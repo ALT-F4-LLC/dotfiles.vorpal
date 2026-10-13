@@ -831,6 +831,26 @@ Routing domain-flavored work onto the baseline on purpose is legitimate,
 but it is an operator decision: elicit it and record it in the issue body
 and the plan artifact, never by omission.
 
+**Security-label flag: guarded paths need a security label or an operator
+answer.** The same pre-record check that confirms the labels you are about
+to record applies this flag rule. Flag an issue whose files or scope match
+any of these guarded paths and whose labels include none of `security`,
+`security-change`, or `security-load-bearing`:
+
+- `src/user/claude_code/hooks/*guard*`
+- `src/user/docket/config/workflows/security-change.toml`
+- `src/user/docket/config/workflows/disposition.toml`
+- `src/user/docket/config/workflows/standard-change.toml`
+- `src/user/docket/config/fragments/severity-ladder-security.md`
+- `src/user/claude_code/agents/executor-read.md`
+
+Put each flagged issue to the operator as a question naming the missing
+label before you record it. Never add the label yourself. Record the
+operator's answer: a security label they apply, or their decision to keep
+the lighter binding, in the issue body and the plan artifact. An issue
+that already carries one of the three security labels is not flagged, and
+neither is an issue whose files and scope match no guarded path.
+
 **Size labels are yours to apply at filing, and their absence is the same
 tell.** A one- or two-file issue that adds no file and whose acceptance
 criteria are verifiable from the diff, carrying neither `small` nor

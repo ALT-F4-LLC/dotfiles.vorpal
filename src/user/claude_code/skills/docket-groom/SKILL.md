@@ -490,7 +490,9 @@ Record these findings alongside the value decision:
   obsolete label can exclude an issue from every registered workflow even
   after earlier grooming passes fixed its acceptance criteria, so check
   this drift explicitly rather than assuming a content fill makes an issue
-  eligible.
+  eligible. Groom also applies `docket-plan`'s security-label flag, the one
+  statement of its guarded paths: ask the operator about an issue the flag
+  matches, and never add the label yourself.
 - **Stale or missing size label:** `small` binds the small-change track and
   `trivial` the trivial-change track, under the docket skill's
   [sizing reference](../docket/references/sizing.md), which is the one

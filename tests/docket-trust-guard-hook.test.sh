@@ -421,13 +421,13 @@ case_command_position_brace_allows() {
 # `{` after `docket` but no `,` or `..`, or holds it inside one quoted
 # group, and bash brace-expands neither. Each row runs under both executor
 # archetypes; with no agent_type the hook allows before the matcher runs.
-# A quoted heredoc body reaches the matcher only when the command names an
-# interpreter, so the widened rows carry one (`ran bash ...`) as the
-# denied findings command did.
+# A quoted heredoc body reaches the matcher only when a code line names an
+# interpreter, so the widened row carries one beside the heredoc
+# (`&& bash --version`).
 
 # The denied findings command itself: a findings heredoc whose body names an
-# interpreter (so the whole command widens) and holds one apostrophe, then a
-# multi-line jq program whose note uses '"'"' escapes and quotes stub output.
+# interpreter in prose and holds one apostrophe, then a multi-line jq
+# program whose note uses '"'"' escapes and quotes stub output.
 incident_findings_command() {
     cat <<'CMD'
 cat > STEP-11188-findings.md <<'EOF'
@@ -446,14 +446,14 @@ CMD
 }
 
 case_unexpandable_brace_prose_allows() {
-    local agent widen='ran bash tests/x.test.sh: exit 0' incident
+    local agent incident
     incident=$(incident_findings_command)
     for agent in executor-read executor-write; do
         assert_verdict 'echo "stub docket {\"ok\":false}"' "$agent" ALLOW \
             "${agent}: double-quoted prose naming docket {...}"
         assert_verdict "cat > f.md <<'EOF'"$'\n''stub docket {"ok":false}'$'\nEOF' \
             "$agent" ALLOW "${agent}: quoted heredoc body naming docket {...}"
-        assert_verdict "cat > f.md <<'EOF'"$'\n'"${widen}"$'\n''stub docket {"ok":false}'$'\nEOF' \
+        assert_verdict "cat > f.md <<'EOF' && bash --version"$'\n''stub docket {"ok":false}'$'\nEOF' \
             "$agent" ALLOW "${agent}: widened quoted heredoc body naming docket {...}"
         assert_verdict "$incident" "$agent" ALLOW \
             "${agent}: the denied findings command (body apostrophe, then a jq program naming docket {...} beside commas)"
@@ -805,15 +805,50 @@ case_heredoc_body_prose() {
         executor-write ALLOW "a # inside an unquoted word is not a comment, so the heredoc still opens"
 }
 
-# A body that names an interpreter widens the whole command, so its prose
-# reaches the command-position brace check. Only the brace word itself can
-# spell docket: letters in the words after it never join it.
+# An interpreter beside the heredoc widens the whole command, so the body's
+# prose reaches the command-position brace check. Only the brace word itself
+# can spell docket: letters in the words after it never join it.
 case_widened_body_brace_prose() {
     local body='`/bin/bash `{tool_name:"Bash",tool_input:{command},agent_type:"executor-write",cwd:<scratch>}` unknown; does not'
-    assert_verdict "cat > /tmp/claude-501/x.md <<'EOF'"$'\n'"${body}"$'\nEOF' \
+    assert_verdict "cat > /tmp/claude-501/x.md <<'EOF' && bash --version"$'\n'"${body}"$'\nEOF' \
         executor-read ALLOW "widened artifact body: backtick-quoted harness argv is prose"
     assert_verdict "cat <<'EOF' | bash"$'\n''`{docket,trust} add erik key`'$'\nEOF' \
         executor-write DENY "a body bash runs still denies a brace word in a substitution"
+}
+
+# An executor's own scratch artifact names the trust verbs in prose. A word
+# inside a quoted heredoc body is data, so an interpreter name there (a gate
+# table row reading `bash gate script`) must not widen the scan to the body;
+# an interpreter on a code line still does, wherever that line sits in its
+# leaf. A real invocation keeps its deny and reason, and a help read stays
+# allowed.
+case_scratch_prose_names_trust_verbs() {
+    local file='"$TMPDIR/STEP-N.d/STEP-N-findings.md"'
+    local summary='"$TMPDIR/STEP-N.d/STEP-N-change-summary.md"'
+    local prose='the refusal named docket trust add and docket trust rm as operator-reserved'
+    local inv='docket trust add erik key'
+    assert_verdict "cat >> ${file} <<'EOF'"$'\n'"${prose}"$'\nEOF' \
+        executor-write ALLOW "AC-1: quoted heredoc append to own scratch names both trust verbs"
+    assert_verdict "cat >> ${summary} <<'EOF'"$'\n'"${prose}"$'\n''| tests | bash gate script | 0 |'$'\nEOF' \
+        executor-write ALLOW "AC-5: interpreter word only inside a quoted heredoc body does not widen"
+    assert_verdict "docket trust add erik ssh-ed25519 AAAA" executor-write DENY \
+        "AC-2: direct docket trust add"
+    assert_deny_reason "docket trust add erik ssh-ed25519 AAAA" executor-write \
+        "AC-2: direct docket trust add"
+    assert_verdict "docket trust rm erik" executor-write DENY \
+        "AC-2: direct docket trust rm"
+    assert_deny_reason "docket trust rm erik" executor-write \
+        "AC-2: direct docket trust rm"
+    assert_verdict "docket trust add --help" executor-write ALLOW \
+        "AC-2: docket trust add --help read"
+    assert_verdict "docket trust rm -h" executor-write ALLOW \
+        "AC-2: docket trust rm -h read"
+    assert_verdict "cat <<'EOF' | sh"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "AC-3: quoted heredoc body piped into sh"
+    assert_verdict "cat <<'EOF' | bash"$'\n''docket trust rm erik'$'\nEOF' \
+        executor-write DENY "AC-3: quoted heredoc body piped into bash"
+    assert_verdict "cat <<'EOF' | exec -a 'x"$'\n'"' sh"$'\n'"${inv}"$'\nEOF' \
+        executor-write DENY "interpreter on a later code line of its leaf still widens"
 }
 
 # ---- HEREDOC DESTINATION: a quoted delimiter is inert only to THIS shell ----
@@ -1235,6 +1270,32 @@ case_missing_prepass_file_denies() {
     rm -rf "$scratch_dir"
 }
 
+# The interpreter test reads its lines through docket-guard-leaf-lines.awk.
+# Without it the hook cannot tell a body word from a code word, so a copy
+# with every other sibling present still denies a command it would allow.
+case_missing_leaf_lines_file_denies() {
+    local scratch_dir scratch_hook err rc
+    scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-trust-guard-leaf-lines-missing.XXXXXX") || \
+        fatal "mktemp failed"
+    scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
+    cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
+        fatal "could not copy the shared files to scratch dir"
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
+        <<<"$(build_input 'ls' executor-write)")
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "hook copy with no line-selection file denies (exit 2)"
+    else
+        fail "hook copy with no line-selection file did not deny (exit ${rc})"
+    fi
+    case "$err" in
+        *"docket-guard-leaf-lines.awk"*) pass "missing line-selection file is named in the reason" ;;
+        *) fail "missing line-selection file deny reason changed or missing: ${err}" ;;
+    esac
+    rm -rf "$scratch_dir"
+}
+
 # ---- Unparseable match program: fail CLOSED, not open ---------------------
 #
 # A match program awk cannot parse prints nothing and exits non-zero. Read
@@ -1249,7 +1310,8 @@ case_match_program_failure() {
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
     sed 's/^BEGIN { MARK = "\\001" }$/BEGIN { MARK = = "\\001" }/' \
         "$HOOK" >"$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" \
+        "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
         fatal "could not copy the pre-pass file to scratch dir"
     if cmp -s "$HOOK" "$scratch_hook"; then
         fail "unparseable match program: the fixture edit did not apply"
@@ -1299,7 +1361,7 @@ case_prepass_program_failure() {
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
     cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
-    cp "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
+    cp "$(dirname "$HOOK")/docket-guard-probe.sh" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
         fatal "could not copy the probe file to scratch dir"
     { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } \
         >"${scratch_dir}/docket-guard-prepass.awk" || \
@@ -1469,6 +1531,7 @@ case_help_lookalikes_and_compounds_deny
 case_heredoc_body_prose
 case_executor_read_payload_heredoc
 case_widened_body_brace_prose
+case_scratch_prose_names_trust_verbs
 case_heredoc_body_destination
 case_comment_regions_are_inert
 case_quote_state_ends_with_its_leaf
@@ -1478,6 +1541,7 @@ case_probe_never_acts
 case_read_loops
 case_many_quoted_groups_on_one_line
 case_missing_prepass_file_denies
+case_missing_leaf_lines_file_denies
 case_match_program_failure
 case_prepass_program_failure
 case_multibyte_text_under_utf8

@@ -353,11 +353,14 @@ fi
 # Install integrity before the walk: a hook copy missing a shared file beside
 # it cannot decide whether a trust-store write is present and fails CLOSED.
 # The pre-pass file is checked first (its reasoning is under "Quote-group
-# marking" below), then the probe file.
+# marking" below), then the line-selection file (under "Widening"), then the
+# probe file.
 HOOK_DIR="${0%/*}"
 [ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
 PREPASS_AWK="${HOOK_DIR}/docket-guard-prepass.awk"
 [ -r "$PREPASS_AWK" ] || deny "trust-store write blocked: the trust-guard hook's shared pre-pass file (docket-guard-prepass.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
+LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
+[ -r "$LEAF_LINES_AWK" ] || deny "trust-store write blocked: the trust-guard hook's shared line-selection file (docket-guard-leaf-lines.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 PROBE_SH="${HOOK_DIR}/docket-guard-probe.sh"
 [ -r "$PROBE_SH" ] && PROBE_PROGRAM=$(<"$PROBE_SH") && [ -n "$PROBE_PROGRAM" ] || deny "trust-store write blocked: the trust-guard hook's shared probe file (docket-guard-probe.sh) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."
 
@@ -453,6 +456,13 @@ fi
 #      not try to prove which specific pipe or substitution carries the
 #      bytes to that interpreter (CL9 is exactly the finding that a
 #      one-hop version of that proof is unsound), it widens instead.
+#      The name is looked for on every line of every leaf except a
+#      quoted-delimiter heredoc body and its terminator line, as selected
+#      by the shared docket-guard-leaf-lines.awk (LEAF_LINES_AWK, resolved
+#      above) in scan mode: such a body is data until something runs it,
+#      so prose there that says `bash` names no program. A leaf with an
+#      unquoted-delimiter heredoc, or one the lexer cannot classify, is
+#      read whole.
 #   2. UNQUOTED DELIMITER (per leaf). A heredoc with an unquoted (or
 #      backslash-quoted-per-character, which is the same case) delimiter
 #      undergoes parameter/command/arithmetic expansion on its body BEFORE
@@ -474,8 +484,10 @@ fi
 # an interpreter and does not widen; every spelling that can run
 # one still does (`sh`, `/bin/sh`, `"sh"`, `$(sh`, a backtick, `;sh`).
 INTERPRETER_RE='(^|[^A-Za-z0-9_.])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_.]|$)'
+INTERPRETER_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK") || \
+    deny "$REASON_PREFIX the trust-guard hook's line-selection program failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 WIDEN=0
-if [[ "$PROBE_TEXT" =~ $INTERPRETER_RE ]]; then
+if [[ "$INTERPRETER_TEXT" =~ $INTERPRETER_RE ]]; then
     WIDEN=1
 fi
 

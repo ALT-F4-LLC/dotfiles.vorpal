@@ -191,8 +191,9 @@ silently — end with the verbatim error as instructed below.` : ''
 
 BIND-THEN-PIN (read before you cite a registry gap as provenance drift):
 \`docket run activate\` registers the source-config version at BIND TIME, as
-part of the same transaction that pins it to the run (documented in \`docket
-run activate --help\`). That means the
+part of the same transaction that pins it to the run (the \`registration.auto\`
+key, which \`docket config set --help\` describes as auto-registration at run
+activate). That means the
 to-be-activated name@version is EXPECTED to be ABSENT from \`docket workflow
 show\`'s registry right up until activation runs — absence pre-activation is
 normal, not evidence of anything wrong. A provenance objection must diff the

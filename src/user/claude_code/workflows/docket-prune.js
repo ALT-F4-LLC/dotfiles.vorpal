@@ -627,7 +627,7 @@ Scratch: ${scratchDir} (the only place you may write). ${READ_ONLY}
 
 ${JSON.stringify(shard)}
 
-2. For each unfiled cut below, write one Markdown body to ${issuesDir}/<key with ':' and '#' replaced by '_'>.md with exactly these sections: a first line "Verdict: <verdict> for <path> (<unit>)"; "## Reason" with the reason; "## Cut" listing each cut line as a bullet (omit the section when cut is empty); "## Evidence" as a bullet per citation in the form "<class>: <locator> — <note>"; "## Refutations" as a bullet per refutation (omit when empty); "## Disposition" with upheldBy/seated and the disposition; "## Execute" with one line: "Land through /docket-refit on src/user/docket/config/<path>; a prose-only cut inside a contract or fragment may go through /simplify-corpus tighten instead." Locators are copied verbatim; never open a transcript to add text. Then append one row per body to ${issuesDir}/index.${n}.tsv: key, title, scope, body path, tab-separated, where title is "corpus-cut: <verdict> <path> <unit>" and scope is "src/user/docket/config/<path>". With no unfiled cut, write index.${n}.tsv empty. Return under bodies the key of every body written.
+2. For each unfiled cut below, write one Markdown body to ${issuesDir}/<key with ':' and '#' replaced by '_'>.md with exactly these sections: a first line "Verdict: <verdict> for <path> (<unit>)"; "## Reason" with the reason; "## Cut" listing each cut line as a bullet (omit the section when cut is empty); "## Evidence" as a bullet per citation in the form "<class>: <locator> — <note>"; "## Refutations" as a bullet per refutation (omit when empty); "## Disposition" with upheldBy/seated and the disposition; "## Execute" with one line: "Land through /docket-refit on src/user/docket/config/<path>." Locators are copied verbatim; never open a transcript to add text. Then append one row per body to ${issuesDir}/index.${n}.tsv: key, title, scope, body path, tab-separated, where title is "corpus-cut: <verdict> <path> <unit>" and scope is "src/user/docket/config/<path>". With no unfiled cut, write index.${n}.tsv empty. Return under bodies the key of every body written.
 
 ${JSON.stringify(unfiled)}`
 }
@@ -756,7 +756,7 @@ Step 1, needles. Open one or two logs from a docket wave (grep -l 'docket step c
 Step 2, rendered. For every definition, count logs whose FIRST record contains its needle: that is the packet the executor received. One fixed program, run once per needle, for example:
   for f in $(find "${dir}" -name 'agent-*.jsonl'); do grep -q -F "${SENTINEL}" "$f" && continue; head -n 1 "$f" | grep -q -F "<needle>" && echo "$f"; done | wc -l
 
-Step 3, applied. Write every section heading text of every contract and fragment (${SECTION_DEF}; grep -h -E '^#{1,2} ' on the corpus files, the leading hashes and space stripped, "Charter" and each fragment's title line dropped, headings shorter than 8 characters dropped and named in notes) to ${scratch}/headings.txt, one per line. Then run ONE pass over the logs, never one grep per heading:
+Step 3, applied. Write every section heading text of every contract and fragment (${SECTION_DEF}; grep -h -E '^#{1,2} ' on the corpus files, the leading hashes and space stripped, "Charter" and each fragment's title line dropped, headings shorter than 8 characters dropped and named in notes, except Not, Method, Emit and Stuck, which always stay) to ${scratch}/headings.txt, one per line. Then run ONE pass over the logs, never one grep per heading:
   for f in $(find "${dir}" -name 'agent-*.jsonl'); do grep -q -F "${SENTINEL}" "$f" && continue; tail -n +2 "$f" | grep -o -F -f ${scratch}/headings.txt | sort -u | sed "s|^|$f\t|"; done > ${scratch}/applied.tsv
 Aggregate applied.tsv with awk into a count per heading and up to three log paths each (path:line locators come from a second grep -n -F on only those logs). Map each heading back to its file by the corpus grep.
 
@@ -985,16 +985,18 @@ async function trialPass() {
             const verdicts = ruled.rulings.map((r) => {
                 const votes = returns.map((ret) => (ret && Array.isArray(ret.votes) ? ret.votes.find((v) => v.unit === r.unit) || null : null))
                 const settled = settleVerdict(r.verdict, votes)
+                // A refactor needs the judge's named cut; without one it downgrades to stay.
+                const verdict = settled.verdict === 'refactor' && !(r.cut || []).length ? 'stay' : settled.verdict
                 return {
                     path: d.path,
                     surface: d.surface,
                     hash: d.hash,
                     unit: r.kind === 'file' ? 'file' : r.unit,
                     kind: r.kind,
-                    verdict: settled.verdict,
+                    verdict,
                     judged: r.verdict,
                     reason: r.reason,
-                    cut: settled.verdict === 'refactor' ? r.cut || [] : [],
+                    cut: verdict === 'refactor' ? r.cut || [] : [],
                     evidence: r.evidence || [],
                     upheldBy: settled.upheldBy,
                     seated: settled.seated,

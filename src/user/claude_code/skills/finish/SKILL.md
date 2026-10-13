@@ -131,7 +131,11 @@ under the docket skill's
 [sizing reference](../docket/references/sizing.md), whose tier goes in
 `--size`; a leftover that is several outcomes is several issues, and one
 you have no time to decompose takes that reference's conduct exception
-(`--size unknown`, `-l blocked`, the `Oversized:` first line). Nothing
+(`--size unknown`, `-l blocked`, the `Oversized:` first line). One
+leftover is not filed: an unobserved Medium review finding goes in one
+`docket issue comment add <id> -m "<finding>"` on the issue it came
+from, never a backlog issue, as the general review severity ladder's
+"Concern, unobserved" row requires. Nothing
 stays only in this transcript.
 
 When the advisor tool is available, call it on the drafted items before

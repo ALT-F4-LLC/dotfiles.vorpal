@@ -366,6 +366,13 @@ printf '%s' "$skill_text" | grep -qF 'never hold a `skipped-not-ready` lane for 
 printf '%s' "$skill_text" | grep -qF "The dispatch closes only when no launch is in flight and the last return's re-split had nothing to launch: extend appended nothing launchable, and every row of the manifest of record is in \`\$SETTLED_FILE\`. The loop ends only when no work remains in this dispatch." &&
     ! printf '%s' "$skill_text" | grep -qF 're-offers it next dispatch'; ok $? \
     'SKILL.md closes the dispatch only when no launch is in flight and every row of the manifest is settled'
+# A dead in-dispatch holder is reaped and acked at the return that reports
+# it, inside the refill steps and ahead of the relaunch, so a lane it refused
+# stops retrying before the close instead of waiting on it.
+refill_steps=${skill_text#*Each time one launch returns while the dispatch is open}
+refill_steps=${refill_steps%%Launch every unit it wrote*}
+printf '%s' "$refill_steps" | grep -qF 'For each row this return settled as `unrecorded` or `unsettled` whose step still reads claimed by that spawn, run `docket step reap STEP-N --reason R` at this return, then pass the `lease-reaped` seq of that reap to `docket guard spawn --run $RUN --ack-reap <seq>` on your own dead-holder evidence and without the ack panel, before the refill relaunches any `skipped-not-ready` lane.'; ok $? \
+    'SKILL.md reaps a dead in-dispatch holder and passes its --ack-reap at the return, before the refill relaunch'
 # A returned launch's statuses settle every row except a refused row and, in
 # the refused row's lane, the chain-dead rows waiting on it. The filter runs
 # as SKILL.md spells it.

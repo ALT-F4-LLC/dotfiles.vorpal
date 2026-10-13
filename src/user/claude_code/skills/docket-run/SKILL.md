@@ -1015,15 +1015,28 @@ launching its usage join (step 3), before waiting on the rest:
    wait on that row, so they stay pending with it. The settled rows
    finished, or are re-offered next dispatch (the statuses list under
    **3. Close the dispatch**).
-3. Rebuild the pending rows from the manifest of record:
+3. Reap the dead in-dispatch holders this return reports. For each row
+   this return settled as `unrecorded` or `unsettled` whose step still
+   reads claimed by that spawn, run `docket step reap STEP-N --reason R`
+   at this return, then pass the `lease-reaped` seq of that reap to
+   `docket guard spawn --run $RUN --ack-reap <seq>` on your own
+   dead-holder evidence and without the ack panel, before the refill
+   relaunches any `skipped-not-ready` lane. Confirm the claim with
+   `docket step show STEP-N`, redirect the conductor token into the reap
+   (**A dead spawn is reaped, not waited out**), read the seq by kind as
+   under **`--ack-reap`**, and sweep the reaped step's scratch. A forced
+   reap raises a write-class hold that denies the refill until the ack
+   lands; once acked, the holder's scope is free, so a lane it refused
+   claims at this return's refill instead of cycling until the close.
+4. Rebuild the pending rows from the manifest of record:
    `jq -c --rawfile settled "$SETTLED_FILE" 'select(.step as $id | $settled | split("\n") | index([$id]) | not)' "$ROWS_FILE" > "$PENDING_FILE"`.
-4. Re-split the pending rows with lane_units.py into a fresh
+5. Re-split the pending rows with lane_units.py into a fresh
    `$LAUNCH_DIR`, with the same `--tribunal` and `--integrated`, and
    `--in-flight` naming every lane whose launch is still running (the
    refill form above). It emits launches only for lanes not in flight,
    up to 20 minus the in-flight count, and writes the rest to
    `deferred.jsonl` for a later return.
-5. Launch every unit it wrote, in one message exactly as above, each
+6. Launch every unit it wrote, in one message exactly as above, each
    passing its `args-<i>.json` from the fresh `$LAUNCH_DIR`. That covers
    lanes deferred past the cap, every `skipped-not-ready` lane with the
    rows behind it, rows appended to a lane that was in flight at an
@@ -1045,8 +1058,10 @@ A wave reports why a claim was refused, not which launch holds the scope,
 so there is no holder tracking: a refused lane relaunches at every
 return that settles it, and a retry whose holder still runs is refused
 again at the cost of one claim probe. The retries end when the holder
-releases the scope or headroom: an in-dispatch launch records or is
-reaped, another session's claim records or its lease ends, a detached
+releases the scope or headroom: an in-dispatch launch records, or its
+dead holder is reaped and acked with `--ack-reap` at the return that
+reports it (step 3 above), so the retries end before the dispatch
+closes; another session's claim records or its lease ends, a detached
 pre-gate finishes.
 
 The dispatch closes only when no launch is in flight and the last
@@ -1162,7 +1177,11 @@ the close like any other.
 
 **1. Launch the usage join first, before reading or diagnosing the wave's
 result.** In the same turn, while it runs: every cherry-pick, `step
-annotate`, and worktree sweep for rows this notification settled. The
+annotate`, and worktree sweep for rows this notification settled. A row
+this notification settled as `unrecorded` or `unsettled` whose step
+still reads claimed by that spawn is reaped and acked at this return,
+before the refill relaunches any `skipped-not-ready` lane (step 3 of
+**Refill freed launch slots each time a launch returns**). Every other
 reap check waits for the close (step 2 below), since the close settles
 most reap holds itself. A reap the open itself performed rides on that
 open's own `reaped`/`reap_hold` fields instead. End the turn on the join. The wave
@@ -1695,9 +1714,14 @@ revocation. The step's packet module under
 modules a day old, so leave it.
 
 **`--ack-reap`.** This flag tells the engine you have established the
-crashed writer is gone; the engine cannot check that itself. Never pass
-it on your own initiative: it is the panel's word, a conversational gate
-per **Gates**. Convene that panel only for a hold still standing after
+crashed writer is gone; the engine cannot check that itself. Pass it on
+your own initiative for one reap only: the return-time reap of a dead
+in-dispatch holder, a row a launch return settled as `unrecorded` or
+`unsettled` whose step still read claimed by that spawn, reaped at that
+return (step 3 of **Refill freed launch slots each time a launch
+returns**). For every other forced reap, never pass it on your own
+initiative: it is the panel's word, a conversational gate per
+**Gates**. Convene that panel only for a hold still standing after
 the reconciled close (**After a reconciled close** above): a non-forced
 reap of a claim admitted under the closing dispatch is already
 acknowledged by the close and needs no panel.
@@ -1732,7 +1756,8 @@ tribunal launch past the spawn-guard hold on an ack-reap decision. A
 launch carrying no proposal, or an already-decided one, is still denied.
 A yes covers exactly the reap it answered; it never extends to the next
 reap, even an identical-looking one. Read-class acks (a reap you
-witnessed yourself) go to the panel like the rest.
+witnessed yourself) go to the panel like the rest; only the return-time
+reap of a dead in-dispatch holder skips it.
 
 **Budget: project before the wall.** Compute the projection, never read
 it off a field:

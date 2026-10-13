@@ -88,8 +88,9 @@ task details out of external requests.
 Review the complete change it will integrate, including any earlier
 commits it includes: every included change, in the checkout and in the
 hand-back, must belong to the assigned task. Check for unrelated changes,
-preexisting work, unintended generated files, and scratch tooling, since
-`git add -A` can pull in files that don't belong. Distinguish completed,
+preexisting work, unintended generated files, and scratch tooling: stage
+only the paths you changed, by name, never a whole-tree add, since a
+worktree can hold untracked files that are not yours. Distinguish completed,
 blocked, and interrupted or failed work; for incomplete work, identify
 what remains and the state available for continuation. For a
 change-summary or disposition hand-back, put issue and run IDs and their

@@ -1526,11 +1526,20 @@ it unrepaired.
 
 A COMMIT BLOCKED report (the executor's commit was refused in its
 worktree) means you make the commit on its behalf first: `git -C <its
-worktree> add -A` then `git -C <its worktree> commit` with a message in
+worktree> add -- <paths>`, naming the paths its change-summary reports
+changed, then `git -C <its worktree> commit` with a message in
 the house commit style (`~/.claude/skills/commit/SKILL.md` §4:
 `type(scope): summary`, plain language, no step or issue IDs, no
 paragraphs, since the change-summary already maps sha to step), and
-proceed from step 1.
+proceed from step 1. Never a whole-tree add: every worktree can hold
+untracked zero-byte sandbox stubs at `.mcp.json` and under `.claude/`,
+and neither is ever staged. Read `git -C <its worktree> show --stat HEAD`
+before integrating; it must list only the change-summary's paths.
+
+A writer change-summary whose second line names stray paths (its own
+`git show --stat` listed files it did not change) is not integrated
+as-is: route it advisor-first, never cherry-picking a sha that carries
+`.mcp.json` or `.claude/` paths.
 
 A formatting-only commit of your own on the shared branch (such as a
 gofmt fix that keeps later writers' repo-wide format gate green) is
@@ -1613,18 +1622,22 @@ straggler `docket doctor` reported at attach in the close report, and
 remove only the one carrying this session's id.
 
 A worktree's commit being integrated does not clear its working tree:
-before removing any worktree, run `git -C <wt> status --porcelain`. Empty
-means go; anything else means preserve first as a real object:
+before removing any worktree, run `git -C <wt> status --porcelain -- .
+':!.mcp.json' ':!.claude'`. The exclusions drop the sandbox's untracked
+zero-byte stubs, which every Linux worktree holds and which are never
+work. Empty means go; anything else means preserve first as a real
+object:
 
-    git -C <wt> add -A          # untracked included; see the trap below
+    git -C <wt> add -A -- . ':!.mcp.json' ':!.claude'   # untracked included; see the trap below
     git -C <wt> stash create    # prints a sha; prints nothing on a clean tree
     git tag preserved/<run>-<wfid> <that sha>
     git tag -l 'preserved/*'    # read it back — an untagged sha is dangling
 
 **The trap:** `git stash create` alone, or even `-u`, silently drops
 untracked files while still returning a sha. `git add -A` first actually
-gets them in. Verify: `git ls-tree -r <sha> --name-only` must list every
-path `status --porcelain` reported. Naming the sha in the close report is
+gets them in, so this recipe keeps the whole-tree add and limits it only
+by the stub exclusions. Verify: `git ls-tree -r <sha> --name-only` must
+list every path the excluded `status --porcelain` reported. Naming the sha in the close report is
 not sufficient; also file an issue in that repo's project carrying the
 tag, run, step, and one line on the work.
 

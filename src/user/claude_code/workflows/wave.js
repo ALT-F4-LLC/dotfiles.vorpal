@@ -477,11 +477,23 @@ ${!isWrite ? `
      review of whatever the checkout holds.
 ` : ''}${isolated && isWrite ? `
 2b. COMMIT YOUR DELIVERABLE IN YOUR WORKTREE before obligation 3; the commit
-   is the only hand-back channel. Two SEPARATE plain calls, exactly this
+   is the only hand-back channel. Three SEPARATE plain calls, exactly this
    shape:
 
-   git add -A
+   git add -- <path> <path> ...
    git commit -m "type(scope): summary"
+   git show --stat HEAD
+
+   STAGE BY NAME: list each path you created, edited, or deleted, typed
+   literally. Never \`-A\`, \`.\`, \`--all\`, \`-u\`, a glob, or \`commit -a\`.
+   NEVER STAGE \`.mcp.json\` or anything under \`.claude/\`: the sandbox puts
+   untracked zero-byte stubs there in every worktree, and you cannot unstage
+   them once committed.
+
+   CHECK THE STAT before recording: every path it lists must be one you
+   changed. If it lists any other path, do not repair it (no \`rm --cached\`,
+   reset, or amend): keep the sha on the change-summary's first line, name
+   the stray paths on its second line and in your final report, and go on.
 
    CONVENTIONAL COMMIT subject: type one of
    feat|fix|docs|refactor|test|perf|build|ci|chore, scope named for the area

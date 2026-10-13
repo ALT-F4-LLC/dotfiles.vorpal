@@ -446,7 +446,7 @@ fi
 
 # --- Widening: where a heredoc's body stops being inert data. ------------
 #
-# Two independent triggers, either one widening a leaf's scan from its
+# Three independent triggers, any one widening a leaf's scan from its
 # first physical line to its whole text (heredoc body included) rather
 # than exempted as prose:
 #
@@ -471,8 +471,16 @@ fi
 #      prepares the heredoc, independent of what cat does with the result.
 #      A quoted delimiter (`<<'EOF'`, `<<"EOF"`, `<<\EOF`) suppresses all of
 #      that, which is the ONLY case this hook exempts as prose (AC1/AC2).
+#   3. RUN A FILE (whole-command scope). A body written to a file is code
+#      once the same call runs a file: by path (`"$TMPDIR/x"`, `./x`), by a
+#      computed command word, with `.`/`source`, or through `builtin`,
+#      `exec`, `command`, `nohup`, `xargs` or `find -exec`. Like trigger 1
+#      this widens rather than tracing which file runs, since a copy, a
+#      variable or a launcher hides that link. The launcher list is
+#      incomplete by nature: an unlisted launcher, a PATH lookup of the
+#      written file, or a run in a later Bash call stays unwidened.
 #
-# With neither trigger, only each leaf's FIRST physical line is scanned: a
+# With no trigger, only each leaf's FIRST physical line is scanned: a
 # genuine invocation's verb is always on that first line by construction
 # (bash resolves `\`-continuations before setting $BASH_COMMAND, verified
 # live; only a heredoc body or a literal newline inside a quoted argument
@@ -490,6 +498,29 @@ WIDEN=0
 if [[ "$INTERPRETER_TEXT" =~ $INTERPRETER_RE ]]; then
     WIDEN=1
 fi
+
+# Trigger 3 reads each leaf's first code line, after its leading assignment
+# words. `command -v`/`-V` only looks a name up, so it runs no file.
+RUNS_FILE=$(printf '%s' "$INTERPRETER_TEXT" | awk '
+BEGIN { RS = "\036"; name = "[A-Za-z_][A-Za-z0-9_]*" }
+{
+    leaf = $0
+    sub(/^[ \t\n]+/, "", leaf)
+    line = leaf
+    sub(/\n.*$/, "", line)
+    while (match(line, "^" name "\\+?=[^ \t]*[ \t]+")) line = substr(line, RLENGTH + 1)
+    if (line ~ "^" name "\\+?=") next
+    word = line
+    sub(/[ \t].*$/, "", word)
+    gsub(/[\047\042\\]/, "", word)
+    if (word ~ /[\/$\140]/ ||
+        word ~ /^(\.|source|builtin|exec|nohup|xargs)$/ ||
+        word == "command" && line !~ /^command[ \t]+-[vV]/ ||
+        word == "find" && leaf ~ /[ \t]-(exec|execdir|ok|okdir)([ \t]|$)/) runs = 1
+}
+END { if (runs) print "RUNS_FILE" }
+') || deny "$REASON_PREFIX the trust-guard hook's run-a-file check failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+[ "$RUNS_FILE" = "RUNS_FILE" ] && WIDEN=1
 
 SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v RS='\036' -v widen="$WIDEN" '
     # Drops every balanced arithmetic span from a line: $((...)), ((...))
@@ -822,4 +853,4 @@ fi
 if [ "$CONDUCTOR" = "1" ]; then
     deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never the conductor's to run, \`--help\` included: a background seat's permission ask has nobody at a terminal to answer it, and one conductor has held one for hours. Send the trust matter to \`main\` as its own \`question:\` (never bundled with another gate) and end your turn; the operator's own terminal is the only path to that store."
 fi
-deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the matcher has false-positived on the phrase appearing as prose or as an interpreter's code argument (known limitation): to read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); to write prose that names the phrase, write it into your own \`\$TMPDIR/STEP-N.d\` with a quoted-delimiter heredoc (\`<<'EOF'\`) consumed by cat, tee or jq, for example \`cat > \"\$TMPDIR/STEP-N.d/STEP-N-findings.md\" <<'EOF'\`, and never feed that heredoc to an interpreter."
+deny "trust-store write blocked: \`docket trust add/rm\` is operator-reserved and never in scope for an executor step, whatever the brief says. If your step genuinely needs a trust entry changed, that is a routing defect: record the mismatch as your step's finding through the gap channel your brief names, and do not retry this call. If this command performs no trust-store write, the matcher has false-positived on the phrase appearing as prose or as an interpreter's code argument (known limitation): to read or search a file's content, use the Read or Grep tool instead (bypasses this matcher entirely); to write prose that names the phrase, write it into your own \`\$TMPDIR/STEP-N.d\` with a quoted-delimiter heredoc (\`<<'EOF'\`) consumed by cat, tee or jq, for example \`cat > \"\$TMPDIR/STEP-N.d/STEP-N-findings.md\" <<'EOF'\`, never feed that heredoc to an interpreter, and do not run a file by path, source one, or use a launcher (exec, command, nohup, xargs, find -exec) in the same Bash call."

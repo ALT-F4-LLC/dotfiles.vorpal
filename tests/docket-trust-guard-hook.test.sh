@@ -884,6 +884,51 @@ case_heredoc_body_destination() {
         executor-write DENY "quoted heredoc fed to sh inside an assignment's backticks"
 }
 
+# ---- WRITE THEN RUN: a body written to a file is code once a file runs -------
+#
+# A quoted delimiter keeps the body from this shell only. When another leaf of
+# the same call executes a file by path, sources one, or hands a program
+# operand to a launcher, the written body may be what runs, whatever its own
+# words say, so the body reaches the matcher. A write with no run stays data.
+case_heredoc_written_then_run() {
+    local write="cat > \"\$TMPDIR/x\" <<'EOF'"$'\n''docket trust add erik key'$'\nEOF'
+    local prose="cat > \"\$TMPDIR/x\" <<'EOF'"$'\n''the rule says docket trust add is operator-reserved'$'\nEOF'
+    assert_verdict "${write}"$'\n''chmod +x "$TMPDIR/x" && "$TMPDIR/x"' \
+        executor-write DENY "AC-1: quoted heredoc written to a file, then executed by path"
+    assert_verdict "${write}"$'\n''. "$TMPDIR/x"' \
+        executor-write DENY "AC-2: quoted heredoc written to a file, then sourced with ."
+    assert_verdict "${write}" \
+        executor-write ALLOW "AC-3: quoted heredoc written to a file with no later run"
+    assert_verdict "${write}"$'\n''source "$TMPDIR/x"' \
+        executor-write DENY "written file sourced with source"
+    assert_verdict "${write}"$'\n''cd "$TMPDIR" && chmod +x x && ./x' \
+        executor-write DENY "written file executed by a relative path"
+    assert_verdict "${write}"$'\n''exec "$TMPDIR/x"' \
+        executor-write DENY "written file executed through exec"
+    assert_verdict "${write}"$'\n''command "$TMPDIR/x"' \
+        executor-write DENY "written file executed through command"
+    assert_verdict "${write}"$'\n''builtin . "$TMPDIR/x"' \
+        executor-write DENY "written file sourced through builtin"
+    assert_verdict "${write}"$'\n''f="$TMPDIR/x"; $f' \
+        executor-write DENY "written file executed through a computed command word"
+    assert_verdict "${write}"$'\n''cp "$TMPDIR/x" "$TMPDIR/y" && "$TMPDIR/y"' \
+        executor-write DENY "written file copied, then the copy executed"
+    assert_verdict "${write}"$'\n''nohup "$TMPDIR/x"' \
+        executor-write DENY "written file executed through nohup"
+    assert_verdict "${write}"$'\n''xargs -I{} {} <<< "$TMPDIR/x"' \
+        executor-write DENY "written file executed through xargs"
+    assert_verdict "${write}"$'\n''find "$TMPDIR" -name x -exec {} \;' \
+        executor-write DENY "written file executed through find -exec"
+    assert_verdict "${prose}"$'\n''make -C "$TMPDIR" test' \
+        executor-write ALLOW "prose heredoc written beside a tool that runs no file"
+    assert_verdict "${prose}"$'\n''find "$TMPDIR" -name x' \
+        executor-write ALLOW "prose heredoc written beside a find that runs nothing"
+    assert_verdict "dir=\"\$TMPDIR/out\""$'\n'"${prose}" \
+        executor-write ALLOW "prose heredoc written beside an assignment of a path"
+    assert_verdict "command -v jq"$'\n'"${prose}" \
+        executor-write ALLOW "prose heredoc written beside a command -v lookup"
+}
+
 # ---- COMMENTS: inert to bash, so inert here ---------------------------------
 #
 # A comment runs to the end of its line and bash executes none of it. Anything
@@ -1533,6 +1578,7 @@ case_executor_read_payload_heredoc
 case_widened_body_brace_prose
 case_scratch_prose_names_trust_verbs
 case_heredoc_body_destination
+case_heredoc_written_then_run
 case_comment_regions_are_inert
 case_quote_state_ends_with_its_leaf
 case_heredoc_position_edges

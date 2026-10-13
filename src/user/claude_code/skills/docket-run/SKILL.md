@@ -938,17 +938,24 @@ is left to the classifier, which refused it mid-run (measured: accepted
 at one conductor's activation, refused at its fourth dispatch):
 
 ```bash
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --write-cap "$WRITE_CAP"
 # a dispatch carrying a fix round's review fanout adds its integrated map:
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --integrated "$INTEGRATED_FILE"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --write-cap "$WRITE_CAP" --integrated "$INTEGRATED_FILE"
 # a refill at a launch return splits the pending rows and names the lanes
 # still in flight, each by its key: the issue id, or row:<step> for a row
 # without an issue (add --integrated as above when the dispatch carries it):
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --write-cap "$WRITE_CAP" --in-flight "<lane>,<lane>"
 ```
 
 Always pass `--tribunal`; without it no generated object carries
-`tribunal`, and the script says so on stderr. `$INTEGRATED_FILE` holds the
+`tribunal`, and the script says so on stderr. `$WRITE_CAP` is the write
+class's effective cap, `.data.limits.write` in this dispatch's
+`docket dispatch open --json` answer (`jq '.data.limits.write'` over the
+answer the kind filter reads). Pass `--write-cap` on every split, the
+refill's included, so launches never outgrow the write class's headroom;
+the script launches at most `min(20, $WRITE_CAP)`. When the answer has no
+`limits.write` key, the class is unbounded: omit `--write-cap` entirely,
+since the script exits on an empty or non-numeric value. `$INTEGRATED_FILE` holds the
 integrated map as one JSON object of issue to sha, written under the
 session's scratchpad. Run it from this session's working directory: it
 exits 1 outside the run's git work tree and writes nothing. It reads the
@@ -1031,10 +1038,11 @@ launching its usage join (step 3), before waiting on the rest:
 4. Rebuild the pending rows from the manifest of record:
    `jq -c --rawfile settled "$SETTLED_FILE" 'select(.step as $id | $settled | split("\n") | index([$id]) | not)' "$ROWS_FILE" > "$PENDING_FILE"`.
 5. Re-split the pending rows with lane_units.py into a fresh
-   `$LAUNCH_DIR`, with the same `--tribunal` and `--integrated`, and
+   `$LAUNCH_DIR`, with the same `--tribunal`, `--write-cap` (omitted when
+   the open's answer has no `limits.write`), and `--integrated`, and
    `--in-flight` naming every lane whose launch is still running (the
    refill form above). It emits launches only for lanes not in flight,
-   up to 20 minus the in-flight count, and writes the rest to
+   up to the write cap minus the in-flight count, and writes the rest to
    `deferred.jsonl` for a later return.
 6. Launch every unit it wrote, in one message exactly as above, each
    passing its `args-<i>.json` from the fresh `$LAUNCH_DIR`. That covers

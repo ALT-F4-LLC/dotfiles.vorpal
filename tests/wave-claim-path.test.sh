@@ -4,9 +4,10 @@
 # the gate between a dispatched executor row and the executor's spawn.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
-# and this one is in that list. It needs only `node` and `awk` — no engine, no
-# database, no network, and it spawns no agent: `agent`, `workflow` and
-# `stepShow` are stubs.
+# and this one is in that list. It needs only `node`, `awk`, `sed` and `jq` —
+# no engine, no database, no network, and it spawns no agent: `agent`,
+# `workflow` and `stepShow` are stubs. `jq` runs docket-run's refill settle
+# filter, read from SKILL.md, over the pre-claim probe's settled statuses.
 #
 # WHY THIS EXISTS. The wave hands an executor its packet inside the spawn
 # prompt, and the packet comes only from the module wave-claim wrote for this
@@ -22,6 +23,7 @@ set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+SKILL="${DOCKET_RUN_SKILL:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/SKILL.md}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
@@ -29,7 +31,9 @@ fatal() {
 }
 
 [ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$SKILL" ] || fatal "SKILL.md not found at ${SKILL}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
+command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-claim-path.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
@@ -48,7 +52,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE"
 }
 
-for region in configuration classifier-retry park-signals orphaned-claim packet claim-path; do
+for region in configuration classifier-retry park-signals orphaned-claim packet claim-path pre-claim-probe; do
     extract "$region" >> "${WORK}/regions.js" || fatal "bad or missing TEST markers for ${region}"
     printf '\n' >> "${WORK}/regions.js"
 done
@@ -102,7 +106,7 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
     }
     vm.createContext(sandbox)
     vm.runInContext(regions + `
-;globalThis.__api = { claimPacket, runParked, setLaunched: (n) => { agentsLaunched = n }, AGENT_LIFETIME_CAP }`, sandbox)
+;globalThis.__api = { claimPacket, preClaimSkip, runParked, setLaunched: (n) => { agentsLaunched = n }, AGENT_LIFETIME_CAP }`, sandbox)
     return { api: sandbox.__api, calls }
 }
 
@@ -262,12 +266,54 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
             'a content block is not resubmitted, and with no module nothing launches')
     }
 
+    // ---- the pre-claim probe: a pre-gate hold waits, any other pending skips ----
+    // Each case also writes its row and a chain-dead follower as a launch's
+    // statuses, for the refill settle filter run below.
+    const follower = { step: 'STEP-13', status: 'skipped-chain-dead' }
+    {
+        const PREGATE = 'a detached pre-gate run for its target is in flight'
+        const { api, calls } = wave({ show: { status: 'pending', blockedReason: PREGATE } })
+        const res = await api.preClaimSkip(row, 'lane')
+        let reason = null
+        try { reason = JSON.parse(res.text).data.blocked_reason } catch {}
+        ok(res && res.status === 'skipped-not-ready' && reason === PREGATE && calls.stepShow === 1,
+            "a pending step held by its target's detached pre-gate settles skipped-not-ready, not skipped-not-claimable")
+        fs.writeFileSync(`${process.argv[3]}/pregate.json`, JSON.stringify([res, follower]))
+    }
+    {
+        const AFTER = 'an `after` predecessor is not done'
+        const { api } = wave({ show: { status: 'pending', blockedReason: AFTER } })
+        const res = await api.preClaimSkip(row, 'lane')
+        ok(res && res.status === 'skipped-not-claimable',
+            'a pending step held by anything but a pre-gate still settles skipped-not-claimable')
+        fs.writeFileSync(`${process.argv[3]}/after.json`, JSON.stringify([res, follower]))
+    }
+    {
+        const { api } = wave({ show: { status: 'ready', blockedReason: '' } })
+        ok(await api.preClaimSkip(row, 'lane') === null, 'a ready step has no skip status and spawns')
+    }
+
     console.log(`\n${pass} passed, ${fail} failed`)
     process.exit(fail === 0 ? 0 : 1)
 })()
 JS
 
-node "${WORK}/suite.js" "${WORK}/regions.js" || exit 1
+node "${WORK}/suite.js" "${WORK}/regions.js" "${WORK}" || exit 1
+
+# docket-run's refill settle filter, as SKILL.md spells it, must leave a
+# pre-gate-held row and its chain-dead follower pending, so the refill
+# relaunches them in the same dispatch. The `after` hold is the control: the
+# filter settles both of its rows.
+settle=$(sed -n 's/.*`jq -r '"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE" >> "$SETTLED_FILE"`.*/\1/p' "$SKILL")
+[ -n "$settle" ] || fatal "no refill settle filter found in ${SKILL}"
+held=$(jq -r "$settle" "${WORK}/pregate.json" | tr '\n' ' ')
+control=$(jq -r "$settle" "${WORK}/after.json" | tr '\n' ' ')
+if [ "$control" = "STEP-12 STEP-13 " ] && [ "$held" = "" ]; then
+    printf 'PASS: the refill settle filter leaves a pre-gate-held row and its chain-dead follower pending\n'
+else
+    printf "FAIL: the refill settle filter settled '%s' of the pre-gate-held launch (control settled '%s')\n" "$held" "$control" >&2
+    exit 1
+fi
 
 # spawn() must reach the executor only through claimPacket(), and the
 # executor's prompt must be the brief carrying the claim's packet.

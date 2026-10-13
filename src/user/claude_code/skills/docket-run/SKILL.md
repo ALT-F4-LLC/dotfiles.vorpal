@@ -1195,7 +1195,9 @@ exhausted), `agent-cap`
 and a row whose text names a live claim needs that claim reaped first),
 and `skipped-chain-dead` are all re-offered next dispatch.
 `skipped-not-ready` (the claim was refused because another issue's launch
-held the scope or the class headroom; nothing was claimed) is relaunched
+held the scope or the class headroom, or the claim or the pre-claim probe
+found the step held while a detached pre-gate measures its target; nothing
+was claimed) is relaunched
 by the refill at the return that settled it, with the
 `skipped-chain-dead` rows behind it, and stays pending in this dispatch
 until a claim succeeds. Every

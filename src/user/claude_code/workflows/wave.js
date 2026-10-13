@@ -165,6 +165,10 @@ const HARNESS_CAP = 16
 // measured bound; nothing above it was tested. Keep it equal to LAUNCH_CAP in
 // lane_units.py.
 const LAUNCH_CAP = 20
+// The engine's hold on a step whose target a detached pre-gate run is still
+// measuring (claim.go). The hold lifts when that run ends, so both the claim
+// path and the pre-claim probe settle it as a wait.
+const PREGATE_HOLD = 'a detached pre-gate run for its target is in flight'
 // Every agent() call in this file goes through countedAgent. At the cap it
 // rejects with AgentCapError, which the spawn path settles as `agent-cap`.
 class AgentCapError extends Error {
@@ -1235,7 +1239,6 @@ async function claimPacket(row, r, phaseLabel) {
 // target: the claim refuses at once, and the hold lifts when that run ends.
 // Engine claim.go: the scope and pre-gate clauses are bare; the headroom
 // clause carries its arithmetic in parentheses.
-const PREGATE_HOLD = 'a detached pre-gate run for its target is in flight'
 const CROSS_LAUNCH_WAIT = /not ready to claim:\s*(its scope conflicts with a claimed or running step|no concurrency headroom in its class|a detached pre-gate run for its target is in flight)(?:\s*\(.*\))?\s*$/m
 
 // No module loaded. The claim agent's `output` says why: a cross-launch wait
@@ -2334,6 +2337,40 @@ function needsClaimProbe(row) {
     return g !== undefined && g < stageOf(row)
 }
 
+// TEST-BEGIN pre-claim-probe — extracted and exercised by
+// tests/wave-claim-path.test.sh with stub `stepShow`/`log` globals.
+// Resolves the row's settled status when the probe reads its step as not
+// claimable this wave, else null and the row spawns. Skip only on a
+// positively recognized status; a dead probe, an engine error, and any other
+// status all spawn (fail-open). `pending` belongs in the set HERE only: the
+// lane's earlier stages settled, so nothing left in this wave can advance the
+// step to `ready`. The pre-gate hold is the exception: it lifts when the
+// engine's detached run ends, so it settles skipped-not-ready as the claim
+// path does, and the refill relaunches the lane in the same dispatch.
+function preClaimSkip(row, phaseLabel) {
+    return stepShow(row.step, `${row.step} · pre-claim`, phaseLabel).then((show) => {
+        const terminal = ['done', 'superseded', 'skipped', 'failed', 'pending']
+        if (!show || show.error || !terminal.includes(show.status)) return null
+        // blockedReason() (chain-dead region) still reads `text` as
+        // the raw `docket step show` envelope — render the same
+        // shape the engine emits so it keeps working unchanged.
+        const envelope = { data: { step: row.step, status: show.status } }
+        if (show.blockedReason) envelope.data.blocked_reason = show.blockedReason
+        const text = JSON.stringify(envelope)
+        if (show.status === 'pending' && show.blockedReason === PREGATE_HOLD) {
+            log(`${row.step}: held — "${PREGATE_HOLD}"; its pre-gate is still ` +
+                `measuring the target, so this issue's later stages defer ` +
+                `to the refill; skipping the spawn`)
+            return { step: row.step, status: 'skipped-not-ready', text }
+        }
+        log(`${row.step}: not claimable (${show.status}) — a same-issue ` +
+            `gate or action upstream left it unreachable for this ` +
+            `wave; skipping the spawn`)
+        return { step: row.step, status: 'skipped-not-claimable', text }
+    })
+}
+// TEST-END pre-claim-probe
+
 // One verdict per issue-round, shared by every fanout sibling. The probes
 // run AT THE ROW'S OWN STAGE, so the bundle's round record is live. Every
 // uncertain outcome resolves null (fail-open); only a positively parsed
@@ -2803,24 +2840,7 @@ function startRow(row, label) {
     if (row.kind === 'vote') return runGate(row, label)
     const launchRow = () => {
         if (needsClaimProbe(row)) {
-            return stepShow(row.step, `${row.step} · pre-claim`, label).then((show) => {
-                // Skip only on a positively recognized status; a dead probe, an
-                // engine error, and any other status all spawn (fail-open).
-                // `pending` belongs in the set HERE only: the lane's earlier
-                // stages settled, so nothing left in this wave can advance the
-                // step to `ready`.
-                const terminal = ['done', 'superseded', 'skipped', 'failed', 'pending']
-                if (!show || show.error || !terminal.includes(show.status)) return spawn(row, label)
-                log(`${row.step}: not claimable (${show.status}) — a same-issue ` +
-                    `gate or action upstream left it unreachable for this ` +
-                    `wave; skipping the spawn`)
-                // blockedReason() (chain-dead region) still reads `text` as
-                // the raw `docket step show` envelope — render the same
-                // shape the engine emits so it keeps working unchanged.
-                const envelope = { data: { step: row.step, status: show.status } }
-                if (show.blockedReason) envelope.data.blocked_reason = show.blockedReason
-                return { step: row.step, status: 'skipped-not-claimable', text: JSON.stringify(envelope) }
-            })
+            return preClaimSkip(row, label).then((skip) => skip || spawn(row, label))
         }
         return spawn(row, label)
     }

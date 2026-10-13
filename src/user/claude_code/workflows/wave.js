@@ -537,12 +537,11 @@ ${isWrite ? `
    - PAYLOAD, when your packet requires one: \`--payload-file <path>\`,
      built with \`jq -n\`.
    - METADATA: leave \`model_resolved\` and \`effort_resolved\` as
-     \`unknown\` unless the runtime directly supplies an observation for
-     this execution; requested routing, aliases, settings, and your own
-     identity claim are not observations. With one, use its exact model ID
-     and effort and name the source in the artifact; several observed
-     models go in the artifact with \`model_resolved\` still unknown. Add no
-     routing or cost field.
+     \`unknown\`. The wave's usage pass reads the served model and effort
+     from the transcript after your record and writes them onto this step,
+     so do not guess either one. Requested routing, aliases, settings, and
+     your own identity claim are not observations and do not change the
+     field. Add no routing or cost field.
    - GAPS: an out-of-scope problem your work surfaced is neither a failure
      nor your declared artifact. File gaps under your contract's
      evidence-rules "File gaps sparingly" rule: only a \`blocker\` or

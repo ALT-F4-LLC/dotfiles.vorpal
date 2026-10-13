@@ -164,18 +164,31 @@ const DEFAULT_MODE = 'steps'
 //                  four token unit rows per step, or those four plus one
 //                  `tool_uses` row per (proposal, voter), sorted numerically
 //                  by step or lexicographically by (proposal, voter)
+//                  In steps mode the first unit row of a step carries a
+//                  `metadata` object when one transcript served the step, its
+//                  model coverage is complete, and its last model is known:
+//                  {model_resolved, effort_resolved?, models_observed?}.
+//                  effort_resolved appears only when known; models_observed
+//                  (sorted) appears only when several models served the step.
+//                  `dispatch backfill-usage` merges the object onto the step
+//                  record. A step that two or more transcripts served gets no
+//                  metadata: its record keeps the executor's `unknown`.
 //         overhead the agents that recorded no step and cast no ballot, with
 //                  their summed units (steps mode; empty in seats mode)
 //         skipped  [{file, reason: 'seated'|'unattributed'|'excluded'|'dead-spawn', key, label}]
 //         errors   [string]; when non-empty the script throws after logging
 //                  each one, because silence must not look like success
-//         model_observations [{file, kind, key, models, complete, source,
-//                              effort_resolved}]
+//         model_observations [{file, kind, key, models, last_model, complete,
+//                              source, effort_resolved}]
 //                  serving models from assistant.message.model, separately
 //                  from routing requests and token rows. Multiple models can
-//                  serve one agent after fallback. Missing fields stay unknown;
+//                  serve one agent after fallback. last_model is the model of
+//                  the final usage-bearing assistant turn, or null; models is
+//                  sorted, so it cannot say which model served last.
+//                  effort_resolved is the one effort the transcript records on
+//                  its assistant turns (top-level `effort`), or 'unknown' when
+//                  it records none or several. Missing fields stay unknown;
 //                  neither routing settings nor model self-reports fill them.
-//                  Effective effort is not exposed by this transcript shape.
 //                  complete covers parsed, deduplicated usage-bearing messages;
 //                  it does not certify that the transcript or task finished.
 // Throws on an invalid args.dir or args.mode; on a scout listing whose
@@ -280,6 +293,9 @@ const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object
 | (reduce ($lines[] | select(.type == "assistant") | .message
             | select((.usage // {}) != {} and (.id // "") != "")) as $m
         ({}; .[$m.id] = $m) | [.[]]) as $messages
+| ([$lines[] | select(.type == "assistant")
+            | select((.message.usage // {}) != {} and (.message.id // "") != "")
+            | {model: .message.model, effort: .effort}]) as $served
 | {
     bootstrap: ($boot != null),
     cast: (($b | cast_join) // null),
@@ -299,6 +315,8 @@ const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object
                    else empty end]
                 | unique | length),
     models_observed: ([$messages[].model | select(type == "string" and . != "" and . != "<synthetic>")] | unique),
+    last_model: (($served | last | .model | select(type == "string" and . != "" and . != "<synthetic>")) // null),
+    efforts_observed: ([$served[].effort | select(type == "string" and . != "")] | unique),
     model_observation_complete: ($messages | length > 0 and all(.[];
         (.model | type) == "string" and .model != "" and .model != "<synthetic>")),
     usage: (
@@ -424,15 +442,32 @@ function modelObservation(file, extract, classification, mode) {
         ? [...new Set(extract.models_observed.filter((model) =>
             typeof model === 'string' && model !== '' && model !== '<synthetic>'))].sort()
         : []
+    const efforts = Array.isArray(extract.efforts_observed)
+        ? [...new Set(extract.efforts_observed.filter((effort) =>
+            typeof effort === 'string' && effort !== ''))].sort()
+        : []
     return {
         file,
         kind: classification.bucket === 'overhead' ? 'overhead' : mode === 'seats' ? 'seat' : 'step',
         key: classification.key,
         models,
+        last_model: typeof extract.last_model === 'string' && extract.last_model !== ''
+            ? extract.last_model : null,
         complete: extract.model_observation_complete === true && models.length > 0,
         source: 'assistant.message.model',
-        effort_resolved: 'unknown',
+        effort_resolved: efforts.length === 1 ? efforts[0] : 'unknown',
     }
+}
+
+// The step metadata a back-fill row carries: the served model and effort a
+// single transcript proves. Null when coverage is partial or no last model is
+// known, so the step keeps the executor's own `unknown` sentinel.
+function servedMetadata(observation) {
+    if (!observation.complete || observation.last_model === null) return null
+    const metadata = { model_resolved: observation.last_model }
+    if (observation.effort_resolved !== 'unknown') metadata.effort_resolved = observation.effort_resolved
+    if (observation.models.length > 1) metadata.models_observed = observation.models
+    return metadata
 }
 
 function addUsage(sums, usage) {
@@ -466,7 +501,8 @@ function reduceRows(results, mode, exclude) {
             skipped.push({ file, reason: c.bucket, key: c.key, label: c.label })
             continue
         }
-        model_observations.push(modelObservation(file, extract, c, mode))
+        const observation = modelObservation(file, extract, c, mode)
+        model_observations.push(observation)
         if (c.bucket === 'overhead') {
             overhead.agents.push({ file, label: c.label })
             addUsage(overhead.sums, extract.usage)
@@ -482,9 +518,12 @@ function reduceRows(results, mode, exclude) {
             silent.push({ file, id, c })
             continue
         }
-        if (!totals.has(id)) totals.set(id, { key: c.key, sums: zeroSums(), tool_uses: 0 })
-        addUsage(totals.get(id).sums, extract.usage)
-        totals.get(id).tool_uses += toolUses(extract)
+        if (!totals.has(id)) totals.set(id, { key: c.key, sums: zeroSums(), tool_uses: 0, files: 0, observation: null })
+        const total = totals.get(id)
+        addUsage(total.sums, extract.usage)
+        total.tool_uses += toolUses(extract)
+        total.files++
+        total.observation = observation
     }
     for (const { file, id, c } of silent) {
         if (totals.has(id)) {
@@ -499,11 +538,17 @@ function reduceRows(results, mode, exclude) {
         : (a, b) => parseInt(a.key.split('-')[1], 10) - parseInt(b.key.split('-')[1], 10)
     // Seats mode carries the tool-call count as a fifth unit row; steps mode
     // keeps the four-row contract docket-run pipes to dispatch backfill-usage.
-    const rows = [...totals.values()].sort(cmp).flatMap(({ key, sums, tool_uses }) =>
+    const rows = [...totals.values()].sort(cmp).flatMap(({ key, sums, tool_uses, files, observation }) =>
         mode === 'seats'
             ? [...UNITS.map((unit) => ({ proposal: key[0], voter: key[1], unit, quantity: sums[unit] })),
                { proposal: key[0], voter: key[1], unit: 'tool_uses', quantity: tool_uses }]
-            : UNITS.map((unit) => ({ step: key, unit, quantity: sums[unit] })),
+            : UNITS.map((unit, i) => ({
+                step: key,
+                unit,
+                quantity: sums[unit],
+                ...(i === 0 && files === 1 && servedMetadata(observation)
+                    ? { metadata: servedMetadata(observation) } : {}),
+            })),
     )
     return { rows, overhead, skipped, errors, model_observations }
 }
@@ -625,6 +670,8 @@ const EXTRACT_SCHEMA = {
         reseat: { type: 'boolean' },
         tool_uses: { type: 'integer' },
         models_observed: { type: 'array', items: { type: 'string' } },
+        last_model: { type: ['string', 'null'] },
+        efforts_observed: { type: 'array', items: { type: 'string' } },
         model_observation_complete: { type: 'boolean' },
         usage: {
             type: 'object',
@@ -674,7 +721,7 @@ jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${shellPath(file)}; echo "exi
 
 The transcript path is exact and must be copied character for character, including the one \`*\` that stands in for the flattened project name (the shell resolves it; do not replace it). A hyphen where a dot might be expected (\`github-com\`) is correct and is not a typo; do not "correct" any part of the path.
 ${retry === 'path' ? '\nThis is a SECOND run: the first run reported that jq could not open the file, which means the path was retyped incorrectly. Copy the path from the command above byte for byte.\n' : retry ? '\nThis is a SECOND, independent run of the same command against the same file — a prior run reported bootstrap:false and is being re-checked. Run the command fresh; do not reuse or assume any earlier result.\n' : ''}
-jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, claim_agent, step_mention, reseat, tool_uses, models_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model names come only from the extracted message fields; missing observations remain empty. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
+jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, claim_agent, step_mention, reseat, tool_uses, models_observed, last_model, efforts_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model and effort names come only from the extracted fields; missing observations remain empty, and a null last_model stays null. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
 const listing = checkListing(mode,
@@ -853,7 +900,7 @@ for (const observation of reduced.model_observations) {
     log(`wave-usage: ${observation.file}: serving models ` +
         `${observation.models.join(', ') || 'unknown'} ` +
         `(${observation.complete ? 'all parsed response model fields present' : 'model fields missing'}); ` +
-        'effective effort unknown')
+        `last ${observation.last_model || 'unknown'}, effort ${observation.effort_resolved}`)
 }
 
 for (const s of reduced.skipped) {

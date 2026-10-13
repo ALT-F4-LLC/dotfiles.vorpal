@@ -688,6 +688,59 @@ const partialObservation = reduceRows([{ file:'partial', extract: {
 ok(partialObservation.models[0] === 'claude-opus-5' && !partialObservation.complete,
     'a known model does not establish complete attribution when other messages lack it')
 
+// The served model is the final usage-bearing turn, which the sorted model set
+// cannot give. Here the final turn is opus, and sorting would put sonnet last.
+const extractOf = (lines) => JSON.parse(spawnSync('jq', ['-c', '-n', '-R', EXTRACT_JQ], {
+    input: lines.map(JSON.stringify).join('\n'), encoding: 'utf8',
+}).stdout)
+const pick = (obj, keys) => Object.fromEntries(keys.map((k) => [k, obj[k]]))
+const turn = (id, model, effort, output) =>
+    ({ type:'assistant', effort, message:{ id, model, usage:{ output_tokens: output } } })
+const finalTurn = extractOf([
+    turn('t1', 'claude-sonnet-5-5', 'medium', 1),
+    turn('t2', 'claude-opus-5-5', 'medium', 1),
+    turn('t2', 'claude-opus-5-5', 'medium', 2),
+])
+ok(finalTurn.last_model === 'claude-opus-5-5' && finalTurn.models_observed.join(',') === 'claude-opus-5-5,claude-sonnet-5-5',
+    `last_model names the final served turn, not the last sorted model (got ${finalTurn.last_model})`)
+ok(JSON.stringify(finalTurn.efforts_observed) === '["medium"]',
+    'the effort the transcript records on its turns is read')
+// Step metadata for the back-fill: one transcript, complete coverage, a last model.
+const served = { ...by(wave, 'agent-aexec.jsonl').extract, record: 'STEP-3190', usage: { input_tokens: 1, output_tokens: 2, cache_creation_tokens: 3, cache_read_tokens: 4 } }
+const mixedEffort = extractOf([
+    turn('e1', 'claude-opus-5-5', 'medium', 1),
+    turn('e2', 'claude-opus-5-5', 'high', 1),
+])
+const mixedObservation = reduceRows([{ file: 'agent-mixed.jsonl', extract: { ...served, ...pick(mixedEffort, ['last_model', 'efforts_observed', 'models_observed', 'model_observation_complete']) } }], 'steps', []).model_observations[0]
+ok(mixedObservation.effort_resolved === 'unknown' && mixedObservation.last_model === 'claude-opus-5-5',
+    'two recorded efforts leave effort_resolved unknown while the model is still attributed')
+const withModels = reduceRows([{ file: 'agent-served.jsonl', extract: {
+    ...served, last_model: 'claude-opus-5-5', efforts_observed: ['medium'],
+    models_observed: ['claude-opus-5-5', 'claude-sonnet-5-5'], model_observation_complete: true,
+} }], 'steps', []).rows.filter((r) => r.step === 'STEP-3190')
+ok(JSON.stringify(withModels[0].metadata) === JSON.stringify({
+        model_resolved: 'claude-opus-5-5', effort_resolved: 'medium',
+        models_observed: ['claude-opus-5-5', 'claude-sonnet-5-5'] })
+    && withModels.slice(1).every((r) => !('metadata' in r)),
+    'a multi-model step carries its served model, effort, and observed models on its first row only')
+const singleModel = reduceRows([{ file: 'agent-one.jsonl', extract: {
+    ...served, last_model: 'claude-opus-5-5', efforts_observed: [], models_observed: ['claude-opus-5-5'],
+    model_observation_complete: true,
+} }], 'steps', []).rows.find((r) => r.step === 'STEP-3190' && 'metadata' in r)
+ok(JSON.stringify(singleModel.metadata) === '{"model_resolved":"claude-opus-5-5"}',
+    'an unrecorded effort and a single model leave effort_resolved and models_observed out of the metadata')
+const twoTranscripts = reduceRows([
+    { file: 'agent-a.jsonl', extract: { ...served, last_model: 'claude-opus-5-5', model_observation_complete: true, models_observed: ['claude-opus-5-5'] } },
+    { file: 'agent-b.jsonl', extract: { ...served, last_model: 'claude-opus-5-5', model_observation_complete: true, models_observed: ['claude-opus-5-5'] } },
+], 'steps', []).rows.filter((r) => r.step === 'STEP-3190')
+ok(twoTranscripts.length === 4 && twoTranscripts.every((r) => !('metadata' in r)),
+    'a step that two transcripts served gets no metadata and keeps the executor sentinel')
+const partialCoverage = reduceRows([{ file: 'agent-p.jsonl', extract: {
+    ...served, last_model: 'claude-opus-5-5', models_observed: ['claude-opus-5-5'], model_observation_complete: false,
+} }], 'steps', []).rows.filter((r) => r.step === 'STEP-3190')
+ok(partialCoverage.every((r) => !('metadata' in r)),
+    'partial model coverage writes no metadata')
+
 // ---- Relay-mangled keys: unquoted before they reach a row, or refused ----
 // One measured join returned two step ids wrapped in literal quotes and the
 // engine refused the whole batch; the join now strips one layer of quotes

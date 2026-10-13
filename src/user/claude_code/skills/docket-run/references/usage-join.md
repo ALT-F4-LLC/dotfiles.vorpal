@@ -26,6 +26,10 @@ usage) before summing. Return a JSON array of rows shaped
 backfill-usage --from-json -` consumes: four rows per dispatched step, one
 for each unit in the order `input_tokens`, `output_tokens`,
 `cache_creation_tokens`, `cache_read_tokens`, each `quantity` an integer.
+The first row of a step may also carry a `metadata` object (`model_resolved`,
+plus `effort_resolved` and `models_observed` when known), which back-fill merges
+onto the finished step's record. wave-usage.js sets it only when one transcript
+served the step and its model coverage is complete.
 
 **Join on the obligation the brief carries, never on the first `STEP-N`
 mentioned.** An agent owns a step only if its brief tells it to `docket

@@ -4,8 +4,8 @@ Covers the `docket guard` and `docket trust` families, the single copy of this
 engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-02 against `docket
-nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
+contract and parsing traps. Verified 2026-10-13 against `docket
+nightly-659-gec91591` (commit `ec91591`, built `2026-10-13T02:11:27Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -14,11 +14,11 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket guard`](#guard-commands) — 117 lines
+- [`docket guard`](#guard-commands) — 118 lines
   - [`guard record`](#guard-record) — 18 lines
-  - [`guard spawn`](#guard-spawn) — 45 lines
-- [`docket trust`](#trust-commands) — 200 lines
-  - [`trust add <name> -- <argv...>`](#trust-add) — 65 lines
+  - [`guard spawn`](#guard-spawn) — 46 lines
+- [`docket trust`](#trust-commands) — 201 lines
+  - [`trust add <name> -- <argv...>`](#trust-add) — 66 lines
   - [`trust list`](#trust-list) — 16 lines
   - [`trust probe [--run RUN-N]`](#trust-probe) — 23 lines
   - [`trust rm <name>`](#trust-rm) — 20 lines
@@ -108,6 +108,7 @@ run. Preserve that uncertainty when interpreting a hook result.
 | `--rows` | string | `""` | file holding the JSON array of rows about to be spawned (`-` for stdin); refused with `--active` |
 | `--ack-reap` | lease-reaped | `[]` | acknowledge a write-class reap by its `lease-reaped` event `seq` (repeatable) |
 | `--deciding-vote` | string | `""` | admit this batch past a reap hold because it exists to DECIDE the named OPEN proposal (`PROPOSAL-N`); event-logged |
+| `--usage-join` | bool | `false` | admit a launch that claims no step (a read-only usage join over finished transcripts) past a reap hold; relaxes the reap half only, never the row comparison; a launch with `--rows` gets no relief and is denied under the hold as without the flag; mutually exclusive with `--deciding-vote`; event-logged as `spawn-admitted` with `carve_out` `usage-join` |
 | `--all-projects` | bool | `false` | answer over every project's runs, not just the current project's |
 
 Both halves must hold. With **no** open dispatch and **no** `--rows`, the
@@ -176,6 +177,7 @@ These verbs need no `.docket/` database: the store is user-level.
 | `--stub` | bool | `false` | this is a **placeholder**, not the check its name implies; every result it produces is flagged `stub` in `step gates` and counted in the run report |
 | `--stub-reason` | string | `""` | free-text reason recorded and shown alongside `stub` in `trust list` and its rendering; requires `--stub` |
 | `--network` | stringSlice | `nil` | hosts this command must reach (repeatable). **Declares a requirement; grants nothing.** A gate that names any receives the proxy variables and `DOCKET_GATE_NETWORK`; one that names none is unchanged |
+| `--declared-file` | stringArray | `nil` | repo-relative file the command reads, such as a sourced script (repeatable); its content is pinned from this checkout |
 | `--timeout` | string | `""` | per-command timeout (e.g. `90s`, `10m`); the engine applies 5m at run time when the trust entry names no timeout |
 | `--yes` | bool | `false` | skip the interactive confirmation (the argv is **still** disclosed) |
 

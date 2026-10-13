@@ -15,9 +15,9 @@ before parsing it. A nearby source checkout is not proof of an installed
 binary's behavior unless their commits match.
 
 [references/cli-inventory.json](references/cli-inventory.json) records command
-paths, aliases, usage, and local/inherited flags. Refreshed **2026-10-02 UTC**
-against `nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`);
-covers 155 public commands. From this skill directory,
+paths, aliases, usage, and local/inherited flags. Refreshed **2026-10-13 UTC**
+against `nightly-659-gec91591` (commit `ec91591`, built `2026-10-13T02:11:27Z`);
+covers 160 public commands. From this skill directory,
 `python3 scripts/cli_inventory.py --check` checks the inventory; `--write`
 refreshes it after a CLI upgrade. The helper invokes only `--help` and
 `--version` and does not read or mutate a Docket store. It detects command/flag
@@ -47,7 +47,7 @@ length to read. The engine families live in docket-run's references:
 [gate, policy and registry](../docket-run/references/gate-policy.md),
 [report and doctor](../docket-run/references/report-doctor.md).
 
-- [JSON envelope](#json-output) — 65 lines
+- [JSON envelope](#json-output) — 69 lines
 - [Command & Flag Reference](#command-reference) — 9 lines
 - [`docket issue` (alias `i`)](#issue-commands) — 273 lines
   - [`issue create`](#issue-create) — 19 lines
@@ -69,8 +69,8 @@ length to read. The engine families live in docket-run's references:
   - [`issue graph [id]`](#issue-graph) — 12 lines
 - [`docket plan`](#plan-commands) — 28 lines
 - [`docket next`](#next-commands) — 22 lines
-- [`docket workflow` (alias `wf`)](#workflow-commands) — 127 lines
-  - [`workflow register <file.toml>`](#workflow-register) — 21 lines
+- [`docket workflow` (alias `wf`)](#workflow-commands) — 128 lines
+  - [`workflow register <file.toml>`](#workflow-register) — 22 lines
   - [`workflow lint <file.toml>`](#workflow-lint) — 23 lines
   - [`workflow deprecate <name>@<version>`](#workflow-deprecate) — 18 lines
   - [`workflow list`](#workflow-list) — 26 lines
@@ -116,8 +116,10 @@ length to read. The engine families live in docket-run's references:
 
 ## JSON envelope — per-verb `data` shapes
 
-Every `--json` response is `{"ok": <bool>, "data": <verb-specific>}` (errors are
-`{"ok": false, "error": "...", "code": "..."}` with no `data` key at all). The
+Every `--json` response except `docket export` is `{"ok": <bool>, "data":
+<verb-specific>}`; `export` prints the bare export document. Errors are
+`{"ok": false, "error": "...", "code": "..."}` with no `data` key, except a
+failed registry fan-out, which keeps its report under `data`. The
 envelope is stable; the shape of `data` is NOT, and guessing it is what crashes
 hand-rolled parsers. The table below is checked against the docket-cli-audit
 sweep's fixtures for the covered verbs (see the header above); probe the
@@ -133,10 +135,10 @@ core shapes, not exhaustive field lists; additive fields can appear.
 | `run status RUN-N` | `{run: {...}, issues: <int>, steps: [...], pins: [...]}` | identical |
 | `run budget RUN-N` | `{run, budget, source, floor, reported, spend, row_version}` | identical |
 | `step artifact ARTIFACT-N --payload` | the payload itself — array or object; `NOT_FOUND` (not `data: null`) when the artifact has no structured payload | identical |
-| `step artifact ARTIFACT-N` (no `--payload`) | `{artifact, kind, producer, body, payload, bytes, payload_bytes, sha256, created_at_ms}` | identical |
+| `step artifact ARTIFACT-N` (no `--payload`) | `{artifact, kind, producer, body, bytes, sha256, created_at_ms}`, plus `payload` and `payload_bytes` only when the artifact has a structured payload | identical |
 | `step artifacts STEP-N` | `{step: "STEP-N", artifacts: [...]}` | identical |
 | `vote list` (`--all` for resolved) | `{proposals: [...], total: <int>}` | `{items: [...], total, truncated}` |
-| `vote show VOTE-ID` | `{id, status, weighted_score, threshold, required_voters, criticality, final_outcome, escalation_reason, description, rationale, domain_tags, files_changed, linked_issues, linked_docs, created_by, created_at, updated_at, votes: [...]}` | identical |
+| `vote show VOTE-ID` | `{id, status, weighted_score, threshold, required_voters, criticality, final_outcome, escalation_reason, description, rationale, domain_tags, files_changed, linked_issues, linked_docs, created_by, created_at, updated_at, sealed, votes: [...]}` | identical |
 
 Two more shape distinctions: single vs. multiple IDs on [`issue
 show`](#issue-show) and `step show`, and `description`/`description_bytes`
@@ -170,11 +172,13 @@ Every serialized issue carries both `issue` and `id` with the same ID string,
 on v1 and v2, including nested `sub_issues`, list rows, and mutation
 responses. `.data.issue` is not a nested object.
 
-`run status RUN-N`'s `pins` elements are `{kind, ref, sha256}` (`kind` is
-`"file"` for on-disk config pins; `name@version` refs live in the DB, not on
-disk). `vote show`'s `votes` elements are `{id, proposal_id, voter_name,
-voter_role, verdict, confidence, domain_relevance, effective_weight, findings,
-findings_json, summary, metadata, created_at}` — note `findings` is a string
+`run status RUN-N`'s `pins` elements are `{kind, ref, sha256}`: `kind` is
+`"file"` for an on-disk config pin and `"workflow"` for a pinned
+`name@version` registry ref, which lives in the DB, not on disk. An activated
+run also carries `activation_head: {branch, commit}`. `vote show`'s `votes`
+elements are `{id, proposal_id, voter_name, voter_role, verdict, confidence,
+domain_relevance, effective_weight, findings, findings_json, summary,
+metadata, usage, usage_source, created_at}` — note `findings` is a string
 and `findings_json` is frequently `null`.
 
 <a id="command-reference"></a>
@@ -528,11 +532,12 @@ existing `name@version` are an idempotent success returning the existing row;
 differing bytes are `CONFLICT` (exit 4) naming both hashes. `--project` or
 `--all-projects` switches the response to a fan-out shape:
 `{operation, subject, scope, results: [{project_id, project, identity, prefix,
-outcome, ...}], succeeded, failed}`. The report is always written with
-`ok: true`. When `failed` is non-zero the process exits with the failing
-projects' shared code (exit 4 for `already-deprecated` or a conflict), or
-exit 1 when their codes differ. Judge a
-fan-out by its exit code and `failed`, never by `ok`.
+outcome, ...}], succeeded, failed}`. When every project succeeds the
+envelope is `ok: true`. When `failed` is non-zero it is `ok: false` with
+`error: "N of M project(s) failed"` and the failing projects' shared `code`,
+and `data` still carries the report; the process exits with that code (exit 4
+for `already-deprecated` or a conflict), or exit 1 when their codes differ.
+Judge a fan-out by its exit code and `failed`.
 
 <a id="workflow-lint"></a>
 
@@ -751,8 +756,8 @@ None of the `schema` verbs are watch-eligible; `--watch` on any of them is a
 | `--voter` | — | string | `""` | defaults to `git user.name` |
 | `--role` | — | string | `""` | |
 | `--verdict` | `-v` | string | `""` | required in `--json`; `approve`\|`approve-with-concerns`\|`reject` |
-| `--confidence` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
-| `--domain-relevance` | — | float64 | `0` | required (when explicitly set) in `--json`; range `[0.0, 1.0]` |
+| `--confidence` | — | float64 | `0` | required in `--json` and non-interactive mode (omitting it is `VALIDATION_ERROR`, exit 3); range `[0.0, 1.0]` |
+| `--domain-relevance` | — | float64 | `0` | required in `--json` and non-interactive mode (omitting it is `VALIDATION_ERROR`, exit 3); range `[0.0, 1.0]` |
 | `--findings` | — | string | `""` | `"-"` reads stdin |
 | `--findings-json` | — | string | `""` | `"-"` reads stdin; `{"blockers": [...], "concerns": [...], "suggestions": [...]}`. Each entry is a bare string, or `{"text": ..., "evidence": ["artifact:ARTIFACT-N", "gate:<name>"]}` naming an artifact the run holds (a bare `N` is rewritten to `artifact:ARTIFACT-N`) or a gate name any step of the run recorded a result for. Every reference is resolved against the run whose vote step or reap acknowledgment opened the proposal **before the cast records** — an unresolvable one, or a proposal no run opened, is a `VALIDATION_ERROR` naming the reference, and the seat's cast is not spent. Entries citing nothing pass unread and stay bare strings; the run report's `findings` section marks them `unsupported`. Mutually exclusive with `--findings` for stdin use |
 | `--summary` | — | string | `""` | review summary; `"-"` reads stdin. Prefer `--summary-file` for prose containing backticks or other shell metacharacters — argv runs it past a shell first, and a voter casts once, with no amend path |

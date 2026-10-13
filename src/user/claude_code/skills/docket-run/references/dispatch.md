@@ -4,8 +4,8 @@ Covers the `docket dispatch` family and `docket next` in step mode (`--run`),
 the single copy of this engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-02 against `docket
-nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
+contract and parsing traps. Verified 2026-10-13 against `docket
+nightly-659-gec91591` (commit `ec91591`, built `2026-10-13T02:11:27Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build. The `dispatch-close`

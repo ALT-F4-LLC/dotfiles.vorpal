@@ -4,8 +4,8 @@ Covers the `docket step` family, the single copy of this engine CLI contract,
 split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-02 against `docket
-nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
+contract and parsing traps. Verified 2026-10-13 against `docket
+nightly-659-gec91591` (commit `ec91591`, built `2026-10-13T02:11:27Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -14,7 +14,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 533 lines
+- [`docket step`](#step-commands) — 534 lines
   - [`step artifacts`](#step-artifacts) — 36 lines
   - [`step claim`](#step-claim) — 45 lines
   - [`step reap`](#step-reap) — 36 lines
@@ -38,6 +38,7 @@ then **completed** with an artifact.
 | `step claim STEP-N [--render] [--template F]` | no | CAS claim; mints token; returns token + context (or packet) |
 | `step heartbeat STEP-N` | **yes** | extends the lease; does not touch `attempt` |
 | `step reap STEP-N --reason R` | **conductor** | forced reap of a dead holder's claim, without waiting out the lease |
+| `step hold STEP-N --reason R` | **conductor** | parks one READY step `waiting-human` (park class `held`, `--reason` as its park reason; event `step-held`) so dispatch stops offering it while the rest of its issue runs; any other status is `CONFLICT` (exit 4), so reap a claimed step first; resolve it like any park (`step resolve --as retry\|skip`) |
 | `step complete STEP-N --artifact-file F …` | **yes** (until the artifact records) | the saga |
 | `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
 | `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | no | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |

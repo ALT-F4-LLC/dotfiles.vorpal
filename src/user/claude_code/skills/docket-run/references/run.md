@@ -5,8 +5,8 @@ family and `docket pin show` (consumer: the docket-run skill), except two
 verbs: `run verify-pins` is documented in [pins.md](pins.md), and `run fact
 add` in the docket-run [SKILL.md](../SKILL.md). Response shapes and parsing
 traps live in docket's
-[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-02 against `docket
-nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-13 against `docket
+nightly-659-gec91591` (commit `ec91591`, built `2026-10-13T02:11:27Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -15,21 +15,21 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 858 lines
+- [`docket run`](#run-commands) — 861 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 32 lines
   - [`run refresh-scope`](#run-refresh-scope) — 33 lines
   - [`run refresh-body RUN-N --issue <ID> --reason R`](#run-refresh-body) — 27 lines
   - [`run refresh-files RUN-N --issue <ID> --reason R`](#run-refresh-files) — 28 lines
-  - [`run report RUN-N`](#run-report) — 103 lines
+  - [`run report RUN-N`](#run-report) — 105 lines
   - [`run activate RUN-N`](#run-activate) — 218 lines
   - [`run conduct RUN-N`](#run-conduct) — 46 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 92 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
-  - [`run status [RUN-N]`](#run-status) — 29 lines
+  - [`run status [RUN-N]`](#run-status) — 30 lines
 
 <a id="run-commands"></a>
 
@@ -261,14 +261,16 @@ reports zeros, `abandoned` reports the trail up to abandonment.
 | `wall_clock_ms` | its own top-level key, not nested in `run`: activation → now, or → the terminal transition |
 | `pinned_workflows` | the run's pinned workflow refs: `{ref, name, pinned_version, current_version, behind}` |
 | `budget` | effective `cap` and its `cap_source` (`run` \| `config` \| `unlimited`), the `floor`, `reported` per unit, the `budget_unit` the cap counts, `spend` = max(reported, floor), `burn_rate` (floor per wall-clock hour), `breach_reason` when a budget paused the run, and the measured cap's `usage_cap`, `usage_budget_unit`, and `usage_spend` (absent while that cap is dormant) |
-| `steps` | count by **effective** status, plus per-step `attempts`, each row carrying its `issue`, its `routing` (how the step ended, with its reason) and — for a vote step — `vote` (its proposal and how it tallied) |
+| `steps` | count by **effective** status: `[{status, count}]` |
+| `attempts` | its own top-level key, one row per step: `step`, `instance`, `issue`, `status`, `attempts`, its `routing` (how the step ended, with its reason), `metadata` when reported, `ruling` `{event, actor, cwd}` when an operator verb such as `step approve` ended it, and — for a vote step — `vote` (its proposal and how it tallied) |
 | `issues` | the run's **issue-level terminal rulings**: per abandoned issue, `{issue, disposition, by, reason}` — the operator's recorded rationale, verbatim. Rendered as a *How issues ended* section |
 | `gates` | per-gate pass/fail/unmatched/**skipped** counts, a **stub** count, and the per-step trail |
 | `actions` | the same rollup over action results, `builtin` included |
 | `artifacts` | the **index**: id, kind, producer instance, producer `executor` and `issue`, sha256, bytes — never the bodies |
 | `metadata` | step `metadata` keys → distinct values with counts, verbatim and uninterpreted — over the **merged** bag, so both what a definition declared and what a worker reported via `step complete --metadata` are counted |
 | `actors` | per-actor event counts (`next` / `gate` / `threshold` / `human`) — the attribution rollup described under [Attribution](events.md#attribution--who-caused-each-transition), computed over the events that remain |
-| `authorities` | per-`authority` value event counts — the companion rollup to `actors`, reflecting the `--authority` flag on `run pause`/`abandon` and `step approve`/`reject`/`resolve` |
+| `authorities` | per-`authority` value event counts — the companion rollup to `actors`, reflecting the `--authority` flag on `run pause`/`abandon`, `step approve`/`reject`/`resolve`, and `run note add` |
+| `note_rulings` | one row per run note: `{note, authority, actor, cwd}`, attributing each note to the operator or the conductor |
 | `step_usage` | the usage **ledger** row by row: each row's `step`, `instance`, `attempt`, `unit`, `quantity`, and `source` — the detail behind `budget`'s per-unit `reported` sums, and what a duplicate back-fill refusal points at |
 | `vote_metadata` | the same key → distinct-value rollup over vote seats' `--metadata` bags |
 | `vote_usage` | per-unit sums of vote seats' `--usage` reports, beside the step ledger's `reported` — never merged with it |
@@ -869,8 +871,9 @@ breached run stays `waiting-human` until `run resume`.
 | `--all` | — | bool | `false` | list form: widen the list to `done` and `abandoned` runs; the bare list is active-only |
 | `--limit` | — | int | `50` | list form; `0` means no limit |
 
-With an ID: the run, its issue count, its steps grouped by status, and its
-pins. Without: a `Collection` of runs — under `--json=v2` the payload is
+With an ID: the run, its issue count, its steps grouped by status, its
+pins, and, once activated, `activation_head` `{branch, commit}` (the
+`Activation head:` line in human mode). Without: a `Collection` of runs — under `--json=v2` the payload is
 `{items, total, truncated}` with each item carrying `row_version`.
 
 **Read-only.** Computes effective status and writes nothing; the pin-drift

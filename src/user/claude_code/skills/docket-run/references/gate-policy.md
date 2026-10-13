@@ -4,8 +4,8 @@ Covers the `docket gate`, `docket policy`, and `docket registry` families, the
 single copy of this engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-02 against `docket
-nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
+contract and parsing traps. Verified 2026-10-13 against `docket
+nightly-659-gec91591` (commit `ec91591`, built `2026-10-13T02:11:27Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -17,7 +17,7 @@ examples reflect the swept commands as of that build.
 - [`docket gate`](#gate-commands) — 24 lines
   - [`gate status STEP-N`](#gate-status) — 20 lines
 - [`docket policy`](#policy-commands) — 26 lines
-- [`docket registry`](#registry-commands) — 16 lines
+- [`docket registry`](#registry-commands) — 20 lines
 
 <a id="gate-commands"></a>
 
@@ -75,13 +75,17 @@ seat on its standing variant. A value outside those five is refused with
 
 `docket registry audit --json` compares every project's registered workflow
 and schema names against the shared corpus. `--project` limits it to a prefix,
-name, identity path, or numeric project ID. The verb repairs nothing.
+name, identity path, or numeric project ID. The verb repairs nothing. With no
+config directory under the shared store root it refuses `VALIDATION_ERROR`
+(exit 3), since with nothing to scan every registered name would look
+orphaned.
 
 | Finding | Meaning and follow-up |
 |---|---|
 | `behind` | Highest registered version is below the current corpus version. The next activation adopts current definitions under normal validation. |
-| `orphaned` | No scanned file declares the registered name. Review the reported roots before deciding to deprecate a workflow: another project's local config may be absent from this invocation's scan. |
+| `orphaned` | No scanned file declares the registered name. Review before deciding to deprecate a workflow: a name defined only in a repository's `.docket/config` is never scanned and always reads as orphaned. |
 
-The corpus is scanned once using this invocation's roots, including the current
-checkout's local additions. An orphan report alone does not authorize deletion
+The corpus is scanned once from the shared store root's `config/` directory,
+reported in `roots`. The audit never reads a repository's `.docket/config`,
+so no checkout's local additions are scanned. An orphan report alone does not authorize deletion
 or prove a different project's local workflow is obsolete.

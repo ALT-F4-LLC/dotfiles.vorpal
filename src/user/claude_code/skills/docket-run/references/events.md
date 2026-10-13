@@ -4,23 +4,22 @@ Covers the `docket events` family, the single copy of this engine CLI
 contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-02 against `docket
-nightly-229-g7f304cc` (commit `7f304cc`, built `2026-10-02T22:01:56Z`) by
+contract and parsing traps. Verified 2026-10-13 against `docket
+nightly-659-gec91591` (commit `ec91591`, built `2026-10-13T02:11:27Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
-examples reflect the swept commands as of that build. The `--kind` and
-`--step` rows, the cross-project `--run` resolution, and `--tail` under
-`--follow` were checked against `nightly-623-gfefc91d`'s `--help`, not by
-the sweep.
+examples reflect the swept commands as of that build. The cross-project
+`--run` resolution and `--tail` under `--follow` were checked against
+`nightly-623-gfefc91d`'s `--help`, not by the sweep.
 
 <a id="contents"></a>
 
 ## Contents
 
-- [`docket events`](#events-commands) — 206 lines
+- [`docket events`](#events-commands) — 209 lines
   - [`events list`](#events-list) — 107 lines
   - [`events prune`](#events-prune) — 49 lines
-  - [Attribution](#events-attribution) — 42 lines
+  - [Attribution](#events-attribution) — 45 lines
 
 <a id="events-commands"></a>
 
@@ -190,15 +189,18 @@ stays honest for every run it still covers.
 
 #### Attribution — who caused each transition
 
-Every event kind maps to exactly one of four actors, and `docket run report`
-publishes the per-actor counts:
+Every event kind the sweep produced maps to exactly one of four actors, and
+`docket run report` publishes the per-actor counts:
 
 | Actor | Meaning | Kinds |
 |---|---|---|
 | `next` | the scheduler | `step-ready`, `lease-reaped`, `join-completed`, `loop-entered`, `dispatch-abandoned`, `issue-promoted`, `issue-in-progress`, `issue-review` |
 | `gate` | a deterministic check, actions included | `gate-started`, `gate-recorded`, `gate-unmatched`, `gate-rerun`, `vote-opened`, `vote-tallied` |
 | `threshold` | computed routing | `step-routed`, `step-failed`, `step-superseded`, `step-skipped`, `step-held`, `step-batch-overridden` |
-| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`, `run-note-added`), `step-claimed`, `step-reminted`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `issue-scope-refreshed`, `issue-body-refreshed`, `issue-files-refreshed`, `gate-override-granted`, `stale-target-waived`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `dispatch-extended`, `reap-acknowledged`, `conductor-seated`, `events-pruned`, `config-changed` |
+| `human` | an operator verb, including one a harness relays | `run-*` (`run-started`, `run-activated`, `run-paused`, `run-resumed`, `run-abandoned`, `run-done`, `run-budget-set`, `run-repinned`, `run-note-added`), `step-claimed`, `step-reminted`, `step-heartbeat`, `step-recorded`, `step-resolved`, `step-approved`, `step-rejected`, `step-annotated`, `issue-abandoned`, `issue-diff-repinned`, `issue-scope-refreshed`, `issue-body-refreshed`, `issue-files-refreshed`, `gate-override-granted`, `stale-target-waived`, `spawn-admitted`, `trust-*`, `project-registered`, `dispatch-opened`, `dispatch-closed`, `dispatch-extended`, `reap-acknowledged`, `conductor-seated`, `events-pruned`, `config-changed`, `claim-refused`, `dispatch-close-refused`, `step-deferred` |
+
+`vote-reseated` is a valid kind the sweep never produced, so its actor is
+unverified.
 
 The three operator lifecycle kinds each carry `data` of `{from, to,
 reason}`, written in the same transaction as the status they record. A

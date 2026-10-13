@@ -115,8 +115,11 @@ Error:
 ```
 
 A registry fan-out (`--project` or `--all-projects` on a registry write or
-lint) is the exception: its per-project report is always `ok: true`, and a
-failing project shows only in `failed` and a non-zero exit.
+lint) is the exception: it keeps its per-project report under `data` even
+when a project fails. All-success is `ok: true` with exit 0; any failure is
+`ok: false` with `error: "N of M project(s) failed"`, the failure's `code`
+(for example `CONFLICT`, exit 4), and the same `data` report. Read
+`data.results` for per-project outcomes.
 
 ### `--json` values (v1 vs v2)
 

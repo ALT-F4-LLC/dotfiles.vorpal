@@ -179,7 +179,7 @@ const DEFAULT_MODE = 'steps'
 //         errors   [string]; when non-empty the script throws after logging
 //                  each one, because silence must not look like success
 //         model_observations [{file, kind, key, models, last_model, complete,
-//                              source, effort_resolved}]
+//                              source, effort_source, effort_resolved}]
 //                  serving models from assistant.message.model, separately
 //                  from routing requests and token rows. Multiple models can
 //                  serve one agent after fallback. last_model is the model of
@@ -455,6 +455,7 @@ function modelObservation(file, extract, classification, mode) {
             ? extract.last_model : null,
         complete: extract.model_observation_complete === true && models.length > 0,
         source: 'assistant.message.model',
+        effort_source: 'assistant.effort',
         effort_resolved: efforts.length === 1 ? efforts[0] : 'unknown',
     }
 }
@@ -652,7 +653,7 @@ const FILES_SCHEMA = {
 
 const EXTRACT_SCHEMA = {
     type: 'object',
-    required: ['ok'],
+    required: ['ok', 'last_model', 'efforts_observed'],
     properties: {
         ok: { type: 'boolean' },
         error: { type: 'string' },

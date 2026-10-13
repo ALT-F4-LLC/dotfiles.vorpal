@@ -712,7 +712,8 @@ const mixedEffort = extractOf([
     turn('e2', 'claude-opus-5-5', 'high', 1),
 ])
 const mixedObservation = reduceRows([{ file: 'agent-mixed.jsonl', extract: { ...served, ...pick(mixedEffort, ['last_model', 'efforts_observed', 'models_observed', 'model_observation_complete']) } }], 'steps', []).model_observations[0]
-ok(mixedObservation.effort_resolved === 'unknown' && mixedObservation.last_model === 'claude-opus-5-5',
+ok(mixedObservation.effort_resolved === 'unknown' && mixedObservation.last_model === 'claude-opus-5-5'
+    && mixedObservation.effort_source === 'assistant.effort',
     'two recorded efforts leave effort_resolved unknown while the model is still attributed')
 const withModels = reduceRows([{ file: 'agent-served.jsonl', extract: {
     ...served, last_model: 'claude-opus-5-5', efforts_observed: ['medium'],

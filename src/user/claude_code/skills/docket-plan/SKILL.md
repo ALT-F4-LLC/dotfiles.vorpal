@@ -744,16 +744,17 @@ avoided. Round the forecast up and say what the headroom is for; an unspent
 cap costs nothing (`docket run budget --set <n> --reason '<why>'` adjusts
 it later, with `--if-version` when a concurrent change would matter). Write
 this arithmetic, one line, into the plan doc's body as the forecast,
-alongside Unlimited or the operator's explicit cap. In unlimited mode, keep
+alongside Unlimited or the operator's explicit cap. That line also states
+the forecast's unit, the declared-cost floor plus the max_fix_loops rework
+headroom, and that `docket run activate --dry-run`'s `expected_cost_total`
+reads lower because it excludes `loop = true` steps and that headroom, so
+an operator choosing a cap compares like with like. In unlimited mode, keep
 the encoded caps at `0` regardless of the forecast. If an explicit cap is
 too small, fit the roster without dropping agreed deliverables, or obtain
 agreement to a concrete scope reduction or budget increase before
 recording. Never silently replace the budget policy with the computed
-forecast. Expect `docket run activate --dry-run`'s `expected_cost_total` to
-read lower than this forecast: it sums only the steps activation
-materializes, so it excludes `loop = true` steps, which instantiate only on
-loop entry, and the max_fix_loops rework headroom this forecast adds on
-top.
+forecast. The dry-run total sums only the steps activation materializes:
+`loop = true` steps instantiate only on loop entry.
 
 Ids render with each project's prefix: the store is machine-global and the
 number is the identity, so `DKT-<n>` and a bare number parse in any

@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-10-02",
-  "binary_version": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: 2026-10-02T22:01:56Z)",
-  "inventory_version": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: 2026-10-02T22:01:56Z)",
-  "scenario_sha256": "0d6d2e28b2b2961ff1c220ec2030d9308f440954159388cb482035393ec7a1ad",
+  "verified_on": "2026-10-13",
+  "binary_version": "docket version nightly-659-gec91591 (commit: ec91591, built: 2026-10-13T02:11:27Z)",
+  "inventory_version": "docket version nightly-659-gec91591 (commit: ec91591, built: 2026-10-13T02:11:27Z)",
+  "scenario_sha256": "85ebdc6ca9e50484c782d97c4b2db00f445730c203fd255f057b8f7cb071ec54",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
     "exercised": [
@@ -101,6 +101,8 @@
       "docket run activate",
       "docket run budget",
       "docket run conduct",
+      "docket run fact",
+      "docket run fact add",
       "docket run issue",
       "docket run issue add",
       "docket run issue remove",
@@ -108,6 +110,8 @@
       "docket run note add",
       "docket run note list",
       "docket run pause",
+      "docket run refresh-body",
+      "docket run refresh-files",
       "docket run refresh-scope",
       "docket run repin",
       "docket run report",
@@ -132,6 +136,7 @@
       "docket step fail",
       "docket step gates",
       "docket step heartbeat",
+      "docket step hold",
       "docket step list",
       "docket step reap",
       "docket step reject",
@@ -188,7 +193,7 @@
         "version"
       ],
       "exit": 0,
-      "stdout": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: <TIMESTAMP>)\n",
+      "stdout": "docket version nightly-659-gec91591 (commit: ec91591, built: <TIMESTAMP>)\n",
       "stderr": ""
     },
     {
@@ -203,11 +208,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-229-g7f304cc",
-          "commit": "7f304cc",
+          "version": "nightly-659-gec91591",
+          "commit": "ec91591",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: <TIMESTAMP>)"
+        "message": "docket version nightly-659-gec91591 (commit: ec91591, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -224,11 +229,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-229-g7f304cc",
-          "commit": "7f304cc",
+          "version": "nightly-659-gec91591",
+          "commit": "ec91591",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: <TIMESTAMP>)"
+        "message": "docket version nightly-659-gec91591 (commit: ec91591, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -257,7 +262,7 @@
         "data": {
           "path": "<SCRATCH>/home/.docket",
           "db_path": "<SCRATCH>/home/.docket/issues.db",
-          "schema_version": 36,
+          "schema_version": 44,
           "created": true
         },
         "message": "Initialized docket database"
@@ -290,7 +295,7 @@
         "data": {
           "path": "<SCRATCH>/home/.docket",
           "db_path": "<SCRATCH>/home/.docket/issues.db",
-          "schema_version": 36,
+          "schema_version": 44,
           "created": false
         },
         "message": "Database already initialized"
@@ -391,7 +396,7 @@
         "config"
       ],
       "exit": 0,
-      "stdout": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 36\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)\n",
+      "stdout": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 44\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)\n",
       "stderr": ""
     },
     {
@@ -408,7 +413,7 @@
         "data": {
           "db_path": "<SCRATCH>/home/.docket/issues.db",
           "db_size_bytes": "<N>",
-          "schema_version": 36,
+          "schema_version": 44,
           "issue_prefix": "DKT",
           "docket_path_env": "",
           "docket_path_set": false,
@@ -416,7 +421,7 @@
           "exec_root": "<SCRATCH>/repo",
           "identity": "<SCRATCH>/repo"
         },
-        "message": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 36\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)"
+        "message": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 44\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)"
       },
       "stderr": ""
     },
@@ -435,7 +440,7 @@
         "data": {
           "db_path": "<SCRATCH>/home/.docket/issues.db",
           "db_size_bytes": "<N>",
-          "schema_version": 36,
+          "schema_version": 44,
           "issue_prefix": "DKT",
           "docket_path_env": "",
           "docket_path_set": false,
@@ -443,7 +448,7 @@
           "exec_root": "<SCRATCH>/repo",
           "identity": "<SCRATCH>/repo"
         },
-        "message": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 36\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)"
+        "message": "Database path: <SCRATCH>/home/.docket/issues.db\nDatabase size: <SIZE>\nSchema version: 44\nIssue prefix: DKT\nStore source: global\nExec root: <SCRATCH>/repo\nProject: <SCRATCH>/repo\nDOCKET_PATH: (not set)"
       },
       "stderr": ""
     },
@@ -822,7 +827,7 @@
       ],
       "exit": 3,
       "stdout": "",
-      "stderr": "Error: unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)\n"
+      "stderr": "Error: unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, limits.max.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)\n"
     },
     {
       "id": "config-set-invalid",
@@ -838,7 +843,7 @@
       "exit": 3,
       "json": {
         "ok": false,
-        "error": "unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)",
+        "error": "unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, limits.max.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)",
         "code": "VALIDATION_ERROR"
       },
       "stderr": ""
@@ -6624,6 +6629,7 @@
           "threshold": 0.5,
           "weighted_score": null,
           "sealed": false,
+          "hold_on_dissent": false,
           "created_by": "sweep",
           "created_at": "<TIMESTAMP>",
           "updated_at": "<TIMESTAMP>"
@@ -6685,6 +6691,7 @@
           "threshold": 0.67,
           "weighted_score": null,
           "sealed": true,
+          "hold_on_dissent": false,
           "created_by": "sweep",
           "created_at": "<TIMESTAMP>",
           "updated_at": "<TIMESTAMP>"
@@ -6771,6 +6778,7 @@
               "threshold": 0.5,
               "weighted_score": null,
               "sealed": false,
+              "hold_on_dissent": false,
               "created_by": "sweep",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
@@ -6789,6 +6797,7 @@
               "threshold": 0.67,
               "weighted_score": null,
               "sealed": true,
+              "hold_on_dissent": false,
               "created_by": "sweep",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
@@ -6807,6 +6816,7 @@
               "threshold": 0.67,
               "weighted_score": null,
               "sealed": true,
+              "hold_on_dissent": false,
               "created_by": "sweep",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
@@ -6851,6 +6861,7 @@
               "threshold": 0.5,
               "weighted_score": null,
               "sealed": false,
+              "hold_on_dissent": false,
               "created_by": "sweep",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
@@ -6869,6 +6880,7 @@
               "threshold": 0.67,
               "weighted_score": null,
               "sealed": true,
+              "hold_on_dissent": false,
               "created_by": "sweep",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
@@ -6887,6 +6899,7 @@
               "threshold": 0.67,
               "weighted_score": null,
               "sealed": true,
+              "hold_on_dissent": false,
               "created_by": "sweep",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
@@ -6940,6 +6953,7 @@
               "threshold": 0.5,
               "weighted_score": null,
               "sealed": false,
+              "hold_on_dissent": false,
               "created_by": "sweep",
               "created_at": "<TIMESTAMP>",
               "updated_at": "<TIMESTAMP>"
@@ -7340,6 +7354,12 @@
               "metadata": {
                 "model": "sweep"
               },
+              "usage": {
+                "tokens": 5
+              },
+              "usage_source": {
+                "tokens": "reported"
+              },
               "created_at": "<TIMESTAMP>"
             },
             {
@@ -7362,6 +7382,8 @@
                 ]
               },
               "summary": "Summary from a file.",
+              "usage": {},
+              "usage_source": {},
               "created_at": "<TIMESTAMP>"
             }
           ]
@@ -7410,6 +7432,12 @@
               "metadata": {
                 "model": "sweep"
               },
+              "usage": {
+                "tokens": 5
+              },
+              "usage_source": {
+                "tokens": "reported"
+              },
               "created_at": "<TIMESTAMP>"
             },
             {
@@ -7432,6 +7460,8 @@
                 ]
               },
               "summary": "Summary from a file.",
+              "usage": {},
+              "usage_source": {},
               "created_at": "<TIMESTAMP>"
             }
           ]
@@ -7490,6 +7520,12 @@
               "metadata": {
                 "model": "sweep"
               },
+              "usage": {
+                "tokens": 5
+              },
+              "usage_source": {
+                "tokens": "reported"
+              },
               "created_at": "<TIMESTAMP>"
             },
             {
@@ -7512,6 +7548,8 @@
                 ]
               },
               "summary": "Summary from a file.",
+              "usage": {},
+              "usage_source": {},
               "created_at": "<TIMESTAMP>"
             }
           ],
@@ -9332,9 +9370,9 @@
         "registry",
         "audit"
       ],
-      "exit": 0,
-      "stdout": "scanned 1 instance-config root(s) for current versions:\n  <SCRATCH>/repo/.docket/config\n\nrepo (DKT)\n  orphaned schema findings registered @13\n  orphaned workflow sweep-stdin registered @1\n\n1 of 1 project(s) carry findings: 0 name(s) behind, 2 orphaned.\nA behind name is adopted by the next `docket run activate` in that project; an orphaned one is retired with `docket workflow deprecate` or `docket schema deprecate`.\n",
-      "stderr": ""
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: the shared store root has no config directory, and the audit never reads a repository's .docket/config, so no registry can be compared against anything: with nothing to scan, every registered name would look orphaned\n"
     },
     {
       "id": "registry-audit",
@@ -9345,44 +9383,11 @@
         "audit",
         "--json"
       ],
-      "exit": 0,
+      "exit": 3,
       "json": {
-        "ok": true,
-        "data": {
-          "roots": [
-            "<SCRATCH>/repo/.docket/config"
-          ],
-          "projects": [
-            {
-              "project_id": 1,
-              "project": "repo",
-              "prefix": "DKT",
-              "identity": "<SCRATCH>/repo",
-              "compared": 3,
-              "behind": null,
-              "orphaned": [
-                {
-                  "kind": "schema",
-                  "name": "findings",
-                  "versions": [
-                    13
-                  ],
-                  "retired": false
-                },
-                {
-                  "kind": "workflow",
-                  "name": "sweep-stdin",
-                  "versions": [
-                    1
-                  ],
-                  "retired": false
-                }
-              ]
-            }
-          ],
-          "behind_total": 0,
-          "orphaned_total": 2
-        }
+        "ok": false,
+        "error": "the shared store root has no config directory, and the audit never reads a repository's .docket/config, so no registry can be compared against anything: with nothing to scan, every registered name would look orphaned",
+        "code": "VALIDATION_ERROR"
       },
       "stderr": ""
     },
@@ -9396,44 +9401,11 @@
         "--format",
         "json"
       ],
-      "exit": 0,
+      "exit": 3,
       "json": {
-        "ok": true,
-        "data": {
-          "roots": [
-            "<SCRATCH>/repo/.docket/config"
-          ],
-          "projects": [
-            {
-              "project_id": 1,
-              "project": "repo",
-              "prefix": "DKT",
-              "identity": "<SCRATCH>/repo",
-              "compared": 3,
-              "behind": null,
-              "orphaned": [
-                {
-                  "kind": "schema",
-                  "name": "findings",
-                  "versions": [
-                    13
-                  ],
-                  "retired": false
-                },
-                {
-                  "kind": "workflow",
-                  "name": "sweep-stdin",
-                  "versions": [
-                    1
-                  ],
-                  "retired": false
-                }
-              ]
-            }
-          ],
-          "behind_total": 0,
-          "orphaned_total": 2
-        }
+        "ok": false,
+        "error": "the shared store root has no config directory, and the audit never reads a repository's .docket/config, so no registry can be compared against anything: with nothing to scan, every registered name would look orphaned",
+        "code": "VALIDATION_ERROR"
       },
       "stderr": ""
     },
@@ -9448,44 +9420,11 @@
         "DKT",
         "--json"
       ],
-      "exit": 0,
+      "exit": 3,
       "json": {
-        "ok": true,
-        "data": {
-          "roots": [
-            "<SCRATCH>/repo/.docket/config"
-          ],
-          "projects": [
-            {
-              "project_id": 1,
-              "project": "repo",
-              "prefix": "DKT",
-              "identity": "<SCRATCH>/repo",
-              "compared": 3,
-              "behind": null,
-              "orphaned": [
-                {
-                  "kind": "schema",
-                  "name": "findings",
-                  "versions": [
-                    13
-                  ],
-                  "retired": false
-                },
-                {
-                  "kind": "workflow",
-                  "name": "sweep-stdin",
-                  "versions": [
-                    1
-                  ],
-                  "retired": false
-                }
-              ]
-            }
-          ],
-          "behind_total": 0,
-          "orphaned_total": 2
-        }
+        "ok": false,
+        "error": "the shared store root has no config directory, and the audit never reads a repository's .docket/config, so no registry can be compared against anything: with nothing to scan, every registered name would look orphaned",
+        "code": "VALIDATION_ERROR"
       },
       "stderr": ""
     },
@@ -9498,7 +9437,7 @@
       ],
       "exit": 3,
       "stdout": "",
-      "stderr": "Error: run needs a subcommand: abandon, activate, budget, conduct, issue, note, pause, refresh-scope, repin, report, resume, start, status, verify-pins\n"
+      "stderr": "Error: run needs a subcommand: abandon, activate, budget, conduct, fact, issue, note, pause, refresh-body, refresh-files, refresh-scope, repin, report, resume, start, status, verify-pins\n"
     },
     {
       "id": "run-status-empty",
@@ -9852,7 +9791,44 @@
         "note"
       ],
       "exit": 0,
-      "stdout": "Record and list a run's notes.\n\nA packet draws from frozen and recorded state only: the issue as snapshotted at\nactivation, the recorded artifacts, the pins, the step's packet files, and the\nstep's own routing record. Issue comments never render, a mid-run description\nedit never renders, and a `step resolve -m` note reaches only the step it rules\non. A fact about the WHOLE RUN had no channel — so a dispatcher that learned\nbefore dispatch that a required gate fails on clean HEAD, got the operator's\ndisposition, and filed the tracking issue, could tell none of it to the workers,\nand each one rediscovered the failure and filed a duplicate.\n\nA run note is that channel. `run note add` records the statement once; every\npacket the run renders afterwards — every step, every issue, every round —\ncarries it verbatim as a `== RUN NOTE N` section right after `== REQUEST`,\nand `step context` exposes it as `notes` so a contract can name it. Notes are\nappend-only and each is recorded as a `run-note-added` event carrying its text,\nso the feed says what every later worker was told.\n\nThe shipped packet template renders notes; a custom `step render --template F`\nrenders them only where it ranges over `.Notes` (each has `.ID` and `.Text`).\n\nUsage:\n  docket run note [command]\n\nAvailable Commands:\n  add Record a note that every later packet of the run carries\n  list List a run's notes in the order they render\n\nFlags:\n  -h, --help help for note\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket run note [command] --help\" for more information about a command.\n",
+      "stdout": "Record and list a run's notes.\n\nA packet draws from frozen and recorded state only: the issue as snapshotted at\nactivation, the recorded artifacts, the pins, the step's packet files, and the\nstep's own routing record. Issue comments never render, a mid-run description\nedit never renders, and a `step resolve -m` note reaches only the step it rules\non. A fact about the WHOLE RUN had no channel — so a dispatcher that learned\nbefore dispatch that a required gate fails on clean HEAD, got the operator's\ndisposition, and filed the tracking issue, could tell none of it to the workers,\nand each one rediscovered the failure and filed a duplicate.\n\nA run note is that channel. `run note add` records the statement once; every\npacket the run renders afterwards — every step, every issue, every round —\ncarries it verbatim as a `== RUN NOTE <id> (authority: <kind>)` section right\nafter `== REQUEST`, and `step context` exposes it as `notes` so a contract can\nname it. Notes are append-only and each is recorded as a `run-note-added` event\ncarrying its text, so the feed says what every later worker was told.\n\n<kind> is operator or conductor, the authority the writer recorded with\n--authority, or unknown for a note stored without one. It comes from the note\nrecord, never from its text, and it states what the writer recorded, not a\nverified operator decision. `run note list` shows it beside each note.\n\nThe shipped packet template renders notes; a custom `step render --template F`\nrenders them only where it ranges over `.Notes` (each has `.ID`, `.Authority`,\nand `.Text`).\n\nUsage:\n  docket run note [command]\n\nAvailable Commands:\n  add Record a note that every later packet of the run carries\n  list List a run's notes in the order they render\n\nFlags:\n  -h, --help help for note\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket run note [command] --help\" for more information about a command.\n",
+      "stderr": ""
+    },
+    {
+      "id": "run-note-add-no-authority",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "note",
+        "add",
+        "RUN-1",
+        "--text",
+        "A note without a ruling."
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: --authority is required: operator or conductor — a run note renders in every packet as a ruling, so it must say whether an operator decided or the conductor did, and defaulting the answer would record an authority nobody asserted\n"
+    },
+    {
+      "id": "run-note-add-no-authority",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "note",
+        "add",
+        "RUN-1",
+        "--text",
+        "A note without a ruling.",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "--authority is required: operator or conductor — a run note renders in every packet as a ruling, so it must say whether an operator decided or the conductor did, and defaulting the answer would record an authority nobody asserted",
+        "code": "VALIDATION_ERROR"
+      },
       "stderr": ""
     },
     {
@@ -9864,6 +9840,8 @@
         "note",
         "add",
         "RUN-1",
+        "--authority",
+        "operator",
         "--text",
         "A note for the packets."
       ],
@@ -9880,6 +9858,8 @@
         "note",
         "add",
         "RUN-1",
+        "--authority",
+        "operator",
         "--text",
         "A note for the packets.",
         "--json"
@@ -9892,6 +9872,7 @@
           "note": {
             "id": 2,
             "text": "A note for the packets.",
+            "authority": "operator",
             "recorded_at_ms": "<N>"
           }
         }
@@ -9907,6 +9888,8 @@
         "note",
         "add",
         "RUN-1",
+        "--authority",
+        "operator",
         "--text",
         "A note for the packets.",
         "--format",
@@ -9920,6 +9903,7 @@
           "note": {
             "id": 3,
             "text": "A note for the packets.",
+            "authority": "operator",
             "recorded_at_ms": "<N>"
           }
         }
@@ -9935,6 +9919,8 @@
         "note",
         "add",
         "RUN-1",
+        "--authority",
+        "conductor",
         "--file",
         "-",
         "--json"
@@ -9947,6 +9933,7 @@
           "note": {
             "id": 4,
             "text": "Note from stdin.",
+            "authority": "conductor",
             "recorded_at_ms": "<N>"
           }
         }
@@ -9964,7 +9951,7 @@
         "RUN-1"
       ],
       "exit": 0,
-      "stdout": "RUN-1 has 4 note(s)\n  [1] <TIMESTAMP>\n      A note for the packets.\n  [2] <TIMESTAMP>\n      A note for the packets.\n  [3] <TIMESTAMP>\n      A note for the packets.\n  [4] <TIMESTAMP>\n      Note from stdin.\n",
+      "stdout": "RUN-1 has 4 note(s)\n  [1] <TIMESTAMP> (authority: operator)\n      A note for the packets.\n  [2] <TIMESTAMP> (authority: operator)\n      A note for the packets.\n  [3] <TIMESTAMP> (authority: operator)\n      A note for the packets.\n  [4] <TIMESTAMP> (authority: conductor)\n      Note from stdin.\n",
       "stderr": ""
     },
     {
@@ -9987,21 +9974,25 @@
             {
               "id": 1,
               "text": "A note for the packets.",
+              "authority": "operator",
               "recorded_at_ms": "<N>"
             },
             {
               "id": 2,
               "text": "A note for the packets.",
+              "authority": "operator",
               "recorded_at_ms": "<N>"
             },
             {
               "id": 3,
               "text": "A note for the packets.",
+              "authority": "operator",
               "recorded_at_ms": "<N>"
             },
             {
               "id": 4,
               "text": "Note from stdin.",
+              "authority": "conductor",
               "recorded_at_ms": "<N>"
             }
           ]
@@ -10030,21 +10021,25 @@
             {
               "id": 1,
               "text": "A note for the packets.",
+              "authority": "operator",
               "recorded_at_ms": "<N>"
             },
             {
               "id": 2,
               "text": "A note for the packets.",
+              "authority": "operator",
               "recorded_at_ms": "<N>"
             },
             {
               "id": 3,
               "text": "A note for the packets.",
+              "authority": "operator",
               "recorded_at_ms": "<N>"
             },
             {
               "id": 4,
               "text": "Note from stdin.",
+              "authority": "conductor",
               "recorded_at_ms": "<N>"
             }
           ]
@@ -10597,7 +10592,7 @@
         "RUN-1"
       ],
       "exit": 0,
-      "stdout": "RUN-1 active\nIssues: 2\nSteps: pending 2, ready 2\nPins:\n  workflow sweep-dev@1 <HEX12>\n",
+      "stdout": "RUN-1 active\nIssues: 2\nActivation head: <HEX40> (main)\nSteps: pending 2, ready 2\nPins:\n  workflow sweep-dev@1 <HEX12>\n",
       "stderr": ""
     },
     {
@@ -10639,7 +10634,11 @@
               "ref": "sweep-dev@1",
               "sha256": "<HEX64>"
             }
-          ]
+          ],
+          "activation_head": {
+            "branch": "main",
+            "commit": "<HEX40>"
+          }
         }
       },
       "stderr": ""
@@ -10685,7 +10684,11 @@
               "ref": "sweep-dev@1",
               "sha256": "<HEX64>"
             }
-          ]
+          ],
+          "activation_head": {
+            "branch": "main",
+            "commit": "<HEX40>"
+          }
         }
       },
       "stderr": ""
@@ -10792,6 +10795,42 @@
               "count": 7
             }
           ],
+          "authorities": [
+            {
+              "authority": "operator",
+              "count": 3
+            },
+            {
+              "authority": "conductor",
+              "count": 1
+            }
+          ],
+          "note_rulings": [
+            {
+              "note": 1,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 2,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 3,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 4,
+              "authority": "conductor",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            }
+          ],
           "vote_usage_coverage": {
             "casts": 0,
             "reported": 0
@@ -10891,6 +10930,42 @@
               "count": 7
             }
           ],
+          "authorities": [
+            {
+              "authority": "operator",
+              "count": 3
+            },
+            {
+              "authority": "conductor",
+              "count": 1
+            }
+          ],
+          "note_rulings": [
+            {
+              "note": 1,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 2,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 3,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 4,
+              "authority": "conductor",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            }
+          ],
           "vote_usage_coverage": {
             "casts": 0,
             "reported": 0
@@ -10939,7 +11014,10 @@
           "references": [],
           "changed": 0,
           "missing": 0,
-          "unpinned": 0
+          "unpinned": 0,
+          "gates": [],
+          "unpinned_gates": 0,
+          "executed_copy_changed": 0
         }
       },
       "stderr": ""
@@ -10972,7 +11050,10 @@
           "references": [],
           "changed": 0,
           "missing": 0,
-          "unpinned": 0
+          "unpinned": 0,
+          "gates": [],
+          "unpinned_gates": 0,
+          "executed_copy_changed": 0
         }
       },
       "stderr": ""
@@ -11272,6 +11353,45 @@
       "stderr": ""
     },
     {
+      "id": "run-refresh-scope-without-token",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "refresh-scope",
+        "RUN-1",
+        "--issue",
+        "DKT-2",
+        "--reason",
+        "no capability"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: RUN-1 is bound to a conductor capability and run refresh-scope requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-1`, which re-mints it\n"
+    },
+    {
+      "id": "run-refresh-scope-without-token",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "refresh-scope",
+        "RUN-1",
+        "--issue",
+        "DKT-2",
+        "--reason",
+        "no capability",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "RUN-1 is bound to a conductor capability and run refresh-scope requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-1`, which re-mints it",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
       "id": "run-refresh-scope",
       "mode": "text",
       "argv": [
@@ -11307,6 +11427,411 @@
         "ok": false,
         "error": "DKT-2 already renders [src/**] in RUN-1; a refresh copies the scope declared on the issue into the run's snapshot, and nothing has been declared since it was frozen. Widen it first — `docket issue edit DKT-2 --scope GLOB --scope GLOB` — then refresh",
         "code": "CONFLICT"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-refresh-body-unchanged",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "refresh-body",
+        "RUN-1",
+        "--issue",
+        "DKT-2",
+        "--reason",
+        "nothing amended"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: DKT-2 already renders its live description in RUN-1; a refresh copies the description declared on the issue into the run's snapshot, and nothing has been declared since it was frozen. Amend it first — `docket issue edit DKT-2 --description F` — then refresh\n"
+    },
+    {
+      "id": "run-refresh-body-unchanged",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "refresh-body",
+        "RUN-1",
+        "--issue",
+        "DKT-2",
+        "--reason",
+        "nothing amended",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "DKT-2 already renders its live description in RUN-1; a refresh copies the description declared on the issue into the run's snapshot, and nothing has been declared since it was frozen. Amend it first — `docket issue edit DKT-2 --description F` — then refresh",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "issue-edit-description",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "issue",
+        "edit",
+        "DKT-2",
+        "--description",
+        "Beta body, amended.",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "assignee": "",
+          "created_at": "<TIMESTAMP>",
+          "description": "Beta body, amended.",
+          "docs": [],
+          "files": [],
+          "id": "DKT-2",
+          "issue": "DKT-2",
+          "kind": "task",
+          "labels": [
+            "sweep-dev"
+          ],
+          "priority": "none",
+          "scope": [
+            "src/**"
+          ],
+          "status": "todo",
+          "title": "Beta",
+          "updated_at": "<TIMESTAMP>",
+          "warnings": [
+            "DKT-2 is bound into RUN-1, which froze its description at activation (§5.1.1) — the 2 step(s) still live there will render that frozen description as their packets' REQUEST and issue.body, NOT the description you just wrote. To make the amendment reach this run's remaining work, refresh its snapshot — `docket run refresh-body RUN-1 --issue DKT-2 --reason \"description amended\"` (refuses while any of the issue's steps is claimed, running or gated, or while a dispatch is open)"
+          ]
+        },
+        "message": "Updated DKT-2: Beta"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-refresh-body",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "refresh-body",
+        "RUN-1",
+        "--issue",
+        "DKT-2",
+        "--reason",
+        "operator amended the request",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": "RUN-1",
+          "issue": "DKT-2",
+          "from_sha256": "<HEX64>",
+          "to_sha256": "<HEX64>",
+          "steps": [
+            "check@0",
+            "approve@0"
+          ]
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-refresh-files-unchanged",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "refresh-files",
+        "RUN-1",
+        "--issue",
+        "DKT-2",
+        "--reason",
+        "nothing attached"
+      ],
+      "exit": 4,
+      "stdout": "",
+      "stderr": "Error: DKT-2 already renders its live attachment list [] in RUN-1; a refresh copies the issue's attached files into the run's snapshot, and nothing has been attached or removed since it was frozen. Change it first — `docket issue file add|remove DKT-2` — then refresh\n"
+    },
+    {
+      "id": "run-refresh-files-unchanged",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "refresh-files",
+        "RUN-1",
+        "--issue",
+        "DKT-2",
+        "--reason",
+        "nothing attached",
+        "--json"
+      ],
+      "exit": 4,
+      "json": {
+        "ok": false,
+        "error": "DKT-2 already renders its live attachment list [] in RUN-1; a refresh copies the issue's attached files into the run's snapshot, and nothing has been attached or removed since it was frozen. Change it first — `docket issue file add|remove DKT-2` — then refresh",
+        "code": "CONFLICT"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "issue-file-add-live",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "issue",
+        "file",
+        "add",
+        "DKT-2",
+        "README.md",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": [
+          "README.md"
+        ],
+        "message": "Added file(s) to DKT-2: Beta"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-refresh-files",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "refresh-files",
+        "RUN-1",
+        "--issue",
+        "DKT-2",
+        "--reason",
+        "operator attached a file",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": "RUN-1",
+          "issue": "DKT-2",
+          "from": [],
+          "to": [
+            "README.md"
+          ],
+          "steps": [
+            "check@0",
+            "approve@0"
+          ]
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-fact-group",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "fact"
+      ],
+      "exit": 0,
+      "stdout": "Record coordination facts that only the conductor driving a run observes,\nso a retro reading the store can count them.\n\nTwo kinds exist. `vote-reseated` records a vote seat the conductor re-spawned;\n`step-deferred` records a step it held back, with the cause `budget` or `chain`.\nA hand-resolved cherry-pick has no kind here: its record is the `step-annotated`\nevent that `step annotate --integrated-sha` writes.\n\nUsage:\n  docket run fact [command]\n\nAvailable Commands:\n  add Record one conductor-observed fact as an event\n\nFlags:\n  -h, --help help for fact\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket run fact [command] --help\" for more information about a command.\n",
+      "stderr": ""
+    },
+    {
+      "id": "run-fact-add-deferred",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "fact",
+        "add",
+        "RUN-1",
+        "--kind",
+        "step-deferred",
+        "--step",
+        "STEP-1",
+        "--cause",
+        "budget",
+        "--reason",
+        "sweep defers it"
+      ],
+      "exit": 0,
+      "stdout": "Recorded step-deferred on RUN-1 (seq 16): sweep defers it\n",
+      "stderr": ""
+    },
+    {
+      "id": "run-fact-add-deferred",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "fact",
+        "add",
+        "RUN-1",
+        "--kind",
+        "step-deferred",
+        "--step",
+        "STEP-1",
+        "--cause",
+        "budget",
+        "--reason",
+        "sweep defers it",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": "RUN-1",
+          "kind": "step-deferred",
+          "seq": 17,
+          "step": "STEP-1",
+          "cause": "budget",
+          "reason": "sweep defers it"
+        },
+        "message": "Recorded step-deferred on RUN-1 (seq 17): sweep defers it"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-fact-add-deferred",
+      "mode": "format",
+      "argv": [
+        "docket",
+        "run",
+        "fact",
+        "add",
+        "RUN-1",
+        "--kind",
+        "step-deferred",
+        "--step",
+        "STEP-1",
+        "--cause",
+        "budget",
+        "--reason",
+        "sweep defers it",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "run": "RUN-1",
+          "kind": "step-deferred",
+          "seq": 18,
+          "step": "STEP-1",
+          "cause": "budget",
+          "reason": "sweep defers it"
+        },
+        "message": "Recorded step-deferred on RUN-1 (seq 18): sweep defers it"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-fact-add-reseated",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "fact",
+        "add",
+        "RUN-1",
+        "--kind",
+        "vote-reseated",
+        "--proposal",
+        "DKT-V1",
+        "--voter",
+        "sweep",
+        "--reason",
+        "seat respawned"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: proposal DKT-V1 is linked to no issue with a step on RUN-1, so no seat of it was re-seated for this run\n"
+    },
+    {
+      "id": "run-fact-add-reseated",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "fact",
+        "add",
+        "RUN-1",
+        "--kind",
+        "vote-reseated",
+        "--proposal",
+        "DKT-V1",
+        "--voter",
+        "sweep",
+        "--reason",
+        "seat respawned",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "proposal DKT-V1 is linked to no issue with a step on RUN-1, so no seat of it was re-seated for this run",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-fact-add-without-token",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "fact",
+        "add",
+        "RUN-1",
+        "--kind",
+        "step-deferred",
+        "--step",
+        "STEP-1",
+        "--cause",
+        "chain",
+        "--reason",
+        "no capability"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: RUN-1 is bound to a conductor capability and run fact add requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-1`, which re-mints it\n"
+    },
+    {
+      "id": "run-fact-add-without-token",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "fact",
+        "add",
+        "RUN-1",
+        "--kind",
+        "step-deferred",
+        "--step",
+        "STEP-1",
+        "--cause",
+        "chain",
+        "--reason",
+        "no capability",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "RUN-1 is bound to a conductor capability and run fact add requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-1`, which re-mints it",
+        "code": "VALIDATION_ERROR"
       },
       "stderr": ""
     },
@@ -11499,7 +12024,7 @@
         "step"
       ],
       "exit": 0,
-      "stdout": "Steps are the units of work a run schedules.\n\nA step is CLAIMED — which mints a capability token and returns the whole\ncontext bundle in one response — then COMPLETED with an artifact. Completion is\na saga: the artifact records and the token retires in one commit, after which\nthe step is engine-owned and finishes under any later invocation, even if the\nworker that claimed it died.\n\nGate steps are never claimed. A human gate is approved or rejected directly; a\nvote gate is decided by its voters casting on the proposal the engine opened\nfor it, whose id rides on the step row.\n\nRead verbs here compute effective status and WRITE NOTHING. Only `next` and\n`step claim` reap an expired lease.\n\nUsage:\n  docket step [command]\n\nAvailable Commands:\n  annotate Record facts about a finished step: opaque metadata, or a verified integration\n  approve Approve a gate step awaiting a person\n  artifact Read one artifact in full, body and payload\n  artifacts List what a step produced, without the bodies\n  claim Claim a step, minting a token and returning its context bundle\n  complete Record a step's artifact and run the completion saga\n  context Re-emit a step's context bundle, read-only\n  fail Report a step as failed, consuming an attempt\n  gates List a step's recorded gate results\n  heartbeat Extend the lease on a claimed step\n  list List a run's or an issue's steps with effective status and cost\n  reap Clear a dead holder's claim without waiting out the lease\n  reject Reject a gate step awaiting a person\n  render Render a step's context bundle into a work packet\n  resolve Resolve a parked step\n  show Show a step at its effective status\n\nFlags:\n  -h, --help help for step\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket step [command] --help\" for more information about a command.\n",
+      "stdout": "Steps are the units of work a run schedules.\n\nA step is CLAIMED — which mints a capability token and returns the whole\ncontext bundle in one response — then COMPLETED with an artifact. Completion is\na saga: the artifact records and the token retires in one commit, after which\nthe step is engine-owned and finishes under any later invocation, even if the\nworker that claimed it died.\n\nGate steps are never claimed. A human gate is approved or rejected directly; a\nvote gate is decided by its voters casting on the proposal the engine opened\nfor it, whose id rides on the step row.\n\nRead verbs here compute effective status and WRITE NOTHING. Only `next` and\n`step claim` reap an expired lease.\n\nUsage:\n  docket step [command]\n\nAvailable Commands:\n  annotate Record facts about a finished step: opaque metadata, or a verified integration\n  approve Approve a gate step awaiting a person\n  artifact Read one artifact in full, body and payload\n  artifacts List what a step produced, without the bodies\n  claim Claim a step, minting a token and returning its context bundle\n  complete Record a step's artifact and run the completion saga\n  context Re-emit a step's context bundle, read-only\n  fail Report a step as failed, consuming an attempt\n  gates List a step's recorded gate results\n  heartbeat Extend the lease on a claimed step\n  hold Park one ready step for the operator\n  list List a run's or an issue's steps with effective status and cost\n  reap Clear a dead holder's claim without waiting out the lease\n  reject Reject a gate step awaiting a person\n  render Render a step's context bundle into a work packet\n  resolve Resolve a parked step\n  show Show a step at its effective status\n\nFlags:\n  -h, --help help for step\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket step [command] --help\" for more information about a command.\n",
       "stderr": ""
     },
     {
@@ -11853,7 +12378,7 @@
             "issue": {
               "id": "DKT-2",
               "title": "Beta",
-              "body_snapshot": "",
+              "body_snapshot": "Beta body, amended.",
               "kind": "task",
               "labels": [
                 "sweep-dev"
@@ -11874,21 +12399,25 @@
               {
                 "id": 1,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 2,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 3,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 4,
                 "text": "Note from stdin.",
+                "authority": "conductor",
                 "recorded_at_ms": "<N>"
               }
             ]
@@ -11932,7 +12461,7 @@
             "issue": {
               "id": "DKT-2",
               "title": "Beta",
-              "body_snapshot": "",
+              "body_snapshot": "Beta body, amended.",
               "kind": "task",
               "labels": [
                 "sweep-dev"
@@ -11953,21 +12482,25 @@
               {
                 "id": 1,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 2,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 3,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 4,
                 "text": "Note from stdin.",
+                "authority": "conductor",
                 "recorded_at_ms": "<N>"
               }
             ]
@@ -12012,7 +12545,7 @@
             "issue": {
               "id": "DKT-2",
               "title": "Beta",
-              "body_snapshot": "",
+              "body_snapshot": "Beta body, amended.",
               "kind": "task",
               "labels": [
                 "sweep-dev"
@@ -12033,21 +12566,25 @@
               {
                 "id": 1,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 2,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 3,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 4,
                 "text": "Note from stdin.",
+                "authority": "conductor",
                 "recorded_at_ms": "<N>"
               }
             ]
@@ -12077,7 +12614,7 @@
         "resolved-prober"
       ],
       "exit": 0,
-      "stdout": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\n\n\n== RUN NOTE 1\nA note for the packets.\n\n== RUN NOTE 2\nA note for the packets.\n\n== RUN NOTE 3\nA note for the packets.\n\n== RUN NOTE 4\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
+      "stdout": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
       "stderr": ""
     },
     {
@@ -12096,7 +12633,7 @@
       "json": {
         "ok": true,
         "data": {
-          "packet": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\n\n\n== RUN NOTE 1\nA note for the packets.\n\n== RUN NOTE 2\nA note for the packets.\n\n== RUN NOTE 3\nA note for the packets.\n\n== RUN NOTE 4\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
+          "packet": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
           "template": "default",
           "template_pinned": true
         }
@@ -12120,7 +12657,7 @@
       "json": {
         "ok": true,
         "data": {
-          "packet": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\n\n\n== RUN NOTE 1\nA note for the packets.\n\n== RUN NOTE 2\nA note for the packets.\n\n== RUN NOTE 3\nA note for the packets.\n\n== RUN NOTE 4\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
+          "packet": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
           "template": "default",
           "template_pinned": true
         }
@@ -12157,7 +12694,7 @@
         "data": {
           "dispatch": "DISPATCH-1",
           "run": "RUN-1",
-          "opened_seq": 13,
+          "opened_seq": 18,
           "expires_ms": "<N>",
           "rows": [
             {
@@ -12553,6 +13090,84 @@
       "stderr": ""
     },
     {
+      "id": "guard-spawn-usage-join",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-1",
+        "--usage-join"
+      ],
+      "exit": 0,
+      "stdout": "allowed\n",
+      "stderr": ""
+    },
+    {
+      "id": "guard-spawn-usage-join",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-1",
+        "--usage-join",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "allowed": true
+        },
+        "message": "allowed"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "guard-spawn-usage-join-rows",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-1",
+        "--usage-join",
+        "--rows",
+        "-"
+      ],
+      "exit": 0,
+      "stdout": "allowed\n",
+      "stderr": ""
+    },
+    {
+      "id": "guard-spawn-usage-join-rows",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "guard",
+        "spawn",
+        "--run",
+        "RUN-1",
+        "--usage-join",
+        "--rows",
+        "-",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "allowed": true
+        },
+        "message": "allowed"
+      },
+      "stderr": ""
+    },
+    {
       "id": "guard-stop-busy",
       "mode": "text",
       "argv": [
@@ -12784,7 +13399,7 @@
             "issue": {
               "id": "DKT-2",
               "title": "Beta",
-              "body_snapshot": "",
+              "body_snapshot": "Beta body, amended.",
               "kind": "task",
               "labels": [
                 "sweep-dev"
@@ -12808,21 +13423,25 @@
               {
                 "id": 1,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 2,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 3,
                 "text": "A note for the packets.",
+                "authority": "operator",
                 "recorded_at_ms": "<N>"
               },
               {
                 "id": 4,
                 "text": "Note from stdin.",
+                "authority": "conductor",
                 "recorded_at_ms": "<N>"
               }
             ]
@@ -13545,7 +14164,7 @@
         "RUN-1"
       ],
       "exit": 0,
-      "stdout": "DISPATCH-1 extended for RUN-1 at seq 22 with 1 row(s), now expiring at <MS>\n\nSTEP INSTANCE ISSUE KIND EXECUTOR CLASS ATTEMPT TTL\n------------------------------------------------------------------------------------------------------------\nSTEP-2 approve@0 DKT-2 human - - 0 <DURATION>\n",
+      "stdout": "DISPATCH-1 extended for RUN-1 at seq 31 with 1 row(s), now expiring at <MS>\n\nSTEP INSTANCE ISSUE KIND EXECUTOR CLASS ATTEMPT TTL\n------------------------------------------------------------------------------------------------------------\nSTEP-2 approve@0 DKT-2 human - - 0 <DURATION>\n",
       "stderr": ""
     },
     {
@@ -13565,7 +14184,7 @@
         "data": {
           "dispatch": "DISPATCH-1",
           "run": "RUN-1",
-          "extended_seq": 23,
+          "extended_seq": 32,
           "expires_ms": "<N>",
           "rows": []
         }
@@ -13590,7 +14209,7 @@
         "data": {
           "dispatch": "DISPATCH-1",
           "run": "RUN-1",
-          "extended_seq": 24,
+          "extended_seq": 33,
           "expires_ms": "<N>",
           "rows": []
         }
@@ -13726,6 +14345,51 @@
       "stderr": ""
     },
     {
+      "id": "dispatch-waive-target-without-token",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "dispatch",
+        "waive-target",
+        "--run",
+        "RUN-1",
+        "--step",
+        "check@0",
+        "--target",
+        "0000000",
+        "--note",
+        "no capability"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: RUN-1 is bound to a conductor capability and dispatch waive-target requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-1`, which re-mints it\n"
+    },
+    {
+      "id": "dispatch-waive-target-without-token",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "dispatch",
+        "waive-target",
+        "--run",
+        "RUN-1",
+        "--step",
+        "check@0",
+        "--target",
+        "0000000",
+        "--note",
+        "no capability",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "RUN-1 is bound to a conductor capability and dispatch waive-target requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-1`, which re-mints it",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
       "id": "dispatch-waive-target",
       "mode": "text",
       "argv": [
@@ -13775,6 +14439,43 @@
             }
           ]
         }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "dispatch-close-without-token",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "dispatch",
+        "close",
+        "--run",
+        "RUN-1",
+        "--skip-integration-check",
+        "no capability"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: RUN-1 is bound to a conductor capability and dispatch close --skip-integration-check requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-1`, which re-mints it\n"
+    },
+    {
+      "id": "dispatch-close-without-token",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "dispatch",
+        "close",
+        "--run",
+        "RUN-1",
+        "--skip-integration-check",
+        "no capability",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "RUN-1 is bound to a conductor capability and dispatch close --skip-integration-check requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-1`, which re-mints it",
+        "code": "VALIDATION_ERROR"
       },
       "stderr": ""
     },
@@ -14049,7 +14750,7 @@
         "rendered-prober"
       ],
       "exit": 0,
-      "stdout": "Claimed STEP-3 until <TIMESTAMP> (attempt 1)\n<HEX64>\n\n== STEP STEP-3 check@0\nrun: RUN-1\nissue: DKT-5 Epsilon\nkind: executor\ntarget: rendered-prober\nattempt: 1\n\n== REQUEST\n\n\n== RUN NOTE 1\nA note for the packets.\n\n== RUN NOTE 2\nA note for the packets.\n\n== RUN NOTE 3\nA note for the packets.\n\n== RUN NOTE 4\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
+      "stdout": "Claimed STEP-3 until <TIMESTAMP> (attempt 1)\n<HEX64>\n\n== STEP STEP-3 check@0\nrun: RUN-1\nissue: DKT-5 Epsilon\nkind: executor\ntarget: rendered-prober\nattempt: 1\n\n== REQUEST\n\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
       "stderr": ""
     },
     {
@@ -14095,7 +14796,11 @@
               "ref": "sweep-dev@1",
               "sha256": "<HEX64>"
             }
-          ]
+          ],
+          "activation_head": {
+            "branch": "main",
+            "commit": "<HEX40>"
+          }
         }
       },
       "stderr": ""
@@ -14218,13 +14923,43 @@
             },
             {
               "actor": "human",
-              "count": 24
+              "count": 35
             }
           ],
           "authorities": [
             {
               "authority": "operator",
+              "count": 4
+            },
+            {
+              "authority": "conductor",
               "count": 1
+            }
+          ],
+          "note_rulings": [
+            {
+              "note": 1,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 2,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 3,
+              "authority": "operator",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
+            },
+            {
+              "note": 4,
+              "authority": "conductor",
+              "actor": "sweep",
+              "cwd": "<SCRATCH>/repo"
             }
           ],
           "artifacts": [
@@ -14347,7 +15082,9 @@
               "labels": [
                 "sweep-dev"
               ],
-              "files": [],
+              "files": [
+                "README.md"
+              ],
               "docs": [],
               "scope": [
                 "src/**"
@@ -14522,7 +15259,10 @@
           "references": [],
           "changed": 0,
           "missing": 0,
-          "unpinned": 0
+          "unpinned": 0,
+          "gates": [],
+          "unpinned_gates": 0,
+          "executed_copy_changed": 0
         }
       },
       "stderr": ""
@@ -14686,6 +15426,7 @@
               "labels": [
                 "sweep-park"
               ],
+              "size": "bounded",
               "attempt": 1,
               "expected_cost": 0,
               "lease_ttl_s": 900,
@@ -14749,6 +15490,7 @@
           "labels": [
             "sweep-park"
           ],
+          "size": "bounded",
           "attempt": 1,
           "failed_attempts": 1,
           "prior_attempt_end": "failed",
@@ -14800,6 +15542,7 @@
           "labels": [
             "sweep-park"
           ],
+          "size": "bounded",
           "attempt": 1,
           "failed_attempts": 1,
           "prior_attempt_end": "failed",
@@ -14840,6 +15583,7 @@
           "labels": [
             "sweep-park"
           ],
+          "size": "bounded",
           "attempt": 1,
           "failed_attempts": 1,
           "prior_attempt_end": "failed",
@@ -14924,6 +15668,7 @@
           "labels": [
             "sweep-park"
           ],
+          "size": "bounded",
           "attempt": 1,
           "failed_attempts": 1,
           "prior_attempt_end": "failed",
@@ -14969,6 +15714,7 @@
               "labels": [
                 "sweep-park"
               ],
+              "size": "bounded",
               "attempt": 2,
               "failed_attempts": 1,
               "prior_attempt_end": "failed",
@@ -15042,6 +15788,7 @@
           "labels": [
             "sweep-park"
           ],
+          "size": "bounded",
           "attempt": 2,
           "failed_attempts": 1,
           "reaped_claims": 1,
@@ -15088,6 +15835,7 @@
               "labels": [
                 "sweep-park"
               ],
+              "size": "bounded",
               "attempt": 3,
               "failed_attempts": 1,
               "reaped_claims": 1,
@@ -15162,6 +15910,7 @@
           "labels": [
             "sweep-park"
           ],
+          "size": "bounded",
           "attempt": 3,
           "failed_attempts": 1,
           "reaped_claims": 1,
@@ -15203,6 +15952,7 @@
           "labels": [
             "sweep-park"
           ],
+          "size": "bounded",
           "attempt": 0,
           "expected_cost": 0,
           "lease_ttl_s": 900,
@@ -15292,7 +16042,11 @@
               "ref": "sweep-park@1",
               "sha256": "<HEX64>"
             }
-          ]
+          ],
+          "activation_head": {
+            "branch": "main",
+            "commit": "<HEX40>"
+          }
         }
       },
       "stderr": ""
@@ -15468,7 +16222,7 @@
         "data": {
           "dispatch": "DISPATCH-2",
           "run": "RUN-3",
-          "opened_seq": 56,
+          "opened_seq": 67,
           "expires_ms": "<N>",
           "rows": [
             {
@@ -15484,6 +16238,7 @@
                 "prose",
                 "sweep-dev"
               ],
+              "size": "small",
               "attempt": 0,
               "expected_cost": 0,
               "lease_ttl_s": 900,
@@ -15511,6 +16266,43 @@
           "total": 2,
           "truncated": false
         }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "dispatch-abandon-without-token",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "dispatch",
+        "abandon",
+        "--run",
+        "RUN-3",
+        "--reason",
+        "no capability"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: RUN-3 is bound to a conductor capability and dispatch abandon requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-3`, which re-mints it\n"
+    },
+    {
+      "id": "dispatch-abandon-without-token",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "dispatch",
+        "abandon",
+        "--run",
+        "RUN-3",
+        "--reason",
+        "no capability",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "RUN-3 is bound to a conductor capability and dispatch abandon requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-3`, which re-mints it",
+        "code": "VALIDATION_ERROR"
       },
       "stderr": ""
     },
@@ -15549,9 +16341,9 @@
         "--run",
         "RUN-3"
       ],
-      "exit": 4,
+      "exit": 3,
       "stdout": "",
-      "stderr": "Error: no dispatch is open for RUN-3\n"
+      "stderr": "Error: RUN-3 is bound to a conductor capability and dispatch abandon requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-3`, which re-mints it\n"
     },
     {
       "id": "dispatch-abandon-again",
@@ -15565,11 +16357,156 @@
         "--format",
         "json"
       ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "RUN-3 is bound to a conductor capability and dispatch abandon requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-3`, which re-mints it",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "step-hold-without-token",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "step",
+        "hold",
+        "STEP-7",
+        "--reason",
+        "no capability"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: RUN-3 is bound to a conductor capability and step hold requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-3`, which re-mints it\n"
+    },
+    {
+      "id": "step-hold-without-token",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "step",
+        "hold",
+        "STEP-7",
+        "--reason",
+        "no capability",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "RUN-3 is bound to a conductor capability and step hold requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-3`, which re-mints it",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "step-hold",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "step",
+        "hold",
+        "STEP-7",
+        "--reason",
+        "keeps failing; operator looks first",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "step": "STEP-7",
+          "instance": "check@0",
+          "issue": "DKT-1",
+          "run": "RUN-3",
+          "kind": "executor",
+          "executor": "prober",
+          "class": "prober",
+          "labels": [
+            "audit",
+            "prose",
+            "sweep-dev"
+          ],
+          "size": "small",
+          "attempt": 0,
+          "expected_cost": 0,
+          "lease_ttl_s": 900,
+          "status": "waiting-human"
+        },
+        "message": "Held STEP-7 (waiting-human)"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "step-hold-again",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "step",
+        "hold",
+        "STEP-7",
+        "--reason",
+        "already held"
+      ],
+      "exit": 4,
+      "stdout": "",
+      "stderr": "Error: step check@0 is waiting-human; `step hold` parks a READY step only — a claimed step is force-reaped first (`step reap`), and a parked one is already waiting on the operator\n"
+    },
+    {
+      "id": "step-hold-again",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "step",
+        "hold",
+        "STEP-7",
+        "--reason",
+        "already held",
+        "--json"
+      ],
       "exit": 4,
       "json": {
         "ok": false,
-        "error": "no dispatch is open for RUN-3",
+        "error": "step check@0 is waiting-human; `step hold` parks a READY step only — a claimed step is force-reaped first (`step reap`), and a parked one is already waiting on the operator",
         "code": "CONFLICT"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "step-show-held",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "step",
+        "show",
+        "STEP-7",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "step": "STEP-7",
+          "instance": "check@0",
+          "issue": "DKT-1",
+          "run": "RUN-3",
+          "kind": "executor",
+          "executor": "prober",
+          "class": "prober",
+          "labels": [
+            "audit",
+            "prose",
+            "sweep-dev"
+          ],
+          "size": "small",
+          "attempt": 0,
+          "expected_cost": 0,
+          "lease_ttl_s": 900,
+          "status": "waiting-human",
+          "park_reason": "keeps failing; operator looks first",
+          "park_class": "held"
+        }
       },
       "stderr": ""
     },
@@ -15923,7 +16860,7 @@
         "5"
       ],
       "exit": 0,
-      "stdout": "1 <MS> project-registered - - \"cwd=<SCRATCH>/repo identity=<SCRATCH>/repo name=repo prefix=DKT project_id=1 verb=config set\"\n2 <MS> run-note-added RUN-1 - \"note=1 text=A note for the packets.\"\n3 <MS> run-note-added RUN-1 - \"note=2 text=A note for the packets.\"\n4 <MS> run-note-added RUN-1 - \"note=3 text=A note for the packets.\"\n5 <MS> run-note-added RUN-1 - \"note=4 text=Note from stdin.\"\n",
+      "stdout": "1 <MS> project-registered - - \"cwd=<SCRATCH>/repo identity=<SCRATCH>/repo name=repo prefix=DKT project_id=1 verb=config set\"\n2 <MS> run-note-added RUN-1 - \"actor=sweep authority=operator cwd=<SCRATCH>/repo note=1 text=A note for the packets.\"\n3 <MS> run-note-added RUN-1 - \"actor=sweep authority=operator cwd=<SCRATCH>/repo note=2 text=A note for the packets.\"\n4 <MS> run-note-added RUN-1 - \"actor=sweep authority=operator cwd=<SCRATCH>/repo note=3 text=A note for the packets.\"\n5 <MS> run-note-added RUN-1 - \"actor=sweep authority=conductor cwd=<SCRATCH>/repo note=4 text=Note from stdin.\"\n",
       "stderr": ""
     },
     {
@@ -15962,6 +16899,9 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 1,
                 "text": "A note for the packets."
               }
@@ -15973,6 +16913,9 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 2,
                 "text": "A note for the packets."
               }
@@ -15984,6 +16927,9 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 3,
                 "text": "A note for the packets."
               }
@@ -15995,12 +16941,15 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "conductor",
+                "cwd": "<SCRATCH>/repo",
                 "note": 4,
                 "text": "Note from stdin."
               }
             }
           ],
-          "total": 61
+          "total": 73
         }
       },
       "stderr": ""
@@ -16042,6 +16991,9 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 1,
                 "text": "A note for the packets."
               }
@@ -16053,6 +17005,9 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 2,
                 "text": "A note for the packets."
               }
@@ -16064,6 +17019,9 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 3,
                 "text": "A note for the packets."
               }
@@ -16075,12 +17033,15 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "conductor",
+                "cwd": "<SCRATCH>/repo",
                 "note": 4,
                 "text": "Note from stdin."
               }
             }
           ],
-          "total": 61,
+          "total": 73,
           "truncated": true
         }
       },
@@ -16113,6 +17074,9 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 1,
                 "text": "A note for the packets."
               }
@@ -16124,6 +17088,9 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 2,
                 "text": "A note for the packets."
               }
@@ -16135,12 +17102,15 @@
               "run": "RUN-1",
               "project": "repo",
               "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
                 "note": 3,
                 "text": "A note for the packets."
               }
             }
           ],
-          "total": 32
+          "total": 43
         }
       },
       "stderr": ""
@@ -16163,7 +17133,7 @@
         "data": {
           "events": [
             {
-              "seq": 59,
+              "seq": 71,
               "at_ms": "<N>",
               "kind": "issue-abandoned",
               "run": "RUN-3",
@@ -16179,7 +17149,7 @@
               }
             },
             {
-              "seq": 60,
+              "seq": 72,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-3",
@@ -16192,7 +17162,7 @@
               }
             },
             {
-              "seq": 61,
+              "seq": 73,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-1",
@@ -16206,7 +17176,929 @@
               }
             }
           ],
-          "total": 61
+          "total": 73
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "events-list-kind",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--run",
+        "RUN-1",
+        "--kind",
+        "run-note-added",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "events": [
+            {
+              "seq": 2,
+              "at_ms": "<N>",
+              "kind": "run-note-added",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
+                "note": 1,
+                "text": "A note for the packets."
+              }
+            },
+            {
+              "seq": 3,
+              "at_ms": "<N>",
+              "kind": "run-note-added",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
+                "note": 2,
+                "text": "A note for the packets."
+              }
+            },
+            {
+              "seq": 4,
+              "at_ms": "<N>",
+              "kind": "run-note-added",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
+                "note": 3,
+                "text": "A note for the packets."
+              }
+            },
+            {
+              "seq": 5,
+              "at_ms": "<N>",
+              "kind": "run-note-added",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "conductor",
+                "cwd": "<SCRATCH>/repo",
+                "note": 4,
+                "text": "Note from stdin."
+              }
+            }
+          ],
+          "total": 4
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "events-list-kind-unknown",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--kind",
+        "no-such-kind"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: unknown event kind \"no-such-kind\"; valid kinds: claim-refused, conductor-seated, config-changed, dispatch-abandoned, dispatch-close-refused, dispatch-closed, dispatch-extended, dispatch-opened, events-pruned, gate-override-granted, gate-recorded, gate-rerun, gate-started, gate-unmatched, issue-abandoned, issue-body-refreshed, issue-diff-repinned, issue-files-refreshed, issue-in-progress, issue-promoted, issue-review, issue-scope-refreshed, join-completed, lease-reaped, loop-entered, project-registered, reap-acknowledged, run-abandoned, run-activated, run-budget-set, run-done, run-note-added, run-paused, run-repinned, run-resumed, run-started, spawn-admitted, stale-target-waived, step-annotated, step-approved, step-batch-overridden, step-claimed, step-deferred, step-failed, step-heartbeat, step-held, step-ready, step-recorded, step-rejected, step-reminted, step-resolved, step-routed, step-skipped, step-superseded, trust-added, trust-removed, vote-opened, vote-reseated, vote-tallied\n"
+    },
+    {
+      "id": "events-list-kind-unknown",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--kind",
+        "no-such-kind",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "unknown event kind \"no-such-kind\"; valid kinds: claim-refused, conductor-seated, config-changed, dispatch-abandoned, dispatch-close-refused, dispatch-closed, dispatch-extended, dispatch-opened, events-pruned, gate-override-granted, gate-recorded, gate-rerun, gate-started, gate-unmatched, issue-abandoned, issue-body-refreshed, issue-diff-repinned, issue-files-refreshed, issue-in-progress, issue-promoted, issue-review, issue-scope-refreshed, join-completed, lease-reaped, loop-entered, project-registered, reap-acknowledged, run-abandoned, run-activated, run-budget-set, run-done, run-note-added, run-paused, run-repinned, run-resumed, run-started, spawn-admitted, stale-target-waived, step-annotated, step-approved, step-batch-overridden, step-claimed, step-deferred, step-failed, step-heartbeat, step-held, step-ready, step-recorded, step-rejected, step-reminted, step-resolved, step-routed, step-skipped, step-superseded, trust-added, trust-removed, vote-opened, vote-reseated, vote-tallied",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "events-list-step",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--step",
+        "STEP-7",
+        "--limit",
+        "5",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "events": [
+            {
+              "seq": 70,
+              "at_ms": "<N>",
+              "kind": "step-held",
+              "run": "RUN-3",
+              "step": "check@0",
+              "step_id": "STEP-7",
+              "issue": "DKT-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "held_by": "step hold",
+                "instance": "check@0",
+                "reason": "keeps failing; operator looks first"
+              }
+            }
+          ],
+          "total": 1
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "events-list-claim-refused",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--kind",
+        "claim-refused",
+        "--all-projects",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "events": [
+            {
+              "seq": 22,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "owner": "other",
+                "reason": "step check@0 is not ready to claim: the step is not pending",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 23,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "owner": "other",
+                "reason": "step check@0 is not ready to claim: the step is not pending",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 24,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "approve@0",
+              "step_id": "STEP-2",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "approve@0",
+                "owner": "sweep",
+                "reason": "step approve@0 is a human step and is not claimable: it is resolved by `docket step approve|reject`, not by a worker",
+                "step": "STEP-2"
+              }
+            },
+            {
+              "seq": 25,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "approve@0",
+              "step_id": "STEP-2",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "approve@0",
+                "owner": "sweep",
+                "reason": "step approve@0 is a human step and is not claimable: it is resolved by `docket step approve|reject`, not by a worker",
+                "step": "STEP-2"
+              }
+            }
+          ],
+          "total": 4
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "events-list-dispatch-close-refused",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--kind",
+        "dispatch-close-refused",
+        "--all-projects",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "events": [
+            {
+              "seq": 38,
+              "at_ms": "<N>",
+              "kind": "dispatch-close-refused",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "reason": "no dispatch is open for RUN-1 and there is no missing usage to accept"
+              }
+            },
+            {
+              "seq": 39,
+              "at_ms": "<N>",
+              "kind": "dispatch-close-refused",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "reason": "no dispatch is open for RUN-1 and there is no missing usage to accept"
+              }
+            }
+          ],
+          "total": 2
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "events-list-run1-all",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "events",
+        "list",
+        "--run",
+        "RUN-1",
+        "--limit",
+        "500",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "events": [
+            {
+              "seq": 2,
+              "at_ms": "<N>",
+              "kind": "run-note-added",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
+                "note": 1,
+                "text": "A note for the packets."
+              }
+            },
+            {
+              "seq": 3,
+              "at_ms": "<N>",
+              "kind": "run-note-added",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
+                "note": 2,
+                "text": "A note for the packets."
+              }
+            },
+            {
+              "seq": 4,
+              "at_ms": "<N>",
+              "kind": "run-note-added",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
+                "note": 3,
+                "text": "A note for the packets."
+              }
+            },
+            {
+              "seq": 5,
+              "at_ms": "<N>",
+              "kind": "run-note-added",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "conductor",
+                "cwd": "<SCRATCH>/repo",
+                "note": 4,
+                "text": "Note from stdin."
+              }
+            },
+            {
+              "seq": 6,
+              "at_ms": "<N>",
+              "kind": "issue-promoted",
+              "run": "RUN-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {}
+            },
+            {
+              "seq": 7,
+              "at_ms": "<N>",
+              "kind": "issue-promoted",
+              "run": "RUN-1",
+              "issue": "DKT-5",
+              "project": "repo",
+              "data": {}
+            },
+            {
+              "seq": 8,
+              "at_ms": "<N>",
+              "kind": "run-activated",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "head_branch": "main",
+                "head_commit": "<HEX40>",
+                "reason": "sweep"
+              }
+            },
+            {
+              "seq": 9,
+              "at_ms": "<N>",
+              "kind": "run-activated",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "head_branch": "main",
+                "head_commit": "<HEX40>"
+              }
+            },
+            {
+              "seq": 10,
+              "at_ms": "<N>",
+              "kind": "run-activated",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "head_branch": "main",
+                "head_commit": "<HEX40>"
+              }
+            },
+            {
+              "seq": 11,
+              "at_ms": "<N>",
+              "kind": "run-budget-set",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "from": 100,
+                "reason": "sweep raises the cap",
+                "to": 200
+              }
+            },
+            {
+              "seq": 12,
+              "at_ms": "<N>",
+              "kind": "conductor-seated",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "rotated": true
+              }
+            },
+            {
+              "seq": 13,
+              "at_ms": "<N>",
+              "kind": "issue-scope-refreshed",
+              "run": "RUN-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "from": [],
+                "issue": "DKT-2",
+                "reason": "scope widened",
+                "steps": [
+                  "check@0",
+                  "approve@0"
+                ],
+                "to": [
+                  "src/**"
+                ]
+              }
+            },
+            {
+              "seq": 14,
+              "at_ms": "<N>",
+              "kind": "issue-body-refreshed",
+              "run": "RUN-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "from_body": "",
+                "from_sha256": "<HEX64>",
+                "issue": "DKT-2",
+                "reason": "operator amended the request",
+                "steps": [
+                  "check@0",
+                  "approve@0"
+                ],
+                "to_sha256": "<HEX64>"
+              }
+            },
+            {
+              "seq": 15,
+              "at_ms": "<N>",
+              "kind": "issue-files-refreshed",
+              "run": "RUN-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "from": [],
+                "issue": "DKT-2",
+                "reason": "operator attached a file",
+                "steps": [
+                  "check@0",
+                  "approve@0"
+                ],
+                "to": [
+                  "README.md"
+                ]
+              }
+            },
+            {
+              "seq": 16,
+              "at_ms": "<N>",
+              "kind": "step-deferred",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cause": "budget",
+                "cwd": "<SCRATCH>/repo",
+                "instance": "check@0",
+                "reason": "sweep defers it",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 17,
+              "at_ms": "<N>",
+              "kind": "step-deferred",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cause": "budget",
+                "cwd": "<SCRATCH>/repo",
+                "instance": "check@0",
+                "reason": "sweep defers it",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 18,
+              "at_ms": "<N>",
+              "kind": "step-deferred",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cause": "budget",
+                "cwd": "<SCRATCH>/repo",
+                "instance": "check@0",
+                "reason": "sweep defers it",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 19,
+              "at_ms": "<N>",
+              "kind": "dispatch-opened",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "dispatch": "DISPATCH-1",
+                "expires_ms": "<N>",
+                "rows": 2
+              }
+            },
+            {
+              "seq": 20,
+              "at_ms": "<N>",
+              "kind": "step-claimed",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "expected_cost": 0,
+                "instance": "check@0"
+              }
+            },
+            {
+              "seq": 21,
+              "at_ms": "<N>",
+              "kind": "issue-in-progress",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0"
+              }
+            },
+            {
+              "seq": 22,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "owner": "other",
+                "reason": "step check@0 is not ready to claim: the step is not pending",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 23,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "owner": "other",
+                "reason": "step check@0 is not ready to claim: the step is not pending",
+                "step": "STEP-1"
+              }
+            },
+            {
+              "seq": 24,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "approve@0",
+              "step_id": "STEP-2",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "approve@0",
+                "owner": "sweep",
+                "reason": "step approve@0 is a human step and is not claimable: it is resolved by `docket step approve|reject`, not by a worker",
+                "step": "STEP-2"
+              }
+            },
+            {
+              "seq": 25,
+              "at_ms": "<N>",
+              "kind": "claim-refused",
+              "run": "RUN-1",
+              "step": "approve@0",
+              "step_id": "STEP-2",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "approve@0",
+                "owner": "sweep",
+                "reason": "step approve@0 is a human step and is not claimable: it is resolved by `docket step approve|reject`, not by a worker",
+                "step": "STEP-2"
+              }
+            },
+            {
+              "seq": 26,
+              "at_ms": "<N>",
+              "kind": "step-recorded",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "tokens": 11
+              }
+            },
+            {
+              "seq": 27,
+              "at_ms": "<N>",
+              "kind": "step-routed",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "detail": "pass",
+                "instance": "check@0"
+              }
+            },
+            {
+              "seq": 28,
+              "at_ms": "<N>",
+              "kind": "issue-review",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0"
+              }
+            },
+            {
+              "seq": 29,
+              "at_ms": "<N>",
+              "kind": "step-annotated",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "landed": true
+              }
+            },
+            {
+              "seq": 30,
+              "at_ms": "<N>",
+              "kind": "step-annotated",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "landed": true
+              }
+            },
+            {
+              "seq": 31,
+              "at_ms": "<N>",
+              "kind": "step-annotated",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "check@0",
+                "landed": true
+              }
+            },
+            {
+              "seq": 32,
+              "at_ms": "<N>",
+              "kind": "dispatch-extended",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "dispatch": "DISPATCH-1",
+                "expires_ms": "<N>",
+                "extended_seq": 31,
+                "rows": 1
+              }
+            },
+            {
+              "seq": 33,
+              "at_ms": "<N>",
+              "kind": "dispatch-extended",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "dispatch": "DISPATCH-1",
+                "expires_ms": "<N>",
+                "extended_seq": 32,
+                "rows": 0
+              }
+            },
+            {
+              "seq": 34,
+              "at_ms": "<N>",
+              "kind": "dispatch-extended",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "dispatch": "DISPATCH-1",
+                "expires_ms": "<N>",
+                "extended_seq": 33,
+                "rows": 0
+              }
+            },
+            {
+              "seq": 35,
+              "at_ms": "<N>",
+              "kind": "stale-target-waived",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "instance": "check@0",
+                "target_sha": "0000000",
+                "waiver": 1
+              }
+            },
+            {
+              "seq": 36,
+              "at_ms": "<N>",
+              "kind": "stale-target-waived",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-1",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "cwd": "<SCRATCH>/repo",
+                "instance": "check@0",
+                "target_sha": "0000000",
+                "waiver": 2
+              }
+            },
+            {
+              "seq": 37,
+              "at_ms": "<N>",
+              "kind": "dispatch-closed",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "accepted": [],
+                "dispatch": "DISPATCH-1",
+                "integration": {
+                  "status": "skipped",
+                  "reason": "sweep has no shared branch"
+                },
+                "reason": "reconciled"
+              }
+            },
+            {
+              "seq": 38,
+              "at_ms": "<N>",
+              "kind": "dispatch-close-refused",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "reason": "no dispatch is open for RUN-1 and there is no missing usage to accept"
+              }
+            },
+            {
+              "seq": 39,
+              "at_ms": "<N>",
+              "kind": "dispatch-close-refused",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "reason": "no dispatch is open for RUN-1 and there is no missing usage to accept"
+              }
+            },
+            {
+              "seq": 40,
+              "at_ms": "<N>",
+              "kind": "step-approved",
+              "run": "RUN-1",
+              "step": "approve@0",
+              "step_id": "STEP-2",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "actor": "sweep",
+                "authority": "operator",
+                "cwd": "<SCRATCH>/repo",
+                "detail": "approved by the sweep",
+                "instance": "approve@0"
+              }
+            },
+            {
+              "seq": 41,
+              "at_ms": "<N>",
+              "kind": "issue-in-progress",
+              "run": "RUN-1",
+              "step": "approve@0",
+              "step_id": "STEP-2",
+              "issue": "DKT-2",
+              "project": "repo",
+              "data": {
+                "instance": "approve@0"
+              }
+            },
+            {
+              "seq": 42,
+              "at_ms": "<N>",
+              "kind": "step-claimed",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-3",
+              "issue": "DKT-5",
+              "project": "repo",
+              "data": {
+                "instance": "check@0"
+              }
+            },
+            {
+              "seq": 43,
+              "at_ms": "<N>",
+              "kind": "issue-in-progress",
+              "run": "RUN-1",
+              "step": "check@0",
+              "step_id": "STEP-3",
+              "issue": "DKT-5",
+              "project": "repo",
+              "data": {
+                "instance": "check@0"
+              }
+            },
+            {
+              "seq": 73,
+              "at_ms": "<N>",
+              "kind": "run-abandoned",
+              "run": "RUN-1",
+              "project": "repo",
+              "data": {
+                "authority": "standing-grant",
+                "authority_ref": "sweep",
+                "from": "active",
+                "reason": "sweep finished with it",
+                "to": "abandoned"
+              }
+            }
+          ],
+          "total": 43
         }
       },
       "stderr": ""
@@ -16223,7 +18115,7 @@
         "--dry-run"
       ],
       "exit": 0,
-      "stdout": "Would prune 32 event(s). Retained minimum is now seq 1.\n",
+      "stdout": "Would prune 43 event(s). Retained minimum is now seq 1.\n",
       "stderr": ""
     },
     {
@@ -16242,7 +18134,7 @@
       "json": {
         "ok": true,
         "data": {
-          "pruned": 32,
+          "pruned": 43,
           "retained_minimum": 1,
           "dry_run": true,
           "before_run": "RUN-1"
@@ -16267,7 +18159,7 @@
       "json": {
         "ok": true,
         "data": {
-          "pruned": 32,
+          "pruned": 43,
           "retained_minimum": 1,
           "dry_run": true,
           "before_run": "RUN-1"
@@ -16791,7 +18683,7 @@
       ],
       "exit": 4,
       "json": {
-        "ok": true,
+        "ok": false,
         "data": {
           "operation": "workflow deprecate",
           "subject": "sweep-stdin@1",
@@ -16809,7 +18701,9 @@
           ],
           "succeeded": 0,
           "failed": 1
-        }
+        },
+        "error": "1 of 1 project(s) failed",
+        "code": "CONFLICT"
       },
       "stderr": ""
     },
@@ -17009,7 +18903,7 @@
       ],
       "exit": 4,
       "json": {
-        "ok": true,
+        "ok": false,
         "data": {
           "operation": "schema deprecate",
           "subject": "findings@13",
@@ -17027,7 +18921,9 @@
           ],
           "succeeded": 0,
           "failed": 1
-        }
+        },
+        "error": "1 of 1 project(s) failed",
+        "code": "CONFLICT"
       },
       "stderr": ""
     },
@@ -17124,7 +19020,7 @@
       ],
       "exit": 4,
       "json": {
-        "ok": true,
+        "ok": false,
         "data": {
           "operation": "schema deprecate",
           "subject": "findings@12",
@@ -17142,7 +19038,9 @@
           ],
           "succeeded": 0,
           "failed": 1
-        }
+        },
+        "error": "1 of 1 project(s) failed",
+        "code": "CONFLICT"
       },
       "stderr": ""
     },
@@ -17627,6 +19525,153 @@
         "ok": false,
         "error": "no project named \"NOPE\"; `docket project list` shows what this store holds (its NAME, PREFIX, and IDENTITY columns all resolve here)",
         "code": "NOT_FOUND"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "registry-audit-shared-root",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "registry",
+        "audit"
+      ],
+      "exit": 0,
+      "stdout": "scanned 1 instance-config root(s) for current versions:\n  <SCRATCH>/home/.docket/config\n\nrepo (DKT)\n  behind workflow sweep-dev registered 1, current 2\n  orphaned schema findings registered @12 @13 [all deprecated]\n  orphaned workflow sweep-park registered @1\n  orphaned workflow sweep-stdin registered @1 [all deprecated]\n\n1 of 1 project(s) carry findings: 1 name(s) behind, 3 orphaned.\nA behind name is adopted by the next `docket run activate` in that project. An orphaned one may still be declared in its project's own repository config, which this audit does not read. Confirm from that checkout first (a workflow with `docket workflow list --orphans`, a schema in its `.docket/config/schemas/`), then retire it with `docket workflow deprecate` or `docket schema deprecate`.\n",
+      "stderr": ""
+    },
+    {
+      "id": "registry-audit-shared-root",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "registry",
+        "audit",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "roots": [
+            "<SCRATCH>/home/.docket/config"
+          ],
+          "projects": [
+            {
+              "project_id": 1,
+              "project": "repo",
+              "prefix": "DKT",
+              "identity": "<SCRATCH>/repo",
+              "compared": 4,
+              "behind": [
+                {
+                  "kind": "workflow",
+                  "name": "sweep-dev",
+                  "registered_version": 1,
+                  "current_version": 2,
+                  "current_path": "<SCRATCH>/home/.docket/config/workflows/sweep-dev.toml"
+                }
+              ],
+              "orphaned": [
+                {
+                  "kind": "schema",
+                  "name": "findings",
+                  "versions": [
+                    12,
+                    13
+                  ],
+                  "retired": true
+                },
+                {
+                  "kind": "workflow",
+                  "name": "sweep-park",
+                  "versions": [
+                    1
+                  ],
+                  "retired": false
+                },
+                {
+                  "kind": "workflow",
+                  "name": "sweep-stdin",
+                  "versions": [
+                    1
+                  ],
+                  "retired": true
+                }
+              ]
+            }
+          ],
+          "behind_total": 1,
+          "orphaned_total": 3
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "id": "registry-audit-shared-root",
+      "mode": "format",
+      "argv": [
+        "docket",
+        "registry",
+        "audit",
+        "--format",
+        "json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "roots": [
+            "<SCRATCH>/home/.docket/config"
+          ],
+          "projects": [
+            {
+              "project_id": 1,
+              "project": "repo",
+              "prefix": "DKT",
+              "identity": "<SCRATCH>/repo",
+              "compared": 4,
+              "behind": [
+                {
+                  "kind": "workflow",
+                  "name": "sweep-dev",
+                  "registered_version": 1,
+                  "current_version": 2,
+                  "current_path": "<SCRATCH>/home/.docket/config/workflows/sweep-dev.toml"
+                }
+              ],
+              "orphaned": [
+                {
+                  "kind": "schema",
+                  "name": "findings",
+                  "versions": [
+                    12,
+                    13
+                  ],
+                  "retired": true
+                },
+                {
+                  "kind": "workflow",
+                  "name": "sweep-park",
+                  "versions": [
+                    1
+                  ],
+                  "retired": false
+                },
+                {
+                  "kind": "workflow",
+                  "name": "sweep-stdin",
+                  "versions": [
+                    1
+                  ],
+                  "retired": true
+                }
+              ]
+            }
+          ],
+          "behind_total": 1,
+          "orphaned_total": 3
+        }
       },
       "stderr": ""
     },

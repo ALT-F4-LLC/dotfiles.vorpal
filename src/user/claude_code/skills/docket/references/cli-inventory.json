@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-10-02",
-  "binary_version": "docket version nightly-229-g7f304cc (commit: 7f304cc, built: 2026-10-02T22:01:56Z)",
+  "verified_on": "2026-10-13",
+  "binary_version": "docket version nightly-659-gec91591 (commit: ec91591, built: 2026-10-13T02:11:27Z)",
   "probe_contract": "Only --version and command-path --help; no store operations.",
   "commands": [
     {
@@ -1201,6 +1201,10 @@
           "short": "-h"
         },
         {
+          "name": "--kind",
+          "value": "string"
+        },
+        {
           "name": "--limit",
           "value": "int",
           "default": "100"
@@ -1212,6 +1216,10 @@
         {
           "name": "--since",
           "value": "int"
+        },
+        {
+          "name": "--step",
+          "value": "string"
         },
         {
           "name": "--tail",
@@ -1487,7 +1495,7 @@
     {
       "command": "docket guard spawn",
       "usage": [
-        "docket guard spawn (--run RUN-N | --active) [--rows FILE] [--ack-reap SEQ] [--deciding-vote PROPOSAL-N] [flags]"
+        "docket guard spawn (--run RUN-N | --active) [--rows FILE] [--ack-reap SEQ] [--deciding-vote PROPOSAL-N | --usage-join] [flags]"
       ],
       "aliases": [],
       "flags": [
@@ -1517,6 +1525,9 @@
         {
           "name": "--run",
           "value": "string"
+        },
+        {
+          "name": "--usage-join"
         }
       ],
       "inherited_flags": [
@@ -3443,6 +3454,84 @@
       ]
     },
     {
+      "command": "docket run fact",
+      "usage": [
+        "docket run fact [command]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run fact add",
+      "usage": [
+        "docket run fact add RUN-N --kind (vote-reseated --proposal PROPOSAL-N --voter NAME | step-deferred --step STEP-N --cause budget|chain) --reason TEXT [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--cause",
+          "value": "string"
+        },
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--kind",
+          "value": "string"
+        },
+        {
+          "name": "--proposal",
+          "value": "string"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        },
+        {
+          "name": "--step",
+          "value": "string"
+        },
+        {
+          "name": "--voter",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
       "command": "docket run issue",
       "usage": [
         "docket run issue [command]"
@@ -3553,10 +3642,14 @@
     {
       "command": "docket run note add",
       "usage": [
-        "docket run note add RUN-N (--text T | --file F) [flags]"
+        "docket run note add RUN-N --authority operator|conductor (--text T | --file F) [flags]"
       ],
       "aliases": [],
       "flags": [
+        {
+          "name": "--authority",
+          "value": "string"
+        },
         {
           "name": "--file",
           "value": "string"
@@ -3630,6 +3723,76 @@
         {
           "name": "--help",
           "short": "-h"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run refresh-body",
+      "usage": [
+        "docket run refresh-body RUN-N --issue DKT-M --reason R [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
+      "command": "docket run refresh-files",
+      "usage": [
+        "docket run refresh-files RUN-N --issue DKT-M --reason R [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--issue",
+          "value": "string"
         },
         {
           "name": "--reason",
@@ -4497,6 +4660,37 @@
       ]
     },
     {
+      "command": "docket step hold",
+      "usage": [
+        "docket step hold STEP-N --reason R [flags]"
+      ],
+      "aliases": [],
+      "flags": [
+        {
+          "name": "--help",
+          "short": "-h"
+        },
+        {
+          "name": "--reason",
+          "value": "string"
+        }
+      ],
+      "inherited_flags": [
+        {
+          "name": "--format",
+          "value": "string"
+        },
+        {
+          "name": "--json",
+          "value": "string[=\"v1\"]"
+        },
+        {
+          "name": "--quiet",
+          "short": "-q"
+        }
+      ]
+    },
+    {
       "command": "docket step list",
       "usage": [
         "docket step list (--run RUN-N | --issue ISSUE-N) [flags]"
@@ -4759,6 +4953,10 @@
       ],
       "aliases": [],
       "flags": [
+        {
+          "name": "--declared-file",
+          "value": "stringArray"
+        },
         {
           "name": "--flaky"
         },

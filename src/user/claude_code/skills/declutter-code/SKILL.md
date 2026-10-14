@@ -182,8 +182,8 @@ default.
    - Worker, ordinary unit (one file, entries of one or two kinds): `opus`
      at `high`.
    - Worker, gnarly unit (a module, a rename crossing many callers, a
-     dedupe that merges near-duplicates with subtle differences): `fable`
-     at `max`.
+     dedupe that merges near-duplicates with subtle differences): `opus`
+     at `xhigh`; a unit that fails there is retried on `fable` at `xhigh`.
 
    Name the seat and why the unit fits the tier.
 

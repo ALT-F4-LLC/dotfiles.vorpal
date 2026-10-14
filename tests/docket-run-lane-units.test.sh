@@ -401,6 +401,16 @@ printf '%s' "$skill_text" | grep -qF 'Relaunch a `skipped-not-ready` lane only a
 # The hold spares launches, never usage joins: a bounce return still joins.
 printf '%s' "$skill_text" | grep -qF 'Every launch return, a bounce included, still gets its usage join'; ok $? \
     'SKILL.md runs the usage join for every launch return, a bounce included'
+# Dispatch-close item 1 owns the obligation: it launches the join first and
+# must not exempt a bounce, in any wording.
+join_item=${skill_text#*'**1. Launch the usage join first'}
+join_item=${join_item%%'End the turn on the join'*}
+[ "$join_item" != "$skill_text" ] && [ -n "$join_item" ] &&
+    printf '%s' "$join_item" | grep -qF 'before reading or diagnosing the wave'; ok $? \
+    "SKILL.md's dispatch-close item 1 launches the usage join first"
+printf '%s' "$join_item" | grep -qiE 'bounce'; rc=$?
+[ "$rc" -eq 1 ]; ok $? \
+    "SKILL.md's dispatch-close item 1 names no bounce exemption from the usage join"
 # A bounce is a launch that claimed nothing because every claim was refused.
 # The test runs as SKILL.md spells it.
 bounce=$(sed -n 's/.*`jq -e '"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE"`.*/\1/p' "$SKILL")

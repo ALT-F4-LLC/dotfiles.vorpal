@@ -525,7 +525,7 @@ if [ -z "${DOCKET_GUARD_BOUNDED:-}" ]; then
         [1-9] | [1-9][0-9] | [12][0-9][0-9] | 300) ;;
         *) GUARD_BOUND=60 ;;
     esac
-    INPUT=$(cat 2>/dev/null) || allow_default
+    INPUT=$(</dev/stdin) || allow_default
     exec 4>&1 5>&2
     # The redirect sits inside the substitution: one after its `)` would apply
     # only once the substitution had run. Job control writes its warnings,
@@ -557,19 +557,37 @@ if [ -z "${DOCKET_GUARD_BOUNDED:-}" ]; then
     exit 1
 fi
 
-INPUT=$(cat 2>/dev/null) || allow_default
+INPUT=$(</dev/stdin) || allow_default
 [ -n "$INPUT" ] || allow_default
 
 command -v jq >/dev/null 2>&1 || allow_default
 
-TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || allow_default
-[ "$TOOL_NAME" = "Bash" ] || allow_default
+# One jq run reads every header field, joined by the unit separator (the
+# hook's own framing bytes never appear in these ids and paths). A value that
+# does hold the separator, or any jq failure, falls back to one jq run per
+# field, so the answers match the field-by-field reads exactly.
+FIELD_SEP=$'\037'
+HAVE_COMMAND=
+if FIELDS=$(printf '%s' "$INPUT" | jq -j '
+    def s: (. // "") | if type == "string" then . else tojson end | sub("\n+$"; "");
+    (.tool_input.command | if . == null or type == "string" then . else error("command") end) as $c
+    | [.tool_name, .agent_type, .agent_id, .session_id, .transcript_path, .cwd, $c] | map(s)
+    | if any(.[]; contains("\u001f")) then error("separator") else join("\u001f") end
+' 2>/dev/null); then
+    IFS="$FIELD_SEP" read -r -d "" TOOL_NAME AGENT_TYPE AGENT_ID SESSION_ID TRANSCRIPT_PATH CALLER_CWD COMMAND <<<"$FIELDS" || true
+    HAVE_COMMAND=1
+    COMMAND=${COMMAND%$'\n'}
+    [ "$TOOL_NAME" = "Bash" ] || allow_default
+else
+    TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // empty' 2>/dev/null) || allow_default
+    [ "$TOOL_NAME" = "Bash" ] || allow_default
 
-AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null) || allow_default
-AGENT_ID=$(printf '%s' "$INPUT" | jq -r '.agent_id // empty' 2>/dev/null) || AGENT_ID=""
-SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null) || SESSION_ID=""
-TRANSCRIPT_PATH=$(printf '%s' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null) || TRANSCRIPT_PATH=""
-CALLER_CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null) || CALLER_CWD=""
+    AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null) || allow_default
+    AGENT_ID=$(printf '%s' "$INPUT" | jq -r '.agent_id // empty' 2>/dev/null) || AGENT_ID=""
+    SESSION_ID=$(printf '%s' "$INPUT" | jq -r '.session_id // empty' 2>/dev/null) || SESSION_ID=""
+    TRANSCRIPT_PATH=$(printf '%s' "$INPUT" | jq -r '.transcript_path // empty' 2>/dev/null) || TRANSCRIPT_PATH=""
+    CALLER_CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // empty' 2>/dev/null) || CALLER_CWD=""
+fi
 OWN_TRANSCRIPT=$(own_transcript_path "$TRANSCRIPT_PATH" "$AGENT_ID" "$SESSION_ID")
 
 OWN_STEP=""
@@ -589,7 +607,7 @@ else
     allow_default
 fi
 
-COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || allow_default
+[ -n "$HAVE_COMMAND" ] || COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // empty' 2>/dev/null) || allow_default
 [ -n "$COMMAND" ] || allow_default
 
 REASON_PREFIX="sibling-destructive verb blocked:"

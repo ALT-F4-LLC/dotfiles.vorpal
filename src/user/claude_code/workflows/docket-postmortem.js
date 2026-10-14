@@ -96,13 +96,13 @@ export const meta = {
 // carry the judgment; clean logs are read for what the digest cannot see.
 const AGENT_CONFIG = {
     digest: { model: 'haiku', effort: 'low' },
-    conductor: { model: 'opus', effort: 'high' },
-    layer: { model: 'opus', effort: 'high' },
+    conductor: { model: 'opus', effort: 'medium' },
+    layer: { model: 'opus', effort: 'medium' },
     deepFlagged: { model: 'opus', effort: 'medium' },
     deepClean: { model: 'sonnet', effort: 'low' },
-    patterns: { model: 'opus', effort: 'high' },
+    patterns: { model: 'opus', effort: 'medium' },
     refute: { model: 'sonnet', effort: 'medium' },
-    reconcile: { model: 'opus', effort: 'high' },
+    reconcile: { model: 'opus', effort: 'medium' },
 }
 
 // TEST-BEGIN docket-postmortem-config — include before any pure test region.

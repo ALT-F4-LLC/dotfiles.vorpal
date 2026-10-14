@@ -52,7 +52,7 @@ const CHUNK_LINES = 200
 // words instead of reading it.
 const AGENT_CONFIG = {
   run: { model: 'haiku', effort: 'low' },
-  rewrite: { model: 'opus', effort: 'high' },
+  rewrite: { model: 'opus', effort: 'medium' },
   verify: { model: 'sonnet', effort: 'medium' },
 }
 

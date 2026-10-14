@@ -494,7 +494,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             .collect()
     };
     let mut builder = settings::ClaudeCodeSettings::default()
-        .with_advisor_model("fable")
+        .with_advisor_model("opus")
         .with_agent_push_notif_enabled(true)
         .with_always_thinking_enabled(false)
         .with_attribution_commit("")
@@ -502,21 +502,24 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_attribution_session_url(false)
         .with_auto_memory_enabled(false)
         .with_auto_updates_channel("latest")
+        // Conductor sessions reach 1.9M tokens of context without this;
+        // docket-run recovers after compaction from conductor.d/<run>.verbs.
+        .with_auto_compact_window(300000)
         .with_away_summary_enabled(false)
-        .with_cleanup_period_days(7)
+        .with_cleanup_period_days(45)
         .with_effort_level("medium")
         .with_feedback_survey_rate(0.0)
         .with_include_git_instructions(false)
         .with_input_needed_notif_enabled(true)
         .with_isolate_peer_machines(true)
-        .with_model("opus")
+        .with_model("sonnet")
         .with_model_setting(
             "claude-fable-5-1",
             serde_json::json!({ "effortLevel": "high" }), // default
         )
         .with_model_setting(
             "claude-haiku-5-5",
-            serde_json::json!({ "effortLevel": "medium" }), // default
+            serde_json::json!({ "effortLevel": "high" }), // default
         )
         .with_model_setting(
             "claude-opus-5-5",
@@ -524,7 +527,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         )
         .with_model_setting(
             "claude-sonnet-5-5",
-            serde_json::json!({ "effortLevel": "high" }), // default
+            serde_json::json!({ "effortLevel": "medium" }), // Claude Code default for 5.5
         )
         // Docket queue and run reads routinely exceed the 30000 default; at
         // the 128000 ceiling they return inline instead of to a file that

@@ -426,6 +426,33 @@ printf '%s' '[{"step":"STEP-1","status":"not-launched-run-parked"}]' > "$WORK/st
 jq -e "$bounce" "$WORK/statuses.json" > /dev/null 2>&1; rc=$?
 [ -n "$bounce" ] && [ "$rc" -eq 1 ]; ok $? \
     "SKILL.md's bounce test rejects a launch with no refused claim (rc=$rc)"
+# Refill step 4 holds a bounce's refused rows and empties the hold at any
+# other return. The prose pins the exit mapping; the two commands run as
+# SKILL.md spells them, driven bounce, bounce, non-bounce.
+printf '%s' "$skill_text" | grep -qF 'On a bounce (exit 0), append its rows to the hold with' &&
+    printf '%s' "$skill_text" | grep -qF 'On any other return (exit 1), empty the hold with'; ok $? \
+    "SKILL.md maps the bounce test's exit 0 to the hold append and exit 1 to the release"
+hold_append=$(sed -n 's/.*`\(jq -r .\.\[\]\.step. "\$STATUSES_FILE" >> "\$HELD_FILE"\)`.*/\1/p' "$SKILL")
+hold_release=$(sed -n 's/.*`\(cat \/dev\/null > "\$HELD_FILE"\)`.*/\1/p' "$SKILL")
+[ -n "$hold_append" ] && [ -n "$hold_release" ]; ok $? \
+    "SKILL.md spells the hold append ('$hold_append') and release ('$hold_release')"
+hold_after() { # <statuses-json>: one return through step 4; prints the held set
+    export STATUSES_FILE="$WORK/statuses.json" HELD_FILE="$WORK/held"
+    printf '%s' "$1" > "$STATUSES_FILE"
+    if jq -e "$bounce" "$STATUSES_FILE" > /dev/null 2>&1; then
+        eval "$hold_append"
+    else
+        eval "$hold_release"
+    fi
+    tr '\n' ' ' < "$HELD_FILE"
+}
+cat /dev/null > "$WORK/held"
+got=$(hold_after '[{"step":"STEP-1","status":"skipped-not-ready"},{"step":"STEP-2","status":"skipped-chain-dead"}]')
+[ "$got" = "STEP-1 STEP-2 " ]; ok $? "SKILL.md's hold append holds a first bounce's rows (got '$got')"
+got=$(hold_after '[{"step":"STEP-3","status":"skipped-not-ready"}]')
+[ "$got" = "STEP-1 STEP-2 STEP-3 " ]; ok $? "SKILL.md's hold append keeps earlier holds at a second bounce (got '$got')"
+got=$(hold_after '[{"step":"STEP-4","status":"returned"},{"step":"STEP-5","status":"skipped-not-ready"}]')
+[ -z "$got" ]; ok $? "SKILL.md's hold release empties the hold at a non-bounce return (got '$got')"
 printf '%s' "$skill_text" | grep -qF "The dispatch closes only when no launch is in flight and the last return's re-split had nothing to launch: extend appended nothing launchable, and every row of the manifest of record is in \`\$SETTLED_FILE\` or \`\$HELD_FILE\`. The loop ends only when no work remains in this dispatch."; ok $? \
     'SKILL.md closes the dispatch only when no launch is in flight and every row of the manifest is settled or held'
 # A dead in-dispatch holder is reaped and acked at the return that reports

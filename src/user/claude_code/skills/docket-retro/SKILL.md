@@ -25,7 +25,8 @@ panel and operator approvals below still authorize applying it.
 
 Run in the invoking conversation: §1 seats its analysts through `Workflow`,
 and §3's approval conversation runs through `AskUserQuestion`, and a forked
-subagent has neither. Gathering and aggregation are the analysts' work
+subagent has neither; a fork returns its open questions to its caller
+instead of asking them. Gathering and aggregation are the analysts' work
 (§1); this conversation reads their findings, composes the proposals, and
 holds the approval conversation.
 Assume nothing was read for you — no run reports from earlier in the
@@ -103,7 +104,7 @@ than assuming an unsandboxed shell is needed. Where it is not writable,
 | Integration health | the store half, from the event feed with `--all-projects`: `step-annotated` per write-class step recorded (one integration each; its payload cannot tell a verbatim pick from a hand-resolved one), `dispatch-closed` whose `reason` is not `reconciled` (an override such as `--skip-integration-check`), `loop-entered` ordinals and `step-routed` with detail `fix-loop` (rounds per issue), `lease-reaped`, `claim-refused` and `dispatch-close-refused` per CONFLICT refusal (a missing-capability refusal writes none), and `step-deferred` (`data.cause` `budget` or `chain`) and `vote-reseated` where the conductor recorded them with `docket run fact add`. The conversation half: cherry-pick conflicts resolved by hand, `parked-base-ancestry`, and any deferral or re-seat the conductor did not record reach only the conversation that drove the wave, as the `coordination` section wave.js computes and returns from each wave; its `reseats` counts judges re-spawned after a missing cast (wave.js runGate), not re-seat casts that landed | an issue repeatedly reaching `fix@3`, or parking on ancestry, means parallel writers collide on the same files: serialize those lanes or split the charter, not a bigger budget; a first-pass gate pass rate falling across runs while spend holds is the review stage catching what implement should; a store-only retro sees the store half alone and says so instead of reporting a clean row |
 | Trust drift | `trust-added`/`trust-removed` (store-level; query with `--all-projects` — visible either way, but only that flag proves you saw all of them) | **an entry the operator does not recognize is a finding, and you raise it first** |
 | Config churn | your own proposals per run over time | churn trending up is a candidate signal that docket-bootstrap mined the repo wrong; confirm it from the churning proposals' common origin, then fix the source, not each symptom |
-| Routing drift | the requested pair only, from step rows: `model_requested` / `effort_requested` (below). The resolved pair on a step row is `unknown` unless the runtime supplied an observation, so it measures nothing. The serving model reaches only the driving conversation, as `model_observations` from wave-usage.js (see the four metadata keys below) | a served model that differs from the requested one, in the driving conversation's wave-usage results, means policy asks for a model it does not get; a store-only retro cannot see it and says so instead of reporting a clean row |
+| Routing drift | both pairs from step rows: `model_requested` / `effort_requested` and `model_resolved` / `effort_resolved` (below). The resolved pair is the served model and effort the wave annotates from the step's transcript; where a row still carries `unknown` (every row from 2026-09-05 until the annotate path was repaired), run wave-usage.js's back-fill over the window before reading the row, and say which rows it could not fill | a served pair that differs from the requested one means policy asks for a model or effort it does not get; a row left `unknown` after the back-fill is a gap in the row, never a clean row |
 | Vote calibration | `vote_rule` outcomes vs the threshold | a rule that never fails, or always fails, is a threshold not doing work |
 | Seat calibration | per cast, from `docket vote show <proposal>` (the proposal per vote step is on `run report`'s step `vote`): `confidence`, `domain_relevance`, `effective_weight` (their product), `verdict`. Investigation depth is the `tool_uses` unit the seats-mode wave-usage.js join back-fills per seat: `run report`'s `vote_usage` shows it summed per run only, and the per-seat rows reach only the conversation that drove the panel, like the serving model above. The later outcome is the same issue's later trail, with `--all-projects`: `step-routed` with detail `fix-loop` or `waiting-human`, a `fix-round` resolution, a `review-gap` issue filed against it | a seat whose confidence stays high while its tool use stays near zero, or whose approvals precede a later park or fix round on the same item, is mis-calibrated: **inferred** until about five runs carry the pattern, never observed from one. Operator-facing only: never fed back into a seat's brief, and never a tally input |
 | Variant fit | `[executors]` rows vs attempts + cost at that variant | a row failing repeatedly at its variant is mis-sized, not under-budgeted |
@@ -154,9 +155,12 @@ rule exists; empty means the job is creating it, not calibrating it. A rule
 whose outcome never differs from a plain human gate is a rule to question,
 not tune.
 
-**The four metadata keys, two of them observed.** Every completed step
-carries `model_requested` / `effort_requested` and `model_resolved` /
-`effort_resolved`; only the requested pair is observed. Read it off the
+**The four metadata keys.** Every completed step carries
+`model_requested` / `effort_requested`, set at routing, and
+`model_resolved` / `effort_resolved`, annotated from the transcript's
+assistant turns (`message.model` and the top-level `effort`); a row
+reading `unknown` is one the annotate path missed, which wave-usage.js
+back-fills from the transcript. Read them off the
 step itself (`docket step show` /
 `step context`): `run report`'s `metadata` is a rollup of key to distinct
 values with counts, so it shows aggregate skew but never which step asked

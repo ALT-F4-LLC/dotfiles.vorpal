@@ -1,6 +1,6 @@
 ---
 node: judge-testing
-version: 18
+version: 19
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -85,9 +85,11 @@ investigation cues, not findings by themselves. A supported source analysis
 can establish risk, distinct from a reproduced flaky outcome; repeated passes
 do not establish determinism.
 
-**Verify the evidence.** Follow rerun-discipline: independently reproduce the
-change's claimed test evidence in full once per panel, plus required
-reproductions of supplied FAILED gates or disputed gate outcomes. Additional
+**Verify the evidence.** Follow rerun-discipline: read the engine's recorded gate
+results for the reviewed candidate first, reproduce the claimed test evidence in
+full only where that record is missing, covers another target, or omits a claimed
+command, and run the required reproductions of supplied FAILED gates or disputed
+gate outcomes. Additional
 probes answer a specific unresolved question; blanket mutation campaigns are
 not required. Apply the evidence rules to state,
 discovery, skips, exclusions, caching, and failure attribution. A current

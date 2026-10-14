@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 17
+version: 18
 ---
 # Re-run discipline
 
@@ -9,13 +9,18 @@ evidence rules. Engine gate results recorded only in the ledger are unavailable
 to a review step until supplied in its context or retrieved. Do not infer their
 outcomes from their absence.
 
-- `judge-testing` independently reproduces the change's claimed test
-  evidence in full: one routine full reproduction per panel. Identify the
-  commands and evaluated state; report missing or blocked evidence explicitly.
-  A reproduction expected to run longer than four minutes runs in the background:
-  issue its bare command with `run_in_background` set, then wait for it in calls
-  each bounded under four minutes. No single call blocks for the reproduction's
-  duration.
+- `judge-testing` starts from the engine's own record, not the implementer's
+  claim: retrieve the candidate's recorded gate results (`docket step gates
+  STEP-N` for the step that produced the reviewed state) and treat a gate the
+  engine ran against the reviewed target as OBSERVED evidence of that command's
+  outcome. Reproduce the claimed test evidence in full only when that record is
+  unavailable, covers a different target than the reviewed candidate, or omits
+  a command the change-summary claims; otherwise spend execution on targeted
+  probes. Identify the commands and evaluated state either way; report missing
+  or blocked evidence explicitly. A reproduction expected to run longer than
+  four minutes runs in the background: issue its bare command with
+  `run_in_background` set, then wait for it in calls each bounded under four
+  minutes. No single call blocks for the reproduction's duration.
 - Every other lens runs only the commands needed to investigate a specific
   candidate finding. State the question before running; any resulting finding
   names the command and explains why its result matters. A probe need not

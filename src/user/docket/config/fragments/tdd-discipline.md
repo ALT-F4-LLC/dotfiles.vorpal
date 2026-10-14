@@ -1,6 +1,6 @@
 ---
 fragment: tdd-discipline
-version: 7
+version: 8
 ---
 # Test discipline
 
@@ -19,6 +19,10 @@ violations and survive changes to incidental implementation details.
 - **Complete the loop.** Implement the behavior, observe the test pass, then
   refactor with relevant tests green. Run required checks before claiming
   completion.
+- **Scope the loop's runs.** While iterating, run the tests of the packages or
+  modules the change touches, not the full suite. The full suite runs once, as
+  part of the required gate set under completion-gates, and a run expected to
+  exceed four minutes takes that fragment's background form.
 - **Pin behavior at the seam.** Test through the unit's public interface. Test
   an internal concept separately when it has a coherent responsibility and
   meaningful contract, using its smallest stable interface. Do not expose

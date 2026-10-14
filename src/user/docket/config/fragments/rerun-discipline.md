@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 18
+version: 19
 ---
 # Re-run discipline
 
@@ -19,8 +19,10 @@ outcomes from their absence.
   probes. Identify the commands and evaluated state either way; report missing
   or blocked evidence explicitly. A reproduction expected to run longer than
   four minutes runs in the background: issue its bare command with
-  `run_in_background` set, then wait for it in calls each bounded under four
-  minutes. No single call blocks for the reproduction's duration.
+  `run_in_background` set, then wait for it with Bash, `timeout` 180000
+  (milliseconds), running `tail -f` on the background task's output file, and
+  read the output with `tail -n 20` on that file. No single call blocks for the
+  reproduction's duration.
 - Every other lens runs only the commands needed to investigate a specific
   candidate finding. State the question before running; any resulting finding
   names the command and explains why its result matters. A probe need not

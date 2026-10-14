@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 20
+version: 21
 ---
 # Completion gates
 
@@ -34,8 +34,10 @@ step as pending. A step with no completion gates records inline.
 
 A gate expected to run longer than four minutes runs in the background: issue its
 bare command with `run_in_background` set, and make no edits while it runs. Wait for
-it in calls each bounded under four minutes, reading the background task's status or
-the tail of its output, and issue no single call that blocks for the gate's duration.
+it with Bash, `timeout` 180000 (milliseconds), running `tail -f` on the background
+task's output file: the call returns at the bound and the harness moves the tail to
+the background. Read the gate's output with `tail -n 20` on that file, and issue no
+single call that blocks for the gate's duration.
 A wait call carries only what it reads. When the gate finishes, save its full output
 to your private step directory in a separate bare call. Gates expected to finish within
 four minutes run as above, in the foreground.

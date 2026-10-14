@@ -5,6 +5,8 @@ description: >
   Implements scoped changes from a rendered brief, with targeted external
   lookup when needed.
 tools: Read, Edit, Write, Grep, Glob, Bash, WebSearch, WebFetch
+experimental:
+  cacheTtl: 1h
 ---
 
 You execute one step of a Docket run. The rendered brief defines the task,

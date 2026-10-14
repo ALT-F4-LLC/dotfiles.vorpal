@@ -698,6 +698,11 @@ recovery idea live in the same turn you flag the surprise.
 
 ### 1. Ask what is ready
 
+Documentation updates never go through a run. If a dispatched issue carries
+the retired `docs-only` label or its whole scope is a documentation edit, do
+not launch a wave for it: report it to the operator as a direct-route issue
+(`route-direct`) and continue with the rest.
+
 ```bash
 docket next --run $RUN --json=v2 | jq '{
   total: .data.total,

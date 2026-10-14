@@ -113,7 +113,7 @@ reported `security-change@2525792` for `@25`. `docket workflow lint <file>
 runs:
 
 ```json
-{"ok":true,"data":{"name":"docs-only","version":19,
+{"ok":true,"data":{"name":"small-change","version":19,
  "sha256":"1b4969…","registration":"unchanged"},"message":"…"}
 ```
 

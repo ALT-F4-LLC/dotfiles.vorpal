@@ -139,7 +139,6 @@ require_bounded() { # <workflow> <step>...
 require_bounded security-change threat-model implement synthesize-findings drain-highs verify-ac
 require_bounded standard-change implement synthesize-findings drain-highs verify-ac
 require_bounded disposition dispose verify-ac
-require_bounded docs-only implement review verify-ac
 require_bounded investigation investigate research report
 require_bounded small-change implement review verify-ac
 require_bounded spec-doc research tdd-author-security tdd-author adr-author ux-spec-author prd-author \

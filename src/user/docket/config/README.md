@@ -49,9 +49,9 @@ throughout this corpus (`ac-commands`, `secret-scan`,
 `blocked`). This file states the shape for new additions; it does not
 mandate renaming anything that already conforms.
 
-Most gate names are this repo's own `just` recipes. The three light tracks
-(docs-only, trivial-change, small-change) bind on a label alone, so each
-carries a `diff-scope-<label>` gate (`diff-scope-docs`, `diff-scope-trivial`,
+Most gate names are this repo's own `just` recipes. The two light tracks
+(trivial-change, small-change) bind on a label alone, so each
+carries a `diff-scope-<label>` gate (`diff-scope-trivial`,
 `diff-scope-small`) on implement and fix that refuses a working-tree
 footprint the label does not promise (`.docket/bin/diff-scope`);
 a repository bound to the corpus supplies those three recipes like any other

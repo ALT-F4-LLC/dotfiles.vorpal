@@ -255,6 +255,11 @@ with `docket-groom`, and are applied here as written there:
   belongs to another route (the operator's own brief, a
   loop): list it as routed elsewhere (step 4 covers why activation would
   refuse it anyway if named for this run).
+- **Documentation-only.** Documentation updates never go through a run:
+  no workflow binds the retired `docs-only` label. An issue whose whole
+  scope is a documentation edit is routed elsewhere: list it with
+  `route-direct`, never rank it, and never plan it into a run. Design
+  documents authored through `spec-doc` are a separate track and stay.
 - **Unsized or oversized.** An issue whose `size` is null or `unknown`,
   or whose criteria describe two or more independent outcomes under the
   [sizing reference](../docket/references/sizing.md)'s cap, has not
@@ -696,7 +701,7 @@ factors are in the pinned definition. `grep -n max_fix_loops
 ~/.docket/config/workflows/<wf>.toml` gives the bound: it lives on the step
 that owns the loop, which is `reconcile` on standard-change, ui-change,
 security-change, spec-doc and spec-project, `review` on small-change,
-`verify-ac` on docs-only, disposition and trivial-change, and the
+`verify-ac` on disposition and trivial-change, and the
 `report-vote` vote on investigation. trivial-change is the one track that
 declares `max_fix_loops = 1`. The round is the `loop = true` step plus every
 step in its `after_loop` closure: the `after_loop` step and every step
@@ -706,8 +711,7 @@ change tracks it includes verify-ac, its vote, and `drain-highs`, not only
 the fix, judges and synthesize-findings. Read the step names, not the costs
 alone: the fix step is called `revise-spec` on spec-project,
 `revise-investigation` on investigation and `revise-disposition` on
-disposition, docs-only's `review` is a single `judge-correctness` with no
-fanout and the track has no synthesize-findings step at all, and spec-doc's
+disposition, and spec-doc's
 five `revise-*` variants are mutually exclusive `when`s: exactly one
 fires, so its round carries 1.50 once, not five times.
 
@@ -807,7 +811,7 @@ planned width is not a guarantee of runtime capacity.
 record it.** Binding is exactly-one-match over the corpus's `[match]` blocks
 and every one discriminates on labels alone (§2): `standard-change` is the
 baseline that matches any issue carrying none of the variant labels, and
-each variant binds on its own label or labels: `ui`, `docs-only`,
+each variant binds on its own label or labels: `ui`,
 `investigation`, `disposition`, `spec-doc`, `spec-project`, any of
 `security-change`, `security-load-bearing`, or `security` (the same set as
 policy's `[security].labels`), and the two size labels, `small`

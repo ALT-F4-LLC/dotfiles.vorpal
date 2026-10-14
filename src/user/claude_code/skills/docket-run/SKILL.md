@@ -870,8 +870,9 @@ behind another's: a dispatch with six issues is six launches. Each launch
 gets only its issue's rows and its `unit`; never merge two issues into
 one launch, which wave.js refuses. Writers the engine never co-staged run
 in separate launches, and the engine's claim check keeps them apart: the
-later claimant settles `skipped-not-ready`, and the refill at its return
-relaunches it (**Refill freed launch slots** below). Emit all N launches in ONE
+later claimant settles `skipped-not-ready`, and the refill relaunches it
+at the next return that is not a bounce (**Refill freed launch slots**
+below). Emit all N launches in ONE
 assistant message, as separate `Workflow` calls, never held back for a
 sibling's return: on past runs, launches spread over several messages
 started up to 17 minutes after the first, while one message put them
@@ -983,7 +984,7 @@ proves only that the module matches the object's own `rows_sha256`, so
 pass each object whole to its own launch.
 
 Pass rows through unchanged beyond the kind filter, the refill's
-settled filter below, and the split, with no reordering,
+settled and held filter below, and the split, with no reordering,
 dropping, or adding, and never sequence or hold rows back otherwise; wave.js's own `stage` labels are one global schedule, and
 offering a `staged` row ahead of readiness is the mechanism, not a
 mistake.
@@ -1003,12 +1004,13 @@ carries content.
 **Refill freed launch slots each time a launch returns.** Parallelism
 stays at the 20-launch cap until no work remains: every launch return
 frees a slot, and you fill it in the same turn, never waiting for the
-slowest lane or for the dispatch close. At open, keep two files under the
-session's scratchpad beside the kept rows file: `$SETTLED_FILE`, created
-empty with `cat /dev/null > "$SETTLED_FILE"`, and `$PENDING_FILE`, a copy
-of the kept rows. `$SETTLED_FILE` lists the steps that need no relaunch
-this dispatch; every other row of the manifest of record is work that
-remains. Each time one launch returns while the dispatch is open, right after
+slowest lane or for the dispatch close. At open, keep three files under
+the session's scratchpad beside the kept rows file: `$SETTLED_FILE` and
+`$HELD_FILE`, each created empty with `cat /dev/null > <file>`, and
+`$PENDING_FILE`, a copy of the kept rows. `$SETTLED_FILE` lists the steps
+that need no relaunch this dispatch, and `$HELD_FILE` the steps of
+refused lanes waiting for a return that can have freed their holder;
+every other row of the manifest of record is work that remains. Each time one launch returns while the dispatch is open, right after
 launching its usage join (step 3), before waiting on the rest:
 
 1. Run `docket dispatch extend --run $RUN --json`. It appends the steps
@@ -1042,8 +1044,21 @@ launching its usage join (step 3), before waiting on the rest:
    reap raises a write-class hold that denies the refill until the ack
    lands; once acked, the holder's scope is free, so a lane it refused
    claims at this return's refill instead of cycling until the close.
-4. Rebuild the pending rows from the manifest of record:
-   `jq -c --rawfile settled "$SETTLED_FILE" 'select(.step as $id | $settled | split("\n") | index([$id]) | not)' "$ROWS_FILE" > "$PENDING_FILE"`.
+4. Hold a bounce's refused lanes, release every held lane at any other
+   return, then rebuild the pending rows. A return is a *bounce* when its
+   launch claimed nothing because every claim was refused: every row
+   settled `skipped-not-ready` or `skipped-chain-dead`, at least one
+   `skipped-not-ready`, so step 2 settled nothing and step 3 reaped
+   nothing. Test it with
+   `jq -e 'any(.[]; .status == "skipped-not-ready") and all(.[]; .status == "skipped-not-ready" or .status == "skipped-chain-dead")' "$STATUSES_FILE"`.
+   On a bounce (exit 0), append its rows to the hold with
+   `jq -r '.[].step' "$STATUSES_FILE" >> "$HELD_FILE"`; lanes held at
+   earlier returns stay held. On any other return (exit 1), empty the
+   hold with `cat /dev/null > "$HELD_FILE"`: that launch claimed or
+   settled steps, or step 3 reaped a dead holder at it, so a holder may
+   have released its scope or headroom. Then rebuild the pending rows from
+   the manifest of record:
+   `jq -c --rawfile settled "$SETTLED_FILE" --rawfile held "$HELD_FILE" 'select(.step as $id | ($settled | split("\n")) + ($held | split("\n")) | index([$id]) | not)' "$ROWS_FILE" > "$PENDING_FILE"`.
 5. Re-split the pending rows with lane_units.py into a fresh
    `$LAUNCH_DIR`, with the same `--tribunal`, `--write-cap` (omitted when
    the open's answer has no `limits.write`), and `--integrated`, and
@@ -1053,14 +1068,16 @@ launching its usage join (step 3), before waiting on the rest:
    `deferred.jsonl` for a later return.
 6. Launch every unit it wrote, in one message exactly as above, each
    passing its `args-<i>.json` from the fresh `$LAUNCH_DIR`. That covers
-   lanes deferred past the cap, every `skipped-not-ready` lane with the
-   rows behind it, rows appended to a lane that was in flight at an
-   earlier return, and every lane extend appended. Never hold a deferred
-   lane while fewer than 20 launches run, and never hold a
-   `skipped-not-ready` lane for a later return or the next dispatch: it
-   relaunches at the return that settled it, even when no other launch
-   is in flight. Add the new launches' transcript directories to the
-   watcher below, restart it, then end the turn again.
+   lanes deferred past the cap, every `skipped-not-ready` lane step 4
+   left unheld with the rows behind it, rows appended to a lane that was
+   in flight at an earlier return, and every lane extend appended. Never
+   hold a deferred lane while fewer than 20 launches run. Relaunch a
+   `skipped-not-ready` lane only at a return where a holder released its
+   scope (an in-dispatch launch returned having claimed or settled steps,
+   or a dead holder was reaped at that return) or at a non-bounce launch
+   return, never at a bounce return. Add the new launches' transcript
+   directories to the watcher below, restart it, then end the turn
+   again.
 
 Re-splitting all pending rows, never the appended rows alone, keeps both
 invariants lane_units.py computes: an appended write-class row never runs
@@ -1068,23 +1085,32 @@ beside an uncostaged writer in another launch, and each launch's class
 share reflects the pending manifest's headroom. A launch already in
 flight keeps the class share of its own split, so the shares can briefly
 sum past the engine's limit; the engine refuses the extra claim, the row
-settles `skipped-not-ready`, and the refill at that return relaunches it.
-A wave reports why a claim was refused, not which launch holds the scope,
-so there is no holder tracking: a refused lane relaunches at every
-return that settles it, and a retry whose holder still runs is refused
-again at the cost of one claim probe plus the per-return usage join its
-launch's return triggers (item 1 of **3. Close the dispatch**), which
-runs even over a wave that claimed nothing. The retries end when the holder
-releases the scope or headroom: an in-dispatch launch records, or its
-dead holder is reaped and acked with `--ack-reap` at the return that
-reports it (step 3 above), so the retries end before the dispatch
-closes; another session's claim records or its lease ends, a detached
-pre-gate finishes.
+settles `skipped-not-ready`, and the refill relaunches it at the next
+return that is not a bounce. A wave reports why a claim was refused, not
+which launch holds the scope, so there is no holder tracking, only the
+hold. A held lane relaunches only at a return where a holder released
+its scope or at a non-bounce launch return, and never at a bounce return,
+a return whose launch claimed nothing because every claim was refused.
+A holder releases its scope when an in-dispatch launch returns having
+claimed or settled steps, or when its dead holder is reaped and acked
+with `--ack-reap` at the return that reports it (step 3 above). Without
+the hold, a lane refused by a live in-dispatch writer bounced back every
+few seconds until that writer finished, each bounce one more launch and
+one more usage join. Every launch return, a bounce included, still gets
+its usage join (item 1 of **3. Close the dispatch**), which runs even
+over a wave that claimed nothing; the hold removes the bounces that
+would follow, never a join. A relaunch whose holder still runs is
+refused again and held again at the cost of one claim probe plus that
+join.
 
 The dispatch closes only when no launch is in flight and the last
 return's re-split had nothing to launch: extend appended nothing
 launchable, and every row of the manifest of record is in
-`$SETTLED_FILE`. The loop ends only when no work remains in this
+`$SETTLED_FILE` or `$HELD_FILE`. The loop ends only when no work remains
+in this dispatch. A row still held at the close waits on a holder no
+later return in this dispatch could release: another session's claim, a
+detached pre-gate, or an in-dispatch holder that returned while the held
+lane's own launch was still in flight. The engine offers it again next
 dispatch.
 
 **A launch that never notifies is a stall, not a wait.** The completion
@@ -1215,9 +1241,11 @@ and `skipped-chain-dead` are all re-offered next dispatch.
 held the scope or the class headroom, or the claim or the pre-claim probe
 found the step held while a detached pre-gate measures its target; nothing
 was claimed) is relaunched
-by the refill at the return that settled it, with the
-`skipped-chain-dead` rows behind it, and stays pending in this dispatch
-until a claim succeeds. Every
+by the refill at the next return that is not a bounce, with the
+`skipped-chain-dead` rows behind it, held through bounce returns (step 4
+of **Refill freed launch slots each time a launch returns**), and stays
+in this dispatch until a claim succeeds or the dispatch closes with it
+held. Every
 executor row is claimed by its claim agent before the executor spawns,
 so a row that settled without a record usually leaves a live claim: the
 row's text names its owner and parked token when the wave knows it.

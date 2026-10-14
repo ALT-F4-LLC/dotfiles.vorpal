@@ -121,7 +121,7 @@ one fix round re-entering at verify. No judge at all: across the 225
 distinct standard-change issues in every project's ledger, the
 three-judge panel's whole in-run effect on changes of 20 lines or
 fewer was a blocker fix round on 7 of 64, and the completion gates
-(build, tests, secret-scan, vuln-scan, doc-validate), the AC
+(build, tests, self-hygiene, secret-scan, vuln-scan, doc-validate), the AC
 verification and the tribunal are the coverage here. Because that
 7-in-64 is not zero, the `small` label wins when an issue carries
 both, so a doubtful case takes the judged track, and the fixer reads

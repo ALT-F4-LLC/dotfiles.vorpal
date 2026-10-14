@@ -527,7 +527,12 @@ Record these findings alongside the value decision:
   [brief](../brief/SKILL.md)'s route rules define and docket-plan and
   brief read; every workflow's `unless_labels` lists the two non-run
   values.
-  Judge it from the issue's body, files, scope, and labels: `route-run`
+  Judge it from the issue's body, files, scope, and labels. Documentation
+  updates never go through a run: an issue whose whole scope is a
+  documentation edit, or that carries the retired `docs-only` label, gets
+  `route-direct` whatever its size, and loses `route-run` and `docs-only`
+  if it has them. Design documents authored through `spec-doc` are a
+  separate track and stay `route-run`. Otherwise `route-run`
   for one-shot work a worker can finish without a question, whatever its
   size or security boundary, including trivial work that leaves no
   decision open; `route-direct` when it is trivial but leaves a decision

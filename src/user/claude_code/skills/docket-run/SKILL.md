@@ -78,32 +78,26 @@ turn open.
 
 **A gate that parks one issue does not stop the run or you.** A park
 holds its issue (engine R2b); the run stays `active` and `next` keeps
-offering other issues' rows. Before any question goes through the
-question tool, check whether this run has work the answer does not gate:
-a launch still in flight, or `next` still offering unaffected rows. If
-so, ask non-blocking: render the text and labels as plain text,
-recommended option first, send one `PushNotification` naming the run and
-gate, then continue the loop in the same turn (close, next, open,
-launch) and end the turn on the next launch in flight, exactly as if no
-question were out. The question tool itself freezes the conversation
-until answered, so treat that as expensive. A valid answer is the
-operator's next typed message naming a rendered label (or `other:
-...`); anything else is not an answer. Hold at most one open question: a
-further park while one is open joins the same question at your next
-report, and the read-back answer carries a ruling per labelled gate. Use
-the blocking question tool only when nothing can move until the operator
-rules (`next` offers nothing but parked issues and no launch is in
-flight).
+offering other issues' rows. Every question still goes through the
+question tool, never plain text. Before asking, check whether this run has
+work the answer does not gate: a launch still in flight, or `next` still
+offering unaffected rows. If so, hold the question, send one
+`PushNotification` naming the run and gate, and continue the loop (close,
+next, open, launch) until nothing unaffected can move; then ask. The
+question tool freezes the conversation until answered, so ask once, at
+that point. Hold at most one open question: a further park joins the same
+question, and the answer carries a ruling per labelled gate. Ask at once
+when nothing can move until the operator rules (`next` offers nothing but
+parked issues and no launch is in flight).
 
-**The same non-blocking rule covers every boundary question**, not only
-gate parks: a worktree cleanup, a permission or classifier prompt on a
-conductor-side command, or a disposition outside the manifest. The
-question tool holds a launch only when the answer changes what the wave
-would run (a stale target, pin drift, a manifest-changing scope edit, or
-a tree state failing every lane's gate). A tree state failing only writer
-lanes does not hold the launch: launch, name those lanes in the
-notification, and let the standing machine-caused-gate-failure ruling
-answer their parks once fixed.
+**The same rule covers every boundary question**, not only gate parks: a
+worktree cleanup, a permission or classifier prompt on a conductor-side
+command, or a disposition outside the manifest. The question holds a
+launch only when the answer changes what the wave would run (a stale
+target, pin drift, a manifest-changing scope edit, or a tree state failing
+every lane's gate). A tree state failing only writer lanes does not hold
+the launch: launch, name those lanes in the notification, and let the
+standing machine-caused-gate-failure ruling answer their parks once fixed.
 
 **Helpers.** An `Agent` you spawn is visible only through its completion
 notification and `SendMessage`; its idle notification is not an event.
@@ -309,6 +303,14 @@ than asking, as `docket-postmortem` and `docket-plan` do.
   `waiting-human`.
 
 ## Before the loop
+
+**Seat model.** A conductor session runs on Sonnet 5.5 at medium effort.
+The loop makes no routing decisions, every reserved matter goes to the
+advisor first, and the measured cost of a conductor is context re-read
+per turn, not reasoning; the advisor stays on Opus 5.5 (`advisor_model`
+in settings). If the session is on another model, say so in the
+activation report and continue; switching models mid-run is the
+operator's call.
 
 **Permission surface.** Wave executors run engine verbs inside your
 session's permission context; a default-mode prompt on their first Bash
@@ -672,7 +674,7 @@ exactly three things:**
    or a vote step whose tally fell short) and `next` offers only parked
    rows with no launch in flight. Apply every standing ruling under
    **Gates** first, the twice-classifier-stopped ruling among them, then
-   present whatever remains to the operator and wait. A vote step merely ready is work for you, mid-loop, not this.
+   present whatever remains to the operator through the question tool and wait. A vote step merely ready is work for you, mid-loop, not this.
 2. An engine **refusal** you cannot resolve: report it verbatim and stop.
 3. `next` returns **no rows and nothing is running**, and the roster is
    covered. Compare `run status`'s bound-issue roster against issues

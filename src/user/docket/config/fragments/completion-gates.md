@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 18
+version: 19
 ---
 # Completion gates
 
@@ -25,6 +25,14 @@ amend or rebase that leaves `git rev-parse 'HEAD^{tree}'` unchanged changes no i
 keep those results rather than rerunning. If a gate changes checked files, validate
 the resulting state before recording. Run no gate after `docket step record`; the
 recorded step belongs to the engine.
+
+A gate expected to run longer than four minutes runs in the background: issue its
+bare command with `run_in_background` set, and make no edits while it runs. Wait for
+it in calls each bounded under four minutes, reading the background task's status or
+the tail of its output, and issue no single call that blocks for the gate's duration.
+A wait call carries only what it reads. When the gate finishes, save its full output
+to your private step directory in a separate bare call. Gates expected to finish within
+four minutes run as above, in the foreground.
 
 Finish every self-check you run (probes, mutants, and advisor review) before the
 required gate set runs, so no gate run precedes a further edit.

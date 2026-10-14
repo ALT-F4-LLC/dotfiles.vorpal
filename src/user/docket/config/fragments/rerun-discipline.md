@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 15
+version: 16
 ---
 # Re-run discipline
 
@@ -12,6 +12,8 @@ outcomes from their absence.
 - `judge-testing` independently reproduces the change's claimed test
   evidence in full: one routine full reproduction per panel. Identify the
   commands and evaluated state; report missing or blocked evidence explicitly.
+  A reproduction expected to run longer than four minutes follows the background
+  launch and bounded-wait rule in completion-gates.
 - Every other lens runs only the commands needed to investigate a specific
   candidate finding. State the question before running; any resulting finding
   names the command and explains why its result matters. A probe need not

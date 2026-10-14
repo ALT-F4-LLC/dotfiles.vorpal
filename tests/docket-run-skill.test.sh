@@ -1368,15 +1368,19 @@ fi
 # reading only the store can count them.
 #
 #   y1 delete the step-deferred line from the verbs heredoc
-#   y2 map `skipped-chain-dead` to cause `budget`
+#   y2 offer the conductor a chain fact again (drop the engine-records sentence)
 #   y3 delete the taught vote-reseated line outside the heredoc, leaving the
 #      checkpoint's copy
 facts_anchor='**Record each deferral and re-seat as a run fact once the close lands.**'
 if paragraph "$facts_anchor" "${WORK}/facts"; then
     states "run facts: budget statuses map to cause budget" \
         "${WORK}/facts" '`not-launched-writer-budget` or `not-launched-token-budget` (cause `budget`)'
-    states "run facts: a chain-dead row maps to cause chain" \
-        "${WORK}/facts" '`skipped-chain-dead` (cause `chain`)'
+    if paragraph '`not-launched-run-parked` and `skipped-not-ready` are neither cause' "${WORK}/nofact"; then
+        states "run facts: the conductor files no chain fact, the engine records it at close" \
+            "${WORK}/nofact" 'the engine records the `chain` fact itself when the dispatch closes'
+    else
+        bad "run facts: no single paragraph names the rows that get no conductor fact"
+    fi
     states "run facts: every seat a reseated row names gets a fact" \
         "${WORK}/facts" "for every seat a row's \`reseated: {proposal, seats}\` names"
 else

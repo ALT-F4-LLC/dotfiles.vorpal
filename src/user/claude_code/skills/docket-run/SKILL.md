@@ -218,7 +218,7 @@ docket run abandon $RUN --reason "advisor-first ruling: <the advisor's answer, q
 docket step hold STEP-N --reason "advisor-first ruling: <the repeated failure, and the advisor's answer, quoted>" < <scratchpad>/conductor.d/$RUN.token
 docket run budget $RUN --set <n> --reason "advisor-first ruling: <the advisor's answer, quoted>" --if-version <the version you read>
 docket dispatch close --run $RUN --skip-integration-check "advisor-first ruling: <the advisor's answer, quoted>" --json < <scratchpad>/conductor.d/$RUN.token
-docket run fact add $RUN --kind step-deferred --step STEP-N --cause <budget|chain> --reason "<the row's status>" < <scratchpad>/conductor.d/$RUN.token
+docket run fact add $RUN --kind step-deferred --step STEP-N --cause budget --reason "<the row's status>" < <scratchpad>/conductor.d/$RUN.token
 docket run fact add $RUN --kind vote-reseated --proposal <proposal-id> --voter <seat> --reason "<why the seat was re-seated>" < <scratchpad>/conductor.d/$RUN.token
 docket run note add $RUN --authority conductor --text "<the ruling>" < <scratchpad>/conductor.d/$RUN.token
 docket run note add $RUN --authority operator --text "<their words>" < <scratchpad>/conductor.d/$RUN.token
@@ -1283,16 +1283,17 @@ facts are how a retro reading only the store counts them; the
 `coordination` counts stay as they are. Per launch, for every `statuses`
 row whose status is `not-launched-agent-budget`,
 `not-launched-writer-budget` or `not-launched-token-budget` (cause
-`budget`) or `skipped-chain-dead` (cause `chain`), and for every seat a
-row's `reseated: {proposal, seats}` names:
+`budget`), and for every seat a row's `reseated: {proposal, seats}` names:
 
 ```bash
-docket run fact add $RUN --kind step-deferred --step STEP-N --cause <budget|chain> --reason "<the row's status>" < <scratchpad>/conductor.d/$RUN.token
+docket run fact add $RUN --kind step-deferred --step STEP-N --cause budget --reason "<the row's status>" < <scratchpad>/conductor.d/$RUN.token
 docket run fact add $RUN --kind vote-reseated --proposal <proposal-id> --voter <seat> --reason "<why the seat was re-seated>" < <scratchpad>/conductor.d/$RUN.token
 ```
 
 `not-launched-run-parked` and `skipped-not-ready` are neither cause, so
-they get no fact. A panel
+they get no fact. `skipped-chain-dead` rows get none from the conductor
+either: the engine records the `chain` fact itself when the dispatch
+closes. A panel
 you convened records its re-seats the same way, per **A panel that
 cannot finish escalates**.
 

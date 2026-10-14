@@ -281,6 +281,13 @@ Apply these rules in order:
    ask it under §1.
 6. **Other one-shot work:** recommend `/docket-plan`.
 
+**Documentation updates never go through a run.** When the whole scope is a
+documentation edit, rules 3 through 6 never recommend `/docket-plan`: recommend
+direct execution, or `/goal` when the operator wants it now in this
+conversation. An issue that tracks the work gets `route-direct` through
+`/docket-groom`. Design documents authored through `spec-doc` are a separate
+track.
+
 Resolve an unknown Shape before recommending execution, and the rule 5
 choice between now and a docket run when the operator has not stated it. Investigative
 uncertainty may travel with a docket brief; an unresolved operator decision

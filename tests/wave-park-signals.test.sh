@@ -102,6 +102,10 @@ ok(!chainDead(returned(STEP_687)),
 // ---- The record tail parks its ISSUE, never the run ----
 // The engine parks the issue (R2b) and leaves the run active for every other
 // lane; RUN-90 lost 1372 of 1656 dispatched rows to the old run-wide reading.
+ok(!laneParked(returned('Did the work.\n\nSTEP-12 recorded (pending)')),
+    'a pending record tail (gates still running detached) does not park the lane')
+ok(recordTail('Did the work.\n\nSTEP-12 recorded (pending)') === 'pending',
+    'a pending record tail reads as recorded, not unrecorded')
 ok(laneParked(returned('Did the work.\n\nSTEP-12 recorded (waiting-human)')),
     'the mandated record tail (waiting-human) parks the lane')
 ok(laneParked(returned('STEP-12 recorded (paused)')),

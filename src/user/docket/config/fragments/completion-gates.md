@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 19
+version: 20
 ---
 # Completion gates
 
@@ -23,8 +23,14 @@ each gate's full output to a file in your private step directory, so one run ser
 every later reading. A later change to a gate's inputs invalidates its result. An
 amend or rebase that leaves `git rev-parse 'HEAD^{tree}'` unchanged changes no input:
 keep those results rather than rerunning. If a gate changes checked files, validate
-the resulting state before recording. Run no gate after `docket step record`; the
-recorded step belongs to the engine.
+the resulting state before recording. Run no gate after `docket step record`: the
+engine runs a gated step's gates in a detached child and the step does not poll
+inside its turn. The record output is then only "Recorded, gates and routing
+running detached:" and carries no `failed_gates`, so it is not a result. Read the
+terminal state once with `docket step show STEP-N --json` (and `docket step gates
+STEP-N` for a failed gate's captured output), never in a loop; a status other than
+done, waiting-human, or paused means the gates have not finished, and you report the
+step as pending. A step with no completion gates records inline.
 
 A gate expected to run longer than four minutes runs in the background: issue its
 bare command with `run_in_background` set, and make no edits while it runs. Wait for

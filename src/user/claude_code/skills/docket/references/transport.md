@@ -106,7 +106,7 @@ Success:
 {"ok": true, "data": { ... }, "message": "Created DKT-1: Fix login bug"}
 ```
 `message` is optional. Parse the result fields, not human-readable message
-text. See [SKILL.md](../SKILL.md) on `step record`'s success-vs-passed
+text. See [SKILL.md](../SKILL.md) on `step record`'s success-vs-passed, detached-gate
 distinction.
 
 Error:

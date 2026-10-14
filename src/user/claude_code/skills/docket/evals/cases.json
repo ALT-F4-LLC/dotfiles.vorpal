@@ -12,6 +12,10 @@
     "request": "A step record returned exit 0 and {\"ok\":true,\"data\":{\"step\":\"STEP-12\",\"status\":\"done\",\"failed_gates\":[]}}. This is the final required step; every deliverable and gate has been confirmed. Decide whether the requested work is complete."
   },
   {
+    "id": "detached-gates",
+    "request": "A step record for a step that declares completion gates returned exit 0 with the line 'Recorded, gates and routing running detached:' and the step's status. There is no failed_gates field. The goal is a completed step with passing gates. Decide whether it is complete and propose the inspection."
+  },
+  {
     "id": "interrupted-record",
     "request": "The transport timed out during docket step record STEP-12. You have no receipt or subsequent readback. A token file remains. Propose only the next inspection commands needed to establish whether recording landed; decide whether completion can currently be claimed."
   },

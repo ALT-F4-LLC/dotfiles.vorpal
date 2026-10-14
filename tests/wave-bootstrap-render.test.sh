@@ -243,17 +243,17 @@ for (const isolated of [true, false]) {
         ok(!/<<'EOF' \.\.\. EOF/.test(bullet) && append !== null,
             `${label}: no single heredoc is the bullet's only channel`)
 
-        // ---- a writer's record call outlasts the default Bash timeout ----
-        // The engine reruns every completion gate at record, so the call needs
-        // a timeout between 400000 and 600000 ms, stated inside obligation 3.
+        // ---- the engine runs a gated step's gates detached ----
+        // Record returns at once, so obligation 3 carries no long Bash timeout
+        // and tells the writer to read the terminal state with `step show`.
         if (isWrite) {
             const start = head.indexOf('3. Record it yourself with `docket step record`')
             const stop = head.indexOf('\n4. ', start)
-            const block = start >= 0 && stop > start ? head.slice(start, stop) : ''
-            const t = /record Bash call with `timeout: (\d+)`/.exec(block.replace(/\s+/g, ' '))
-            const n = t ? Number(t[1]) : NaN
-            ok(n >= 400000 && n <= 600000,
-                `${label}: obligation 3 issues the record Bash call with a timeout of 400000-600000 ms (got ${t ? t[1] : 'none'})`)
+            const block = start >= 0 && stop > start ? head.slice(start, stop).replace(/\s+/g, ' ') : ''
+            ok(!/timeout: \d+/.test(block),
+                `${label}: obligation 3 sets no long Bash timeout on the record call`)
+            ok(/GATES RUN DETACHED/.test(block) && /docket step show STEP-\d+ --json/.test(block),
+                `${label}: obligation 3 says gates run detached and reads the terminal state with step show`)
         }
 
         // ---- refused-write rule: the refusal's own recovery, once, disclosed ----

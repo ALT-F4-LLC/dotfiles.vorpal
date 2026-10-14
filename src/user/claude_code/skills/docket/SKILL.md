@@ -78,8 +78,15 @@ shapes](reference.md#json-envelope--per-verb-data-shapes) when building a
 parser.
 
 **A successful `step record` means recording succeeded, not that the step
-passed.** Inspect `failed_gates`, the returned step's status/routing, and
-when needed `step gates`, `gate status`, or `run report`. A skipped or stub
+passed.** For a step that declares completion gates, record returns at once
+with "Recorded, gates and routing running detached:" and no `failed_gates`;
+the engine runs the gates in a detached child. Read the terminal state with
+`step show STEP-N --json` and a failed gate's output with `step gates STEP-N`,
+and treat a step still in its saga as unfinished. Only an inline record (a
+gate-less step, or no detached launcher) carries `failed_gates`. Inspect the
+returned step's status/routing, and when needed `gate status` or `run report`.
+If the detached child dies mid-saga, nothing sweeps the step; re-running
+`step record` or `step resume STEP-N` finishes it. A skipped or stub
 check does not establish the change passed a real check. Prefer the
 `record` alias to `complete` to avoid a shell-builtin collision in some
 worker environments.
@@ -91,7 +98,7 @@ worker environments.
 | `next --run`, `dispatch open`, `step claim` | Can reap leases or otherwise change scheduling state; `next --run` can expire a dispatch |
 | `trust probe` | Executes trusted checks; treat it as execution, though its purpose is diagnosis |
 | `guard spawn --ack-reap` / `--deciding-vote` | Can record an acknowledgment or audit event; a guard is not a lock |
-| `step record` | Records an artifact, runs gates, and applies routing |
+| `step record` | Records an artifact; runs gates and applies routing, detached for a gated step |
 | `step approve/reject/resolve/reap/hold`, `run pause/resume/abandon`, `run fact add`; rulings `step annotate --integrated-sha`, `run note add`, `run refresh-scope`, `run refresh-body`, `run refresh-files`, `run repin`, `dispatch waive-target`, `dispatch abandon`, `dispatch close --skip-integration-check`, `vote commit` on a vote-step proposal | Require the run's conductor capability on a bound run, via `DOCKET_TOKEN` on that one invocation or an owner-only file on stdin, never with nothing redirected. `dispatch close` without `--skip-integration-check` and `vote commit` on a conversational `vote create` proposal stay token-free. `step approve`, `step reject`, `step resolve`, `run pause` and `run abandon` also require `--authority` with one of `operator`, `standing-grant` or `conductor`, plus `--authority-ref` when it is `standing-grant`. `run note add` requires `--authority operator` when the note records the operator's words or `--authority conductor` for the conductor's own ruling, with no default. `step reap`, `step hold`, `run resume` and `run fact add` take no `--authority`. See [transport](references/transport.md) |
 
 Never pass `--watch` or `--follow` from an agent: nothing ends them, the

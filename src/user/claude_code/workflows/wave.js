@@ -143,7 +143,7 @@ const COMMAND_OUTPUT_SCHEMA = {
 const EXECUTOR_REPLY_SCHEMA = {
     type: 'object',
     properties: {
-        recorded: { type: 'string', enum: ['done', 'waiting-human', 'paused', 'none'], description: 'The status in your docket step record response, or none when you did not record' },
+        recorded: { type: 'string', enum: ['done', 'waiting-human', 'paused', 'pending', 'none'], description: 'The step status you read with docket step show after recording (done, waiting-human, or paused), pending when that read still shows the step in its saga, or none when you did not record' },
         signal: { type: 'string', enum: ['none', 'BOOTSTRAP DENIED', 'NETWORK GATE BLOCKED', 'RECORD BLOCKED', 'WRITE BLOCKED'], description: 'The stop signal you stopped on without recording, or none' },
         report: { type: 'string', description: 'Your full report, with every refusal or error quoted verbatim' },
     },
@@ -522,9 +522,17 @@ ${!isWrite ? `
 ${isWrite ? `
    - WORKTREE: \`--worktree\` is the literal path of the checkout the work
      happened in (\`git rev-parse --show-toplevel\`).
-   - TIMEOUT: issue the record Bash call with \`timeout: 600000\`. The
-     engine reruns every completion gate at record, which outlasts the
-     default Bash timeout and would move the call to the background.` : ''}
+   - GATES RUN DETACHED: for a step that declares completion gates, record
+     returns at once with "Recorded, gates and routing running detached:".
+     That line is not a result and carries no \`failed_gates\`. Run no gate
+     and wait on none; the engine runs them. A step with no gates records
+     inline.` : ''}
+   - TERMINAL STATE: after record exits 0, read the step once with
+     \`docket step show ${row.step} --json\`, and for a failed or parked step
+     \`docket step gates ${row.step}\` for the failed gate's captured output.
+     Never loop on it. A status of done, waiting-human, or paused is the
+     step's terminal state. Any other status means the engine's detached
+     run has not finished: report it as pending.
    - ARTIFACT, MANDATORY on every record: a FRESH file whose name starts
      with your step id, ${dir}/${row.step}-<kind>.md.
      <kind> is the artifact KIND your packet's OUTPUT section names; there
@@ -577,8 +585,9 @@ ${isWrite ? `
      say so, and stop; never reconstruct or guess a token.
 
 4. Return through the structured output. \`report\` is your full reply.
-   \`recorded\` is the status in the record response, filled in from it:
-   done, waiting-human, or paused. If you did not record, \`recorded\` is
+   \`recorded\` is the terminal state you read with \`step show\` after
+   record, never the record output: done, waiting-human, or paused, or
+   pending when that read still shows the step mid-run. If you did not record, \`recorded\` is
    none. If instead you STOPPED without recording, \`recorded\` is none and
    \`signal\` names the stop, with its details in \`report\`; otherwise
    \`signal\` is none. The stop signals:
@@ -699,7 +708,7 @@ function isConflictReport(text) {
 // is a recorded step whatever its prose says.
 function isBootstrapDenied(text) {
     if (typeof text !== 'string' || !text.includes('BOOTSTRAP DENIED')) return false
-    if (/recorded \((?:done|waiting-human|paused)\)[\s*_`.]*$/.test(lastLine(text))) return false
+    if (/recorded \((?:done|waiting-human|paused|pending)\)[\s*_`.]*$/.test(lastLine(text))) return false
     return text.split('\n').some((l) => /^[\s*_`>#]*BOOTSTRAP DENIED[\s*_`.:!]*$/.test(l))
 }
 
@@ -722,7 +731,10 @@ function runParked(res) {
 }
 
 // THE REPLY-TAIL CONTRACT. A returned executor reply ends in the record tail
-// `STEP-N recorded (<status>)`, or carries one of the brief's stop signals on
+// `STEP-N recorded (<status>)`, where <status> is the terminal state the
+// executor read with `docket step show` after record (done, waiting-human, or
+// paused; pending when the engine's detached gate run had not finished), or
+// carries one of the brief's stop signals on
 // a line of its own, which means the step was NOT recorded. A reply with a
 // record tail is recorded whatever its prose quotes; a reply with neither is
 // `unrecorded`, and `step show` says what happened. COMMIT BLOCKED is not a
@@ -734,7 +746,7 @@ const STOP_SIGNALS = [
 
 function recordTail(text) {
     if (typeof text !== 'string') return null
-    const m = lastLine(text).match(/recorded \((done|waiting-human|paused)\)[\s*_`.]*$/)
+    const m = lastLine(text).match(/recorded \((done|waiting-human|paused|pending)\)[\s*_`.]*$/)
     return m ? m[1] : null
 }
 
@@ -762,7 +774,7 @@ function executorReplyText(step, reply) {
     if (typeof reply === 'string') return reply
     if (typeof reply !== 'object') return null
     const report = typeof reply.report === 'string' ? reply.report.trim() : ''
-    const recorded = ['done', 'waiting-human', 'paused'].includes(reply.recorded) ? reply.recorded : null
+    const recorded = ['done', 'waiting-human', 'paused', 'pending'].includes(reply.recorded) ? reply.recorded : null
     if (recorded) {
         if (recordTail(report) === recorded) return report
         return `${report}${report ? '\n\n' : ''}${step} recorded (${recorded})`
@@ -2346,6 +2358,9 @@ function needsClaimProbe(row) {
 // step to `ready`. The pre-gate hold is the exception: it lifts when the
 // engine's detached run ends, so it settles skipped-not-ready as the claim
 // path does, and the refill relaunches the lane in the same dispatch.
+// A row behind a gated step stays `pending` while the engine's detached gate
+// run holds that step in its saga, so the same skip makes it wait for the step
+// to leave the saga; the next dispatch re-offers it.
 function preClaimSkip(row, phaseLabel) {
     return stepShow(row.step, `${row.step} · pre-claim`, phaseLabel).then((show) => {
         const terminal = ['done', 'superseded', 'skipped', 'failed', 'pending']

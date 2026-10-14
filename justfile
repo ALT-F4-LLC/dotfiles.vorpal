@@ -133,16 +133,15 @@ tests:
     # entry wins, so commit.gpgsign=false still applies.
     n=${GIT_CONFIG_COUNT:-0}
     export GIT_CONFIG_KEY_$n=commit.gpgsign GIT_CONFIG_VALUE_$n=false GIT_CONFIG_COUNT=$((n+1))
-    # The suites run concurrently, at most TESTS_JOBS at a time (default: the
-    # CPU count, capped at 8), so one run stays inside the tests gate's
-    # timeout while several writers share the machine. Each suite's output
+    # The suites run one at a time by default, so one agent's run puts one
+    # suite's load on the machine; TESTS_JOBS=<n> runs up to n at once, for a
+    # caller that wants speed over load. Each suite's output
     # goes to its own log and is replayed in order, so the lines of two
     # suites never interleave. Each job writes its own exit status to a file
     # beside its log: bash 3.2 drops a reaped job from its table, so a later
     # `wait <pid>` can report "not a child of this shell" for a suite that
     # passed. A missing status file counts as a failure.
-    max=${TESTS_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}
-    [ "$max" -gt 8 ] && max=8
+    max=${TESTS_JOBS:-1}
     logs=$(mktemp -d "${TMPDIR:-/tmp}/just-tests.XXXXXX")
     trap 'rm -rf "$logs"' EXIT
     names=()

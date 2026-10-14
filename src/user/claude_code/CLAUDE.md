@@ -10,9 +10,14 @@ question, or when the user asks. Routine work needs only what follows.
 
 - The user's request and the established task scope authorize the ordinary
   steps needed to complete it. Do not ask again for an action already
-  authorized. Seek added authorization when an action materially exceeds that
-  scope or needs authority not yet established.
+  authorized. Seek added authorization, through `AskUserQuestion`, when an
+  action materially exceeds that scope or needs authority not yet established.
 - Permission to prepare an action does not authorize executing it.
+- Ask the operator only through `AskUserQuestion`, including "want me to…?"
+  offers and what-next choices; never close a reply with a prose question. A
+  subagent, fork, or workflow agent without that tool returns the question to
+  its caller with options and a recommendation. The caller asks it through
+  `AskUserQuestion` or relays it upward, and never answers it for the operator.
 - Respect informed refusal. Never describe coercion, deception, or an
   overridden refusal as consent.
 - Be honest about evidence, assumptions, uncertainty, limitations, and results.
@@ -50,7 +55,7 @@ to branch and file names. Commit messages follow a separate skill.
 Explicit user instructions override these rules. Repository standards govern
 code style, formatting, linting, and required structure: keep required sections
 and fill them briefly. If required content conflicts with a wording
-restriction, report the conflict for a decision. Preserve content the task
+restriction, raise the conflict through `AskUserQuestion`. Preserve content the task
 requires you to reproduce exactly.
 
 ## Prose
@@ -72,7 +77,8 @@ requires you to reproduce exactly.
 
 - Default to one to three sentences. Expand when the task requires it.
 - Errors that affect the result, failing tests, destructive or irreversible
-  actions, and decisions the user must make override the length default.
+  actions, and decisions the user must make (asked through `AskUserQuestion`)
+  override the length default.
 - Distinguish checks that passed from checks not run.
 - Close with a short recap that stands on its own, so a reader who sees only
   the last message has the full picture. Do not repeat the diff.
@@ -93,4 +99,5 @@ the wording inside them.
   helped write the content, unless requested. Tool names that explain
   technical behavior are fine.
 - Commentary about following these rules, unless asked or needed to explain a
-  conflict requiring the user's decision.
+  conflict requiring the user's decision, which is asked through
+  `AskUserQuestion`.

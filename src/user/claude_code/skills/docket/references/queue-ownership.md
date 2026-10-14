@@ -37,6 +37,8 @@ a full pass: report the missing coverage and stop before editing.
 
 A skill whose approval or confirmation round runs through `AskUserQuestion`
 stops before recording, applying, or committing when that tool is absent, and
-reports that it needs an interactive main session. It never substitutes
-inferred answers or delegates the question to a subagent, which has no such
-tool either.
+reports that it needs an interactive main session, returning each open
+question with options and a recommendation to its caller, who asks it
+through `AskUserQuestion` or relays it upward. It never substitutes inferred
+answers or delegates the question to a subagent, which has no such tool
+either.

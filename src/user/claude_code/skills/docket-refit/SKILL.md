@@ -45,8 +45,9 @@ triage each fan out through the read-only workflow script described next.
 Treat whatever the conversation already discussed as background, not
 evidence: read the target and launch the evidence stages yourself, and
 start from `$ARGUMENTS` (the named target, or nothing for corpus mode). If
-`AskUserQuestion` is unavailable, stop before §4 and report the decisions
-still open instead of implementing. Your closing report names the commit
+`AskUserQuestion` is unavailable, stop before §4 and return the decisions
+still open, with options and a recommendation, to the caller to ask through
+`AskUserQuestion` or relay upward, instead of implementing. Your closing report names the commit
 landed and every decision the operator made along the way.
 
 The corpus has five refittable surfaces, all under

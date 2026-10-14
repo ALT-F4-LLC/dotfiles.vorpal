@@ -12,7 +12,8 @@ argument-hint: "[system, component, or change]"
 Target or focus supplied with invocation: $ARGUMENTS
 
 Use the operator's request and repository context to establish the target when
-arguments are absent. Ask only if the scope cannot reasonably be determined.
+arguments are absent. Ask, through `AskUserQuestion`, only if the scope cannot reasonably be
+determined; a subagent returns the question to its caller instead.
 Perform analysis and verification within the existing task authorization;
 propose mitigations unless their implementation is also within scope.
 
@@ -67,7 +68,8 @@ inventing acceptance.
    practical, verify in an isolated test setup that breaking the control makes its
    verification fail. Record expected and actual results, with checks marked passed,
    failed, or not run. A verification plan is not a result. Identify unresolved work
-   and any pending risk-acceptance decision.
+   and any pending risk-acceptance decision, asked through `AskUserQuestion` (a
+   subagent returns it to its caller with options and a recommendation).
 
    When the advisor tool is available, call it on the model before this question
    settles: this question is self-review, and the working agreement treats

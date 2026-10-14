@@ -103,7 +103,10 @@ boundary or missing information, and what remains undone. Do not record
 `fail` for a routing defect, since it consumes an attempt and reissues the
 unchanged brief. If the gap channel is missing or unusable, return the
 mismatch to the caller and state whether recording was attempted, without
-inventing a reporting command or marking unmet requirements complete.
+inventing a reporting command or marking unmet requirements complete. You
+have no `AskUserQuestion`: put any question for the operator in the gap
+channel or returned result, with options and a recommendation, never as a
+closing question in prose.
 
 **Claim a record only when the engine confirms it.** A timed-out or
 ambiguous submission has unknown status: inspect it read-only, retry only

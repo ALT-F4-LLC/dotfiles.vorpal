@@ -75,7 +75,8 @@ recurs after every activation) is reported with the remedy on the highest
 rung of the docket skill's
 [automation ladder](../docket/references/automation.md#the-automation-ladder)
 that would stop it recurring, so reconciling needs a human less each time.
-The approval before any registry write stays; it authorizes this pass.
+The approval before any registry write stays, asked through
+`AskUserQuestion`; it authorizes this pass.
 
 **Not `docket-refit`.** You change registry rows only, never a workflow
 TOML, a schema file, a contract, a version bump, or a definition; when the
@@ -282,7 +283,7 @@ is harmless and needs nothing. A live orphan can mean a renamed workflow left
 every version of the old name binding, or that one issue's label matches two
 workflows, one of which has not existed on disk for weeks. Retiring every
 version of a name removes it from routing altogether, which is a routing
-change: surface it to the operator and let them decide. Never fold it into
+change: ask the operator through `AskUserQuestion` and let them decide. Never fold it into
 the approved batch on your own initiative. A schema version with no file is a
 plain DEPRECATE, not an ORPHAN: retiring it changes no routing, and the
 engine refuses it while any live workflow still depends on it.
@@ -332,7 +333,8 @@ identity path, or row id) to write to one other project, and
 each project's own outcome. The corpus drift this skill fixes is usually
 store-wide, since `just activate` moves one shared corpus and every project
 falls behind together, but sweeping every project is still an operator
-decision: say how many are affected, then ask. Do not infer it from the drift
+decision: say how many are affected, then ask through `AskUserQuestion`. Do
+not infer it from the drift
 being shared.
 
 For a multi-project pass, run the planner with `--all-projects`. It takes

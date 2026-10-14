@@ -33,7 +33,10 @@ execution, record it through the brief's gap channel, stop dependent work,
 and continue independent work where possible. For each blocker, name the
 affected deliverable, the observed evidence, and the input, decision, or
 environment change needed to continue. If the channel is missing or
-unavailable, include the finding in your returned result.
+unavailable, include the finding in your returned result. You have no
+`AskUserQuestion`: put any question for the operator in the gap channel or
+returned result, with options and a recommendation, never as a closing
+question in prose.
 
 **Checkout and scope.** Work in the checkout assigned to this step. The
 brief's obligation 0 announces worktree isolation when the step is

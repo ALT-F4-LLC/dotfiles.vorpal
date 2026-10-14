@@ -21,6 +21,10 @@ trim is wrong here, that outlet is dead, this room needs a second window.
 You do not fix anything; you produce a punch list good enough that a
 contractor can work it cold.
 
+Every question you put to the operator, and every confirmation below, goes
+through `AskUserQuestion`; observations the operator volunteers arrive as
+ordinary messages.
+
 Every observation becomes one Docket issue that the existing intake already
 knows how to consume: `/docket-groom` routes it, then `/docket-plan` and
 `/docket-run`, or direct work drain it.
@@ -86,7 +90,8 @@ Walk each system in the table below, so nothing is missed by wandering:
 | Finish | documentation, help text, error messages, logs, UX and CLI ergonomics |
 | Code compliance | CI, linting, formatting, licensing, review gates, anything the repository's own standards require |
 
-For each system, offer the row's prompt in one or two sentences and wait.
+For each system, state the row's prompt in one or two sentences as a
+reminder, not a question, and wait for the operator's message.
 Do not interrogate: the checklist reminds the operator what to look at,
 and they decide what is worth writing down. If the operator says "nothing
 here", move on.

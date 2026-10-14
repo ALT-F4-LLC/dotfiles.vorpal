@@ -352,6 +352,19 @@ else
     fail "reports every failing check in one run: $out"
 fi
 
+# --- ask ----------------------------------------------------------------------
+build_corpus "$FIX"
+printf '\nAsk the operator which option to take.\n' >> "$FIX/$SKILL"
+expect_fail "ask: asks the operator without naming the channel" "$FIX" ask "AskUserQuestion"
+
+build_corpus "$FIX"
+printf '\nAsk the operator through `AskUserQuestion` which option to take.\n' >> "$FIX/$SKILL"
+expect_pass "ask: names AskUserQuestion" "$FIX"
+
+build_corpus "$FIX"
+printf '\nA subagent returns the question to its caller; it cannot ask\nthe operator.\n' >> "$FIX/$SKILL"
+expect_pass "ask: a negated ask across a line wrap is exempt" "$FIX"
+
 # --- the live corpus ------------------------------------------------------------
 if out=$(CORPUS_ROOT="$REPO_ROOT" bash "$GATE" 2>&1); then
     pass "live corpus resolves"

@@ -333,7 +333,7 @@ by itself resolve an engine defect or capability gap, and a source fix does
 not prove the affected installation has it. Preserve any remaining engine
 and consumer work separately; related work in different projects is not
 automatically duplicate work. If source or version evidence is unavailable,
-record the uncertainty and seek clarification instead of declaring the
+record the uncertainty and seek clarification through `AskUserQuestion` instead of declaring the
 issue obsolete. These are evidence checks only; do not implement fixes.
 
 Answer these questions for each issue, concisely and from evidence:
@@ -491,8 +491,8 @@ Record these findings alongside the value decision:
   after earlier grooming passes fixed its acceptance criteria, so check
   this drift explicitly rather than assuming a content fill makes an issue
   eligible. Groom also applies `docket-plan`'s security-label flag, the one
-  statement of its guarded paths: ask the operator about an issue the flag
-  matches, and never add the label yourself.
+  statement of its guarded paths: ask the operator through `AskUserQuestion`
+  about an issue the flag matches, and never add the label yourself.
 - **Stale or missing size label:** `small` binds the small-change track and
   `trivial` the trivial-change track, under the docket skill's
   [sizing reference](../docket/references/sizing.md), which is the one

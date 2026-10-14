@@ -154,7 +154,7 @@ scope-or-budget rule).
 
 Security sensitivity is asked, not inferred: it sets labels that pin
 routing later, and a wrong guess is silent, so if the answer is not obvious
-from the request, ask it outright.
+from the request, ask it outright in an `AskUserQuestion` round.
 
 `needs-research` sits between inferred and asked: apply it yourself when the
 request names an external library, API, protocol, framework, or prior art
@@ -224,8 +224,8 @@ the cost forecast.
   final proposal when their counts, costs, or urgency materially differ.
 - **Budget**: state **Unlimited (default)** when no limit is specified;
   do not ask a budget question. Preserve an explicit cap in its stated unit.
-  Ask only if a supplied limit is ambiguous or conflicts with other settled
-  instructions. Smaller-run alternatives may show lower forecasts without
+  Ask, in an `AskUserQuestion` round, only if a supplied limit is ambiguous
+  or conflicts with other settled instructions. Smaller-run alternatives may show lower forecasts without
   turning those forecasts into caps.
 
 Skip a question here only when the operator's own invocation or a
@@ -529,8 +529,8 @@ to the roster, adjust the budget) is legitimate reshaping under this
 section, not an escape from it. Run it, then re-run §5's presentation with
 the run's current state (roster, budget, First-wave width) before yielding
 the turn, even if a new open item surfaced along the way: name that item as
-a question inside the presentation, not as the last line of the message
-with nothing else restated.
+an `AskUserQuestion` round after the presentation, never as a prose
+question or the last line of the message.
 
 ## 2. Read before you decompose
 
@@ -751,7 +751,7 @@ reads lower because it excludes `loop = true` steps and that headroom, so
 an operator choosing a cap compares like with like. In unlimited mode, keep
 the encoded caps at `0` regardless of the forecast. If an explicit cap is
 too small, fit the roster without dropping agreed deliverables, or obtain
-agreement to a concrete scope reduction or budget increase before
+agreement, through `AskUserQuestion`, to a concrete scope reduction or budget increase before
 recording. Never silently replace the budget policy with the computed
 forecast. The dry-run total sums only the steps activation materializes:
 `loop = true` steps instantiate only on loop entry.
@@ -829,7 +829,7 @@ surface carries a security label or rejected security votes (the scope
 read surfaces both), recommend the matching security workflow and make the
 lighter binding the option that needs justifying, never the default.
 Routing domain-flavored work onto the baseline on purpose is legitimate,
-but it is an operator decision: elicit it and record it in the issue body
+but it is an operator decision: elicit it through `AskUserQuestion` and record it in the issue body
 and the plan artifact, never by omission.
 
 **Security-label flag: guarded paths need a security label or an operator
@@ -845,7 +845,7 @@ any of these guarded paths and whose labels include none of `security`,
 - `src/user/docket/config/fragments/severity-ladder-security.md`
 - `src/user/claude_code/agents/executor-read.md`
 
-Put each flagged issue to the operator as a question naming the missing
+Put each flagged issue to the operator through `AskUserQuestion`, naming the missing
 label before you record it. Never add the label yourself. Record the
 operator's answer: a security label they apply, or their decision to keep
 the lighter binding, in the issue body and the plan artifact. An issue

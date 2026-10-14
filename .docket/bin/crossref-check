@@ -427,6 +427,37 @@ while IFS= read -r f; do
   done < <(contents_mismatches "$f")
 done < <(corpus_files)
 
+# --- ask: an ask of the operator names its channel ---------------------------
+# CLAUDE.md's ask rule: the operator is asked only through AskUserQuestion, and
+# a subagent returns the question to its caller. A paragraph that tells the
+# reader to ask the operator or user must name the question tool or the caller
+# in the same paragraph, or negate the ask ("never ask", "does not ask").
+ask_misses() {
+  awk '
+    function flush(   low) {
+      low = tolower(para)
+      if (hit && low !~ /askuserquestion|question tool|question-tool|caller|(never|not|nor|cannot|without|no|or|recommendation to) ask/)
+        printf "%d\tasks the operator or user without naming AskUserQuestion, the question tool, or the caller\n", hit
+      para = ""; hit = 0
+    }
+    /^```/ { fence = !fence; next }
+    fence { next }
+    /^[[:space:]]*$/ { flush(); next }
+    {
+      para = para " " $0
+      if (!hit && tolower($0) ~ /(^|[^a-z])(ask|confirm with|check with|prompt)(s|ing)? (the )?(operator|user)([^a-z]|$)/) hit = FNR
+    }
+    END { flush() }
+  ' "$1"
+}
+while IFS= read -r f; do
+  case "$f" in *.md) ;; *) continue ;; esac
+  case "$f" in "$claude_tree"/*) ;; *) continue ;; esac
+  while IFS=$'\t' read -r line msg; do
+    fail ask "$f" "$line" "$msg"
+  done < <(ask_misses "$f")
+done < <(corpus_files)
+
 if [ "$failed" -ne 0 ]; then
   echo "" >&2
   echo "crossref-check FAILED. Rename the reference to what exists now, or" >&2

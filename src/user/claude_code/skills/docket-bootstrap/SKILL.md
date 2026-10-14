@@ -19,8 +19,8 @@ bootstrap.
 
 Run in the main conversation; approvals belong to the operator. Leave
 `context` and `agent` out of this skill's frontmatter. Preserve relevant
-decisions already made in the conversation and ask only for unresolved
-decisions.
+decisions already made in the conversation and ask, through
+`AskUserQuestion`, only for unresolved decisions.
 
 ## Operating boundaries
 
@@ -344,8 +344,8 @@ inspect real `gate_results`; `unmatched` means it did not execute.
 
 The successful terminal state is activated and undispatched. A stop hook
 does not authorize dispatch or abandonment. If a guard prevents handoff,
-explain the boundary and ask the operator to park the run, invoke
-`/docket-run`, or explicitly abandon and re-plan it. Do not repeatedly
+explain the boundary and ask the operator through `AskUserQuestion` to park
+the run, invoke `/docket-run`, or explicitly abandon and re-plan it. Do not repeatedly
 re-ask an already settled choice.
 
 A clone on a configured machine reads the shared corpus directly. Another

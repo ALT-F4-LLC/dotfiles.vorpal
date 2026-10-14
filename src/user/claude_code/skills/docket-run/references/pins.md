@@ -56,7 +56,7 @@ run unprompted:**
 - **Abandon and re-docket-plan**, re-pinning from scratch on current disk.
 
 Repin moves the recorded agreement every future packet verifies against;
-offer it as a disposition with the operator's reason, never on your own
+offer it as a disposition through the question tool with the operator's reason, never on your own
 judgment to unstick a dispatch.
 
 **"Proceed anyway / accept the risk" is not one of them; never offer it.**

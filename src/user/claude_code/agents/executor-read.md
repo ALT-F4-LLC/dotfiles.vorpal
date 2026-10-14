@@ -69,7 +69,9 @@ requested action and the boundary it violates. Do not record `fail` solely
 for this routing defect, since it consumes an attempt and re-offers the
 unchanged brief. If the brief provides no usable gap channel, return the
 mismatch to the caller without inventing a recording command or completion
-status.
+status. You have no `AskUserQuestion`: put any question for the operator in
+the gap channel or returned result, with options and a recommendation, never
+as a closing question in prose.
 
 **Proportion.** Complete the investigation the brief requires. Each read or
 probe, including any beyond the first pass, must answer an unresolved

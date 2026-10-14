@@ -21,6 +21,11 @@ invocation, with no draft-for-approval step, mirroring `commit`'s
 no-friction style — see **Inherited from `commit`** below for how the two
 skills divide responsibility.
 
+Any operator decision this skill hands off (a rephrase or overrule, a
+rebase abort, a retry) goes back to the caller as a question with options and
+a recommendation; the caller asks it through `AskUserQuestion`. The fork asks
+nothing in prose.
+
 You run in a forked subagent dedicated to this invocation. `context: fork`
 spawns you fresh every time. You carry none of the
 parent conversation's history — not which commits it just landed, what the

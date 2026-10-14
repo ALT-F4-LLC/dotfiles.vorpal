@@ -30,7 +30,7 @@ requirements and proposals; leave unsupported details unspecified.
 Distinguish unavailable evidence from facts needing investigation.
 
 Use established conversation context without asking the operator to
-repeat it. If referenced history is unavailable, ask for it.
+repeat it. If referenced history is unavailable, ask for it through `AskUserQuestion`.
 
 The operator may request only the brief at any point. Emit its current
 state, identify unresolved items, and stop.
@@ -295,7 +295,7 @@ security requirements. Exclude `/brief` itself, and do not offer
 the confirmed brief to one of the operator's other live sessions on this
 machine, and the peer skill there selects the executing route by the rules
 of this section, under its own project, and asks the operator at that
-keyboard to confirm once. It opens no clarification rounds, since the
+keyboard through `AskUserQuestion` to confirm once. It opens no clarification rounds, since the
 requirements are settled. Confirmation here authorizes the send only, so
 rules 1 through 6 are applied again there and none of them is satisfied
 by the relay. Offer it when the operator names a live session as where the

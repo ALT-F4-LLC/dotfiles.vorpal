@@ -1,5 +1,5 @@
 [policy]
-version = 41
+version = 42
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -18,22 +18,22 @@ sonnet-low = { model = "sonnet", effort = "low", escalate_to = "sonnet-medium" }
 sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-medium" }
 
 [executors]
-adr-author = { variant = "fable-high" }
+adr-author = { variant = "opus-high" }
 design-qa = { variant = "opus-medium" }
 dispose = { variant = "opus-medium" }
 drain-highs = { variant = "haiku-high" }
 fix = { variant = "opus-medium" }
 implement = { variant = "opus-medium" }
-investigate = { variant = "fable-high" }
-judge-architecture = { variant = "opus-medium" }
+investigate = { variant = "opus-high" }
+judge-architecture = { variant = "opus-low" }
 judge-correctness = { variant = "opus-medium" }
 judge-design = { variant = "opus-medium" }
 judge-security = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
 judge-simplicity = { variant = "opus-medium" }
 judge-testing = { variant = "sonnet-high" }
-prd-author = { variant = "fable-high" }
-report = { variant = "fable-high" }
-research = { variant = "fable-high" }
+prd-author = { variant = "opus-high" }
+report = { variant = "opus-medium" }
+research = { variant = "opus-high" }
 revise-investigation = { variant = "fable-high" }
 spec-author-architecture = { variant = "opus-medium" }
 spec-author-code-quality = { variant = "opus-medium" }
@@ -43,14 +43,14 @@ spec-author-review-strategy = { variant = "opus-medium" }
 spec-author-security = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
 spec-author-testing = { variant = "opus-medium" }
 synthesize-findings = { variant = "sonnet-high" }
-tdd-author = { variant = "fable-high" }
+tdd-author = { variant = "opus-high" }
 tdd-author-security = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
 threat-model = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
 tribunal-architecture = { variant = "opus-medium" }
 tribunal-correctness = { variant = "opus-medium" }
-tribunal-design = { variant = "fable-high" }
+tribunal-design = { variant = "sonnet-high" }
 tribunal-security = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
-ux-spec-author = { variant = "fable-high" }
+ux-spec-author = { variant = "opus-high" }
 verify-ac = { variant = "opus-medium" }
 
 [security]
@@ -58,7 +58,7 @@ ceiling = "opus-max"
 labels = ["security-change", "security-load-bearing", "security"]
 never = ["fable"]
 nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
-reason = "As observed at policy version 32: Fable's safety classifiers cover more categories than Opus 5's cyber-only set and flag security review by its nature; Claude Code then re-runs the request on the fallback model (cyber → Opus 4.8), so a Fable seat here pays Fable's rate for an Opus 4.8 run and the ledger credits a model that never ran. Name Opus up front. Residual: Opus 5 itself re-runs cyber-flagged requests on Opus 4.8 with nothing in the step record catching the hop — the wave records `model_resolved` as unknown unless the runtime supplies an observation, so the serving model surfaces only in the transcript-read usage back-fill, whose ledger rows carry units and quantities only."
+reason = "As observed at policy version 42: Claude Opus 5.5 launched with the same class of biology, cybersecurity, and distillation safeguards as Claude Fable 5.1, all of which fall back to another model transparently (cyber -> Opus 4.8, biology -> Opus 5), so a flagged request hops to a fallback on an Opus seat exactly as on a Fable seat. Naming Opus no longer avoids the hop; it only avoids paying Fable's rate ($10 / $50 per million input / output tokens against Opus 5.5's $4 / $20) for the same fallback run, which is why `never` keeps Fable off these nodes. The hop is narrower than the version-32 wording implied: the policy on both models allows vulnerability discovery in source code and blocks compiled-binary vulnerability discovery, penetration testing, and exploit development, so a secure code review of a diff is inside the permitted set and the residual is dual-use edge cases. Do not seat Sonnet on these nodes: Sonnet 5.5's cyber fallback is Sonnet 5 (Terminal-Bench 4.0 10.3% against Sonnet 5.5's 70.6%), a far steeper cliff than Opus 4.8; Haiku 5.5 blocks with no fallback at all. Residual unchanged: nothing in the step record catches the hop, so the serving model surfaces only in the transcript-read usage back-fill, whose ledger rows carry units and quantities only."
 
 [escalation]
 on_failure = "one-hop"

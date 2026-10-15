@@ -1278,9 +1278,13 @@ by that spawn is a reap candidate. Read a dispatch's outcome as the
 union of its launches' `statuses`.
 
 **Record each deferral and re-seat as a run fact once the close lands.**
-The store sees neither a deferred row nor a re-seated judge, so these
-facts are how a retro reading only the store counts them; the
-`coordination` counts stay as they are. Per launch, for every `statuses`
+The store sees a re-seated judge and a `budget` deferral only if you file
+it. `dispatch close` records a `chain` deferral itself behind a predecessor
+a wave attempted, and filing that one returns the engine's record instead
+of writing a second; the engine misses a row behind a predecessor skipped
+before its claim, so keep filing every `chain` deferral. These facts are
+how a retro reading only the store counts them; the `coordination` counts
+stay as they are. Per launch, for every `statuses`
 row whose status is `not-launched-agent-budget`,
 `not-launched-writer-budget` or `not-launched-token-budget` (cause
 `budget`) or `skipped-chain-dead` (cause `chain`), and for every seat a

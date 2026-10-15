@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-10-13",
-  "binary_version": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: 2026-10-13T05:25:40Z)",
-  "inventory_version": "docket version nightly-659-gec91591 (commit: ec91591, built: 2026-10-13T02:11:27Z)",
+  "verified_on": "2026-10-15",
+  "binary_version": "docket version nightly-31-ga499498 (commit: a499498, built: 2026-10-15T00:39:58Z)",
+  "inventory_version": "docket version nightly-31-ga499498 (commit: a499498, built: 2026-10-15T00:39:52Z)",
   "scenario_sha256": "04025e433a3c4bcb482826a3d9d9ff9f527335b027219f404057434256f04252",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
@@ -193,7 +193,7 @@
         "version"
       ],
       "exit": 0,
-      "stdout": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: <TIMESTAMP>)\n",
+      "stdout": "docket version nightly-31-ga499498 (commit: a499498, built: <TIMESTAMP>)\n",
       "stderr": ""
     },
     {
@@ -208,11 +208,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-14-gaac20c0",
-          "commit": "aac20c0",
+          "version": "nightly-31-ga499498",
+          "commit": "a499498",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: <TIMESTAMP>)"
+        "message": "docket version nightly-31-ga499498 (commit: a499498, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -229,11 +229,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-14-gaac20c0",
-          "commit": "aac20c0",
+          "version": "nightly-31-ga499498",
+          "commit": "a499498",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-14-gaac20c0 (commit: aac20c0, built: <TIMESTAMP>)"
+        "message": "docket version nightly-31-ga499498 (commit: a499498, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -11643,7 +11643,7 @@
         "fact"
       ],
       "exit": 0,
-      "stdout": "Record coordination facts that only the conductor driving a run observes,\nso a retro reading the store can count them.\n\nTwo kinds exist. `vote-reseated` records a vote seat the conductor re-spawned;\n`step-deferred` records a step it held back, with the cause `budget` or `chain`.\nA hand-resolved cherry-pick has no kind here: its record is the `step-annotated`\nevent that `step annotate --integrated-sha` writes.\n\nUsage:\n  docket run fact [command]\n\nAvailable Commands:\n  add Record one conductor-observed fact as an event\n\nFlags:\n  -h, --help help for fact\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket run fact [command] --help\" for more information about a command.\n",
+      "stdout": "Record coordination facts that only the conductor driving a run observes,\nso a retro reading the store can count them.\n\nTwo kinds exist. `vote-reseated` records a vote seat the conductor re-spawned;\n`step-deferred` records a step it held back, with the cause `budget` or `chain`.\n`dispatch close` records a `chain` deferral itself behind a predecessor a wave attempted,\nand filing that one returns the engine's record instead of writing a second. The engine\nmisses a row behind a predecessor skipped before its claim, so keep filing every\n`chain` deferral.\nA hand-resolved cherry-pick has no kind here: its record is the `step-annotated`\nevent that `step annotate --integrated-sha` writes.\n\nUsage:\n  docket run fact [command]\n\nAvailable Commands:\n  add Record one conductor-observed fact as an event\n\nFlags:\n  -h, --help help for fact\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket run fact [command] --help\" for more information about a command.\n",
       "stderr": ""
     },
     {
@@ -14616,6 +14616,7 @@
           "run": "RUN-1",
           "rows": 0,
           "steps": 1,
+          "metadata_merged": 0,
           "source": "sweep",
           "skipped": [
             {
@@ -14658,6 +14659,7 @@
           "run": "RUN-1",
           "rows": 0,
           "steps": 1,
+          "metadata_merged": 0,
           "source": "sweep",
           "skipped": [
             {

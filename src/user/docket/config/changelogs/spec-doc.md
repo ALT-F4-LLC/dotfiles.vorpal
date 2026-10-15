@@ -3,6 +3,14 @@
 Version history of `workflows/spec-doc.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 47
+
+unless_labels gains `docs-only`, the retired label no workflow selects, so
+an issue carrying it with `spec-doc` matches zero workflows instead of
+binding here. Every workflow now declines the label, which reserves it.
+Takes effect for runs activated after install. No topology or limit
+change.
+
 ## 46
 
 Repoints the synthesize payload to findings-cluster@6 and the reconcile payload

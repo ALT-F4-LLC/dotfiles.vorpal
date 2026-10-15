@@ -3,6 +3,14 @@
 Version history of `workflows/investigation.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 24
+
+unless_labels gains `docs-only`, the retired label no workflow selects, so
+an issue carrying it with `investigation` matches zero workflows instead
+of binding here. The routing sweep found 145 to 640 unroutable label
+states with the label declined by only some workflows. Takes effect for
+runs activated after install. No topology or limit change.
+
 ## 23
 
 unless_labels drops a retired routing label; `route-direct` and

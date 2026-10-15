@@ -142,7 +142,7 @@ from, never a backlog issue, as the general review severity ladder's
 "Concern, unobserved" row requires. Nothing
 stays only in this transcript.
 
-When the advisor tool is available, call it on the drafted items before
+When the session can launch agents, launch the `advisor` agent on the drafted items before
 filing them.
 
 ## Check before you close

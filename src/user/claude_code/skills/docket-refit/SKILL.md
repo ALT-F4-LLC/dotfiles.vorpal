@@ -392,7 +392,7 @@ The picture also carries the §1 comparison: the shapes weighed, the one
 chosen, and the reason, so the operator approves a decision and not only a
 drawing.
 
-When the advisor tool is available, call it on the design before rendering
+When the session can launch agents, launch the `advisor` agent on the design before rendering
 the artifact.
 
 Present the artifact link and ask for approval via `AskUserQuestion`

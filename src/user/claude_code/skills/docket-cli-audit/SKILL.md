@@ -232,7 +232,7 @@ mind: `src/user/docket/config` contracts, fragments and workflows carry
 versions; a prose fix there follows the same bump rules corpus-check applies,
 and a schema fix is an operator-decision item.
 
-When the advisor tool is available, call it on the staged batch before
+When the session can launch agents, launch the `advisor` agent on the staged batch before
 presenting it, and fold its input in with the rest of the classification.
 
 Present the staged semantic batch with `AskUserQuestion`: group by file, show

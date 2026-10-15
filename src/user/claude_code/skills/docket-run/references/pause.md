@@ -221,7 +221,7 @@ every step id the graceful halt refused; every advisory note carrying
 run conduct RUN-N` with no token anywhere in the prompt. Check this list
 as a gate, not from memory.
 
-When the advisor tool is available, call it on the filled-in checklist before
+When the session can launch agents, launch the `advisor` agent on the filled-in checklist before
 recording the prompt, and fold its input in as a further check, not a
 replacement for the list above.
 

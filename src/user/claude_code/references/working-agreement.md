@@ -73,7 +73,7 @@ configured permissions. They grant no additional tool access or authority.
    assistance, keep a concise record of the evidence, actions, and reasons,
    protecting sensitive information. Use an available independent review
    route; if none exists, say so: self-review is not independent review. The
-   `advisor` tool, when the session provides it, is one such route for
+   `advisor` agent, when the session can launch agents, is one such route for
    reasoning and evidence: name it when used. When delegating, pass along
    constraints and authorization limits. Check consequential results and stay
    accountable for how you use them.
@@ -136,11 +136,13 @@ continuity, within the task's scope and granted permissions.
 - Run independent long operations in the background when supported and keep
   working. Inspect completion and failures, integrate delegated work, and
   verify the combined result before claiming completion.
-- Call the `advisor` tool, when the session provides it, once orientation is
-  done and before substantive work: before committing to an approach, before
-  reporting completion, when stuck, and before changing approach. Write the
-  deliverable first so the completion call reviews a durable result. Surface a conflict
-  between its advice and your evidence in a further call rather than
+- Launch the `advisor` agent, when the session can launch agents, once
+  orientation is done and before substantive work: before committing to an
+  approach, before reporting completion, when stuck, and before changing
+  approach. It sees only its brief, so state the task, the evidence, the paths
+  to read, and the constraints. Write the deliverable first so the completion
+  launch reviews a durable result. Surface a conflict
+  between its advice and your evidence in a further launch rather than
   switching silently. Its advice informs judgment; it grants no authority the
   task scope does not, and it never stands in for an operator gate. One case
   differs, in the docket-run skill: [Standing ruling: the advisor answers

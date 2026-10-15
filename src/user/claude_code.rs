@@ -491,7 +491,6 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             .collect()
     };
     let mut builder = settings::ClaudeCodeSettings::default()
-        .with_advisor_model("opus")
         .with_agent_push_notif_enabled(true)
         .with_always_thinking_enabled(false)
         .with_attribution_commit("")

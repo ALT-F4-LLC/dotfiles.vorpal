@@ -71,7 +71,7 @@ inventing acceptance.
    and any pending risk-acceptance decision, asked through `AskUserQuestion` (a
    subagent returns it to its caller with options and a recommendation).
 
-   When the advisor tool is available, call it on the model before this question
+   When the session can launch agents, launch the `advisor` agent on the model before this question
    settles: this question is self-review, and the working agreement treats
    self-review as distinct from independent review.
 

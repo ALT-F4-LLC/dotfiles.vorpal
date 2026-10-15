@@ -108,11 +108,12 @@ permitted` measured the sandbox, not the code, and presenting it as a
 code failure invites an unreal override-pass.
 
 **Consult the advisor after the evidence and before the question.** When
-the session provides the `advisor` tool, call it before any gate, park, or
-question is presented to the operator, and only with the evidence above in
-hand: the gate verdicts read, the artifact read in full, the premise-check
-run, and the status of every cited tracker read. The advisor reads your
-transcript, so a call made on a slice or a paraphrase weighs evidence
+the session can launch agents, launch the `advisor` agent before any gate,
+park, or question is presented to the operator, and only with the evidence
+above in hand: the gate verdicts read, the artifact read in full, the
+premise-check run, and the status of every cited tracker read. The advisor
+sees only its brief, so put that evidence in it, quoted or by path; a launch
+made on a slice or a paraphrase weighs evidence
 nobody read. An answer the standing ruling counts as clear settles the
 decision, and no question is asked.
 

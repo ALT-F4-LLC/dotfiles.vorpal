@@ -153,7 +153,7 @@ question (a TODO, a "needs operator decision" note) with no other content
 change; that forces a second bump later. Fold the flag into your final
 report instead of touching a frozen file.
 
-When the advisor tool is available, call it on the staged batch before
+When the session can launch agents, launch the `advisor` agent on the staged batch before
 presenting it, and fold its input in with the rest of the classification.
 
 Present the staged batch to the operator with `AskUserQuestion`: group by

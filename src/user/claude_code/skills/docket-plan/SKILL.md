@@ -1065,7 +1065,7 @@ If §1 or §1b concludes with nothing to record (the operator chose "propose
 only", or no feasible startable run remains after the full checks), present
 your reasoning as given and stop; run no further commands.
 
-When the advisor tool is available, call it after the recording commands
+When the session can launch agents, launch the `advisor` agent after the recording commands
 above have run and before the presentation, on the recorded run (or, when
 §1 or §1b recorded nothing, on that conclusion), and fold its input into the
 presentation.

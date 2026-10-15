@@ -288,7 +288,7 @@ the approved batch on your own initiative. A schema version with no file is a
 plain DEPRECATE, not an ORPHAN: retiring it changes no routing, and the
 engine refuses it while any live workflow still depends on it.
 
-When the advisor tool is available, call it on the plan before presenting
+When the session can launch agents, launch the `advisor` agent on the plan before presenting
 it for that decision.
 
 ## Step 3 — apply, then verify by assertion

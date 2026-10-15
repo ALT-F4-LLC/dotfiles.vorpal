@@ -307,8 +307,8 @@ than asking, as `docket-postmortem` and `docket-plan` do.
 **Seat model.** A conductor session runs on Sonnet 5.5 at medium effort.
 The loop makes no routing decisions, every reserved matter goes to the
 advisor first, and the measured cost of a conductor is context re-read
-per turn, not reasoning; the advisor stays on Opus 5.5 (`advisor_model`
-in settings). If the session is on another model, say so in the
+per turn, not reasoning; the advisor stays on Opus (`model:` in
+`agents/advisor.md`). If the session is on another model, say so in the
 activation report and continue; switching models mid-run is the
 operator's call.
 
@@ -730,7 +730,7 @@ Read `next` as a summary, never as rows: the rows you launch are what
 - **Empty, nothing running** → run the roster-coverage check (termination
   condition 3): covered → seat-coverage check below, then report done;
   uncovered → report phase quiesced and surface the re-activation gate. When
-  the advisor tool is available, call it on that verdict before reporting it.
+  the session can launch agents, launch the `advisor` agent on that verdict before reporting it.
   Read the report from `docket run status $RUN`, then stop.
 - **A dispatch is already open** → `next --run` refuses rather than
   returning empty. Reconcile it: once every launch has returned, run step
@@ -2295,7 +2295,7 @@ the operator when an answer is not clear. This section is that ruling,
 and "advisor-first" anywhere in this file names this route.
 
 **Every decision this file sends to the operator goes to the `advisor`
-tool first.** That holds under any wording (a gate, a park, a question, a
+agent first.** That holds under any wording (a gate, a park, a question, a
 stop-and-ask, a surfaced choice) and for every class: a `waiting-human`
 park the rulings above leave over, an override-pass or class-scope
 choice, a panel rejection or a stalled panel, a budget breach or a raise
@@ -2309,11 +2309,11 @@ ruling answers.
 **Gather the evidence, then call.** The call comes after everything
 [references/escalation.md](references/escalation.md) requires before an
 operator question: the gate verdicts read, the artifact read in full, the
-premise-check run, and the status of every cited tracker read. The tool
-takes no parameters and reads your transcript, so state the question in
-your own turn before the call: the decision's class, the evidence with
-every failing row quoted, and the dispositions the engine's verbs can
-honor.
+premise-check run, and the status of every cited tracker read. The agent
+sees only its brief, so put the question in the launch prompt: the
+decision's class, the evidence with every failing row quoted, the paths to
+read, and the dispositions the engine's verbs can honor, as a list to choose
+one from.
 
 **A clear answer settles the decision.** An answer is clear when the
 advisor names exactly one disposition the engine verbs can honor, states
@@ -2322,8 +2322,8 @@ hold. Nothing else is clear: two dispositions, a condition ("if X,
 then"), a recommendation to ask the operator, a disposition no verb can
 honor, an answer that contradicts a gate row, an artifact, or a recorded
 ruling, and a call that errors, times out, or returns nothing. An answer
-that conflicts with your evidence gets one reconcile call, and only one.
-Name the conflict in your own turn before it. When that call does not
+that conflicts with your evidence gets one reconcile launch, and only one.
+Its brief carries the first answer verbatim and the conflicting evidence. When that call does not
 produce a clear answer, the decision goes to the operator with the text
 of both advisor answers attached. Every other answer that is not clear
 goes to the operator with the advisor text attached, through the question
@@ -2375,7 +2375,7 @@ quotes the advisor's answer, never your summary of it.
 line each:** the step or run, the disposition, the verb run, and the
 advisor's answer quoted.
 
-**A session without the `advisor` tool sends every such decision to the
+**A session that cannot launch the `advisor` agent sends every such decision to the
 operator.** Say so in the question.
 
 ### Escalating to the operator

@@ -140,7 +140,7 @@ supplies the recurring wake-up, and each firing re-enters this skill from
    suite yourself and read the output. The
    worker's report is a claim, not evidence. A fresh failure goes back to
    the worker as the one follow-up round §3 describes, briefed with the
-   command and its output. When the advisor tool is available, call it on
+   command and its output. When the session can launch agents, launch the `advisor` agent on
    the rerun result before treating it as a pass.
 5. **Review the diff.** `git diff --stat` and `git diff` against the
    recorded HEAD. Refuse the pass, restoring by path, if any of these hold:

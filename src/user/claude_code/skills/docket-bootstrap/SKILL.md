@@ -291,7 +291,7 @@ operator's answer or infer it from silence.
    as a note: a stub resolves and will run but measures nothing — surface
    that in §5.3's read-back as hollow assurance, not a satisfied gate.
 
-   When the advisor tool is available, call it on the prepared binding
+   When the session can launch agents, launch the `advisor` agent on the prepared binding
    before presenting it, and fold its input in with the rest of §5.
 3. **Approve trust individually.** Each call identifies one entry,
    repository, exact argv, and explicit values for `re-runnable`, `tree`,

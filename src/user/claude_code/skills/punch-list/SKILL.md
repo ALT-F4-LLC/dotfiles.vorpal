@@ -214,7 +214,7 @@ Run only the commands the acceptance criterion names or the read-only
 probes needed to inspect state. Never run a proposed remedy.
 
 **Record the verdicts.** Every item gets one comment stating the verdict,
-the sha, and the evidence. When the advisor tool is available, call it on
+the sha, and the evidence. When the session can launch agents, launch the `advisor` agent on
 the verdicts before presenting the report table. Then:
 
 - **pass** on an open issue: close it only after the operator confirms

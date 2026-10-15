@@ -308,7 +308,7 @@ closure: route by verified checkout and store, preserve the trust-boundary
 notice, never assign work, and record every result. If filing is blocked,
 finish the review with complete file-ready writeups.
 
-When the advisor tool is available, call it on the reconciled findings
+When the session can launch agents, launch the `advisor` agent on the reconciled findings
 before filing.
 
 Deliver the review here: the identity block; coverage (captures, sessions,

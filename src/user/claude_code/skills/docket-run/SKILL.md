@@ -1293,9 +1293,9 @@ freed launch slots each time a launch returns** leaves every
 of `$SETTLED_FILE`, and step 4 holds a bounce's rows, so the refill
 relaunches those rows and each relaunch reports them again. File each
 step at most once per dispatch: keep `$FILED_FILE` under the session's
-scratchpad, created empty with `cat /dev/null > <file>` at each dispatch
-open beside `$SETTLED_FILE` (the next dispatch re-offers a deferred step,
-and its deferral there is a new fact), skip a row whose step `grep -qxF
+scratchpad, emptied with `cat /dev/null > "$FILED_FILE"` before this
+close's first fact (the next dispatch re-offers a deferred step, and its
+deferral there is a new fact), skip a row whose step `grep -qxF
 STEP-N "$FILED_FILE"` finds, and once a `step-deferred` fact lands, append
 its step with `printf '%s\n' STEP-N >> "$FILED_FILE"`. Per launch, for
 every `statuses` row whose status is `not-launched-agent-budget`,

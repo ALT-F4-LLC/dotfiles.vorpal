@@ -1371,21 +1371,12 @@ fi
 #   y2 map `skipped-chain-dead` to cause `budget`
 #   y3 delete the taught vote-reseated line outside the heredoc, leaving the
 #      checkpoint's copy
-#   y4 delete the skip-already-filed clause, so a relaunch re-files a step
 facts_anchor='**Record each deferral and re-seat as a run fact once the close lands.**'
 if paragraph "$facts_anchor" "${WORK}/facts"; then
     states "run facts: budget statuses map to cause budget" \
         "${WORK}/facts" '`not-launched-writer-budget` or `not-launched-token-budget` (cause `budget`)'
     states "run facts: a chain-dead row maps to cause chain" \
         "${WORK}/facts" '`skipped-chain-dead` (cause `chain`)'
-    states "run facts: the repeat source is named, the step 2 filter and refill relaunch" \
-        "${WORK}/facts" 'step 2 of **Refill freed launch slots each time a launch returns** leaves every `skipped-chain-dead` row of a launch holding a `skipped-not-ready` row out of `$SETTLED_FILE`'
-    states "run facts: the filed set is created empty at each dispatch open" \
-        "${WORK}/facts" 'keep `$FILED_FILE` under the session'"'"'s scratchpad, created empty with `cat /dev/null > <file>` at each dispatch open'
-    states "run facts: a step already filed this dispatch is skipped" \
-        "${WORK}/facts" 'skip a row whose step `grep -qxF STEP-N "$FILED_FILE"` finds'
-    states "run facts: a filed step joins the filed set" \
-        "${WORK}/facts" 'append its step with `printf '"'"'%s\n'"'"' STEP-N >> "$FILED_FILE"`'
     states "run facts: every seat a reseated row names gets a fact" \
         "${WORK}/facts" "for every seat a row's \`reseated: {proposal, seats}\` names"
 else

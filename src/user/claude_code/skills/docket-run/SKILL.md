@@ -1284,8 +1284,21 @@ a wave attempted, and filing that one returns the engine's record instead
 of writing a second; the engine misses a row behind a predecessor skipped
 before its claim, so keep filing every `chain` deferral. These facts are
 how a retro reading only the store counts them; the `coordination` counts
-stay as they are. Per launch, for every `statuses`
-row whose status is `not-launched-agent-budget`,
+stay as they are. One step can appear in several launches' `statuses`:
+wave.js reads `skipped-not-ready` as chain-dead, marks that row's issue
+dead and settles the issue's later rows `skipped-chain-dead`, and its
+`statuses` carries one entry per row the launch held; step 2 of **Refill
+freed launch slots each time a launch returns** leaves every
+`skipped-chain-dead` row of a launch holding a `skipped-not-ready` row out
+of `$SETTLED_FILE`, and step 4 holds a bounce's rows, so the refill
+relaunches those rows and each relaunch reports them again. File each
+step at most once per dispatch: keep `$FILED_FILE` under the session's
+scratchpad, created empty with `cat /dev/null > <file>` at each dispatch
+open beside `$SETTLED_FILE` (the next dispatch re-offers a deferred step,
+and its deferral there is a new fact), skip a row whose step `grep -qxF
+STEP-N "$FILED_FILE"` finds, and once a `step-deferred` fact lands, append
+its step with `printf '%s\n' STEP-N >> "$FILED_FILE"`. Per launch, for
+every `statuses` row whose status is `not-launched-agent-budget`,
 `not-launched-writer-budget` or `not-launched-token-budget` (cause
 `budget`) or `skipped-chain-dead` (cause `chain`), and for every seat a
 row's `reseated: {proposal, seats}` names:

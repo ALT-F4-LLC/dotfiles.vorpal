@@ -554,7 +554,8 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5-5")
         .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
         .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
-        .with_env("GIT_CONFIG_COUNT", &GIT_CONFIG.len().to_string());
+        .with_env("ENABLE_TOOL_SEARCH", "true") // REASON: Deferred MCP tool loading is off when ANTHROPIC_BASE_URL is not a first-party host
+        .with_env("GIT_CONFIG_COUNT",&GIT_CONFIG.len().to_string());
 
     for (i, (key, value)) in GIT_CONFIG.iter().enumerate() {
         builder = builder

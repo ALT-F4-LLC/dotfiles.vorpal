@@ -1295,8 +1295,9 @@ relaunches those rows and each relaunch reports them again. File each
 step at most once per dispatch: keep `$FILED_FILE` under the session's
 scratchpad, emptied with `cat /dev/null > "$FILED_FILE"` before this
 close's first fact (the next dispatch re-offers a deferred step, and its
-deferral there is a new fact), skip a row whose step `grep -qxF
-STEP-N "$FILED_FILE"` finds, and once a `step-deferred` fact lands, append
+deferral there is a new fact), skip the `step-deferred` fact for a row
+whose step `grep -qxF STEP-N "$FILED_FILE"` finds, and once a
+`step-deferred` fact lands, append
 its step with `printf '%s\n' STEP-N >> "$FILED_FILE"`. Per launch, for
 every `statuses` row whose status is `not-launched-agent-budget`,
 `not-launched-writer-budget` or `not-launched-token-budget` (cause

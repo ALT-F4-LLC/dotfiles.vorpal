@@ -785,8 +785,8 @@ and the run settles it, so an unchosen approach is not a §4a decision and
 does not block drafting. Draft criteria at the outcome level from the
 established need: the observable result, the boundary conditions the
 evidence names, and one criterion that the run records its design decision
-in a named artifact. Ask the operator only for a fact or constraint the
-outcome itself needs and no evidence supplies. Such an issue is run-ready
+in a named artifact. Ask the operator, through `AskUserQuestion`, only for a fact or
+constraint the outcome itself needs and no evidence supplies. Such an issue is run-ready
 once those criteria pass §2c; the design choice stays the run's.
 
 A stored size that disagrees with the sizing reference's measures is

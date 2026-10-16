@@ -368,6 +368,43 @@ case_command_position_brace_denies() {
         "brace word launched by timeout"
 }
 
+# A redirection may stand anywhere in a simple command, so one between the
+# brace word and the verb leaves the verb in the same command. Operators that
+# carry & or | (2>&1, &>, >|) are redirections too, not command separators.
+case_brace_redirection_before_verb_denies() {
+    assert_verdict "{docket,trust} >/dev/null add erik key" executor-write DENY \
+        "redirection between the brace word and add"
+    assert_verdict "{docket,trust} 2>&1 rm erik" executor-write DENY \
+        "fd duplication between the brace word and rm"
+    assert_verdict "{docket,trust} </dev/null add erik key" executor-write DENY \
+        "input redirection between the brace word and add"
+    assert_verdict "{docket,trust} >/dev/null add erik key" docket-conductor-RUN-1 DENY \
+        "conductor: redirection between the brace word and add"
+    assert_verdict "{docket,} 2>/dev/null trust add erik key" executor-write DENY \
+        "redirection between a docket-only brace word and trust"
+    assert_verdict "env {docket,trust} >/dev/null add erik key" executor-write DENY \
+        "launched brace word with a redirection before add"
+    assert_verdict "{docket,trust} &>/dev/null add erik key" executor-write DENY \
+        "&> redirection between the brace word and add"
+    assert_verdict "{docket,trust} >|/tmp/x add erik key" executor-write DENY \
+        ">| redirection between the brace word and add"
+    assert_verdict "{docket,trust} <<<x add erik key" executor-write DENY \
+        "here-string between the brace word and add"
+    assert_verdict "bash -c '{docket,trust} >/dev/null add erik key'" executor-write DENY \
+        "bash -c running a brace word with a redirection before add"
+}
+
+# The span still ends where the command does, so letters after a ; or | are
+# not read as the brace word's verb.
+case_brace_redirection_command_end_allows() {
+    assert_verdict "{docket,trust} list >/dev/null" executor-write ALLOW \
+        "brace word with a read verb and a trailing redirection"
+    assert_verdict "{docket,trust} >/dev/null; echo add" executor-write ALLOW \
+        "verb letters in the next command after ;"
+    assert_verdict "{docket,trust} 2>/dev/null|cat" executor-write ALLOW \
+        "a pipe after the redirection ends the command"
+}
+
 # zsh, the Bash tool's shell here, runs `noglob`, `nocorrect`, `-` and
 # `repeat N` as precommand modifiers and still brace-expands the word after
 # them, so that word keeps command position. The plain spellings deny through
@@ -1700,6 +1737,8 @@ case_must_deny_separately_quoted_tokens
 case_must_deny_quote_split_words
 case_brace_split_verb_denies
 case_command_position_brace_denies
+case_brace_redirection_before_verb_denies
+case_brace_redirection_command_end_allows
 case_command_position_brace_allows
 case_backslash_continuation
 case_zsh_modifier_brace_denies

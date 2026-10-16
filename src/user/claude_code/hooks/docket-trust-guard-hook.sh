@@ -442,18 +442,24 @@ function may_brace_expand(from,   k) {
 # command. Each word is tested on its own, since words built from one brace
 # share letters (`{docke,trus}t` is `docket trust`). The span starts at first
 # (the brace word after any glued operator) and runs on through the words
-# after it, up to the first unquoted ; | & < > or backtick, which ends the
-# command. The test reads no further: a heredoc body full of prose would
-# otherwise spell the verb by chance. A sequence expression can build letters
-# absent from its text (bash 4+ `{a..e..3}` is `a d`); zsh, the shell of the
-# Bash tool, steps no letter range.
+# after it, up to the first unquoted ; | & or backtick, which ends the
+# command. A redirection may stand anywhere in a simple command, so it ends
+# nothing: its operator is dropped first, including the forms that carry & or
+# | (2>&1, <&0, &>, >|), and its target stays in the span. The test reads no
+# further: a heredoc body full of prose would otherwise spell the verb by
+# chance. A sequence expression can build letters absent from its text (bash
+# 4+ `{a..e..3}` is `a d`); zsh, the shell of the Bash tool, steps no letter
+# range.
 function may_spell_trust_verb(from, first,   k, rest, piece, p) {
     rest = first
     for (k = from + 1; k <= n; k++) {
         piece = words[k]
-        if (substr(piece, 1, 1) != MARK && (p = match(piece, /[;|&<>\140]/)) > 0) {
-            rest = rest substr(piece, 1, p - 1)
-            break
+        if (substr(piece, 1, 1) != MARK) {
+            gsub(/[<>]&|&>|>[|]/, "", piece)
+            if ((p = match(piece, /[;|&\140]/)) > 0) {
+                rest = rest substr(piece, 1, p - 1)
+                break
+            }
         }
         rest = rest piece
     }

@@ -160,7 +160,10 @@ from the request, ask it outright in an `AskUserQuestion` round.
 request names an external library, API, protocol, framework, or prior art
 the plan depends on and the repo alone cannot verify, usually explicit in
 the operator's own words. When the signal is genuinely unclear, fold it into
-the batched question round instead of guessing either way. It gates an
+the batched question round instead of guessing either way. When applying
+it, record a URL in the issue body for each external source: the research
+executor fetches only URLs the brief names, and a source without one gets a
+single search that cannot verify it. It gates an
 optional `research` step ahead of authoring in `spec-doc`, `spec-project`,
 and `investigation`; absent is the normal case, so a label applied too
 eagerly costs a skipped step, not a wrong one, while a label withheld when

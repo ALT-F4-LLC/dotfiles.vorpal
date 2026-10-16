@@ -789,6 +789,14 @@ in a named artifact. Ask the operator, through `AskUserQuestion`, only for a fac
 constraint the outcome itself needs and no evidence supplies. Such an issue is run-ready
 once those criteria pass §2c; the design choice stays the run's.
 
+When several `needs-design` issues share one mechanism and collide on the
+same file, the mechanism belongs to the one issue whose outcome needs it
+first: the others `depends_on` it, applied as a relation correction under
+§4b. Which issue owns it is a §4a question only when the evidence does not
+settle it. A `route-run` label on an issue waiting on a prerequisite is
+correct once its contract is complete; the `depends_on` relation, not the
+label, holds the issue back.
+
 A stored size that disagrees with the sizing reference's measures is
 corrected the same way an absent one is filled: directly under this
 section when `docket workflow show` confirms no registered workflow

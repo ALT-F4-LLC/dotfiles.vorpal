@@ -296,7 +296,18 @@ cited files yourself for any entry you would not defend in one sentence,
 for every closure, merge, rescope, or split candidate, and for every issue
 `uncovered` names, which you judge inline under the rules below. If the
 script cannot launch or returns nothing, judge every issue inline instead;
-the pass does not stop, it slows down.
+the pass does not stop, it slows down. The harness may pass the script's
+`args` as a JSON-encoded string, and the script takes no file path: pass the
+survey inline as compact JSON carrying only the fields the header comment
+names, and never drop rows to shorten it. Rows beyond the script's judge
+cap return `uncovered` and are judged inline.
+
+Persist the ledger to the scratchpad as soon as the script returns, at
+`docket-groom-<project>-<pass id>.json`, and rewrite it after each batch of
+edits and each operator answer. A large pass can outlive its context window;
+the file, not memory, carries the ledger, the pass id, and the applied-edit
+record. A continuation that finds the file for its pass resumes from it and
+is not a new survey; the fresh-read checks before each edit still apply.
 
 Build one ledger covering every issue in the judged scope, including
 issues with no hygiene defects; count-only engine rows enter §5's survey
@@ -746,6 +757,27 @@ identifies the future verification method; it does not mean the deliverable
 was already inspected. Edit an authorized fill into the issue with a
 comment noting docket-groom drafted it.
 
+Drafting is part of the pass, not a follow-up, except on run-included or
+claimed issues, which route to §4b. Every retained issue with
+missing criteria, files, scope, or size gets its fill in this pass; a
+pass that reports "criteria still missing" for an issue it could have
+drafted from the issue's own evidence is incomplete by its own rule. Work
+the retained issues in batches ordered by epic (ungrouped issues last),
+finish and record one batch before starting the next, and rewrite the
+ledger file after each. Draft each criterion from the established
+requirement, run the citation lint on it, store it, and comment the
+drafting once per issue. An issue whose requirement is not established
+from evidence is a §4a decision, not a draft.
+
+A stored size that disagrees with the sizing reference's measures is
+corrected the same way an absent one is filled: directly under this
+section when `docket workflow show` confirms no registered workflow
+declares `sizes_any`, with the five counts in the comment, and through §4b
+as a rerouted safe edit when one does. The correction rewrites a field the
+pass itself can re-derive, not prose the operator wrote, so it needs no
+rescope approval. A tier of `oversized` is a §4b split proposal, never a
+size write.
+
 Automatic fills preserve prose the operator already wrote. Rewrites to
 existing content apply only as explicitly approved in §4. A content fill
 and a stale-binding label often belong to the same issue: check the label
@@ -778,7 +810,11 @@ concrete choice the operator can answer without rereading the backlog. Do
 not ask a generic "what should we do with this issue?"
 
 Use `AskUserQuestion` in the main session, in manageable batches within the
-tool's limits. Use a single choice for mutually exclusive outcomes. Include
+tool's limits. Ask every remaining decision in this pass, round after round,
+before the report; a decision left unasked because many are queued is a
+pass that stopped early. Once a decision settles, return to §3 and §4b for
+the issues it unblocked, so their criteria, routing, and parenting land in
+the same pass. Use a single choice for mutually exclusive outcomes. Include
 a defer option where a decision genuinely cannot be made yet; capture the
 missing input, responsible decision-maker if known, and the condition for
 resuming. Continue independent grooming while an answer is pending.
@@ -947,6 +983,16 @@ require a canonical issue another proposal would close, parent an issue
 to an epic another proposal creates, or repair criteria on an issue
 another proposal would split.
 
+Every candidate the ledger holds becomes a proposal or a recorded reason it
+cannot: each criteria repair, split, rescope, re-parent, closure, and merge.
+Listing candidates in the report as "not yet proposed" is not a result. Large
+sets go to the operator in rounds, not by omission: one proposal per
+independent change, dependent changes combined as above, grouped by epic
+and several to a round; present a
+round, apply what is approved, and present the next, until none remain. The
+advisor review runs once per round. A round does not restart the survey, and
+a declined proposal is not asked again.
+
 If there is nothing to propose, finish any remaining §4a triage; proceed to
 §5 only when no further decisions or authorized edits can be completed.
 When the session can launch agents, launch the `advisor` agent on the proposal batch before
@@ -1023,6 +1069,32 @@ every criterion passes and all required outcomes are covered in the stored
 issue. That recheck applies to non-epic issues. An epic's recheck is that
 it carries `blocked`, that every open child is retained or has a recorded
 gap, and that each membership has its one-sentence defense in the ledger.
+
+Before reporting, run the completion gate against the ledger file. Every
+judged issue must be in one of these states, and any other state sends the
+pass back to §3 or §4:
+
+- **Run-ready:** passes §2b and §2c, `scripts/scope-lint.sh` exits 0, and
+  carries exactly one routing label. A `route-run` issue also matches
+  exactly one workflow; `route-direct` and `route-loop` match none by
+  design and need only §2b's criteria for that route.
+- **Waiting on a named prerequisite:** complete contract, real `depends_on`.
+- **Blocked on the operator:** a decision asked this pass and deferred,
+  declined, or unanswered, with the exact input needed recorded.
+- **Retired:** closed or merged on an applied proposal.
+- **Declined:** the operator declined a proposal; the issue stays retained,
+  and the declined change and the gap it leaves are recorded.
+- **Held by protection:** run-included or claimed, with its routed edits
+  proposed.
+- **Reported limit:** `AskUserQuestion` unavailable, a proposal outdated, a
+  mutation failed or uncertain, or evidence unavailable, with the exact
+  blocker recorded.
+
+A report that hands back drafting, proposals, or questions the pass could
+have completed, with "re-run to finish", fails the gate. Only the waiting,
+operator-blocked, declined, protected, and reported-limit states may remain
+non-ready, and a pass scoped to chosen issues (named ids, or an epic's
+children) must leave every one of them run-ready or in one of those states.
 
 Grooming is complete only when every judged issue has a verified
 disposition and retained work has no unresolved grooming gaps. Distinguish

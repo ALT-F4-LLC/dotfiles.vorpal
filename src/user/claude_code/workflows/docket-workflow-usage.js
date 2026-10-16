@@ -1,5 +1,5 @@
 export const meta = {
-    name: 'wave-usage',
+    name: 'docket-workflow-usage',
     description: 'Internal: launched through scriptPath by docket-run when a wave returns; measures a completed wave\'s token spend from its agent transcripts and emits the back-fill rows for `docket dispatch backfill-usage` or `docket vote backfill-usage`. Args and probe cost in the header comment.',
     whenToUse: 'Never by name. Launched beside the dispatch close, and by the pause and resume paths for a wave never back-filled.',
     phases: [
@@ -47,7 +47,7 @@ export const meta = {
 
 // scout/extract/recheck only relay a fixed command's output through a schema
 // (no judgment involved), so a cheap model is pinned rather than inherited —
-// the same reasoning wave.js:probe and tribunal.js:verify already apply to
+// the same reasoning docket-workflow.js:probe and tribunal.js:verify already apply to
 // read-only relay agents of this shape.
 const AGENT_CONFIG = {
     scout: { model: 'haiku', effort: 'low' },
@@ -85,7 +85,7 @@ const DEFAULT_MODE = 'steps'
 //    names its assignment in a `docket step claim/record STEP-N` command, the
 //    same string the claimant must pass, so the join cannot disagree with the
 //    record. A bare STEP-N search cannot tell "execute this step" from "read
-//    this step": wave.js probes a row before claiming it, and a first-match
+//    this step": docket-workflow.js probes a row before claiming it, and a first-match
 //    join back-filled ~17K tokens per probe onto pending and superseded steps
 //    no agent ever ran on a past wave.
 //
@@ -199,24 +199,24 @@ const DEFAULT_MODE = 'steps'
 // extraction agent that returns nothing, a jq failure that survives its retry,
 // a step key that is not STEP-N or an executor brief that names no step to
 // record, and a dispatched agent that carries no usage. A bootstrap:false confirmed on that re-check is not an
-// error: it is folded into wave overhead instead, since wave.js never
+// error: it is folded into wave overhead instead, since docket-workflow.js never
 // dispatches an agent without a bootstrap brief.
 // ---------------------------------------------------------------------------
 
 const input = (typeof args === 'string' ? JSON.parse(args) : args) || {}
-if (typeof args === 'string') log('wave-usage: decoded args from the harness JSON-encoded transport (normal)')
+if (typeof args === 'string') log('docket-workflow-usage: decoded args from the harness JSON-encoded transport (normal)')
 const dir = input.dir
 if (typeof dir !== 'string' || !dir.startsWith('/')) {
-    throw new Error(`wave-usage: args.dir must be an absolute transcript directory, got ${JSON.stringify(dir)}`)
+    throw new Error(`docket-workflow-usage: args.dir must be an absolute transcript directory, got ${JSON.stringify(dir)}`)
 }
 const mode = input.mode ?? DEFAULT_MODE
 if (mode !== 'steps' && mode !== 'seats') {
-    throw new Error(`wave-usage: args.mode must be "steps" or "seats", got ${JSON.stringify(mode)}`)
+    throw new Error(`docket-workflow-usage: args.mode must be "steps" or "seats", got ${JSON.stringify(mode)}`)
 }
 const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
 
-// TEST-BEGIN wave-usage-extract — extracted by
-// tests/wave-usage-probe-overhead.test.sh and run with the same jq flags as
+// TEST-BEGIN docket-workflow-usage-extract — extracted by
+// tests/docket-workflow-usage-probe-overhead.test.sh and run with the same jq flags as
 // the agents use. Keep it free of workflow globals.
 //
 // Run as `jq -c -n -R -f <this> <transcript>`: raw lines, so a line that is
@@ -235,9 +235,9 @@ const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
 // searched past: the later user messages are tool results, and their output
 // can quote a `docket step record STEP-N` it merely read.
 //
-// probe is the four-way read test: the explicit declaration wave.js's
+// probe is the four-way read test: the explicit declaration docket-workflow.js's
 // probeBrief() closes with (via probeTrailer()), the block probe's opening sentence, the legacy
-// probe self-description (truncated on purpose: wave.js writes "what the
+// probe self-description (truncated on purpose: docket-workflow.js writes "what the
 // record currently says", tribunal.js "what the VOTE record currently says"),
 // and the READ JOB itself — the fixed opening line followed by one docket
 // read verb. Keying on the command keeps classification working when the
@@ -249,8 +249,8 @@ const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
 // is required to run. step_mention is NOT a join: it is the loose "which step
 // is this agent looking at" read that labels an overhead agent in the report.
 //
-// claim_agent is the declaration wave.js's claimBrief() closes with. The
-// claim agent runs wave-claim for an executor and is wave overhead: its
+// claim_agent is the declaration docket-workflow.js's claimBrief() closes with. The
+// claim agent runs docket-workflow-claim for an executor and is wave overhead: its
 // brief never spells a claim or record of the step, so it never joins one.
 //
 // reseat is the sentence tribunal.js opens a re-seated judge's brief with.
@@ -329,10 +329,10 @@ const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object
         })
   }
 `
-// TEST-END wave-usage-extract
+// TEST-END docket-workflow-usage-extract
 
-// TEST-BEGIN wave-usage-select — extracted and run by
-// tests/wave-usage-probe-overhead.test.sh after the extract region, whose
+// TEST-BEGIN docket-workflow-usage-select — extracted and run by
+// tests/docket-workflow-usage-probe-overhead.test.sh after the extract region, whose
 // BRIEF_DEFS_JQ it reads. Keep it free of workflow globals.
 //
 // Run by the seats-mode scout as `jq -r -n -R '<this>' <transcript>...`
@@ -345,10 +345,10 @@ const SELECT_JQ = `${BRIEF_DEFS_JQ}reduce (inputs | fromjson? | select(type == "
     ({}; if has($u.file) then . else .[$u.file] = $u.text end)
 | to_entries[] | select(.value | cast_join) | .key
 `
-// TEST-END wave-usage-select
+// TEST-END docket-workflow-usage-select
 
-// TEST-BEGIN wave-usage-classify — extracted and exercised by
-// tests/wave-usage-probe-overhead.test.sh over jq output from fixture
+// TEST-BEGIN docket-workflow-usage-classify — extracted and exercised by
+// tests/docket-workflow-usage-probe-overhead.test.sh over jq output from fixture
 // transcripts. Keep everything between the markers free of workflow globals
 // (agent, log, args) so it stays evaluable on its own.
 const UNITS = ['input_tokens', 'output_tokens', 'cache_creation_tokens', 'cache_read_tokens']
@@ -401,7 +401,7 @@ function classify(raw, mode, file) {
         // The relaying agent said jq found no first `type:"user"` line. Twice
         // in a row (bootstrapFallback set by the caller after a fresh retry
         // repeats the answer) is treated as a misreport rather than truth —
-        // wave.js never dispatches an agent without a bootstrap brief, so a
+        // docket-workflow.js never dispatches an agent without a bootstrap brief, so a
         // reproducible "no user message" is far more likely a relay error
         // than an actual bootstrap-free transcript. Reported here as
         // overhead (with its usage) rather than thrown, so one misreport
@@ -485,7 +485,7 @@ function reduceRows(results, mode, exclude) {
     const model_observations = []
     const excluded = new Set(exclude || [])
     // A claimant transcript with no usage is judged AFTER the whole batch is
-    // summed, not in line: wave.js re-spawns a claimant whose first spawn
+    // summed, not in line: docket-workflow.js re-spawns a claimant whose first spawn
     // died before its first assistant turn, and that dead transcript still
     // opens with the step's brief. Beside a live transcript for the same
     // key it is a dead spawn and is skipped; alone, silence is still an
@@ -553,10 +553,10 @@ function reduceRows(results, mode, exclude) {
     )
     return { rows, overhead, skipped, errors, model_observations }
 }
-// TEST-END wave-usage-classify
+// TEST-END docket-workflow-usage-classify
 
-// TEST-BEGIN wave-usage-paths — extracted and exercised by
-// tests/wave-usage-probe-overhead.test.sh. Keep it free of workflow globals.
+// TEST-BEGIN docket-workflow-usage-paths — extracted and exercised by
+// tests/docket-workflow-usage-probe-overhead.test.sh. Keep it free of workflow globals.
 const sq = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`
 
 // A path as the agents' shell commands carry it. Every path under
@@ -607,7 +607,7 @@ const listCommand = (dir) =>
 // one only the no-transcripts check catches. Returns the listing unchanged.
 function checkListing(mode, listing) {
     if (listing?.files_exit !== 0) {
-        throw new Error(`wave-usage: the ${mode}-mode transcript listing exited ${listing?.files_exit}, not 0 — ` +
+        throw new Error(`docket-workflow-usage: the ${mode}-mode transcript listing exited ${listing?.files_exit}, not 0 — ` +
             'it may be short, so no transcript is measured from it')
     }
     return listing
@@ -628,17 +628,17 @@ const AGENT_LOG_RE = /\/agent-[^/]*\.jsonl$/
 function filesToExtract(mode, dir, transcripts, listing) {
     if (mode !== 'seats') return { files: transcripts, unlisted: 0 }
     if (!Array.isArray(listing?.seats)) {
-        throw new Error('wave-usage: the seats-mode scout returned no seats listing — cannot tell judges from other agents')
+        throw new Error('docket-workflow-usage: the seats-mode scout returned no seats listing — cannot tell judges from other agents')
     }
     if (listing.seats_exit !== 0) {
-        throw new Error(`wave-usage: the seats selection exited ${listing.seats_exit}, not 0 — ` +
+        throw new Error(`docket-workflow-usage: the seats selection exited ${listing.seats_exit}, not 0 — ` +
             'its seat list may be short, so no seat is measured from it')
     }
     const selected = new Set(rebuildListing(dir, listing.seats.filter((f) => AGENT_LOG_RE.test(f))).files)
     const files = transcripts.filter((f) => selected.has(f))
     return { files, unlisted: selected.size - files.length }
 }
-// TEST-END wave-usage-paths
+// TEST-END docket-workflow-usage-paths
 
 const FILES_SCHEMA = {
     type: 'object',
@@ -682,8 +682,8 @@ const EXTRACT_SCHEMA = {
     },
 }
 
-// TEST-BEGIN wave-usage-scout — extracted by
-// tests/wave-usage-probe-overhead.test.sh, which sets `dir` and `mode`, renders
+// TEST-BEGIN docket-workflow-usage-scout — extracted by
+// tests/docket-workflow-usage-probe-overhead.test.sh, which sets `dir` and `mode`, renders
 // the seats-mode brief and runs its fenced command block over fixture
 // transcripts.
 //
@@ -710,14 +710,14 @@ ${LIST_COMMAND}
 \`\`\`
 
 The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], files_exit: N}: \`files\` is every path printed before the \`files_exit=\` line, one entry per line, verbatim and in that order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`files_exit\` is the number printed on the \`files_exit=\` line. An empty listing is an empty \`files\` array. Do not open, read, or count the files.`
-// TEST-END wave-usage-scout
+// TEST-END docket-workflow-usage-scout
 
 const extractBrief = (file, retry) => `You are a read-only measurement relay for one transcript file. Do not cd anywhere. Run these commands verbatim, sandboxed. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second runs it:
 
 \`\`\`
-cat > "\${TMPDIR:-/tmp}/wave-usage-$$.jq" <<'JQ'
+cat > "\${TMPDIR:-/tmp}/docket-workflow-usage-$$.jq" <<'JQ'
 ${EXTRACT_JQ}JQ
-jq -c -n -R -f "\${TMPDIR:-/tmp}/wave-usage-$$.jq" ${shellPath(file)}; echo "exit=$?"
+jq -c -n -R -f "\${TMPDIR:-/tmp}/docket-workflow-usage-$$.jq" ${shellPath(file)}; echo "exit=$?"
 \`\`\`
 
 The transcript path is exact and must be copied character for character, including the one \`*\` that stands in for the flattened project name (the shell resolves it; do not replace it). A hyphen where a dot might be expected (\`github-com\`) is correct and is not a typo; do not "correct" any part of the path.
@@ -731,25 +731,25 @@ const rawFiles = [...new Set(listing?.files || [])]
 const listed = rawFiles.filter((f) => AGENT_LOG_RE.test(f))
 if (listed.length !== rawFiles.length) {
     const dropped = rawFiles.filter((f) => !AGENT_LOG_RE.test(f))
-    log(`wave-usage: scout listed ${rawFiles.length} path(s), ${dropped.length} not matching agent-*.jsonl and dropped: ${dropped.join(', ')}`)
+    log(`docket-workflow-usage: scout listed ${rawFiles.length} path(s), ${dropped.length} not matching agent-*.jsonl and dropped: ${dropped.join(', ')}`)
 }
 const { files: transcripts, retyped: retypedByScout } = rebuildListing(dir, listed)
 if (retypedByScout) {
-    log(`wave-usage: scout returned ${retypedByScout} path(s) outside args.dir (the relay retyped the directory); rebuilt each from args.dir and the listed basename`)
+    log(`docket-workflow-usage: scout returned ${retypedByScout} path(s) outside args.dir (the relay retyped the directory); rebuilt each from args.dir and the listed basename`)
 }
-log(`wave-usage: ${transcripts.length} agent transcript(s) under ${dir} (${mode} mode)`)
+log(`docket-workflow-usage: ${transcripts.length} agent transcript(s) under ${dir} (${mode} mode)`)
 if (transcripts.length === 0) {
-    throw new Error(`wave-usage: no agent-*.jsonl under ${dir} — nothing to measure, which is a finding, not an empty batch`)
+    throw new Error(`docket-workflow-usage: no agent-*.jsonl under ${dir} — nothing to measure, which is a finding, not an empty batch`)
 }
 const { files, unlisted } = filesToExtract(mode, dir, transcripts, listing)
 if (mode === 'seats') {
-    if (unlisted) log(`wave-usage: scout selected ${unlisted} path(s) its own listing lacks; dropped`)
-    log(`wave-usage: ${files.length} transcript(s) brief a vote cast; the other ${transcripts.length - files.length} are not extracted` +
+    if (unlisted) log(`docket-workflow-usage: scout selected ${unlisted} path(s) its own listing lacks; dropped`)
+    log(`docket-workflow-usage: ${files.length} transcript(s) brief a vote cast; the other ${transcripts.length - files.length} are not extracted` +
         (files.length === 0 ? ' — the selection ran clean and found no judge, so no seat row follows' : ''))
 }
 
-// TEST-BEGIN wave-usage-recheck-pipeline — extracted and exercised by
-// tests/wave-usage-recheck-pipeline.test.sh; EXTRACT_SCHEMA requires only
+// TEST-BEGIN docket-workflow-usage-recheck-pipeline — extracted and exercised by
+// tests/docket-workflow-usage-recheck-pipeline.test.sh; EXTRACT_SCHEMA requires only
 // `ok`, so a schema-valid reply can still omit `usage` — reduceRows
 // dereferences extract.usage[u] unguarded. Shared by the first-attempt
 // classification and the bootstrap-recheck retry stage below, so neither
@@ -777,7 +777,7 @@ function hasUsage(extract) {
 // STAGE 2's four-branch precedence is NOT simplifiable to "retry if
 // bootstrap:false, else keep": a failed first attempt (null, !ok, no usage)
 // pushes to `errors` and returns null (excluded from `results`, and NEVER
-// retried — wave-usage only rechecks a confirmed-good extract that merely
+// retried — docket-workflow-usage only rechecks a confirmed-good extract that merely
 // reported no bootstrap, never a failure); a GOOD extract with
 // bootstrap !== false passes straight through, unretried; only
 // bootstrap === false triggers stage 3's retry. ONE exception, stage 2b:
@@ -799,27 +799,27 @@ const extractOnce = (path, retry, label, config, what) => agent(extractBrief(pat
     schema: EXTRACT_SCHEMA,
     ...config,
 }).catch((err) => {
-    log(`wave-usage: ${basename(path)}: ${what} agent error: ${err}`)
+    log(`docket-workflow-usage: ${basename(path)}: ${what} agent error: ${err}`)
     return null
 })
 function classifyFirstAttempt(r, file, i) {
     if (!r) {
-        log(`wave-usage: ${file}: extraction agent returned nothing`)
+        log(`docket-workflow-usage: ${file}: extraction agent returned nothing`)
         errors.push(`${file}: extraction agent returned nothing`)
         return null
     }
     if (!r.extract || !r.extract.ok) {
         const why = (r.extract && r.extract.error) || 'no error text'
         if (PATH_MISS_RE.test(why)) {
-            log(`wave-usage: ${file}: jq could not open the file (${why}) — the relay likely retyped the path; retrying once with a fresh agent`)
+            log(`docket-workflow-usage: ${file}: jq could not open the file (${why}) — the relay likely retyped the path; retrying once with a fresh agent`)
             return { file, path: files[i], pathMiss: why }
         }
-        log(`wave-usage: ${file}: jq failed — ${why}`)
+        log(`docket-workflow-usage: ${file}: jq failed — ${why}`)
         errors.push(`${file}: jq failed — ${why}`)
         return null
     }
     if (!hasUsage(r.extract)) {
-        log(`wave-usage: ${file}: extract reported ok but carried no usage`)
+        log(`docket-workflow-usage: ${file}: extract reported ok but carried no usage`)
         errors.push(`${file}: extract reported ok but carried no usage`)
         return null
     }
@@ -840,7 +840,7 @@ function retryPathMiss(prev) {
         }
         if (!second.ok) {
             const why = second.error || 'no error text'
-            log(`wave-usage: ${prev.file}: path retry also failed — ${why}`)
+            log(`docket-workflow-usage: ${prev.file}: path retry also failed — ${why}`)
             errors.push(`${prev.file}: jq failed — ${prev.pathMiss} (path retry: ${why})`)
             return null
         }
@@ -848,7 +848,7 @@ function retryPathMiss(prev) {
             errors.push(`${prev.file}: path retry reported ok but carried no usage`)
             return null
         }
-        log(`wave-usage: ${prev.file}: path retry succeeded`)
+        log(`docket-workflow-usage: ${prev.file}: path retry succeeded`)
         return { file: prev.file, extract: second, path: prev.path }
     })
 }
@@ -861,20 +861,20 @@ let bootstrapRechecked = 0
 function recheckBootstrap(prev) {
     if (!prev || prev.extract.bootstrap !== false) return prev
     bootstrapRechecked++
-    log(`wave-usage: ${prev.file}: reported bootstrap:false — re-checking before trusting it`)
+    log(`docket-workflow-usage: ${prev.file}: reported bootstrap:false — re-checking before trusting it`)
     return extractOnce(prev.path, true, `${prev.file} · extract (retry)`, AGENT_CONFIG.recheck, 'recheck').then((second) => {
         if (second && second.ok && second.bootstrap === false) {
-            log(`wave-usage: ${prev.file}: bootstrap:false confirmed on a second, independent read — treating as a misreport and recording as overhead, not an error`)
+            log(`docket-workflow-usage: ${prev.file}: bootstrap:false confirmed on a second, independent read — treating as a misreport and recording as overhead, not an error`)
             return { ...prev, extract: { ...prev.extract, bootstrapFallback: true } }
         }
         if (second && second.ok && hasUsage(second)) {
-            log(`wave-usage: ${prev.file}: bootstrap:false did not repeat on retry — using the retry's answer`)
+            log(`docket-workflow-usage: ${prev.file}: bootstrap:false did not repeat on retry — using the retry's answer`)
             return { ...prev, extract: second }
         }
         if (second && second.ok) {
-            log(`wave-usage: ${prev.file}: retry reported ok but carried no usage — reporting the original error rather than a reply reduceRows cannot use`)
+            log(`docket-workflow-usage: ${prev.file}: retry reported ok but carried no usage — reporting the original error rather than a reply reduceRows cannot use`)
         } else {
-            log(`wave-usage: ${prev.file}: retry could not confirm or refute the first answer — reporting the original error`)
+            log(`docket-workflow-usage: ${prev.file}: retry could not confirm or refute the first answer — reporting the original error`)
         }
         return prev
     })
@@ -891,14 +891,14 @@ const extracted = await pipeline(
     recheckBootstrap,
 )
 const results = extracted.filter(Boolean)
-// TEST-END wave-usage-recheck-pipeline
-if (pathRetried) log(`wave-usage: ${pathRetried} transcript(s) had their path retyped by the relay and were retried once`)
-if (bootstrapRechecked) log(`wave-usage: ${bootstrapRechecked} transcript(s) reported bootstrap:false and were rechecked`)
+// TEST-END docket-workflow-usage-recheck-pipeline
+if (pathRetried) log(`docket-workflow-usage: ${pathRetried} transcript(s) had their path retyped by the relay and were retried once`)
+if (bootstrapRechecked) log(`docket-workflow-usage: ${bootstrapRechecked} transcript(s) reported bootstrap:false and were rechecked`)
 const summary = reduceRows(results, mode, exclude)
 const reduced = { ...summary, errors: [...errors, ...summary.errors] }
 
 for (const observation of reduced.model_observations) {
-    log(`wave-usage: ${observation.file}: serving models ` +
+    log(`docket-workflow-usage: ${observation.file}: serving models ` +
         `${observation.models.join(', ') || 'unknown'} ` +
         `(${observation.complete ? 'all parsed response model fields present' : 'model fields missing'}); ` +
         `last ${observation.last_model || 'unknown'}, effort ${observation.effort_resolved}`)
@@ -906,28 +906,28 @@ for (const observation of reduced.model_observations) {
 
 for (const s of reduced.skipped) {
     if (s.reason === 'unattributed') {
-        log(`wave-usage: ${s.file}: no seat (never cast) — dropped here; steps mode carries it if it recorded a step, and reports it as wave overhead if it did not`)
+        log(`docket-workflow-usage: ${s.file}: no seat (never cast) — dropped here; steps mode carries it if it recorded a step, and reports it as wave overhead if it did not`)
     } else if (s.reason === 'seated') {
-        log(`wave-usage: ${s.label}: cast a ballot — skipped here, carried by seats mode`)
+        log(`docket-workflow-usage: ${s.label}: cast a ballot — skipped here, carried by seats mode`)
     } else if (s.reason === 'dead-spawn') {
-        log(`wave-usage: ${s.file} (${s.label}): dead spawn — no usage, and another transcript carries this ${mode === 'seats' ? 'seat' : 'step'}; skipped, not thrown`)
+        log(`docket-workflow-usage: ${s.file} (${s.label}): dead spawn — no usage, and another transcript carries this ${mode === 'seats' ? 'seat' : 'step'}; skipped, not thrown`)
     } else {
-        log(`wave-usage: ${s.file} (${s.label}): excluded — a prior back-fill already carries this ${mode === 'seats' ? 'seat' : 'step'}`)
+        log(`docket-workflow-usage: ${s.file} (${s.label}): excluded — a prior back-fill already carries this ${mode === 'seats' ? 'seat' : 'step'}`)
     }
 }
 for (const o of reduced.overhead.agents) {
-    log(`wave-usage: ${o.file}: ${o.label} — recorded no step, so its usage is wave overhead and is attributed to none`)
+    log(`docket-workflow-usage: ${o.file}: ${o.label} — recorded no step, so its usage is wave overhead and is attributed to none`)
 }
 if (reduced.overhead.agents.length) {
     const sums = UNITS.map((u) => `${u} ${reduced.overhead.sums[u]}`).join(', ')
-    log(`wave-usage: WAVE OVERHEAD: ${reduced.overhead.agents.length} agent(s), ${sums} — no step owns this spend; it is reported, not back-filled`)
+    log(`docket-workflow-usage: WAVE OVERHEAD: ${reduced.overhead.agents.length} agent(s), ${sums} — no step owns this spend; it is reported, not back-filled`)
 }
 const keyOf = (r) => (mode === 'seats' ? `${r.proposal} ${r.voter}` : r.step)
-log(`wave-usage: ${reduced.rows.length} row(s) over ${new Set(reduced.rows.map(keyOf)).size} key(s)` +
+log(`docket-workflow-usage: ${reduced.rows.length} row(s) over ${new Set(reduced.rows.map(keyOf)).size} key(s)` +
     (mode === 'seats' ? ' (four token units and tool_uses per seat)' : ''))
 if (reduced.errors.length) {
-    for (const e of reduced.errors) log(`wave-usage: ${e}`)
-    throw new Error(`wave-usage: ${reduced.errors.length} error(s) — ${reduced.errors.join('; ')}`)
+    for (const e of reduced.errors) log(`docket-workflow-usage: ${e}`)
+    throw new Error(`docket-workflow-usage: ${reduced.errors.length} error(s) — ${reduced.errors.join('; ')}`)
 }
 
 return reduced

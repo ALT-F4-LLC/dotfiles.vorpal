@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's fail-closed writer-isolation branch.
+# Behavior suite for docket-workflow.js's fail-closed writer-isolation branch.
 #
 # When an isolated spawn rejects because the harness could not create the
 # worktree, the spawn catch must return `isolation-unavailable` and launch
@@ -10,19 +10,19 @@
 # fallback fails here instead of relying on review.
 #
 # Needs only `node` and `awk`; it never runs a wave. WAVE_JS overrides the
-# wave.js path for mutant runs.
+# docket-workflow.js path for mutant runs.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-isolation-unavailable.XXXXXX") || fatal "mktemp failed"

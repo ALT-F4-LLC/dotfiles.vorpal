@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's per-unit LAUNCHES — one dispatch split into
+# Behavior suite for docket-workflow.js's per-unit LAUNCHES — one dispatch split into
 # one wave launch per issue, each launch holding only its own rows.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
@@ -21,21 +21,21 @@
 # the narrower count its own rows show; and the retired `shard` arg and a
 # malformed `unit` refuse to route.
 #
-# HOW. Like tests/wave-issue-lanes.test.sh it wraps the extracted ladder
+# HOW. Like tests/docket-workflow-issue-lanes.test.sh it wraps the extracted ladder
 # region in an async function with stub spawn/runGate/probe/parallel/log
 # globals; `input.unit` is set per scenario.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-launch-unit.XXXXXX") || fatal "mktemp failed"
@@ -88,7 +88,7 @@ JS
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so wave.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -165,7 +165,7 @@ const ex = (step, issue, stage, cls, extra) => Object.assign(
     { step, issue, stage, kind: 'executor', executor: cls === 'write' ? 'implement' : cls, class: cls },
     extra || {})
 const vote = (step, issue, stage) => ({ step, issue, stage, kind: 'vote', voters: ['judge-correctness'] })
-// wave.js returns {statuses, coordination}; `out` below is that object.
+// docket-workflow.js returns {statuses, coordination}; `out` below is that object.
 const statusOf = (out, step) => (out.statuses.find((r) => r.step === step) || {}).status
 const logged = (frag) => LOG.some((l) => l.includes(frag))
 

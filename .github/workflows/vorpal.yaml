@@ -125,53 +125,53 @@ jobs:
 
       - run: bash tests/tribunal-seat-brief.test.sh
 
-      - run: bash tests/wave-agent-budget.test.sh
+      - run: bash tests/docket-workflow-agent-budget.test.sh
 
-      - run: bash tests/wave-bootstrap-owner-discriminator.test.sh
+      - run: bash tests/docket-workflow-bootstrap-owner-discriminator.test.sh
 
-      - run: bash tests/wave-bootstrap-render.test.sh
+      - run: bash tests/docket-workflow-bootstrap-render.test.sh
 
-      - run: bash tests/wave-chain-dead-ladder.test.sh
+      - run: bash tests/docket-workflow-chain-dead-ladder.test.sh
 
-      - run: bash tests/wave-claim.test.sh
+      - run: bash tests/docket-workflow-claim.test.sh
 
-      - run: bash tests/wave-claim-path.test.sh
+      - run: bash tests/docket-workflow-claim-path.test.sh
 
-      - run: bash tests/wave-executor-read-write.test.sh
+      - run: bash tests/docket-workflow-executor-read-write.test.sh
 
-      - run: bash tests/wave-classifier-retry.test.sh
+      - run: bash tests/docket-workflow-classifier-retry.test.sh
 
-      - run: bash tests/wave-fix-round-ancestry.test.sh
+      - run: bash tests/docket-workflow-fix-round-ancestry.test.sh
 
-      - run: bash tests/wave-harness-cap.test.sh
+      - run: bash tests/docket-workflow-harness-cap.test.sh
 
-      - run: bash tests/wave-isolation-unavailable.test.sh
+      - run: bash tests/docket-workflow-isolation-unavailable.test.sh
 
-      - run: bash tests/wave-issue-lanes.test.sh
+      - run: bash tests/docket-workflow-issue-lanes.test.sh
 
-      - run: bash tests/wave-launch-unit.test.sh
+      - run: bash tests/docket-workflow-launch-unit.test.sh
 
-      - run: bash tests/wave-model-attribution.test.sh
+      - run: bash tests/docket-workflow-model-attribution.test.sh
 
-      - run: bash tests/wave-orphaned-claim.test.sh
+      - run: bash tests/docket-workflow-orphaned-claim.test.sh
 
-      - run: bash tests/wave-packet.test.sh
+      - run: bash tests/docket-workflow-packet.test.sh
 
-      - run: bash tests/wave-park-signals.test.sh
+      - run: bash tests/docket-workflow-park-signals.test.sh
 
-      - run: bash tests/wave-target-envelope.test.sh
+      - run: bash tests/docket-workflow-target-envelope.test.sh
 
-      - run: bash tests/wave-token-budget.test.sh
+      - run: bash tests/docket-workflow-token-budget.test.sh
 
-      - run: bash tests/wave-tribunal-agent-count.test.sh
+      - run: bash tests/docket-workflow-tribunal-agent-count.test.sh
 
-      - run: bash tests/wave-usage-probe-overhead.test.sh
+      - run: bash tests/docket-workflow-usage-probe-overhead.test.sh
 
-      - run: bash tests/wave-usage-recheck-pipeline.test.sh
+      - run: bash tests/docket-workflow-usage-recheck-pipeline.test.sh
 
-      - run: bash tests/wave-vote-harness-weight.test.sh
+      - run: bash tests/docket-workflow-vote-harness-weight.test.sh
 
-      - run: bash tests/wave-vote-retry-report.test.sh
+      - run: bash tests/docket-workflow-vote-retry-report.test.sh
 
       - run: bash tests/workflow-changelog-version.test.sh
 

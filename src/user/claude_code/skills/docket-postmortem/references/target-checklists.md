@@ -15,7 +15,7 @@ applied, and never judge a past execution against a newer checklist alone.
 | Continuous execution | Reconciliation continues after each wave. An agent awaiting its parent's outstanding reply can legitimately end a turn; abandoning actionable work without a wait or terminal condition is different. |
 | Fresh run state | Engine results or captured authoritative reads support each transition. The issue roster may legally grow during an active run under the pinned contract. |
 | Conductor capability | The token stays in the session-private file: never in a brief, a tool output, a helper's prompt, or the resume prompt. A done or abandoned run removes it. |
-| Wave launch | Installed absolute `wave.js` path, real supported args object, original rows and their model, effort, and variant. A source path or copied workaround does not prove the installed workflow ran. Harness args decoding alone is not a defect. |
+| Wave launch | Installed absolute `docket-workflow.js` path, real supported args object, original rows and their model, effort, and variant. A source path or copied workaround does not prove the installed workflow ran. Harness args decoding alone is not a defect. |
 | Roster and row hygiene | Activation's bound and promoted issue data establishes membership. Only human rows are excluded when prescribed; action and vote rows keep their semantics and stage numbering. |
 | Executor completion | The assigned executor used its record protocol and supplied accepted evidence. A returned worker report does not prove engine recording succeeded. Token-file fallback is assessed only against the versioned contract. |
 | Integration | The conductor verified the named commit existed, integrated a real commit in prescribed step order, preserved unrelated staged work, handled signing as configured, and surfaced conflicts through the target's gate. |
@@ -34,7 +34,7 @@ applied, and never judge a past execution against a newer checklist alone.
 |---|---|
 | Staging | Rows sharing an engine stage may run concurrently; stages are awaited in ascending order and a missing stage follows the installed default. A conflicting engine-certified set is investigated at the certification boundary, not automatically blamed on concurrency. |
 | Self-sufficient brief | Repo, assigned step, scope, required source context, artifacts, and record obligations are present in the persisted brief, which closes with the step's work packet verbatim. Attribute missing inputs to the brief that should have supplied them. |
-| Claim before spawn | A claim agent ran `wave-claim` ahead of each executor, and the executor spawned only after the wave loaded that claim's packet module. A claim with no executor behind it is a reap candidate, not lost work. |
+| Claim before spawn | A claim agent ran `docket-workflow-claim` ahead of each executor, and the executor spawned only after the wave loaded that claim's packet module. A claim with no executor behind it is a reap candidate, not lost work. |
 | Recording root | The worker recorded from its own checkout with worktree information when required, without invented store overrides or sibling-checkout probing. Out-of-scope problems used the installed gap path. |
 | Null or failed spawn | No usable return leaves execution and recording uncertain. Reconcile actual task, claim, and step state before assuming no work happened. |
 | Result acceptance | Separate workflow return status, worker report content, recorded engine result, and integration. Each establishes a different fact. |

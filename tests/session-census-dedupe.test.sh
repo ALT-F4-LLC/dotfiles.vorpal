@@ -9,7 +9,7 @@
 #
 # WHY THIS EXISTS. A streamed assistant message repeats across transcript
 # lines under one message id with output_tokens growing on each rewrite, so a
-# per-line sum inflated every token and character total (wave-usage.js
+# per-line sum inflated every token and character total (docket-workflow-usage.js
 # measured 1.65-2.36x on one wave). The extractor now retracts the earlier
 # line's share before adding the later one; this suite pins that arithmetic
 # on a fixture whose inflated and deduplicated totals differ on every field.

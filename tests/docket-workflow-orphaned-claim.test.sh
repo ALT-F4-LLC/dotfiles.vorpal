@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's orphaned-claim diagnosis (DOT-864).
+# Behavior suite for docket-workflow.js's orphaned-claim diagnosis (DOT-864).
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -9,7 +9,7 @@
 # WHY THIS EXISTS. RUN-61 DISPATCH-332 (wave wf_289fc41a-863, 2026-08-25): the
 # operator interrupted the fix@1 executor mid-step, the harness relaunched the
 # IDENTICAL agent spec on workflow resume (same idempotency key, new agentId,
-# same worktreePath — none of wave.js's own retry paths fired, and none could
+# same worktreePath — none of docket-workflow.js's own retry paths fired, and none could
 # see a harness resume), and the relaunched agent's claim was refused with
 # `step fix@1 is not ready to claim: the step is not pending`. The wave
 # reported that sentence as STEP-2760's outcome. Read at face value it says the
@@ -33,14 +33,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-orphaned-claim.XXXXXX") || fatal "mktemp failed"
@@ -150,7 +150,7 @@ ok(runParked({ status: 'returned', text: BOTH }),
 // The same body-scan trap every predicate in this file guards: a reviewer
 // WRITING about this conflict is prose, not a conflict.
 const FINDING = [
-    'Reviewed wave.js\'s claim handling.',
+    'Reviewed docket-workflow.js\'s claim handling.',
     '',
     '- **F-1 (high)** a CONFLICT reading "not ready to claim: the step is not pending"',
     '  is relayed as the step outcome, which reads as "the step never started".',

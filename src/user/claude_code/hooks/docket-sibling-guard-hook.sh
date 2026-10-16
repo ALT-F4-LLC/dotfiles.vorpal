@@ -425,7 +425,7 @@ log_decision() {  # <decision> <clause>
 # still finds it within the bound. Measured on real executor transcripts the
 # brief is line 1 (about 19 KiB) and the marker sits about 1.3 KiB in. The
 # marker must name the same step twice (`claim STEP-N --owner wave:STEP-N:`),
-# which is what wave.js renders and what no skill text carries.
+# which is what docket-workflow.js renders and what no skill text carries.
 scan_transcript() {  # <transcript-path>
     local t="$1" chunk="" rest="" total=0 budget=65536
     local re='docket step claim STEP-([0-9]+) --owner wave:STEP-([0-9]+):'

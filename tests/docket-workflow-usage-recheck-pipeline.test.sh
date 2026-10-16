@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave-usage.js's Extract-then-bootstrap-recheck
+# Behavior suite for docket-workflow-usage.js's Extract-then-bootstrap-recheck
 # orchestration: one continuous pipeline() with a conditional recheck stage,
 # instead of two separate pipeline() calls with a plain-JS filter between
 # them.
@@ -39,11 +39,11 @@
 # (d) the recheck is ok but carries NO usage -> the ORIGINAL extract is kept
 #     unchanged (not the recheck's, not dropped);
 # (e) a FAILED first attempt (ok:false) is pushed to errors and returned as
-#     null — and is NEVER retried, since wave-usage only rechecks a
+#     null — and is NEVER retried, since docket-workflow-usage only rechecks a
 #     confirmed-good extract that merely reported no bootstrap, never an
 #     outright extraction failure.
 #
-# HOW. Wraps wave-usage.js's wave-usage-recheck-pipeline region (hasUsage
+# HOW. Wraps docket-workflow-usage.js's docket-workflow-usage-recheck-pipeline region (hasUsage
 # through `results`) in an async IIFE, with `files` set per case and a
 # no-barrier `pipeline` stub matching the real one's throw-to-null
 # semantics, `agent` scripted per label, `phase`/`log` recording calls.
@@ -51,17 +51,17 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE_USAGE="${WAVE_USAGE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave-usage.js}"
+WAVE_USAGE="${WAVE_USAGE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow-usage.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE_USAGE" ] || fatal "wave-usage.js not found at ${WAVE_USAGE}"
+[ -f "$WAVE_USAGE" ] || fatal "docket-workflow-usage.js not found at ${WAVE_USAGE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-usage-recheck-pipeline.XXXXXX") || fatal "mktemp failed"
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/docket-workflow-usage-recheck-pipeline.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
 extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
@@ -78,7 +78,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE_USAGE"
 }
 
-extract wave-usage-recheck-pipeline > "${WORK}/region.js" || fatal "bad or missing TEST markers for wave-usage-recheck-pipeline"
+extract docket-workflow-usage-recheck-pipeline > "${WORK}/region.js" || fatal "bad or missing TEST markers for docket-workflow-usage-recheck-pipeline"
 grep -q 'function recheckBootstrap' "${WORK}/region.js" || fatal "region does not contain recheckBootstrap"
 grep -q 'function classifyFirstAttempt' "${WORK}/region.js" || fatal "region does not contain classifyFirstAttempt"
 grep -q '\.catch(' "${WORK}/region.js" || fatal "region no longer catches agent() rejections — has the recheck-fold changed shape?"

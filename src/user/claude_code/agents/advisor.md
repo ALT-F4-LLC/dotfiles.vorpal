@@ -6,6 +6,7 @@ description: >
   artifact to review, and the constraints; it sees nothing else. Returns advice
   as review input, never as authorization.
 model: opus
+effort: high
 tools: Read, Grep, Glob, Bash
 ---
 

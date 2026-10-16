@@ -587,11 +587,11 @@ fi
 # step 2 must name the generated args as the source and carry no formula, CPU
 # probe, or literal of its own. The launch example passes args-<i>.json whole:
 # an inline object re-emits every row and hand-types cwd through model output.
-if paragraph 'wave.js uses `min(HARNESS_CAP, harnessCap)` as its own' "${WORK}/harness-cap"; then
+if paragraph 'docket-workflow.js uses `min(HARNESS_CAP, harnessCap)` as its own' "${WORK}/harness-cap"; then
     ok "harnessCap: exactly one paragraph rules on the cap"
     states "harnessCap: each launch passes the generated args figure" \
-        "${WORK}/harness-cap" "launch i's \`harnessCap\` reaches wave.js inside \`args-<i>.json\`"
-    if paragraph 'Workflow({ scriptPath: "<absolute installed path to wave.js>"' "${WORK}/launch-example"; then
+        "${WORK}/harness-cap" "launch i's \`harnessCap\` reaches docket-workflow.js inside \`args-<i>.json\`"
+    if paragraph 'Workflow({ scriptPath: "<absolute installed path to docket-workflow.js>"' "${WORK}/launch-example"; then
         states "launch example: launch 0 passes the generated args object" \
             "${WORK}/launch-example" 'args: <$LAUNCH_DIR/args-0.json, the generated args object, unedited>'
         states "launch example: launch 1 passes the generated args object" \
@@ -602,7 +602,7 @@ if paragraph 'wave.js uses `min(HARNESS_CAP, harnessCap)` as its own' "${WORK}/h
             ok "launch example: no inline rows: <launch-"
         fi
     else
-        bad "launch example: no single paragraph carries the wave.js Workflow launch example"
+        bad "launch example: no single paragraph carries the docket-workflow.js Workflow launch example"
     fi
     awk '/^### 2\. /{on=1; next} /^### 3\. /{on=0} on' "$SKILL" > "${WORK}/step-2"
     if [ ! -s "${WORK}/step-2" ]; then
@@ -613,7 +613,7 @@ if paragraph 'wave.js uses `min(HARNESS_CAP, harnessCap)` as its own' "${WORK}/h
         ok "harnessCap: step 2 carries no formula, CPU probe, or literal cap"
     fi
 else
-    bad "harnessCap: no single paragraph carries 'wave.js uses \`min(HARNESS_CAP, harnessCap)\` as its own'"
+    bad "harnessCap: no single paragraph carries 'docket-workflow.js uses \`min(HARNESS_CAP, harnessCap)\` as its own'"
 fi
 
 # (e) Absence claim, run over SENTENCES rather than paragraphs: every
@@ -927,8 +927,8 @@ else
     drift_fixture() { # <name>: source and installed trees, identical, with harness dirs in source
         mkdir -p "${drift}/$1/src/workflows/.claude/.cc-writes" "${drift}/$1/src/hooks/.claude/.cc-writes" \
             "${drift}/$1/home/.claude/workflows" "${drift}/$1/home/.claude/hooks"
-        echo 'export default 1' > "${drift}/$1/src/workflows/wave.js"
-        echo 'export default 1' > "${drift}/$1/home/.claude/workflows/wave.js"
+        echo 'export default 1' > "${drift}/$1/src/workflows/docket-workflow.js"
+        echo 'export default 1' > "${drift}/$1/home/.claude/workflows/docket-workflow.js"
         echo 'exit 0' > "${drift}/$1/src/hooks/guard.sh"
         echo 'exit 0' > "${drift}/$1/home/.claude/hooks/guard.sh"
     }
@@ -952,12 +952,12 @@ else
         bad "install drift: an added new-hook.sh was not reported: $(head -c 300 "${drift}/hook.out")"
     fi
     drift_fixture workflow
-    echo 'export default 2' > "${drift}/workflow/src/workflows/wave.js"
+    echo 'export default 2' > "${drift}/workflow/src/workflows/docket-workflow.js"
     drift_run workflow "${drift}/workflow.out"
-    if grep -q '^Files .*wave\.js and .*wave\.js differ$' "${drift}/workflow.out"; then
+    if grep -q '^Files .*docket-workflow\.js and .*docket-workflow\.js differ$' "${drift}/workflow.out"; then
         ok "install drift: a byte-changed workflow is named in a Files differ line"
     else
-        bad "install drift: a changed wave.js was not reported: $(head -c 300 "${drift}/workflow.out")"
+        bad "install drift: a changed docket-workflow.js was not reported: $(head -c 300 "${drift}/workflow.out")"
     fi
 fi
 
@@ -1541,7 +1541,7 @@ if ! grep -qxF -- "$advisor_heading" "${WORK}/advisor-section"; then
 else
     ok "advisor first: the standing ruling has its own section"
     states "advisor first: every operator-bound decision goes to the advisor first" \
-        "${WORK}/advisor" 'Every decision this file sends to the operator goes to the `advisor` tool first.'
+        "${WORK}/advisor" 'Every decision this file sends to the operator goes to the `advisor` agent first.'
     states "advisor first: no class is carved out, reserved items and security gates included" \
         "${WORK}/advisor" 'every item under **Reserved to the operator**, and a failed security gate'
     states "advisor first: the call follows the evidence escalation.md requires" \
@@ -1551,7 +1551,7 @@ else
     states "advisor first: a clear answer settles the decision" \
         "${WORK}/advisor" '**A clear answer settles the decision.**'
     states "advisor first: a conflict gets one reconcile call" \
-        "${WORK}/advisor" 'An answer that conflicts with your evidence gets one reconcile call, and only one.'
+        "${WORK}/advisor" 'An answer that conflicts with your evidence gets one reconcile launch, and only one.'
     states "advisor first: a reconcile call that is not clear goes to the operator with the advisor text" \
         "${WORK}/advisor" 'When that call does not produce a clear answer, the decision goes to the operator with the text of both advisor answers attached.'
     states "advisor first: every other unclear answer goes to the operator with the advisor text" \
@@ -1577,7 +1577,7 @@ else
     states "advisor first: every advisor-settled decision is reported, one line each" \
         "${WORK}/advisor" 'Report every advisor-settled decision in your next status report, one line each'
     states "advisor first: a session without the tool sends every such decision to the operator" \
-        "${WORK}/advisor" 'A session without the `advisor` tool sends every such decision to the operator.'
+        "${WORK}/advisor" 'A session that cannot launch the `advisor` agent sends every such decision to the operator.'
 
     for advisor_verb in 'docket step resolve STEP-N ' 'docket step approve STEP-N ' \
         'docket step reject STEP-N ' 'docket run abandon $RUN '; do
@@ -1669,7 +1669,7 @@ fi
 consult_anchor='**Consult the advisor after the evidence and before the question.**'
 if esc_para "$consult_anchor" "${WORK}/consult"; then
     contains "escalation: the advisor is consulted before anything is presented to the operator" \
-        "${WORK}/consult" 'When the session provides the `advisor` tool, call it before any gate, park, or question is presented to the operator'
+        "${WORK}/consult" 'When the session can launch agents, launch the `advisor` agent before any gate, park, or question is presented to the operator'
     contains "escalation: the call follows the gate verdicts, the full artifact read, the premise-check, and tracker status" \
         "${WORK}/consult" 'the gate verdicts read, the artifact read in full, the premise-check run, and the status of every cited tracker read'
     consult_at=$(esc_para_number "$consult_anchor")

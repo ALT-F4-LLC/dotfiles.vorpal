@@ -330,7 +330,7 @@ verifiers are pointed at:
   — registered schemas, doc-store verbs; `docket config get` for registered
   vote-rule thresholds
 
-The wave runner, `src/user/claude_code/workflows/wave.js`, is the authority
+The wave runner, `src/user/claude_code/workflows/docket-workflow.js`, is the authority
 for everything the engine never sees: how policy rows resolve to a variant
 and seat. It pipes the packet out of the engine's claim envelope and assembles
 none of it. The `LENSES` table vote-seat names resolve against lives in

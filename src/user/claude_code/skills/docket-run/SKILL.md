@@ -20,7 +20,7 @@ argument-hint: "[RUN-N | pause [RUN-N]]"
 # docket-run
 
 You are the conductor: a relay between the engine, the panel, and the
-operator. The engine decides what runs, `wave.js` decides what each step
+operator. The engine decides what runs, `docket-workflow.js` decides what each step
 routes to, a tribunal panel decides at gates, and what the panel could
 not or must not decide goes to the advisor first and to the operator when
 the advisor's answer is not clear.
@@ -41,7 +41,7 @@ journal lives, and it sanctions the launches below.
 artifact bodies. Every loop iteration asks the engine again.
 
 **You make no routing decisions.** Model, tier, effort, and executor
-choice belong to `wave.js`, in code. You may read `wave.js` (grep it for a
+choice belong to `docket-workflow.js`, in code. You may read `docket-workflow.js` (grep it for a
 quoted brief string to attach a file and line to an escalation) but never
 edit it or choose routes yourself.
 
@@ -343,7 +343,7 @@ first dispatch; `unable to open database file (14)` means the seat's
 write access, not the engine.
 
 **A clean write step proves nothing about a read step.** Isolated
-executors run wave.js's worktree bootstrap before any work, and deny
+executors run docket-workflow.js's worktree bootstrap before any work, and deny
 beats allow: a denied component (`git checkout --detach`, say) fails a
 fanout even after a clean write step and cannot be fixed with an allow
 rule. Read the deny list, not just the allow list, before the first
@@ -451,7 +451,7 @@ The classifier screens a rendered brief before any agent exists, so a
 block is a verdict on content and a retry re-renders the same content.
 It also stops a running agent's output mid-write; that stop is the same
 verdict on content, reached later. Reconcile and close as usual, then
-escalate once, quoting the refusal and the `wave.js` line it names; the
+escalate once, quoting the refusal and the `docket-workflow.js` line it names; the
 question never offers or recommends an unchanged re-dispatch. Never
 retry, never reword the brief; the fix is a definition edit the operator
 installs outside this run. A step stopped a second time goes to
@@ -604,7 +604,7 @@ tool call with another:**
    panel you convened yourself gets the same treatment** (loop step 3):
 
    ```
-   Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
+   Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
               args: {dir: "<tribunal-transcript-dir>", mode: "seats", exclude: []} })
    ```
 
@@ -720,7 +720,7 @@ prints, since writer lanes the engine never co-staged share one launch.
 
 Pass no `--limit` on the `--run` form, and read v2: only v2 carries the
 pre-cut `total` and an explicit `truncated`. `writers` is the wave-length
-lever, since wave.js serializes writers the engine never co-staged; flag
+lever, since docket-workflow.js serializes writers the engine never co-staged; flag
 a large number in your report rather than reordering the plan yourself.
 
 Read `next` as a summary, never as rows: the rows you launch are what
@@ -788,7 +788,7 @@ docket dispatch open --run $RUN --limit 240 --json
 **Always pass `--limit 240`.** The default `0` is unlimited, and a large
 ready set can exceed the `Read` tool's payload cap and the `Workflow`
 tool's practical inline-arg size; 240 rows stays under both. The cap
-governs payload size only. wave.js handles the harness's separate
+governs payload size only. docket-workflow.js handles the harness's separate
 1000-agent lifetime cap, reserving each row's projected agents against a
 900-agent budget and deferring the rest (`not-launched-agent-budget`,
 re-offered next dispatch), so hand it the whole manifest and never
@@ -806,7 +806,7 @@ reopen smaller. To inspect an oversized answer, pipe
 `offset`/`limit`, never reconstructing rows by hand.
 
 Rows never reach a launch through your context. **Split the launches**
-below writes each launch's rows into a rows module that wave.js loads
+below writes each launch's rows into a rows module that docket-workflow.js loads
 itself, and the launch's generated args object names that module and its
 hash. Never re-emit rows into a launch's `args`, probe byte offsets, or
 split a file by hand. To inspect a launch's rows, page its
@@ -836,7 +836,7 @@ can be a false pass for targets that land after the worktree was cut. A
 target missing at the base is a pre-dispatch stop-and-report.
 
 Invoke the wave by scriptPath, always: the installed
-`~/.claude/workflows/wave.js`, as an absolute path with `~` expanded
+`~/.claude/workflows/docket-workflow.js`, as an absolute path with `~` expanded
 yourself (the Workflow tool does not expand it). This is the only
 launchable path: the tool accepts a scriptPath only under the session's
 cwd or `~/.claude/workflows` (added via
@@ -845,18 +845,18 @@ never a fallback, and a source file edited since the last `just activate`
 is bytes no session runs. A missing installed file is drift: stop and
 report it, never hunt for another copy.
 
-**Pass the machine's own concurrency cap so wave.js does not have to guess
+**Pass the machine's own concurrency cap so docket-workflow.js does not have to guess
 it.** A wave script cannot read the CPU count itself. lane_units.py (Split the
 launches below) reads the CPU count itself (`os.cpu_count()`, overridable via
 `LANE_UNITS_CPUS`) and writes the cap, floored at 1, into every launches.json
 entry and every generated args object: launch i's `harnessCap` reaches
-wave.js inside `args-<i>.json`, as written, never a figure of your own.
-wave.js uses `min(HARNESS_CAP, harnessCap)` as its own admission bound and
+docket-workflow.js inside `args-<i>.json`, as written, never a figure of your own.
+docket-workflow.js uses `min(HARNESS_CAP, harnessCap)` as its own admission bound and
 logs which it used; omitting the field is never a refusal.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: <$LAUNCH_DIR/args-0.json, the generated args object, unedited> })
-Workflow({ scriptPath: "<absolute installed path to wave.js>", args: <$LAUNCH_DIR/args-1.json, the generated args object, unedited> })
+Workflow({ scriptPath: "<absolute installed path to docket-workflow.js>", args: <$LAUNCH_DIR/args-0.json, the generated args object, unedited> })
+Workflow({ scriptPath: "<absolute installed path to docket-workflow.js>", args: <$LAUNCH_DIR/args-1.json, the generated args object, unedited> })
 …one launch per index, 0 through N-1, all in this same turn
 ```
 
@@ -868,7 +868,7 @@ none refused or queued, measured). So each issue gets its own
 launch, 16 slots, and 1000-agent budget, and no issue's agents queue
 behind another's: a dispatch with six issues is six launches. Each launch
 gets only its issue's rows and its `unit`; never merge two issues into
-one launch, which wave.js refuses. Writers the engine never co-staged run
+one launch, which docket-workflow.js refuses. Writers the engine never co-staged run
 in separate launches, and the engine's claim check keeps them apart: the
 later claimant settles `skipped-not-ready`, and the refill relaunches it
 at the next return that is not a bounce (**Refill freed launch slots**
@@ -876,16 +876,16 @@ below). Emit all N launches in ONE
 assistant message, as separate `Workflow` calls, never held back for a
 sibling's return: on past runs, launches spread over several messages
 started up to 17 minutes after the first, while one message put them
-about a minute apart. wave.js refuses `of` above 20 and the retired
+about a minute apart. docket-workflow.js refuses `of` above 20 and the retired
 `shard` arg.
 
 `tribunal` is the absolute installed path to `tribunal.js`, resolved the
-same way as wave.js's and handed to lane_units.py as `--tribunal`; wave.js
+same way as docket-workflow.js's and handed to lane_units.py as `--tribunal`; docket-workflow.js
 seats in-wave vote rows through it. `cwd` is the repo the run belongs to,
 and must be this session's working directory; lane_units.py writes the git
 toplevel of the directory it runs in, so run it from this session's working
-directory. Before each executor spawns, a claim agent runs `wave-claim`
-(`src/user/docket/bin/wave-claim`, installed under `~/.docket/bin`), which
+directory. Before each executor spawns, a claim agent runs `docket-workflow-claim`
+(`src/user/docket/bin/docket-workflow-claim`, installed under `~/.docket/bin`), which
 claims the step and writes its rendered packet into a module under
 `<cwd>/.claude/docket-packets/`. The wave loads
 that module and hands the executor the packet verbatim in its brief, and
@@ -895,7 +895,7 @@ whose `cwd` is elsewhere stops claiming after its first unloadable module.
 `run_in_background`. Resuming a stopped workflow needs the same
 `args-<i>.json` object again, verbatim.
 
-**Never `Workflow({name: "wave"})`**: the name registry can serve a stale
+**Never `Workflow({name: "docket-workflow"})`**: the name registry can serve a stale
 snapshot. `scriptPath` is the only invocation that provably runs the
 current file.
 
@@ -909,7 +909,7 @@ building the map: which sha each issue gets, the round off-by-one trap,
 and when an entry is omitted. Emit the object as a literal JSON value,
 never hand-stringified, and never add, drop, or re-type a field. The rows
 ride in the rows module the object names, with `model`/`effort`/`variant`
-intact, never in `args`; wave.js refuses the launch before any claim when
+intact, never in `args`; docket-workflow.js refuses the launch before any claim when
 the module's `rows_sha256` differs from the object's. There is no
 `policyPath`/`policyText`; routing is on the rows.
 
@@ -970,7 +970,7 @@ exits 1 outside the run's git work tree and writes nothing. It reads the
 kept rows as one JSON array or as JSON lines (the kept rows file itself
 is JSON lines, per the kind filter), prints N alone on stdout,
 writes `launch-<i>.jsonl` (launch i's rows, one per line), `args-<i>.json`
-(launch i's complete wave.js args), `launches.json` (each launch's
+(launch i's complete docket-workflow.js args), `launches.json` (each launch's
 `index`, `of`, `classCap`, `harnessCap`, row count and its one lane) and
 `deferred.jsonl` (rows past the free slots, empty when none) under
 `$LAUNCH_DIR`, writes each launch's rows module under
@@ -979,13 +979,13 @@ the dispatch report. Use a fresh `$LAUNCH_DIR` per split under the
 session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M` at the
 open and `<scratchpad>/launch-DISPATCH-M-R<k>` for its k-th refill). Pass
 launch i's `args` as the generated args object in `args-<i>.json`,
-unedited. wave.js no longer re-derives the partition, and its hash check
+unedited. docket-workflow.js no longer re-derives the partition, and its hash check
 proves only that the module matches the object's own `rows_sha256`, so
 pass each object whole to its own launch.
 
 Pass rows through unchanged beyond the kind filter, the refill's
 settled and held filter below, and the split, with no reordering,
-dropping, or adding, and never sequence or hold rows back otherwise; wave.js's own `stage` labels are one global schedule, and
+dropping, or adding, and never sequence or hold rows back otherwise; docket-workflow.js's own `stage` labels are one global schedule, and
 offering a `staged` row ahead of readiness is the mechanism, not a
 mistake.
 
@@ -1026,7 +1026,7 @@ launching its usage join (step 3), before waiting on the rest:
    per line:
    `jq -r '(any(.[]; .status == "skipped-not-ready")) as $refused | .[] | select(.status != "skipped-not-ready" and (($refused and .status == "skipped-chain-dead") | not)) | .step' "$STATUSES_FILE" >> "$SETTLED_FILE"`.
    That settles every row except a `skipped-not-ready` row and, in a
-   launch holding one, its `skipped-chain-dead` rows: wave.js settles the
+   launch holding one, its `skipped-chain-dead` rows: docket-workflow.js settles the
    later stages of a refused row's issue `skipped-chain-dead`, and they
    wait on that row, so they stay pending with it. The settled rows
    finished, or are re-offered next dispatch (the statuses list under
@@ -1132,7 +1132,7 @@ not.** A wave agent parked on a permission prompt leaves its launch's task
 output empty and sends nothing until it finishes, so at dispatch open,
 beside the launches, start ONE watcher for the whole dispatch: a Bash
 call with `run_in_background: true` listing every launch's transcript
-directory (the same `<transcript-dir>` wave-usage reads). It takes each
+directory (the same `<transcript-dir>` docket-workflow-usage reads). It takes each
 agent transcript's (`agent-<agentId>.jsonl`) last-entry time from its
 modification time, since transcripts are append-only, and exits when a
 running agent's transcript has had no new entry for 15 minutes. Its exit
@@ -1260,7 +1260,7 @@ launched unguarded in the shared checkout.
 Hold the row until worktree isolation is restored and the claim its
 text names is reaped; restoring means fixing the harness or worktree
 gap, never relaunching the writer without isolation. `blocked` means a stop signal and no record: the
-claim agent's `wave-claim` stopped on CLAIM FAILED or CLAIM INCOMPLETE
+claim agent's `docket-workflow-claim` stopped on CLAIM FAILED or CLAIM INCOMPLETE
 (the lease was never taken, or was already ended with `docket step
 fail`), or the executor stopped on NETWORK GATE BLOCKED or RECORD
 BLOCKED; the row's `signal` names which. Resolve what the reply reports
@@ -1285,7 +1285,7 @@ of writing a second; the engine misses a row behind a predecessor skipped
 before its claim, so keep filing every `chain` deferral. These facts are
 how a retro reading only the store counts them; the `coordination` counts
 stay as they are. One step can appear in several launches' `statuses`:
-wave.js reads `skipped-not-ready` as chain-dead, marks that row's issue
+docket-workflow.js reads `skipped-not-ready` as chain-dead, marks that row's issue
 dead and settles the issue's later rows `skipped-chain-dead`, and its
 `statuses` carries one entry per row the launch held; step 2 of **Refill
 freed launch slots each time a launch returns** leaves every
@@ -1346,11 +1346,11 @@ dispatch), and only that hold gets the ack-reap panel under
 
 **This order binds one dispatch's own sequence, not the relationship
 between dispatches.** When more than one dispatch or panel is genuinely
-in flight, launch their `wave-usage.js` joins concurrently; each join
+in flight, launch their `docket-workflow-usage.js` joins concurrently; each join
 still precedes its own dispatch's write, verify, and close. "Precedes" is
 the order of calls, not when the join's usage record lands: the engine's
 grace window can still bill a step after the close returns, as
-`wave-usage.js`'s header comment explains.
+`docket-workflow-usage.js`'s header comment explains.
 
 Two ways the back-fill gets skipped, both losing the run's only record of
 its spend: treating **"nothing was claimed"** as a reason (a wave whose
@@ -1375,7 +1375,7 @@ notification (step 2's dead-launch check) or a session resumes onto a
 dispatch whose wave no longer exists. The order is the same as a normal
 close, with one difference at the end:
 
-1. Back-fill first: launch the `wave-usage.js` join over whatever
+1. Back-fill first: launch the `docket-workflow-usage.js` join over whatever
    transcripts exist, before anything else, since abandon has no later
    window.
 2. `docket dispatch verify --run $RUN`, then `docket step show STEP-N` for
@@ -1398,8 +1398,8 @@ close, with one difference at the end:
 // 1. the join is a workflow (below); its return carries the rows and you check the shape.
 // The join measures tokens only. A wave's coordination counts (rounds, gate passes,
 // re-seats, claim conflicts, ancestry parks, budget/chain deferrals) come from the
-// `coordination` field of that wave's own return, which wave.js computes; the join has none.
-Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
+// `coordination` field of that wave's own return, which docket-workflow.js computes; the join has none.
+Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
            args: {dir: "<transcript-dir>", mode: "steps", exclude: []} })
 ```
 
@@ -1463,13 +1463,13 @@ on a genuine discrepancy.
 
 **This is the transcript-token path, not a workaround for one.** An
 executor cannot observe its own token consumption; tokens reach the
-ledger through wave-usage → `backfill-usage` by design. `docket step
+ledger through docket-workflow-usage → `backfill-usage` by design. `docket step
 record --usage '{"unit": n, ...}'` is the other channel, opaque to the
 engine, at most 32 units per call; `budget.unit` names the one unit the
 run's cap counts.
 
-**Launch wave-usage over the transcript directory**: the installed
-`~/.claude/workflows/wave-usage.js`, with
+**Launch docket-workflow-usage over the transcript directory**: the installed
+`~/.claude/workflows/docket-workflow-usage.js`, with
 `args: {dir, mode: "steps", exclude: []}`. The coordination counts are
 not the join's: read them from the `coordination` field of the wave's
 own return (per the join's comment above). It fans one
@@ -1499,7 +1499,7 @@ with `mode: "seats"` and pipe its rows to the vote-scoped verb, once per
 panel, right after reading the tally:
 
 ```
-Workflow({ scriptPath: "<absolute installed path to wave-usage.js>",
+Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
            args: {dir: "<tribunal-transcript-dir>", mode: "seats", exclude: []} })
 ```
 
@@ -1538,7 +1538,7 @@ claim it fresh (`docket step claim STEP-N --owner conduct:recovery
 --json`) and record against the new token; never redispatch a step whose
 complete parked payload you hold. On a write-class step, carry
 `--worktree <its checkout>` (it defaults to the invoking checkout
-otherwise). Once landed, sweep the parked dir as wave.js's executor
+otherwise). Once landed, sweep the parked dir as docket-workflow.js's executor
 cleanup does after a record: a later reader opens every path the recorded
 artifact cites, so remove only the uncited scratch, the spent token
 included, and keep the artifact and every file it cites. Only a step that
@@ -1775,7 +1775,7 @@ denies the verb to executors.
 The reap already nulled the lease's token hash, so this is about not
 leaving a dead holder's credential and brief in shared scratch, not
 revocation. The step's packet module under
-`<cwd>/.claude/docket-packets/` holds no token, and `wave-claim` sweeps
+`<cwd>/.claude/docket-packets/` holds no token, and `docket-workflow-claim` sweeps
 modules a day old, so leave it.
 
 **`--ack-reap`.** This flag tells the engine you have established the
@@ -2015,7 +2015,7 @@ Workflow({ scriptPath: "<absolute installed path to tribunal.js>",
            args: {voteId, voters, context, gateKind, cwd} })
 ```
 
-Resolve the path exactly as wave.js's (step 2's installed-path rule); an
+Resolve the path exactly as docket-workflow.js's (step 2's installed-path rule); an
 absent installed file is stop-and-report. `context` is the decision's
 rendered evidence, verbatim; `cwd` is the repo the run belongs to. A
 conversational gate has no row, so each `voters` entry carries its own

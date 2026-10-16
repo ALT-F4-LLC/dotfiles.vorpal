@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave-usage.js's three-way split of a wave's agents —
+# Behavior suite for docket-workflow-usage.js's three-way split of a wave's agents —
 # judge, claimant, overhead — and specifically for the ordering of the two
 # questions it asks a bootstrap brief.
 #
@@ -8,7 +8,7 @@
 # and this one is in that list. It needs only `jq`, `node` and `awk` — no
 # engine, no database, no network, and it never runs a workflow.
 #
-# HOW IT RUNS THE SCRIPT WITHOUT THE WORKFLOW TOOL. wave-usage.js fences its
+# HOW IT RUNS THE SCRIPT WITHOUT THE WORKFLOW TOOL. docket-workflow-usage.js fences its
 # jq program and its pure reduction in `// TEST-BEGIN <region>` /
 # `// TEST-END <region>` markers. This suite extracts both, writes the jq
 # program to a file exactly as the workflow's agents do, runs it with the
@@ -16,7 +16,7 @@
 # `classify`/`reduceRows` under node — the same path the live workflow takes,
 # minus the agents that relay the jq output.
 #
-# WHY THIS EXISTS. wave.js spawns read-only probes (`docket step show STEP-N
+# WHY THIS EXISTS. docket-workflow.js spawns read-only probes (`docket step show STEP-N
 # --json`) beside its executors, and the usage join once keyed on the first
 # STEP-N in a brief, so each probe back-filled its tokens onto the step it had
 # merely READ — one past wave put whole ledger rows on a pending step that was
@@ -50,8 +50,8 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-USAGE="${WAVE_USAGE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave-usage.js}"
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+USAGE="${WAVE_USAGE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow-usage.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 TRIBUNAL="${TRIBUNAL_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/tribunal.js}"
 
 fatal() {
@@ -59,14 +59,14 @@ fatal() {
     exit 2
 }
 
-[ -f "$USAGE" ] || fatal "wave-usage.js not found at ${USAGE}"
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$USAGE" ] || fatal "docket-workflow-usage.js not found at ${USAGE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 [ -f "$TRIBUNAL" ] || fatal "tribunal.js not found at ${TRIBUNAL}"
 for tool in jq node awk; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
 done
 
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-usage-probe.XXXXXX") || fatal "mktemp failed"
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/docket-workflow-usage-probe.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
 pass=0
@@ -79,17 +79,17 @@ ok() { # <condition-already-evaluated: 0/1> <label>
     fi
 }
 
-# ---- The briefs this script keys on must still be the briefs wave.js writes.
-# Every marker is duplicated prose; if wave.js drops one, the join silently
+# ---- The briefs this script keys on must still be the briefs docket-workflow.js writes.
+# Every marker is duplicated prose; if docket-workflow.js drops one, the join silently
 # reclassifies a whole wave, so check the two directions that matter.
 grep -qF 'WAVE PROBE: not a step execution' "$WAVE"; ok $? \
-    'wave.js still declares its probe briefs with the marker wave-usage reads'
+    'docket-workflow.js still declares its probe briefs with the marker docket-workflow-usage reads'
 grep -qF 'Run exactly this one command:' "$WAVE"; ok $? \
-    'wave.js still opens a probe brief with the fixed one-command line'
+    'docket-workflow.js still opens a probe brief with the fixed one-command line'
 grep -qF 'You are executing one step of a Docket run' "$WAVE"; ok $? \
-    'wave.js still opens an executor brief with the line the drift guard reads'
+    'docket-workflow.js still opens an executor brief with the line the drift guard reads'
 grep -qF 'WAVE CLAIM: not a step execution' "$WAVE"; ok $? \
-    'wave.js still declares its claim agent with the marker wave-usage reads'
+    'docket-workflow.js still declares its claim agent with the marker docket-workflow-usage reads'
 grep -qE '^  \$\{cdPrefix\}docket vote cast \$\{voteId\} --voter ' "$TRIBUNAL"; ok $? \
     "tribunal.js still writes the seat's cast instruction as an indented line the cast join anchors on"
 grep -qF "'You are ONE SEAT of a tribunal" "$TRIBUNAL"; ok $? \
@@ -111,21 +111,21 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 }
 
 {
-    extract wave-usage-extract  || fatal "bad or missing TEST markers for wave-usage-extract"
-    extract wave-usage-select   || fatal "bad or missing TEST markers for wave-usage-select"
-    extract wave-usage-classify || fatal "bad or missing TEST markers for wave-usage-classify"
-    extract wave-usage-paths    || fatal "bad or missing TEST markers for wave-usage-paths"
+    extract docket-workflow-usage-extract  || fatal "bad or missing TEST markers for docket-workflow-usage-extract"
+    extract docket-workflow-usage-select   || fatal "bad or missing TEST markers for docket-workflow-usage-select"
+    extract docket-workflow-usage-classify || fatal "bad or missing TEST markers for docket-workflow-usage-classify"
+    extract docket-workflow-usage-paths    || fatal "bad or missing TEST markers for docket-workflow-usage-paths"
 } > "${WORK}/regions.js" || exit 2
 [ -s "${WORK}/regions.js" ] || fatal "extracted regions are empty"
 
 # The jq program reaches disk the way the workflow's agents write it.
 { cat "${WORK}/regions.js"; echo 'process.stdout.write(EXTRACT_JQ)'; } > "${WORK}/emit.js"
-node "${WORK}/emit.js" > "${WORK}/wave-usage.jq" || fatal "could not evaluate EXTRACT_JQ"
-[ -s "${WORK}/wave-usage.jq" ] || fatal "EXTRACT_JQ is empty"
+node "${WORK}/emit.js" > "${WORK}/docket-workflow-usage.jq" || fatal "could not evaluate EXTRACT_JQ"
+[ -s "${WORK}/docket-workflow-usage.jq" ] || fatal "EXTRACT_JQ is empty"
 # The seats-mode selection program, written to disk the way the scout writes it.
 { cat "${WORK}/regions.js"; echo 'process.stdout.write(SELECT_JQ)'; } > "${WORK}/emit-select.js"
-node "${WORK}/emit-select.js" > "${WORK}/wave-usage-select.jq" || fatal "could not evaluate SELECT_JQ"
-[ -s "${WORK}/wave-usage-select.jq" ] || fatal "SELECT_JQ is empty"
+node "${WORK}/emit-select.js" > "${WORK}/docket-workflow-usage-select.jq" || fatal "could not evaluate SELECT_JQ"
+[ -s "${WORK}/docket-workflow-usage-select.jq" ] || fatal "SELECT_JQ is empty"
 
 # ---- Fixtures ---------------------------------------------------------------
 # One synthetic wave directory. Each agent is a bootstrap user message plus two
@@ -138,7 +138,7 @@ fs.mkdirSync(d, { recursive: true })
 
 const PROBE_MARKER = 'WAVE PROBE: not a step execution'
 
-// wave.js probeBrief(), verbatim in shape, serving the step it READS.
+// docket-workflow.js probeBrief(), verbatim in shape, serving the step it READS.
 const probe = `Run exactly this one command:
 
   docket step show STEP-3146 --json
@@ -285,14 +285,14 @@ fs.mkdirSync(relayDir, { recursive: true })
 write('agent-arelayexec.jsonl', executor.replace(/STEP-3156/g, 'STEP-3175'), relayDir, false, true)
 write('agent-arelayprobe.jsonl', probe.replace(/STEP-3146/g, 'STEP-3176'), relayDir, false, true)
 
-// The claim path, in its own directory: wave.js's claim agent (claimBrief()
+// The claim path, in its own directory: docket-workflow.js's claim agent (claimBrief()
 // in shape) and the executor it claims for, whose brief closes with a packet
 // that quotes another step's obligations.
 const claimDir = path.join(path.dirname(d), 'claim')
 fs.mkdirSync(claimDir, { recursive: true })
 write('agent-cclaim.jsonl', `Run exactly this one command:
 
-  ~/.docket/bin/wave-claim --step STEP-3180 --owner wave:STEP-3180:1 --attempt 1 --module '/repo/.claude/docket-packets/STEP-3180.a1.js' --metadata '{}'
+  ~/.docket/bin/docket-workflow-claim --step STEP-3180 --owner wave:STEP-3180:1 --attempt 1 --module '/repo/.claude/docket-packets/STEP-3180.a1.js' --metadata '{}'
 
 It claims STEP-3180 under that owner, parks the lease token in the step's
 private scratch dir, and writes the rendered packet for the executor the wave
@@ -317,7 +317,7 @@ An old run's note: \`docket step record STEP-999 --artifact-file x\`.
 ----- END WORK PACKET STEP-3180 -----`, claimDir)
 
 // Cast quotes, in their own directory: step executors whose packets quote the
-// vote path's cast command (an issue about wave.js or tribunal.js carries it
+// vote path's cast command (an issue about docket-workflow.js or tribunal.js carries it
 // in its body, diff and excerpts), beside seat briefs in the shapes the cast
 // join must still read. A quoted cast must never seat an executor; only the
 // seat's own cast instruction seats an agent.
@@ -401,7 +401,7 @@ for sub in wave drift panel relay claim castquote verifyac; do
     mkdir -p "${WORK}/extracts/${sub}"
     for f in "${WORK}/${sub}"/agent-*.jsonl; do
         name=$(basename "$f")
-        if ! jq -c -n -R -f "${WORK}/wave-usage.jq" "$f" > "${WORK}/extracts/${sub}/${name}.json"; then
+        if ! jq -c -n -R -f "${WORK}/docket-workflow-usage.jq" "$f" > "${WORK}/extracts/${sub}/${name}.json"; then
             printf 'jq failed on %s/%s\n' "$sub" "$name" >&2
             extracts_ok=1
         fi
@@ -414,7 +414,7 @@ ok $extracts_ok 'the jq program runs clean over every fixture transcript'
 # one behind the harness relay), the relay-first claimant and probe, and the
 # claim path, and the cast-quoting executors beside their seats. One jq
 # invocation over many files, as the scout's glob hands them over.
-jq -r -n -R -f "${WORK}/wave-usage-select.jq" \
+jq -r -n -R -f "${WORK}/docket-workflow-usage-select.jq" \
     "${WORK}"/wave/agent-*.jsonl "${WORK}"/panel/agent-*.jsonl \
     "${WORK}"/relay/agent-*.jsonl "${WORK}"/claim/agent-*.jsonl \
     "${WORK}"/castquote/agent-*.jsonl "${WORK}"/verifyac/agent-*.jsonl \
@@ -426,7 +426,7 @@ ok $? 'the selection program runs clean over the mixed corpus'
 # refuses a non-zero one rather than reading a short seat list as complete.
 mkdir -p "${WORK}/malformed"
 printf '%s\n' '{"type":"user","message":"not an object"}' > "${WORK}/malformed/agent-bad.jsonl"
-jq -r -n -R -f "${WORK}/wave-usage-select.jq" \
+jq -r -n -R -f "${WORK}/docket-workflow-usage-select.jq" \
     "${WORK}/malformed/agent-bad.jsonl" "${WORK}"/panel/agent-pjudge.jsonl \
     > "${WORK}/selected-malformed.txt" 2>/dev/null
 [ $? -ne 0 ]; ok $? 'a malformed transcript fails the selection batch with a non-zero status'
@@ -440,7 +440,7 @@ mkdir -p "$SCOUT_DIR" && cp "${WORK}"/wave/agent-*.jsonl "$SCOUT_DIR"/ || fatal 
 {
     cat "${WORK}/regions.js"
     echo 'const dir = process.argv[2]; const mode = "seats"'
-    extract wave-usage-scout || fatal "bad or missing TEST markers for wave-usage-scout"
+    extract docket-workflow-usage-scout || fatal "bad or missing TEST markers for docket-workflow-usage-scout"
     echo 'process.stdout.write(scoutBrief)'
 } > "${WORK}/emit-scout.js" || exit 2
 node "${WORK}/emit-scout.js" "$SCOUT_DIR" > "${WORK}/scout-brief.txt" || fatal "could not render scoutBrief"
@@ -812,7 +812,7 @@ ok(JSON.stringify(seatsSelected.rows) === JSON.stringify(seatsAll.rows),
 
 // ---- A quoted cast seats nobody; the seat's own instruction still does ----
 // Executor packets quote the vote path's cast command whenever the work is on
-// wave.js, wave-usage.js or tribunal.js. The cast join reads only a cast
+// docket-workflow.js, docket-workflow-usage.js or tribunal.js. The cast join reads only a cast
 // instruction at the start of a line, in a brief that does not open as a step
 // executor, so the quote neither seats the executor nor selects it.
 const castSteps = reduceRows(castQuote, 'steps', [])
@@ -958,7 +958,7 @@ const quiet = reduceRows(silent, 'steps', [])
 ok(quiet.errors.length === 1 && quiet.errors[0].includes('carries no usage'),
     'a claimant whose transcript carries no usage is an error, not a zero row')
 // ---- ...unless a live transcript carries the same step: then it is a dead spawn ----
-// wave.js re-spawns a claimant whose first spawn died before its first
+// docket-workflow.js re-spawns a claimant whose first spawn died before its first
 // assistant turn; the dead transcript still opens with the step's brief and
 // carries no usage. One wave lost a whole shard's rows to that error.
 const live = by(wave, 'agent-aexec.jsonl')
@@ -983,7 +983,7 @@ ok(unreadResult.errors[0].includes('"bootstrap":false') && unreadResult.errors[0
     'the thrown error names the agent\'s raw structured answer beside the jq verdict, not just the file name')
 
 // ---- A relayed bootstrap:false, checked twice, is a misreport, not an error ----
-// wave.js never dispatches an agent without a bootstrap brief, so this is a
+// docket-workflow.js never dispatches an agent without a bootstrap brief, so this is a
 // case a script cannot rule out on its own — a second independent read
 // repeating the same answer is treated as a relay misreport and folded into
 // overhead (with its usage) rather than thrown, so it cannot sink the join.

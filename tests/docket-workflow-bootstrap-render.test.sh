@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's executorBrief(): the brief an executor is
+# Behavior suite for docket-workflow.js's executorBrief(): the brief an executor is
 # spawned with, carrying its work packet verbatim.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
@@ -19,7 +19,7 @@
 # join read sits ahead of the packet, where no packet content can displace
 # it.
 #
-# HOW. wave.js fences the helpers in TEST-BEGIN/TEST-END `packet` and
+# HOW. docket-workflow.js fences the helpers in TEST-BEGIN/TEST-END `packet` and
 # `executor-brief` markers. This suite extracts both and renders the brief
 # for every isolation and class combination. It also asserts the
 # refused-write rule: take the recovery the refusal's own text names, once,
@@ -31,14 +31,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-bootstrap-render.XXXXXX") || fatal "mktemp failed"
@@ -140,7 +140,7 @@ for (const isolated of [true, false]) {
         ok(g && g[1] === '4381' && g[2] === '4381' && g.index < brief.indexOf(BEGIN) && g.index < 65536,
             `${label}: the sibling guard's marker names the step twice, ahead of the packet and inside 64 KiB`)
         const j = JOIN_RE.exec(brief)
-        ok(j && j[1] === 'STEP-4381', `${label}: wave-usage's first-match join keys the executor to its own step, not one the packet quotes`)
+        ok(j && j[1] === 'STEP-4381', `${label}: docket-workflow-usage's first-match join keys the executor to its own step, not one the packet quotes`)
         ok(/executing one step/i.test(brief.slice(0, 300)), `${label}: session-census finds the opener in the first 300 characters`)
         ok(head.includes('Claiming again re-keys') && head.includes('(attempt 2)'),
             `${label}: the brief states the claim is made and must not be repeated`)

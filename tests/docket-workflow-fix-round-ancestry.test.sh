@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's fix-round base-ancestry guard (DOT-871).
+# Behavior suite for docket-workflow.js's fix-round base-ancestry guard (DOT-871).
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -39,14 +39,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-fix-round-ancestry.XXXXXX") || fatal "mktemp failed"
@@ -86,7 +86,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so wave.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -190,7 +190,7 @@ const run = async (theRows, integrated, ctx, git, self) => {
     CTX_PROBES = 0; GIT_PROBES = 0; SELF_PROBES = 0
     LOG.length = 0
     CTX = ctx || ''; GIT = git || ''; SELF = self || ''
-    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 
@@ -430,7 +430,7 @@ ok(cherryPickOfTargetCommand('abc123f', 'def456a').startsWith('git log -1 --form
    !/[;&|]\s*rm|>/.test(cherryPickOfTargetCommand('abc123f', 'def456a').replace(/echo "cherrypick-of-target-exit=\$\?"/, '')),
     'cherryPickOfTargetCommand is a read-only trailer grep in the prior→target direction')
 // (that the status kills the chain is asserted structurally by AC-fail above,
-// and fenced predicate-level in tests/wave-park-signals.test.sh)
+// and fenced predicate-level in tests/docket-workflow-park-signals.test.sh)
 ok(!runParked({ status: 'parked-base-ancestry', text: 'x' }),
     'a base-ancestry park kills its issue, never the whole run')
 

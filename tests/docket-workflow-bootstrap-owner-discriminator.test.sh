@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's claim owner discriminator: the number
+# Behavior suite for docket-workflow.js's claim owner discriminator: the number
 # appended to `--owner wave:<step>:<n>` that distinguishes two claims of the
 # SAME step in one wave.
 #
@@ -27,21 +27,21 @@
 # claims of the SAME step still get distinct, incrementing discriminators (1,
 # then 2), so a second claim never presents the owner of an earlier one.
 #
-# HOW. It extracts wave.js's `packet` region (TEST-BEGIN/TEST-END markers)
+# HOW. It extracts docket-workflow.js's `packet` region (TEST-BEGIN/TEST-END markers)
 # into a fresh VM context per scenario and reads the discriminator back off
 # the `--owner wave:<step>:<n>` in the claim agent's rendered command.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 node - "$WAVE" <<'JS'
@@ -65,7 +65,7 @@ const discriminatorOf = (ctx, step) => {
     const row = { step, issue: 'DKT-1', run: 'RUN-1', attempt: 0 }
     const owner = ctx.nextOwner(step)
     const brief = ctx.claimBrief(row, ctx.claimCommand(row, routing, owner, `/repo/.claude/docket-packets/${step}.a1.js`))
-    const line = brief.split('\n').find((l) => l.includes(`wave-claim --step ${step} --owner`))
+    const line = brief.split('\n').find((l) => l.includes(`docket-workflow-claim --step ${step} --owner`))
     assert(line, `rendered claim command exists for ${step}`)
     const m = line.match(new RegExp(`--owner wave:${step}:(\\d+)`))
     assert(m, `owner discriminator is present for ${step}`)

@@ -1,14 +1,14 @@
 #!/bin/sh
-# wave-claim — claims one Docket step for wave.js and hands its work packet
+# docket-workflow-claim — claims one Docket step for docket-workflow.js and hands its work packet
 # back as a module the wave loads byte for byte.
 #
 # WHY IT EXISTS. A Workflow script can neither read a file nor run a command,
-# so wave.js cannot fetch a packet itself, and every channel an agent reads
+# so docket-workflow.js cannot fetch a packet itself, and every channel an agent reads
 # through is capped below a packet's size (a Bash result past 128,000
 # characters, a hook's additionalContext past 10,000, a Read past its token
 # limit). The one uncapped channel is the spawn prompt. A claim agent runs
 # this script; it claims the step and writes the packet into a JS module under
-# the session's working directory; wave.js loads that module through a nested
+# the session's working directory; docket-workflow.js loads that module through a nested
 # workflow({scriptPath}) and spawns the executor with the packet inline. The
 # harness reads the module from disk, so the executor's prompt carries the
 # module's bytes and no model ever copies them.
@@ -85,7 +85,7 @@
 set -eu
 umask 077
 
-me="wave-claim"
+me="docket-workflow-claim"
 
 usage() {
 	printf '%s USAGE: %s\n' "$me" "$*"
@@ -179,7 +179,7 @@ fit() {
 			if (.output | type) == "string" and (.output | length) > $keep then
 				(.output | length) as $n | ($keep / 4 | floor) as $head
 				| .output = .output[:$head]
-					+ "\n[wave-claim: \($n - $keep) of \($n) characters omitted here to fit the Workflow script cap; the unabridged packet is \($file)]\n"
+					+ "\n[docket-workflow-claim: \($n - $keep) of \($n) characters omitted here to fit the Workflow script cap; the unabridged packet is \($file)]\n"
 					+ .output[-($keep - $head):]
 			else . end;
 		def rows:
@@ -303,7 +303,7 @@ bytes="$(wc -c <"$packet" | tr -d ' ')"
 fit "$packet" "$work/packet.fit"
 
 {
-	printf "export const meta = { name: 'docket-packet', description: 'Docket work packet written by wave-claim' }\n"
+	printf "export const meta = { name: 'docket-packet', description: 'Docket work packet written by docket-workflow-claim' }\n"
 	printf 'return '
 	jq -c \
 		--arg step "$step" --arg owner "$owner" --argjson expected "$attempt" \

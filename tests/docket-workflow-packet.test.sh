@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's `packet` region: where a claim's packet module
+# Behavior suite for docket-workflow.js's `packet` region: where a claim's packet module
 # lands, how the claim agent is briefed, and which loaded modules the wave
 # accepts before it spawns an executor with the packet inline.
 #
@@ -9,7 +9,7 @@
 # database, no network, and it spawns no agent.
 #
 # WHY THIS EXISTS. An executor is spawned only with a packet the wave loaded
-# from the module wave-claim wrote for THIS claim. packetFromModule() is the
+# from the module docket-workflow-claim wrote for THIS claim. packetFromModule() is the
 # gate: a module from another step, another owner, or an earlier attempt, or
 # one whose token path is not the step's own, spawns nothing. Each refusal
 # case below mutates exactly one field of an accepted module, so a check that
@@ -18,14 +18,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-packet.XXXXXX") || fatal "mktemp failed"
@@ -67,12 +67,12 @@ const owner = nextOwner('STEP-12')
 const modulePath = packetModulePath('/repo', row)
 const command = claimCommand(row, r, owner, modulePath)
 const brief = claimBrief(row, command)
-ok(command.startsWith(`~/.docket/bin/wave-claim --step STEP-12 --owner ${owner} --attempt 3 --module '${modulePath}' --metadata '`),
+ok(command.startsWith(`~/.docket/bin/docket-workflow-claim --step STEP-12 --owner ${owner} --attempt 3 --module '${modulePath}' --metadata '`),
     'the claim command names step, owner, fenced attempt and quoted module path')
 ok(brief.startsWith('Run exactly this one command:') && brief.includes(`\n  ${command}\n`), 'the brief is one command, verbatim')
 ok(brief.includes('WAVE CLAIM: not a step execution'), 'the brief marks the agent as wave overhead')
 ok(!/docket step (?:claim|record|complete)\s+STEP-\d+/.test(brief),
-    "the brief never spells a claim or record of the step, so wave-usage cannot bill the step's executor for it")
+    "the brief never spells a claim or record of the step, so docket-workflow-usage cannot bill the step's executor for it")
 ok(!/STEP-\d+\.d\b/.test(brief), "the brief names no step scratch dir, so the sibling guard has no sibling's dir to weigh")
 ok(shellQuote(`it's`) === `'it'\\''s'`, 'shellQuote closes, escapes and reopens a single quote')
 
@@ -89,7 +89,7 @@ ok(accepted.ok && accepted.packet === good.packet && accepted.token === good.tok
     accepted.attempt === 3 && accepted.reMinted === false && accepted.sha256 === good.packet_sha256,
     'a module for this claim is accepted with its packet, token, dir and attempt')
 ok(accepted.ok && accepted.dirPhysical === good.dir_physical,
-    'an accepted module carries the physical step dir wave-claim resolved')
+    'an accepted module carries the physical step dir docket-workflow-claim resolved')
 ok(packetFromModule({ ...good, attempt: 4, re_minted: true }, row, owner).ok,
     'a later attempt (a claim taken after this dispatch) is still this claim')
 const refusals = [

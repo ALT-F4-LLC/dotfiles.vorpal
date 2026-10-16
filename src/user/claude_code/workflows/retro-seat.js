@@ -33,7 +33,7 @@ export const meta = {
 // Workflow({scriptPath}), never by name. No policy.toml row or wave
 // dispatch covers retro-analyst, so this script is its only seating path
 // and the caller sets each seat's {model, effort} explicitly per analyst
-// entry, because no engine row supplies them as it does for wave.js steps.
+// entry, because no engine row supplies them as it does for docket-workflow.js steps.
 // ---------------------------------------------------------------------------
 
 // The retro-analyst contract's Emit and Stuck sections, as fields: the window

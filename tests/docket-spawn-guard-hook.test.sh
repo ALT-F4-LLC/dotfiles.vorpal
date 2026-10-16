@@ -29,17 +29,17 @@
 # `spawn-admitted` audit event. Cases below assert the exact argv, and assert
 # that the verdict still comes back from the engine both ways.
 #
-# Third, the usage join. wave-usage.js claims no step, so a launch of the
+# Third, the usage join. docket-workflow-usage.js claims no step, so a launch of the
 # INSTALLED copy asks `guard spawn --active --usage-join` and the engine
 # admits it past a reap hold. The match is on the resolved path, never the
-# basename: a same-named copy elsewhere, or wave.js, asks the plain question.
+# basename: a same-named copy elsewhere, or docket-workflow.js, asks the plain question.
 # Production ~/.claude/workflows is a symlink into the vorpal store, so the
 # rows use fixture HOMEs, one real directory and one symlinked, and both the
 # symlinked and the resolved scriptPath must match.
 #
 # ALSO PINNED: the fail-OPEN path (no `docket`), the engine's own allow over
 # no active run, and the ordinary path (a launch that is neither tribunal.js
-# nor the installed wave-usage.js reaches the engine with no extra flags, and its denial text is the engine's).
+# nor the installed docket-workflow-usage.js reaches the engine with no extra flags, and its denial text is the engine's).
 #
 # WHAT THIS SUITE CANNOT SEE: it drives the hook's stdin and PATH only. The
 # stub answers however a case tells it to, so nothing here shows what the REAL
@@ -284,7 +284,7 @@ case_two_active_runs_older_holds() {
     export ACTIVE_RUNS="RUN-14 RUN-15"
     export HELD_RUNS="RUN-14"
     run_case "two active runs, only the OLDER holds a reap" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/wave.js")"
+        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")"
     expect_argv "  ...asked over every active run" "guard spawn --active"
     if grep -q 'RUN-14' "$STDERR_FILE"; then
         pass "  ...and the denial names the older run"
@@ -296,7 +296,7 @@ case_two_active_runs_older_holds() {
 case_never_resolves_a_run() {
     one_held_run
     verdict_of "$PATH_WITH_DOCKET" \
-        "$(workflow_payload "$HOME/.claude/workflows/wave.js")" >/dev/null
+        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")" >/dev/null
     expect_never_asked "the hook never asks run status for a run id" "^run "
     expect_never_asked "  ...and never names a run on the plain path" "--run"
 }
@@ -390,8 +390,8 @@ case_tribunal_malformed_proposal_asks_plainly() {
 case_wave_still_denies() {
     one_held_run
     export ADMIT_VOTE="DKT-V46"
-    run_case "wave.js under the same hold" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/wave.js" DKT-V46)"
+    run_case "docket-workflow.js under the same hold" DENY \
+        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js" DKT-V46)"
     expect_argv "  ...and a voteId on a NON-tribunal launch is ignored" \
         "guard spawn --active"
 }
@@ -415,14 +415,14 @@ case_lookalike_basename_still_denies() {
 case_tribunal_as_directory_still_denies() {
     one_held_run
     export ADMIT_VOTE="DKT-V46"
-    run_case "tribunal.js as a DIRECTORY component, wave.js as the script" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js/wave.js" DKT-V46)"
+    run_case "tribunal.js as a DIRECTORY component, docket-workflow.js as the script" DENY \
+        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js/docket-workflow.js" DKT-V46)"
 }
 
 case_denial_text_is_the_engines() {
     one_held_run
     verdict_of "$PATH_WITH_DOCKET" \
-        "$(workflow_payload "$HOME/.claude/workflows/wave.js")" >/dev/null
+        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")" >/dev/null
     if grep -q 'unacknowledged reaps in bounded classes hold headroom' "$STDERR_FILE"; then
         pass "deny forwards the engine's own reason on stderr"
     else
@@ -434,7 +434,7 @@ case_denial_text_is_the_engines() {
 case_no_active_run_allows() {
     reset_env
     run_case "no active run — the engine allows over an empty set" ALLOW \
-        "$(workflow_payload "$HOME/.claude/workflows/wave.js")"
+        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")"
     expect_argv "  ...and the hook still asked, rather than deciding" \
         "guard spawn --active"
 }
@@ -442,7 +442,7 @@ case_no_active_run_allows() {
 case_missing_docket_allows() {
     reset_env
     run_case "no docket binary on PATH (fail-OPEN on a tooling gap)" ALLOW \
-        "$(workflow_payload "$HOME/.claude/workflows/wave.js")" "$PATH_NO_DOCKET"
+        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")" "$PATH_NO_DOCKET"
 }
 
 case_missing_jq_still_guards() {
@@ -466,7 +466,7 @@ case_empty_stdin_still_guards() {
 }
 
 # ---- A launch cwd that is not the checkout's root is refused before spawn ----
-# A hand-typed cwd that misses the checkout died late, at wave.js's first claim
+# A hand-typed cwd that misses the checkout died late, at docket-workflow.js's first claim
 # agent, leaving an open dispatch behind. The hook refuses it first: no engine
 # call, exit 2, the bad path verbatim on stderr.
 # The reason is asserted too: a nonexistent path can never equal the toplevel,
@@ -503,26 +503,26 @@ expect_cwd_passes_through() {
 
 case_wave_cwd_missing_refused() {
     local bad="${REPO_ROOT}-no-such-checkout"
-    expect_cwd_refused "wave.js with a nonexistent cwd (a sibling of the repo root)" "$bad" \
+    expect_cwd_refused "docket-workflow.js with a nonexistent cwd (a sibling of the repo root)" "$bad" \
         "not an existing directory" \
-        "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "$bad")"
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/docket-workflow.js" "$bad")"
 }
 
 case_wave_cwd_subdirectory_refused() {
     local bad="${REPO_ROOT}/tests"
-    expect_cwd_refused "wave.js with a cwd that is a subdirectory of the repo" "$bad" \
+    expect_cwd_refused "docket-workflow.js with a cwd that is a subdirectory of the repo" "$bad" \
         "not the git toplevel" \
-        "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "$bad")"
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/docket-workflow.js" "$bad")"
 }
 
 case_wave_cwd_toplevel_passes() {
-    expect_cwd_passes_through "wave.js with cwd equal to the repo root" \
-        "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "$REPO_ROOT")"
+    expect_cwd_passes_through "docket-workflow.js with cwd equal to the repo root" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/docket-workflow.js" "$REPO_ROOT")"
 }
 
 case_wave_cwd_toplevel_trailing_slash_passes() {
-    expect_cwd_passes_through "wave.js with cwd equal to the repo root plus a trailing slash" \
-        "$(workflow_payload_cwd "$HOME/.claude/workflows/wave.js" "${REPO_ROOT}/")"
+    expect_cwd_passes_through "docket-workflow.js with cwd equal to the repo root plus a trailing slash" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/docket-workflow.js" "${REPO_ROOT}/")"
 }
 
 # tribunal.js carries the same hand-typed cwd. A launch with no args.cwd keeps
@@ -558,7 +558,7 @@ case_tribunal_cwd_toplevel_trailing_slash_passes() {
         "$(workflow_payload_cwd "$HOME/.claude/workflows/tribunal.js" "${REPO_ROOT}/")"
 }
 
-# ---- USAGE JOIN: the installed wave-usage.js declares itself to the engine ----
+# ---- USAGE JOIN: the installed docket-workflow-usage.js declares itself to the engine ----
 # Fixture HOMEs, so the rows hold on a runner with no ~/.claude/workflows.
 # USAGE_HOME has a real workflows directory. LINK_HOME's workflows is a
 # symlink to STORE_DIR, as production's points into the vorpal store; the
@@ -571,10 +571,10 @@ STORE_DIR="${SANDBOX}/store/workflows"
 ELSEWHERE_DIR="${SANDBOX}/elsewhere"
 mkdir -p "${USAGE_HOME}/.claude/workflows" "${LINK_HOME}/.claude" "$STORE_DIR" "$ELSEWHERE_DIR" \
     || fatal "cannot build usage-join fixtures"
-: >"${USAGE_HOME}/.claude/workflows/wave-usage.js"
-: >"${USAGE_HOME}/.claude/workflows/wave.js"
-: >"${STORE_DIR}/wave-usage.js"
-: >"${ELSEWHERE_DIR}/wave-usage.js"
+: >"${USAGE_HOME}/.claude/workflows/docket-workflow-usage.js"
+: >"${USAGE_HOME}/.claude/workflows/docket-workflow.js"
+: >"${STORE_DIR}/docket-workflow-usage.js"
+: >"${ELSEWHERE_DIR}/docket-workflow-usage.js"
 ln -s "$STORE_DIR" "${LINK_HOME}/.claude/workflows" || fatal "cannot link the fixture workflows"
 STORE_DIR_REAL=$(cd -P "$STORE_DIR" && pwd -P) || fatal "cannot resolve the fixture store"
 
@@ -599,33 +599,33 @@ expect_usage_join_not_claimed() {
 }
 
 case_usage_join_installed_path() {
-    expect_usage_join_admitted "wave-usage.js at the installed path under a hold" \
-        "$USAGE_HOME" "${USAGE_HOME}/.claude/workflows/wave-usage.js"
+    expect_usage_join_admitted "docket-workflow-usage.js at the installed path under a hold" \
+        "$USAGE_HOME" "${USAGE_HOME}/.claude/workflows/docket-workflow-usage.js"
 }
 
 case_usage_join_not_for_wave() {
-    expect_usage_join_not_claimed "wave.js at the installed path under a hold" \
-        "$USAGE_HOME" "${USAGE_HOME}/.claude/workflows/wave.js"
+    expect_usage_join_not_claimed "docket-workflow.js at the installed path under a hold" \
+        "$USAGE_HOME" "${USAGE_HOME}/.claude/workflows/docket-workflow.js"
 }
 
 case_usage_join_not_for_foreign_path() {
-    expect_usage_join_not_claimed "wave-usage.js at /tmp/x, outside the install" \
-        "$USAGE_HOME" "/tmp/x/wave-usage.js"
+    expect_usage_join_not_claimed "docket-workflow-usage.js at /tmp/x, outside the install" \
+        "$USAGE_HOME" "/tmp/x/docket-workflow-usage.js"
 }
 
 case_usage_join_not_for_same_named_copy() {
     expect_usage_join_not_claimed "an existing same-named copy outside the install" \
-        "$USAGE_HOME" "${ELSEWHERE_DIR}/wave-usage.js"
+        "$USAGE_HOME" "${ELSEWHERE_DIR}/docket-workflow-usage.js"
 }
 
 case_usage_join_symlinked_install() {
-    expect_usage_join_admitted "wave-usage.js through a symlinked workflows directory" \
-        "$LINK_HOME" "${LINK_HOME}/.claude/workflows/wave-usage.js"
+    expect_usage_join_admitted "docket-workflow-usage.js through a symlinked workflows directory" \
+        "$LINK_HOME" "${LINK_HOME}/.claude/workflows/docket-workflow-usage.js"
 }
 
 case_usage_join_resolved_target() {
-    expect_usage_join_admitted "wave-usage.js at the symlink's resolved target" \
-        "$LINK_HOME" "${STORE_DIR_REAL}/wave-usage.js"
+    expect_usage_join_admitted "docket-workflow-usage.js at the symlink's resolved target" \
+        "$LINK_HOME" "${STORE_DIR_REAL}/docket-workflow-usage.js"
 }
 
 case_two_active_runs_older_holds

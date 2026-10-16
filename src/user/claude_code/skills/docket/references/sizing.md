@@ -127,7 +127,7 @@ the 55 done issues carrying `conduct` or `tribunal` across the engine and
 dotfiles projects (no `loop-bound` issue existed yet) — eight through a run,
 47 worked directly. The check found no reason to move either number:
 
-- The one conduct-path issue with usage recorded after the wave-usage
+- The one conduct-path issue with usage recorded after the docket-workflow-usage
   attribution fixes, a panel condition at 7 files and 4 directories, cost
   70,600 implement output tokens — already one of the three over-ceiling
   anchors above.

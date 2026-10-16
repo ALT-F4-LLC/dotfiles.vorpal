@@ -1,6 +1,6 @@
 # Naming convention for this corpus
 
-This file is authoring-facing documentation, not an engine or wave.js
+This file is authoring-facing documentation, not an engine or docket-workflow.js
 input. It states the naming shape every definition in this directory
 follows, so a future addition or edit stays consistent with the rest of
 the corpus.

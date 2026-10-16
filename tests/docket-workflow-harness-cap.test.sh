@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's effective harness concurrency cap:
+# Behavior suite for docket-workflow.js's effective harness concurrency cap:
 # `args.harnessCap`, and how it interacts with the loose HARNESS_CAP=16
 # ceiling admission was previously bound to unconditionally.
 #
@@ -15,7 +15,7 @@
 # and admission()'s own header comment names the failure this causes: judge
 # agents queuing behind a harness slot the wave believed was still open. The
 # fix lets the conductor pass the harnessCap that lane_units.py wrote into
-# launches.json as `args.harnessCap`; wave.js takes min(HARNESS_CAP, that
+# launches.json as `args.harnessCap`; docket-workflow.js takes min(HARNESS_CAP, that
 # value) as the effective admission bound, and falls back to the loose 16-agent
 # ceiling when the field is absent — a caller that omits it (an older SKILL.md,
 # a direct scriptPath launch, a resumed run whose original args predate this
@@ -30,7 +30,7 @@
 # script's own hard ceiling; (4) a non-integer, zero, or negative harnessCap
 # is ignored (falls back to 16), never crashes or admits zero rows.
 #
-# HOW. Like tests/wave-launch-unit.test.sh, it wraps the extracted
+# HOW. Like tests/docket-workflow-launch-unit.test.sh, it wraps the extracted
 # stage-ladder region in an async function with stub spawn/runGate/probe/
 # parallel/log globals and sets `input.harnessCap` per scenario. Rows are
 # issue-less singletons (their own lane each) so nothing but the harness cap
@@ -39,14 +39,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-harness-cap.XXXXXX") || fatal "mktemp failed"
@@ -82,7 +82,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so wave.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -150,7 +150,7 @@ const start = (theRows, harnessCap) => {
     RESULTS = new Map()
     HOLD = new Set(theRows.map((r) => r.step))   // every row holds until finish()
     OPEN = new Map()
-    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 // N issue-less singleton rows, each its own lane, no class/writer coupling —

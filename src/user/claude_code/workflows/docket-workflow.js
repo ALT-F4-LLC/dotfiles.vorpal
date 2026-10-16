@@ -1,5 +1,5 @@
 export const meta = {
-    name: 'wave',
+    name: 'docket-workflow',
     description: 'Internal: launched through scriptPath by docket-run, once per issue, to run one issue lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes on the normal path (gate status before, the proposal body, gate status after), 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, argument and return contract in the header comment; the reply-tail contract is THE REPLY-TAIL CONTRACT comment beside the park signals.',
     whenToUse: 'Never by name. Pass lane_units.py\'s generated args-<i>.json unedited; the argument contract is in the header comment.',
 }
@@ -13,7 +13,7 @@ export const meta = {
 // at the model/effort the engine rendered on it, seat a judge panel on each
 // vote row from its routed roster, and skip action rows (engine-run at record
 // time). Each executor row is claimed first by a claim agent running
-// ~/.docket/bin/wave-claim, which writes the rendered packet into a module the
+// ~/.docket/bin/docket-workflow-claim, which writes the rendered packet into a module the
 // wave loads; the executor receives that packet verbatim in its brief and
 // never claims or fetches anything itself. Stages run as awaited groups per
 // issue lane — the staged closure means one wave can carry judges -> gate ->
@@ -105,7 +105,7 @@ export const meta = {
 // `reseated` ({proposal, seats}). `coordination`
 // is the launch's rounds per issue, gate outcomes, re-seats, claim conflicts,
 // ancestry parks, spawn failures and deferrals, counted from its own rows and
-// settled statuses. It is the run's only coordination source; wave-usage.js
+// settled statuses. It is the run's only coordination source; docket-workflow-usage.js
 // measures tokens alone.
 // ---------------------------------------------------------------------------
 
@@ -204,7 +204,7 @@ function resolve(row) {
                 'rejected directly, and they stay with the conductor',
         }[row.kind] || 'only kind:"executor" rows are spawnable'
         throw new Error(
-            `wave.js: step ${row.step} is kind:${JSON.stringify(row.kind)} — ${why}. ` +
+            `docket-workflow.js: step ${row.step} is kind:${JSON.stringify(row.kind)} — ${why}. ` +
             `Refusing to route.`
         )
     }
@@ -244,7 +244,7 @@ function archetype(row, hint) {
 // either way; the sweep limits exposure and accumulation.
 //
 // THE PACKET RIDES THE SPAWN PROMPT. A claim agent runs
-// ~/.docket/bin/wave-claim (src/user/docket/bin/wave-claim), which claims the
+// ~/.docket/bin/docket-workflow-claim (src/user/docket/bin/docket-workflow-claim), which claims the
 // step, parks the token in the step dir, and writes the rendered packet into
 // a module under <cwd>/.claude/docket-packets. The wave loads that module
 // with a nested workflow({scriptPath}): the harness reads the file, so no
@@ -254,7 +254,7 @@ function archetype(row, hint) {
 // hook's additionalContext past 10,000, a Read past its token limit); the
 // spawn prompt is not. No executor spawns without a packet: a claim that
 // yields no valid module launches nothing. The Workflow tool refuses a script
-// file over 524,288 bytes, so wave-claim abridges long gate-results output
+// file over 524,288 bytes, so docket-workflow-claim abridges long gate-results output
 // when the module would not fit (packet_abridged), and refuses the claim when
 // it still would not: CLAIM FAILED before the lease, CLAIM INCOMPLETE after.
 //
@@ -263,13 +263,13 @@ function archetype(row, hint) {
 // names a technique by what it gets past, or pre-argues its own
 // authorization.
 //
-// TEST-BEGIN packet — extracted and exercised by tests/wave-packet.test.sh,
-// and prepended by tests/wave-bootstrap-render.test.sh,
-// tests/wave-model-attribution.test.sh and
-// tests/wave-bootstrap-owner-discriminator.test.sh. Keep it free of workflow
+// TEST-BEGIN packet — extracted and exercised by tests/docket-workflow-packet.test.sh,
+// and prepended by tests/docket-workflow-bootstrap-render.test.sh,
+// tests/docket-workflow-model-attribution.test.sh and
+// tests/docket-workflow-bootstrap-owner-discriminator.test.sh. Keep it free of workflow
 // globals (agent, log, args, workflow) so it stays evaluable on its own.
 const PACKET_DIR = '.claude/docket-packets'
-const WAVE_CLAIM = '~/.docket/bin/wave-claim'
+const WAVE_CLAIM = '~/.docket/bin/docket-workflow-claim'
 
 const shellQuote = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'"
 
@@ -324,7 +324,7 @@ function claimCommand(row, r, owner, modulePath) {
 
 // The claim agent's whole job is one command, and its `output` only explains
 // a missing module: the module decides whether an executor spawns. The brief
-// never spells `docket step claim STEP-N`: wave-usage.js joins an agent's
+// never spells `docket step claim STEP-N`: docket-workflow-usage.js joins an agent's
 // tokens to the step its brief claims or records, and this agent is wave
 // overhead (the WAVE CLAIM line), not the step's executor. Its command names
 // no STEP-N.d, so the sibling guard has nothing of a sibling's to weigh.
@@ -362,7 +362,7 @@ function packetFromModule(mod, row, owner) {
     if (!dir.startsWith('/') || !dir.endsWith(`/${row.step}.d`)) {
         return refuse(`the module's step dir ${JSON.stringify(mod.dir)} is not an absolute ${row.step}.d`)
     }
-    // wave-claim resolves every symlink in the step dir; a writer's Write
+    // docket-workflow-claim resolves every symlink in the step dir; a writer's Write
     // tool lands at this physical path.
     const dirPhysical = typeof mod.dir_physical === 'string' ? mod.dir_physical : ''
     if (!dirPhysical.startsWith('/') || !dirPhysical.endsWith(`/${row.step}.d`)) {
@@ -387,7 +387,7 @@ function packetFromModule(mod, row, owner) {
 // TEST-END packet
 
 // TEST-BEGIN executor-brief — extracted and exercised by
-// tests/wave-bootstrap-render.test.sh, which prepends the packet region.
+// tests/docket-workflow-bootstrap-render.test.sh, which prepends the packet region.
 // Keep it free of workflow globals so it stays evaluable on its own.
 //
 // `claim` is packetFromModule()'s accepted result and `owner` the claim's
@@ -620,20 +620,20 @@ let input = args
 if (typeof input === 'string') {
     try {
         input = JSON.parse(input)
-        log('wave.js: decoded args from the harness JSON-encoded transport (normal)')
+        log('docket-workflow.js: decoded args from the harness JSON-encoded transport (normal)')
     } catch (e) {
         throw new Error(
-            `wave.js: args arrived as a STRING that is not valid JSON (${e.message}). ` +
+            `docket-workflow.js: args arrived as a STRING that is not valid JSON (${e.message}). ` +
             `Refusing to route.`
         )
     }
 }
 if (!input || typeof input !== 'object') throw new Error(
-    `wave.js: args is ${typeof input}, expected {rows}. Refusing to route.`
+    `docket-workflow.js: args is ${typeof input}, expected {rows}. Refusing to route.`
 )
 
 // TEST-BEGIN launch-rows — extracted and exercised by
-// tests/wave-launch-unit.test.sh, which prepends the packet region and stubs
+// tests/docket-workflow-launch-unit.test.sh, which prepends the packet region and stubs
 // `workflow` and `log`.
 //
 // A launch's rows arrive inline as args.rows, or by reference: lane_units.py
@@ -646,7 +646,7 @@ async function launchRows(input) {
     const ref = input.rowsModule
     if (ref === undefined || ref === null) return input.rows || []
     const refuse = (why) => {
-        const text = `wave.js: launch rows module ${JSON.stringify(ref)} REFUSED — ${why}; ` +
+        const text = `docket-workflow.js: launch rows module ${JSON.stringify(ref)} REFUSED — ${why}; ` +
             `nothing was claimed. Re-run lane_units.py and relaunch. Refusing to route.`
         log(text)
         return new Error(text)
@@ -686,7 +686,7 @@ const rows = await launchRows(input)
 // a substring of the body: a judge reviewing park handling quotes the very
 // phrases a body scan would match.
 // TEST-BEGIN park-signals — extracted and exercised by
-// tests/wave-park-signals.test.sh against verbatim captured replies. Prepend
+// tests/docket-workflow-park-signals.test.sh against verbatim captured replies. Prepend
 // the configuration region; these predicates use no workflow globals (agent,
 // log, args).
 function lastLine(text) {
@@ -694,7 +694,7 @@ function lastLine(text) {
     return lines.length ? lines[lines.length - 1].trim() : ''
 }
 
-// wave-claim prints a CONFLICT as three lines (`STEP-N`, `CONFLICT`, the
+// docket-workflow-claim prints a CONFLICT as three lines (`STEP-N`, `CONFLICT`, the
 // engine's error), which the claim agent relays; the cap allows one line of
 // slack. A longer reply is a finding about conflicts, not a conflict.
 function isConflictReport(text) {
@@ -788,7 +788,7 @@ function executorReplyText(step, reply) {
 
 // ORPHANED CLAIM. The refusal `not ready to claim: the step is not pending`
 // means ALREADY CLAIMED, not never started. The claim agent relays it from
-// wave-claim when another owner holds the lease: a claim from an earlier
+// docket-workflow-claim when another owner holds the lease: a claim from an earlier
 // wave whose holder died, most often. On a harness resume the claim agent's
 // cached reply and the module reload hand an interrupted executor its own
 // live token again, and the engine refuses a second record of a step that
@@ -796,7 +796,7 @@ function executorReplyText(step, reply) {
 // `claim-conflict`, which kills the chain unless the step already reads done
 // or skipped (chainDead reads `step_status`).
 // TEST-BEGIN orphaned-claim — extracted and exercised by
-// tests/wave-orphaned-claim.test.sh, which concatenates the park-signals
+// tests/docket-workflow-orphaned-claim.test.sh, which concatenates the park-signals
 // region ahead of it (isConflictReport) and the chain-dead region after it.
 // Keep everything between the markers free of workflow globals (agent, probe,
 // log, args) so it stays evaluable on its own.
@@ -917,7 +917,7 @@ function orphanedClaimReport(step, conflict, show) {
 // keeps the `unrecorded` path.
 //
 // TEST-BEGIN blocked-settle — extracted and exercised by
-// tests/wave-orphaned-claim.test.sh, which concatenates the packet
+// tests/docket-workflow-orphaned-claim.test.sh, which concatenates the packet
 // (shellQuote), park-signals (stopSignal) and orphaned-claim (parseStepShow)
 // regions ahead of it. agent(), stepShow() and log() are injected; keep
 // everything between the markers free of workflow globals.
@@ -1016,7 +1016,7 @@ async function settleStoppedReply({ row, owner, claim, held, text, agent, stepSh
 // block stays operator-escalated on the first failure.
 //
 // TEST-BEGIN classifier-retry — extracted and exercised by
-// tests/wave-classifier-retry.test.sh against verbatim captured reason text.
+// tests/docket-workflow-classifier-retry.test.sh against verbatim captured reason text.
 // Keep everything between the markers free of workflow globals (agent, log,
 // args) so it stays evaluable on its own.
 //
@@ -1063,7 +1063,7 @@ const PROBE_SCHEMA = {
 
 function blockProbeBrief(label) {
     return [
-        'You are a DIAGNOSTIC PROBE inside a running Docket wave (wave.js). A',
+        'You are a DIAGNOSTIC PROBE inside a running Docket wave (docket-workflow.js). A',
         'step\'s agent launch resolved to null, and the harness recorded why in',
         'its own wave state file. Your ONLY job is to recover that record',
         'VERBATIM. Change nothing, rephrase nothing.',
@@ -1098,7 +1098,7 @@ function blockProbeBrief(label) {
 }
 
 // TEST-BEGIN null-probe — extracted and exercised by
-// tests/wave-classifier-retry.test.sh. Keep everything between the markers
+// tests/docket-workflow-classifier-retry.test.sh. Keep everything between the markers
 // free of workflow globals (agent, log, args) so it stays evaluable alone.
 //
 // A recovered reason is usable only when the probe found a live-wave entry,
@@ -1114,7 +1114,7 @@ function probeRecovered(p, label) {
 // TEST-END null-probe
 
 // TEST-BEGIN spawn-catch — extracted and exercised by
-// tests/wave-isolation-unavailable.test.sh with a counting launch spy.
+// tests/docket-workflow-isolation-unavailable.test.sh with a counting launch spy.
 // Settles a rejected top-level launch. The isolation branch is fail-closed:
 // an isolated writer whose worktree could not be made is never relaunched
 // without isolation. Everything the handler touches is injected, except
@@ -1151,12 +1151,12 @@ function spawnCatch({ row, isolated, log, launch, failed, retryTransient, held =
 let nullBurstTripped = false
 
 // TEST-BEGIN claim-path — extracted and exercised by
-// tests/wave-claim-path.test.sh, which prepends the configuration,
+// tests/docket-workflow-claim-path.test.sh, which prepends the configuration,
 // park-signals, classifier-retry, orphaned-claim and packet regions and
 // stubs `agent`, `workflow`, `stepShow`, `log` and `input`.
 //
 // Set once a packet module fails to load for any reason but its absence. A
-// missing module is one row's failure: its wave-claim never ran or never
+// missing module is one row's failure: its docket-workflow-claim never ran or never
 // finished. Any other load error (the harness refusing a path outside the
 // session's working directory, a guard, a permission change) would refuse
 // every later module too, and each claim behind it would strand a live
@@ -1164,7 +1164,7 @@ let nullBurstTripped = false
 let packetPathRefused = ''
 const MODULE_NOT_WRITTEN = /Workflow script file not found/i
 
-// One claim agent runs wave-claim; then the module decides. Resolves
+// One claim agent runs docket-workflow-claim; then the module decides. Resolves
 // {ok: true, owner, claim} with the packet in hand, or {ok: false, result}
 // settling the row with no executor launched.
 async function claimPacket(row, r, phaseLabel) {
@@ -1255,7 +1255,7 @@ const CROSS_LAUNCH_WAIT = /not ready to claim:\s*(its scope conflicts with a cla
 // No module loaded. The claim agent's `output` says why: a cross-launch wait
 // defers the lane; any other CONFLICT keeps the executor path's handling (a
 // run park, or an orphaned claim diagnosed from the step's own row); a
-// wave-claim stop line is `blocked`; anything else leaves the claim state
+// docket-workflow-claim stop line is `blocked`; anything else leaves the claim state
 // unknown.
 function claimFailure(row, owner, reply, loadError, phaseLabel) {
     const text = reply && typeof reply.output === 'string' ? reply.output.trim() : ''
@@ -1531,7 +1531,7 @@ function assertRouted(who, entry, refusal) {
     for (const k of ['model', 'effort', 'variant']) {
         if (!entry || typeof entry[k] !== 'string' || entry[k] === '') {
             throw new Error(
-                `wave.js: ${who} carries no ${k} (got ${JSON.stringify(entry && entry[k])}) — ` +
+                `docket-workflow.js: ${who} carries no ${k} (got ${JSON.stringify(entry && entry[k])}) — ` +
                 `the engine renders model/effort/variant from the run's pinned ` +
                 `policy.toml, so this was never routed or was re-typed without ` +
                 `its fields. ${refusal}`
@@ -1543,7 +1543,7 @@ function assertRouted(who, entry, refusal) {
 function voterToSeat(voter, routing) {
     if (typeof voter !== 'string' || voter === '') {
         throw new Error(
-            `wave.js: a voter_assignments entry carries no voter name (got ${JSON.stringify(voter)}). ` +
+            `docket-workflow.js: a voter_assignments entry carries no voter name (got ${JSON.stringify(voter)}). ` +
             `Refusing to seat the panel.`
         )
     }
@@ -1552,16 +1552,16 @@ function voterToSeat(voter, routing) {
 }
 
 // TEST-BEGIN gate-vote — extracted and exercised by
-// tests/wave-vote-retry-report.test.sh, which concatenates this region after
+// tests/docket-workflow-vote-retry-report.test.sh, which concatenates this region after
 // the classifier-retry region (whose CLASSIFIER_BLOCK / TRANSIENT_CLASSIFIER /
 // reasonText the probe retry below reads) and feeds it stub `agent`,
 // `parallel`, `log`, `workflow`, and `voterToSeat` globals — the panel seat is
 // tribunal.js's, reached through the stubbed `workflow`, not rendered here.
 // Prepend the configuration region. Other dependencies stay inside the markers;
-// tests/wave-target-envelope.test.sh extracts it to assert the gate path
+// tests/docket-workflow-target-envelope.test.sh extracts it to assert the gate path
 // spends no target probe, and tests/tribunal-seat-brief.test.sh pins the
 // brief tribunal.js renders for the mid-wave call this region makes.
-// The closing paragraphs every probe brief shares. wave-usage.js classifies a
+// The closing paragraphs every probe brief shares. docket-workflow-usage.js classifies a
 // probe by the WAVE PROBE line.
 function probeTrailer(step) {
     return `Run nothing else: no vote, no investigation. You are a
@@ -2094,8 +2094,8 @@ async function runGate(row, phaseLabel) {
 // target".
 //
 // TEST-BEGIN target-envelope — extracted and exercised by
-// tests/wave-target-envelope.test.sh, and prepended by
-// tests/wave-fix-round-ancestry.test.sh and the ladder suites, whose guard
+// tests/docket-workflow-target-envelope.test.sh, and prepended by
+// tests/docket-workflow-fix-round-ancestry.test.sh and the ladder suites, whose guard
 // reads through it. Keep it free of workflow globals — `log` included.
 const TARGET_ENVELOPE_JQ =
     `jq -c '{target_sha: (first(.. | objects | select(has("target_sha")) | ` +
@@ -2159,8 +2159,8 @@ function parseTargetRef(text) {
 // parking, a `cherry picked from commit <target>` trailer on `prior` fails
 // open.
 // TEST-BEGIN fix-round-ancestry — extracted and exercised by
-// tests/wave-fix-round-ancestry.test.sh (and concatenated ahead of the
-// stage-ladder region by tests/wave-chain-dead-ladder.test.sh, whose ladder
+// tests/docket-workflow-fix-round-ancestry.test.sh (and concatenated ahead of the
+// stage-ladder region by tests/docket-workflow-chain-dead-ladder.test.sh, whose ladder
 // calls into it). Keep everything between the markers free of workflow
 // globals (agent, probe, log, args) so it stays evaluable on its own.
 //
@@ -2275,8 +2275,8 @@ function ancestryParkReport(step, broken) {
 // A run park stops all later launches, while in-flight rows finish. A lane
 // park, conflict, failed spawn, or uncleared gate stops only its own issue.
 // TEST-BEGIN stage-ladder — extracted and exercised by
-// tests/wave-chain-dead-ladder.test.sh, tests/wave-fix-round-ancestry.test.sh
-// and tests/wave-issue-lanes.test.sh, which wrap this whole region in an
+// tests/docket-workflow-chain-dead-ladder.test.sh, tests/docket-workflow-fix-round-ancestry.test.sh
+// and tests/docket-workflow-issue-lanes.test.sh, which wrap this whole region in an
 // async function and feed it stub `parallel`/`spawn`/`runGate`/`probe`/
 // `stepShow`/`log` globals. The suites prepend configuration, park-signals
 // (laneParked, runParked, isConflictReport) and fix-round-ancestry with its
@@ -2349,7 +2349,7 @@ function needsClaimProbe(row) {
 }
 
 // TEST-BEGIN pre-claim-probe — extracted and exercised by
-// tests/wave-claim-path.test.sh with stub `stepShow`/`log` globals.
+// tests/docket-workflow-claim-path.test.sh with stub `stepShow`/`log` globals.
 // Resolves the row's settled status when the probe reads its step as not
 // claimable this wave, else null and the row spawns. Skip only on a
 // positively recognized status; a dead probe, an engine error, and any other
@@ -2583,7 +2583,7 @@ const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
 function launchUnit(spec) {
     if (spec === undefined || spec === null) return { index: 0, of: 1, classCap: null }
     const bad = (why) => new Error(
-        `wave.js: args.unit must be {index, of, classCap?} with integers ` +
+        `docket-workflow.js: args.unit must be {index, of, classCap?} with integers ` +
         `0 <= index < of <= ${LAUNCH_CAP}; got ${JSON.stringify(spec)} (${why}). Refusing to route.`)
     if (typeof spec !== 'object') throw bad('not an object')
     const { index, of, classCap } = spec
@@ -2598,7 +2598,7 @@ function launchUnit(spec) {
     return { index, of, classCap }
 }
 if (input.shard !== undefined) throw new Error(
-    'wave.js: args.shard is retired — a launch now receives only its own rows ' +
+    'docket-workflow.js: args.shard is retired — a launch now receives only its own rows ' +
     'and args.unit {index, of, classCap}, both from lane_units.py. Re-split the ' +
     'dispatch and relaunch; never resume a pre-split wave. Refusing to route.')
 const unit = launchUnit(input.unit)
@@ -2617,7 +2617,7 @@ if (unit.of > 1) {
 const lanes = groupRows(rows, laneOf)
 // One issue, one wave: a conductor launch carries exactly one lane.
 if (input.unit != null && lanes.size > 1) throw new Error(
-    `wave.js: a launch with args.unit must hold exactly one issue lane; got ` +
+    `docket-workflow.js: a launch with args.unit must hold exactly one issue lane; got ` +
     `${lanes.size} (${[...lanes.keys()].join(', ')}). Re-split the dispatch with ` +
     `lane_units.py, which gives every issue its own launch. Refusing to route.`)
 log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, laneRows]) => {
@@ -2959,10 +2959,19 @@ function settleRow(row, res) {
     }
 }
 
+// "2 executors + 1 vote": what a phase runs, in place of the engine's stage
+// number. The lane name (the issue key) leads the phase label, so every phase
+// of a launch names its issue.
+function describeGroup(group) {
+    const counts = new Map()
+    for (const row of group) counts.set(row.kind, (counts.get(row.kind) || 0) + 1)
+    return [...counts].map(([kind, n]) => `${n} ${kind}${n === 1 || kind === 'vote' ? '' : 's'}`).join(' + ')
+}
+
 async function runLane(name, laneRows) {
     const byStage = groupRows(laneRows, stageOf)
     const keys = [...byStage.keys()].sort((a, b) => a - b)
-    for (const k of keys) {
+    for (const [pos, k] of keys.entries()) {
         if (parked) break
         const group = byStage.get(k).filter((row) => {
             if (row.issue && deadIssues.has(row.issue)) {
@@ -2987,7 +2996,7 @@ async function runLane(name, laneRows) {
             return true
         })
         if (group.length === 0) continue
-        const label = `${name} stage ${k} (${group.length} row${group.length === 1 ? '' : 's'})`
+        const label = `${name} · ${pos + 1}/${keys.length} · ${describeGroup(group)}`
         const settled = await parallel(group.map((row) => () => runRow(row, label)))
         settled.forEach((res, index) => settleRow(group[index], res))
     }

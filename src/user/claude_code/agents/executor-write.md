@@ -1,7 +1,7 @@
 ---
 name: executor-write
 description: >
-  Graph-fleet executor for one Docket step dispatched by wave.js.
+  Graph-fleet executor for one Docket step dispatched by docket-workflow.js.
   Implements scoped changes from a rendered brief, with targeted external
   lookup when needed.
 tools: Read, Edit, Write, Grep, Glob, Bash, WebSearch, WebFetch

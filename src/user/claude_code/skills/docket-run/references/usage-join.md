@@ -1,6 +1,6 @@
 # Where the usage numbers are
 
-Consumer: the docket-run skill, step 3. When the installed `wave-usage.js`
+Consumer: the docket-run skill, step 3. When the installed `docket-workflow-usage.js`
 is absent (drift, stop-and-report), the conductor delegates the usage join
 to one `executor-read` agent. The brief is the text below verbatim, followed
 by two inputs the conductor appends: the journal directory path and the
@@ -22,19 +22,19 @@ map `agentId` to a step through the agent's first `user` message.
 The transcript writes one content block per line under a shared message
 id, so dedupe assistant lines by `message.id` (the last line wins for
 usage) before summing. Return a JSON array of rows shaped
-`{step, unit, quantity}`, as wave-usage.js does and `docket dispatch
+`{step, unit, quantity}`, as docket-workflow-usage.js does and `docket dispatch
 backfill-usage --from-json -` consumes: four rows per dispatched step, one
 for each unit in the order `input_tokens`, `output_tokens`,
 `cache_creation_tokens`, `cache_read_tokens`, each `quantity` an integer.
 The first row of a step may also carry a `metadata` object (`model_resolved`,
 plus `effort_resolved` and `models_observed` when known), which back-fill merges
-onto the finished step's record. wave-usage.js sets it only when one transcript
+onto the finished step's record. docket-workflow-usage.js sets it only when one transcript
 served the step and its model coverage is complete.
 
 **Join on the obligation the brief carries, never on the first `STEP-N`
 mentioned.** An agent owns a step only if its brief tells it to `docket
 step claim`/`record STEP-N`. A brief that merely mentions a step (a
-read-only probe, or the claim agent that runs `wave-claim` for an
+read-only probe, or the claim agent that runs `docket-workflow-claim` for an
 executor) is wave overhead: sum and report separately, attribute to
 nothing. A judge carries `docket vote cast`, not a record, and is
 keyed by seat in the panel back-fill instead.

@@ -5,6 +5,8 @@ description: >-
   framework. Use when the operator requests a threat model, attack-path analysis, or
   evaluation of security controls.
 argument-hint: "[system, component, or change]"
+model: opus
+effort: medium
 ---
 
 # Threat modeling: the four questions

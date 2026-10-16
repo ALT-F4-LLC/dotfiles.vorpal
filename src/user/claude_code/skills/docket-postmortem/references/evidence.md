@@ -81,7 +81,7 @@ journal; its task result can supply evidence, but a nonempty output file can
 be partial. Confirm completion from the journal's `result` record.
 
 Join by stable session, workflow, and agent identity. For Docket steps,
-prefer an explicit assignment record, or the installed `wave-usage`
+prefer an explicit assignment record, or the installed `docket-workflow-usage`
 obligation classifier: claimant (step record), judge (vote cast), and wave
 overhead (read-only probes and claim agents) have different owners. The first `STEP-N` in a
 prompt can be something a probe read. Preserve unattributed work as a count
@@ -111,7 +111,7 @@ The installed `session-census` workflow dedups assistant usage by message
 ID: a repeated ID retracts its earlier observation before the later one is
 added, so streamed rewrites count once.
 
-Validate usage extraction against the installed `wave-usage` semantics:
+Validate usage extraction against the installed `docket-workflow-usage` semantics:
 
 - Deduplicate assistant usage by conversation or agent and message ID,
   retaining the last complete usage observation in supported transcript

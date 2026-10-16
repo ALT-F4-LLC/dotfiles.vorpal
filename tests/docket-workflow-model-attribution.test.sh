@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Execute the claim agent's rendered command against a fake wave-claim.
+# Execute the claim agent's rendered command against a fake docket-workflow-claim.
 # Verify that routing survives failure at claim time and is never presented
 # as observation, and that every argument stays one literal shell word.
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-model-attribution.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 
@@ -26,10 +26,10 @@ const region = (name) => {
 }
 const ctx = vm.runInNewContext(region('packet') + '\n' + region('executor-brief') +
     '\n;({ nextOwner, claimCommand, claimBrief, executorBrief })')
-// `~/.docket/bin/wave-claim` resolves under a scratch HOME to this fake.
+// `~/.docket/bin/docket-workflow-claim` resolves under a scratch HOME to this fake.
 const home = path.join(work, 'home')
 fs.mkdirSync(path.join(home, '.docket', 'bin'), { recursive: true })
-fs.writeFileSync(path.join(home, '.docket', 'bin', 'wave-claim'),
+fs.writeFileSync(path.join(home, '.docket', 'bin', 'docket-workflow-claim'),
     '#!/bin/bash\nprintf \'%s\\0\' "$@" > "$CAPTURE_ARGS"\n', { mode: 0o755 })
 const row = { step: 'STEP-7', issue: 'DKT-3', run: 'RUN-1', attempt: 1 }
 const marker = path.join(work, 'unexpected-shell-execution')
@@ -44,7 +44,7 @@ for (const [index, c] of cases.entries()) {
     const owner = ctx.nextOwner(`STEP-7`)
     const modulePath = `${c.cwd}/.claude/docket-packets/STEP-7.a2.js`
     const brief = ctx.claimBrief(row, ctx.claimCommand(row, routing, owner, modulePath))
-    const line = brief.split('\n').find((l) => l.includes('wave-claim --step STEP-7 --owner'))
+    const line = brief.split('\n').find((l) => l.includes('docket-workflow-claim --step STEP-7 --owner'))
     assert(line, 'rendered claim command exists')
     const capture = path.join(work, `argv-${index}`)
     const run = spawnSync('/bin/bash', ['-c', line.trim()], {

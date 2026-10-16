@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's harness-slot weighting: how a vote row's
+# Behavior suite for docket-workflow.js's harness-slot weighting: how a vote row's
 # judge panel counts against the harness's own concurrency cap, alongside
 # executor rows.
 #
@@ -36,21 +36,21 @@
 # which are executor-only concepts a vote row's empty class must never
 # compete in.
 #
-# HOW. Extends tests/wave-issue-lanes.test.sh's stage-ladder harness with a
+# HOW. Extends tests/docket-workflow-issue-lanes.test.sh's stage-ladder harness with a
 # HOLDABLE `runGate` stub (mirroring the existing holdable `spawn`), so a
 # vote row can be observed occupying a harness slot before it settles.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-vote-harness-weight.XXXXXX") || fatal "mktemp failed"
@@ -87,7 +87,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so wave.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -107,7 +107,7 @@ const spawn = (row) => {
     if (!HOLD.has(row.step)) return Promise.resolve(canned)
     return new Promise((resolve) => OPEN.set(row.step, () => resolve(canned)))
 }
-// HOLDABLE runGate: unlike wave-issue-lanes.test.sh's stub (which always
+// HOLDABLE runGate: unlike docket-workflow-issue-lanes.test.sh's stub (which always
 // resolves immediately), this one mirrors spawn()'s HOLD/OPEN pattern so a
 // vote row can be observed occupying its harness weight before it settles —
 // the exact window this suite needs to watch.
@@ -161,7 +161,7 @@ const start = (theRows, opts) => {
     RESULTS = new Map()
     HOLD = new Set(theRows.map((r) => r.step))   // every row holds until finish()
     OPEN = new Map()
-    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 const logged = (frag) => LOG.some((l) => l.includes(frag))

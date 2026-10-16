@@ -131,7 +131,7 @@ every other path the prompt names from command output as well.
 - **Every wave this session launched** — every launch of a dispatch
   counts as its own wave here: its `wfId`, its
   `unit: {index, of, classCap}`, and the journal/transcript directory path
-  docket-run used for `wave-usage`. Without the `wfId` and that directory,
+  docket-run used for `docket-workflow-usage`. Without the `wfId` and that directory,
   usage for that wave can never be back-filled
   (`--source "wave-journal:<wfId>"` on the combined `dispatch close
   --backfill-from`, or on a crashed-relay back-fill), and
@@ -145,7 +145,7 @@ every other path the prompt names from command output as well.
   session may need to resume with `resumeFromRunId`. The harness does not
   restore these; an arg-less resume dies at startup, and a launch resumed
   with another launch's args runs a different lane set. A wave launched
-  before the split carries the retired `shard` arg, which wave.js now
+  before the split carries the retired `shard` arg, which docket-workflow.js now
   refuses: reconcile that dispatch instead of resuming it.
 - **Un-integrated writer shas**: any executor sha recorded but never
   cherry-picked into the shared checkout, with its worktree path and
@@ -165,7 +165,7 @@ every other path the prompt names from command output as well.
   needs to know one is outstanding.
 - **Every tribunal proposal id convened this session**, with a one-line
   tally each. Panel spend reaches the ledger through the seats-mode
-  wave-usage join piped to
+  docket-workflow-usage join piped to
   `docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>"` —
   back-fill every panel this session convened before recording the
   snapshot, in both halt modes, and carry into the snapshot only the

@@ -7,9 +7,9 @@
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it spawns no agent.
 #
-# WHY THIS EXISTS. wave.js fences its own seat-brief safe-read list and pins
-# it (tests/wave-target-envelope.test.sh, tests/wave-vote-retry-report.test.sh
-# extract wave.js's `gate-vote` region and exercise the brief tribunal.js
+# WHY THIS EXISTS. docket-workflow.js fences its own seat-brief safe-read list and pins
+# it (tests/docket-workflow-target-envelope.test.sh, tests/docket-workflow-vote-retry-report.test.sh
+# extract docket-workflow.js's `gate-vote` region and exercise the brief tribunal.js
 # renders through a stubbed `workflow`). Before this suite, tribunal.js's OWN
 # copy — now the only copy, since DOT-1300 folded the seat contract into this
 # file — carried no such pin: nothing in the repo asserted that a judge is

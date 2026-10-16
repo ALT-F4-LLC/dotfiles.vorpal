@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's AGENT BUDGET — the self-bound that keeps one
+# Behavior suite for docket-workflow.js's AGENT BUDGET — the self-bound that keeps one
 # wave launch under the Workflow tool's 1000-agent lifetime cap.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
@@ -19,7 +19,7 @@
 # would idle its lane and, through the stage await, every row behind it.
 #
 # This suite wraps the ladder region in an async function with stubbed
-# spawn/runGate/probe/parallel/log globals — the wave-chain-dead-ladder.test.sh
+# spawn/runGate/probe/parallel/log globals — the docket-workflow-chain-dead-ladder.test.sh
 # scaffolding — and asserts on what launched, what deferred, and how the wave
 # said so.
 #
@@ -30,14 +30,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-agent-budget.XXXXXX") || fatal "mktemp failed"
@@ -74,7 +74,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so wave.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -119,7 +119,7 @@ const run = async (theRows) => {
     rows = theRows
     SPAWNED = []
     LOG.length = 0
-    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 // Read the production configuration rather than duplicating its values.

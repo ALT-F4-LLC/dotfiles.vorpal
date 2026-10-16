@@ -9,14 +9,14 @@
 # settings deny interpreter code arguments (`SHELL_INDIRECTION_DENY_PATTERNS`
 # in src/user/claude_code.rs), so the whole call was refused before it ran,
 # no hook fired, the seat's no-retry rule applied, and it voted on the
-# proposal summary alone. The block-probe brief in wave.js even offered
+# proposal summary alone. The block-probe brief in docket-workflow.js even offered
 # "python3 or jq" as the way to parse JSON. No other gate reads the brief
 # sources for this: the Rust tests pin the deny rules themselves, and the
 # tribunal and wave suites assert what a brief renders, not what parser it
 # names.
 #
 # What this suite pins, over the sources every seat and judge brief renders
-# from (workflows/tribunal.js, workflows/wave.js, and the docket contracts
+# from (workflows/tribunal.js, workflows/docket-workflow.js, and the docket contracts
 # and fragments):
 #
 #   (a) deny-derived: no line matches any interpreter code-argument pattern
@@ -31,7 +31,7 @@
 #       renders it into BOTH seat-brief modes (the interpolation count);
 #       fragments/evidence-rules.md, which every judge, verify and report
 #       contract includes, carries the same rule for docket steps; and
-#       wave.js's block probe says to parse with jq.
+#       docket-workflow.js's block probe says to parse with jq.
 #
 # WORKFLOWS_DIR, CORPUS_DIR and SETTINGS_SOURCE override the inputs, so a
 # mutation probe can point the suite at deliberately-broken COPIES under
@@ -72,7 +72,7 @@ glob_to_ere() {
 
 # The files a seat or judge brief renders from.
 brief_sources() { # <workflows> <corpus>
-    printf '%s\n' "$1/tribunal.js" "$1/wave.js"
+    printf '%s\n' "$1/tribunal.js" "$1/docket-workflow.js"
     ls "$2"/contracts/*.md "$2"/fragments/*.md 2>/dev/null
 }
 
@@ -85,7 +85,7 @@ check_tree() { # <workflows> <corpus> <settings>
     sources=$(brief_sources "$wf" "$corpus")
     # Exit 2 is a setup fault, not a finding: a mutant that reads no sources
     # must not count as red.
-    if [ -z "$sources" ] || [ ! -f "$wf/tribunal.js" ] || [ ! -f "$wf/wave.js" ] \
+    if [ -z "$sources" ] || [ ! -f "$wf/tribunal.js" ] || [ ! -f "$wf/docket-workflow.js" ] \
         || [ ! -f "$settings" ]; then
         echo "  no brief sources under $wf and $corpus, or no settings source at $settings"
         return 2
@@ -127,8 +127,8 @@ check_tree() { # <workflows> <corpus> <settings>
         echo "  tribunal.js renders the parse rule into $renders seat-brief mode(s), expected 2"
         red=1
     fi
-    if ! grep -qF -- "$PROBE_SENTENCE" "$wf/wave.js"; then
-        echo "  wave.js block probe no longer says: $PROBE_SENTENCE"
+    if ! grep -qF -- "$PROBE_SENTENCE" "$wf/docket-workflow.js"; then
+        echo "  docket-workflow.js block probe no longer says: $PROBE_SENTENCE"
         red=1
     fi
     if ! grep -qF -- "$RULE_SENTENCE" "$corpus/fragments/evidence-rules.md"; then
@@ -165,7 +165,7 @@ mutant() { # <label> <setup-fn>
     local wf="$TMP/$label/workflows" corpus="$TMP/$label/config"
     rm -rf "$TMP/$label"
     mkdir -p "$wf" "$corpus"
-    cp "$WORKFLOWS/tribunal.js" "$WORKFLOWS/wave.js" "$wf/"
+    cp "$WORKFLOWS/tribunal.js" "$WORKFLOWS/docket-workflow.js" "$wf/"
     cp -R "$CORPUS/contracts" "$CORPUS/fragments" "$corpus/"
     "$setup" "$wf" "$corpus"
     check_tree "$wf" "$corpus" "$SETTINGS" > "$TMP/$label.out" 2>&1
@@ -177,7 +177,7 @@ mutant() { # <label> <setup-fn>
 }
 
 # m1: the block probe offers python3 again (matches no deny glob; census only)
-m1() { sed -i.bak "s/${PROBE_SENTENCE}/parse the JSON (python3 or jq)/" "$1/wave.js"; }
+m1() { sed -i.bak "s/${PROBE_SENTENCE}/parse the JSON (python3 or jq)/" "$1/docket-workflow.js"; }
 # m2: a contract instructs the exact refused shape
 m2() { printf '\nRead the bundle with `python3 -c "import json,sys; print(json.load(sys.stdin))"`.\n' >> "$2/contracts/verify-ac.md"; }
 # m3: a fragment instructs a sibling interpreter with a combined flag

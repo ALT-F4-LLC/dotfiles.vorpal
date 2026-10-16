@@ -11,7 +11,7 @@
 # acts on named fields. Free text breaks that at two seams. An agent() call
 # without a `schema` returns whatever prose the agent ended with, which the
 # script then parses or relays. And a return the harness cannot carry whole
-# loses data silently: wave.js once returned an array with a named
+# loses data silently: docket-workflow.js once returned an array with a named
 # `coordination` property, and the harness's JSON transport delivered the
 # elements without it.
 #
@@ -72,9 +72,9 @@ const BOUND = 4096
 // Calls that legitimately pass no schema, by file and whitespace-normalized
 // call text.
 const ALLOW = [
-    { file: 'wave.js', call: 'agent(brief, options)',
+    { file: 'docket-workflow.js', call: 'agent(brief, options)',
       why: "countedAgent()'s pass-through; every countedAgent() call is checked instead" },
-    { file: 'wave.js', call: 'agent(settleBrief(row, owner, claim, settleNote(signal, text)))',
+    { file: 'docket-workflow.js', call: 'agent(settleBrief(row, owner, claim, settleNote(signal, text)))',
       why: "settleStoppedReply()'s injected agent; its caller's countedAgent() call passes COMMAND_OUTPUT_SCHEMA and is checked instead" },
     { file: 'docket-postmortem.js', call: 'agent(prompt, opts)',
       why: "seat()'s pass-through; every seat() call is checked instead" },
@@ -183,7 +183,7 @@ function closing(text, open) {
 // file order, against the constants evaluated before it. An object or array
 // initializer ends at its closing bracket; any other ends before the next
 // line of code indented no deeper than the const. `mode` stands in for
-// wave-usage's runtime arg, at its wider value.
+// docket-workflow-usage's runtime arg, at its wider value.
 function constants(src, code) {
     const scope = { mode: 'seats' }
     const failed = new Map()

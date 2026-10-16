@@ -35,7 +35,7 @@ export const meta = {
 
 // group relays a fixed jq program's output through a schema (no judgment
 // involved), so a cheap model is pinned rather than inherited — the same
-// reasoning wave.js:probe and tribunal.js:verify apply to read-only relay
+// reasoning docket-workflow.js:probe and tribunal.js:verify apply to read-only relay
 // agents of this shape. file performs a side-effecting `docket issue create`
 // and keeps inheriting the caller's model.
 const AGENT_CONFIG = {

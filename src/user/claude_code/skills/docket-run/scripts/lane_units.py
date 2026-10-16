@@ -21,7 +21,7 @@ Run it from inside the run's git work tree: outside one it exits 1 and
 writes nothing. The script writes, under <out-dir>:
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
-  args-<i>.json     launch i's complete wave.js args (below)
+  args-<i>.json     launch i's complete docket-workflow.js args (below)
   launches.json     [{index, of, classCap, rows, lanes, harnessCap}] per launch
   deferred.jsonl    rows of lanes past the free launch slots, one per line
                     (always written, empty when nothing is deferred)
@@ -30,7 +30,7 @@ and, under <toplevel>/.claude/docket-packets/ (`git rev-parse
 --show-toplevel`), one rows module per launch, rows-<sha256>.js, returning
 {v: 1, rows_sha256, rows}: launch i's rows, and the sha256 of
 launch-<i>.jsonl's bytes. A Workflow script cannot read files but loads a
-module under its working directory, as wave.js already loads packet modules
+module under its working directory, as docket-workflow.js already loads packet modules
 from the same directory. The directory carries a `.gitignore` of `*`.
 
 It prints the launch count N alone on stdout, so `N=$(python3 lane_units.py
@@ -39,7 +39,7 @@ dispatch report. args-<i>.json is launch i's Workflow args, passed unedited:
 {rowsModule, rows_sha256, unit: {index, of, classCap}, harnessCap, cwd,
 tribunal, integrated}, where cwd is the git toplevel, `tribunal` is present
 when --tribunal is given, and `integrated` only when --integrated is given.
-wave.js compares the module's rows_sha256 with the args' before it claims
+docket-workflow.js compares the module's rows_sha256 with the args' before it claims
 anything. The rows themselves never ride in the args.
 
 The partition. Every issue lane is its own launch: one issue, one wave. A
@@ -47,7 +47,7 @@ row without an issue is a lane of its own, keyed by its step. Lanes are
 never welded or packed together. Writer lanes the engine never co-staged
 therefore run in separate launches, and the engine's claim check keeps them
 in stage order: a writer claimed while another lane's uncertified writer
-holds its scope is refused, and wave.js settles that refusal as
+holds its scope is refused, and docket-workflow.js settles that refusal as
 skipped-not-ready, which a later refill relaunches. The free slots are the
 launch cap minus the lanes in flight, never below zero. Past them, the
 earliest lanes in manifest order launch and the rest go to deferred.jsonl,
@@ -66,7 +66,7 @@ launch's harnessCap arg. cpus is os.cpu_count(), or LANE_UNITS_CPUS when set.
 
 This file exists because an inline heredoc (`python3 - <<'PY'`) is an
 interpreter code argument the auto-mode deny rule refuses before it runs.
-LAUNCH_CAP and HARNESS_CAP mirror wave.js and must not drift from it.
+LAUNCH_CAP and HARNESS_CAP mirror docket-workflow.js and must not drift from it.
 """
 
 import hashlib
@@ -204,7 +204,7 @@ def git_toplevel():
 
 
 def write_module(packets, digest, rows):
-    """Write a launch's rows as a module wave.js loads by path; return the path."""
+    """Write a launch's rows as a module docket-workflow.js loads by path; return the path."""
     os.makedirs(packets, exist_ok=True)
     ignore = os.path.join(packets, ".gitignore")
     if not os.path.exists(ignore):

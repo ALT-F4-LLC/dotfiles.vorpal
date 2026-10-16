@@ -6,14 +6,14 @@
 # and this one is in that list. It needs only `node` — no engine, no database,
 # no network, and it never runs a workflow.
 #
-# WHY THIS EXISTS. Commit 303d8b4 shipped wave.js with two top-level
+# WHY THIS EXISTS. Commit 303d8b4 shipped docket-workflow.js with two top-level
 # `function probeBrief` declarations. Nothing on the way to the store parses
 # these files — the vorpal "workflows" artifact is a plain file copy — so the
 # defect reached ~/.claude via `just activate` and blocked ALL docket-run dispatch
 # machine-wide until it surfaced live at RUN-45's first dispatch (DOT-608 fixed
 # the syntax; this suite is the net that was missing).
 #
-# WHY THE OBVIOUS LINT IS A TRAP. `node --check wave.js` PASSES on those exact
+# WHY THE OBVIOUS LINT IS A TRAP. `node --check docket-workflow.js` PASSES on those exact
 # bytes: script mode permits function redeclaration. The Workflow tool
 # evaluates these scripts as ES MODULES, where the same bytes are a
 # SyntaxError. Script-mode `node --check` is therefore NOT an acceptable gate

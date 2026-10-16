@@ -18,7 +18,7 @@ const AGENT_CONFIG = {
   coverage: { model: 'opus', effort: 'medium' },
   refill: { model: 'sonnet', effort: 'high' },
   crossBoundary: { model: 'opus', effort: 'medium' },
-  verify: { model: 'haiku', effort: 'medium' },
+  verify: { model: 'sonnet', effort: 'medium' },
 }
 
 const SHARD_LINES = 1500

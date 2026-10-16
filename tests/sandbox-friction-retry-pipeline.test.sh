@@ -27,7 +27,7 @@
 # risk. This suite pins that the fold preserves the null-then-retry shape
 # and that a rejected agent() call is caught into the same null path a
 # resolved-to-null call takes (the same regression class the census and
-# wave-usage folds guarded against).
+# docket-workflow-usage folds guarded against).
 #
 # WHAT IS PINNED HERE. (1) a fast group's retry fires while a slow sibling's
 # own first attempt is still held open — the one thing impossible under the

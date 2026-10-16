@@ -283,13 +283,13 @@ got=$(summary 'sorted({x["harnessCap"] for x in s})')
 ok $? "with LANE_UNITS_CPUS unset every launch has harnessCap min(16, max(1, $online - 2)) = $want (got '$out', caps $got)"
 
 # ---- Generated launch args: a rows module by reference, never inline rows ------
-# The conductor passes args-<i>.json to wave.js unedited, so the object is
+# The conductor passes args-<i>.json to docket-workflow.js unedited, so the object is
 # complete and small: the rows ride in a module under
-# <toplevel>/.claude/docket-packets/ that wave.js loads, and the module
-# exports rows_sha256, the sha256 of launch-<i>.jsonl's bytes, which wave.js
+# <toplevel>/.claude/docket-packets/ that docket-workflow.js loads, and the module
+# exports rows_sha256, the sha256 of launch-<i>.jsonl's bytes, which docket-workflow.js
 # compares with the args' rows_sha256.
 fat() { # <n> <issue> <stage> — a kept row with the fields the engine renders
-    printf '{"step":"STEP-%s","issue":"%s","run":"RUN-125","kind":"executor","class":"read","executor":"review-correctness","instance":"review@0#%s","stage":%s,"attempt":0,"model":"sonnet","effort":"medium","variant":"judge-sonnet","scope":["src/user/claude_code/workflows/wave.js"]}' "$1" "$2" "$1" "$3"
+    printf '{"step":"STEP-%s","issue":"%s","run":"RUN-125","kind":"executor","class":"read","executor":"review-correctness","instance":"review@0#%s","stage":%s,"attempt":0,"model":"sonnet","effort":"medium","variant":"judge-sonnet","scope":["src/user/claude_code/workflows/docket-workflow.js"]}' "$1" "$2" "$1" "$3"
 }
 big=""
 for lane in 1 2 3 4 5 6; do
@@ -489,20 +489,20 @@ got=$(jq -c --rawfile settled "$WORK/settled" --rawfile held "$WORK/held" "$filt
 [ -n "$filter" ] && [ "$got" = "STEP-5 STEP-123 " ]; ok $? \
     "SKILL.md's pending filter drops exactly the settled and held steps (got '$got')"
 
-# ---- the mirrored caps match wave.js --------------------------------------------
+# ---- the mirrored caps match docket-workflow.js --------------------------------------------
 # lane_units.py caps launches and reports harnessCap; a cap that drifts from
-# wave.js splits launches the wave then refuses or narrows.
-WAVE_JS="${WAVE_JS:-${ROOT}/src/user/claude_code/workflows/wave.js}"
+# docket-workflow.js splits launches the wave then refuses or narrows.
+WAVE_JS="${WAVE_JS:-${ROOT}/src/user/claude_code/workflows/docket-workflow.js}"
 for name in LAUNCH_CAP HARNESS_CAP; do
     js=$(sed -n "s/^const ${name} = \([0-9][0-9]*\).*/\1/p" "$WAVE_JS")
     py=$(sed -n "s/^${name} = \([0-9][0-9]*\).*/\1/p" "$SCRIPT")
-    [ -n "$js" ] && [ "$js" = "$py" ]; ok $? "lane_units.py's ${name} (${py:-missing}) mirrors wave.js (${js:-missing})"
+    [ -n "$js" ] && [ "$js" = "$py" ]; ok $? "lane_units.py's ${name} (${py:-missing}) mirrors docket-workflow.js (${js:-missing})"
 done
-# The rows module's field names are the ones wave.js reads; a rename on
+# The rows module's field names are the ones docket-workflow.js reads; a rename on
 # either side strands every launch.
 grep -q 'input\.rowsModule' "$WAVE_JS" && grep -q 'input\.rows_sha256' "$WAVE_JS" && grep -q 'mod\.rows_sha256' "$WAVE_JS" &&
     grep -q 'mod\.v !== 1' "$WAVE_JS" && grep -q "const PACKET_DIR = '.claude/docket-packets'" "$WAVE_JS"
-ok $? 'wave.js reads rowsModule, rows_sha256 and v under the names lane_units.py writes, from the same packet directory'
+ok $? 'docket-workflow.js reads rowsModule, rows_sha256 and v under the names lane_units.py writes, from the same packet directory'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

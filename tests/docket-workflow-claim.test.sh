@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for src/user/docket/bin/wave-claim, the script wave.js's
+# Behavior suite for src/user/docket/bin/docket-workflow-claim, the script docket-workflow.js's
 # claim agent runs to claim a step and write its work packet into a module the
 # wave loads with a nested workflow({scriptPath}).
 #
@@ -13,15 +13,15 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-CLAIM="${WAVE_CLAIM:-${SCRIPT_DIR}/../src/user/docket/bin/wave-claim}"
+CLAIM="${WAVE_CLAIM:-${SCRIPT_DIR}/../src/user/docket/bin/docket-workflow-claim}"
 CLAIM=$(cd "$(dirname "$CLAIM")" && pwd)/$(basename "$CLAIM")
 
 fatal() { printf 'FATAL: %s\n' "$1" >&2; exit 2; }
-[ -x "$CLAIM" ] || fatal "wave-claim not executable at ${CLAIM}"
+[ -x "$CLAIM" ] || fatal "docket-workflow-claim not executable at ${CLAIM}"
 command -v jq >/dev/null 2>&1 || fatal "jq is required"
 command -v node >/dev/null 2>&1 || fatal "node is required"
 
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-claim.XXXXXX") || fatal "mktemp failed"
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/docket-workflow-claim.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
 pass=0; fail=0
@@ -123,8 +123,8 @@ run_claim success success "${ARGS[@]}"
 check $? "success prints exactly one CLAIMED line naming the module"
 grep -qxF 'step claim STEP-7 --owner wave:STEP-7:2 --render --metadata {"variant":"std","model_requested":"opus"} --json=v2' "$C/stub.log"
 check $? "the claim carries the owner, --render, the metadata and --json=v2"
-[ -f "$MODULE" ]; check $? "the module lands at the path wave.js computed"
-[ "$(head -n 1 "$MODULE")" = "export const meta = { name: 'docket-packet', description: 'Docket work packet written by wave-claim' }" ]
+[ -f "$MODULE" ]; check $? "the module lands at the path docket-workflow.js computed"
+[ "$(head -n 1 "$MODULE")" = "export const meta = { name: 'docket-packet', description: 'Docket work packet written by docket-workflow-claim' }" ]
 check $? "the module opens with a pure-literal meta"
 sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"
 cmp -s "$C/packet.out" "$WORK/packet.txt"; check $? "the module's packet is the engine's packet byte for byte"

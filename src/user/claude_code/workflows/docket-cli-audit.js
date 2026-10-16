@@ -34,7 +34,7 @@ const AGENT_CONFIG = {
   read: { model: 'sonnet', effort: 'medium' },
   coverage: { model: 'opus', effort: 'low' },
   refill: { model: 'sonnet', effort: 'medium' },
-  verify: { model: 'sonnet', effort: 'low' },
+  verify: { model: 'sonnet', effort: 'medium' },
 }
 
 const SHARD_LINES = 1500

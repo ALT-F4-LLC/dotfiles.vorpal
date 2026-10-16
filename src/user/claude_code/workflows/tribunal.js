@@ -1,6 +1,6 @@
 export const meta = {
     name: 'tribunal',
-    description: 'Internal: launched through scriptPath by docket-run (conversational gates) and by wave.js mid-wave; seats a judge panel that casts real `docket vote cast` votes on one gated proposal. Args, return, and probe cost in the header comment.',
+    description: 'Internal: launched through scriptPath by docket-run (conversational gates) and by docket-workflow.js mid-wave; seats a judge panel that casts real `docket vote cast` votes on one gated proposal. Args, return, and probe cost in the header comment.',
     whenToUse: 'Never by name. The caller creates the proposal, passes its id, and passes every voter with its {model, effort, variant}; this script only fills an open one.',
     phases: [
         { title: 'Judge', detail: 'one seat per voter, each casting docket vote cast' },
@@ -21,13 +21,13 @@ export const meta = {
 // (two when the first returns nothing), plus one more after any re-seat; MID-
 // WAVE (`step` present) renders the same brief with the gate's row context and
 // target ref, spawns the seats, and returns without probing — the caller
-// (wave.js) already reads `docket gate status` for the tally and drives the
+// (docket-workflow.js) already reads `docket gate status` for the tally and drives the
 // one permitted re-seat itself. A conversational proposal has no step, so
 // `docket gate status` cannot address it and the probe reads `docket vote
 // result`. Invoke by scriptPath ONLY, with args {voteId, voters, context,
 // gateKind, cwd, step?, target?, heldCluster?, isRespawn?} — `context` is
 // required conversationally and optional mid-wave; it is the case, rendered VERBATIM into every seat brief in both modes: the
-// conversational caller's own text, or mid-wave the proposal body wave.js
+// conversational caller's own text, or mid-wave the proposal body docket-workflow.js
 // projected off the record with every cast removed (a seat never reads the
 // vote record itself — it prints the sibling casts already landed, and the
 // engine tallies); `voters` is an array of {seat, model, effort, variant}
@@ -41,7 +41,7 @@ export const meta = {
 // skill (ack-reap, activation, budget, loop-extension, fix-batch) or the
 // docket-retro skill (retro-batch) — always as
 // Workflow({scriptPath}) — never by name. Engine `type = "vote"` step rows
-// ride the wave since the staged closure: wave.js calls this same script MID-
+// ride the wave since the staged closure: docket-workflow.js calls this same script MID-
 // WAVE (passing `step`) to seat their panels, one level of workflow nesting
 // deep, so the seat brief renders from one place. The CALLER creates the
 // proposal, passes its id, and passes every voter WITH its {model, effort,
@@ -161,7 +161,7 @@ function lensOf(seat) {
 const TARGET_SHA_RE = /^[0-9a-f]{40}$/
 
 // TEST-BEGIN seat-brief — extracted and exercised by
-// tests/tribunal-seat-brief.test.sh and tests/wave-target-envelope.test.sh,
+// tests/tribunal-seat-brief.test.sh and tests/docket-workflow-target-envelope.test.sh,
 // which stub `lensOf` and `TARGET_SHA_RE` (the only globals this reaches
 // for) and assert what a mode and a target ref do and do not put in front
 // of a judge. Keep every other dependency inside the markers.
@@ -261,7 +261,7 @@ other seats' or already decided.` : ''
         : `THE GATE:       ${gateKind}`
 
     // Both modes render the case VERBATIM: the conversational caller's own
-    // text, or mid-wave the proposal body wave.js projected off the record
+    // text, or mid-wave the proposal body docket-workflow.js projected off the record
     // with every cast removed. A seat never reads the vote record itself —
     // it prints the casts already landed, and seats run in parallel, so a
     // read after a sibling's cast would put that verdict in front of it.
@@ -627,9 +627,9 @@ if (!input || typeof input !== 'object') throw new Error(
     `{voteId, voters, context, gateKind, cwd}. Refusing to seat the panel.`
 )
 
-// MID-WAVE mode is signaled by a `step` object — the caller is wave.js,
+// MID-WAVE mode is signaled by a `step` object — the caller is docket-workflow.js,
 // seating a panel on an engine-scheduled vote row rather than a conversational
-// gate it opened itself. Mid-wave `context` is the proposal body wave.js
+// gate it opened itself. Mid-wave `context` is the proposal body docket-workflow.js
 // projected off the record, empty when that read died, so it is optional
 // here and the brief says so when it is absent.
 const isMidWave = input.step !== undefined && input.step !== null
@@ -660,7 +660,7 @@ for (const s of seats) {
 // sharing a model, effort, variant and lens converge on the same choice, so
 // agreement among identical seats is not independent evidence; and a seat
 // name with no declared lens decides as a generalist, which the roster never
-// shows. wave.js relays these lines, so the conductor sees both where it
+// shows. docket-workflow.js relays these lines, so the conductor sees both where it
 // reads the tally.
 const lensName = (s) => (lensOf(s.seat).text === WHOLE_SYSTEM_LENS ? 'whole-system' : lensOf(s.seat).role)
 const generalists = seats.filter((s) => lensName(s) === 'whole-system')

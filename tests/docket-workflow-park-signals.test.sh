@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's park and chain-dead signals (DOT-226).
+# Behavior suite for docket-workflow.js's park and chain-dead signals (DOT-226).
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it never runs a wave.
 #
 # WHY THIS EXISTS. A workflow script has no module resolution, so the
-# predicates cannot be imported. They are fenced in wave.js with
+# predicates cannot be imported. They are fenced in docket-workflow.js with
 # `// TEST-BEGIN <region>` / `// TEST-END <region>` and this suite extracts
 # those regions and evaluates them — the same extraction idiom
 # workflow-sync.test.sh uses for the duplicated regions, pointed at a
@@ -24,21 +24,21 @@
 #
 # WHAT THIS SUITE CANNOT SEE: it exercises the predicates, not the stage
 # ladder they drive. That a false park skips later stages, and that the engine
-# re-offers them, are wave.js and engine behavior respectively and are not
+# re-offers them, are docket-workflow.js and engine behavior respectively and are not
 # re-derived here. Nor does it check the readiness probe (DOT-226's other
 # half), which needs a live engine to answer.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-park-signals.XXXXXX") || fatal "mktemp failed"
@@ -152,7 +152,7 @@ ok(!runParked(returned(REAL_CONFLICT)),
 const CONFLICT_FINDING = [
     'Reviewed the wave for claim handling.',
     '',
-    '- **F-1 (high)** wave.js:1217 treats any reply containing CONFLICT as a dead',
+    '- **F-1 (high)** docket-workflow.js:1217 treats any reply containing CONFLICT as a dead',
     '  chain, so a finding that merely names CONFLICT kills the issue.',
     '- **F-2 (medium)** the same body scan drives the park signal.',
     '- **F-3 (low)** the log line does not say which predicate fired.',
@@ -200,9 +200,9 @@ ok(isBootstrapDenied('BOOTSTRAP DENIED\n\nrm -rf refused by the sandbox: Operati
 ok(isBootstrapDenied('**BOOTSTRAP DENIED**\n\nquoted denial follows'),
     'the line still reads wrapped in markdown emphasis')
 const DENIED_FINDING = [
-    'Reviewed wave.js bootstrap handling.',
+    'Reviewed docket-workflow.js bootstrap handling.',
     '',
-    '- **F-1 (medium)** wave.js:238 tells an executor to say BOOTSTRAP DENIED and stop, but the',
+    '- **F-1 (medium)** docket-workflow.js:238 tells an executor to say BOOTSTRAP DENIED and stop, but the',
     '  ladder never reads the phrase, so the next stage launches into a refused claim.',
     '- **F-2 (low)** the skip log does not say which predicate fired.',
     '',

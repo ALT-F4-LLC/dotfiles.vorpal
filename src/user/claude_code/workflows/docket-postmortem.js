@@ -99,7 +99,7 @@ const AGENT_CONFIG = {
     conductor: { model: 'opus', effort: 'medium' },
     layer: { model: 'opus', effort: 'medium' },
     deepFlagged: { model: 'opus', effort: 'medium' },
-    deepClean: { model: 'sonnet', effort: 'low' },
+    deepClean: { model: 'sonnet', effort: 'medium' },
     patterns: { model: 'opus', effort: 'medium' },
     refute: { model: 'sonnet', effort: 'medium' },
     reconcile: { model: 'opus', effort: 'medium' },

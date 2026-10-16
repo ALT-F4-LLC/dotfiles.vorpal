@@ -52,7 +52,7 @@ printf 'package deep\n' > "${REPO}/src/pkg/deep/z.go"
 printf '# Guide\n' > "${REPO}/docs/guide.md"
 printf 'notes\n' > "${REPO}/docs/notes.txt"
 printf 'notes\n' > "${REPO}/src/pkg/notes.txt"
-printf '#!/bin/sh\n' > "${REPO}/bin/wave-claim"
+printf '#!/bin/sh\n' > "${REPO}/bin/docket-workflow-claim"
 printf 'tests:\n' > "${REPO}/justfile"
 printf '# nothing ignored\n' > "${REPO}/.gitignore"
 git -C "$REPO" init -q
@@ -121,10 +121,10 @@ expect_line "missing from files: docs/new.md" "a new AC-named file missing from 
 
 # AC-2: files without an extension, by path or at the repository root, and
 # dotfiles are repository paths.
-lint "- [ ] AC-1: bin/wave-claim refuses a stale lease." \
+lint "- [ ] AC-1: bin/docket-workflow-claim refuses a stale lease." \
     "src/pkg/y.go" \
     "src/pkg/y.go"
-expect_line "missing from files: bin/wave-claim" "an extension-less AC path missing from files"
+expect_line "missing from files: bin/docket-workflow-claim" "an extension-less AC path missing from files"
 lint "- [ ] AC-1: the justfile and .gitignore list the target." \
     "src/pkg/y.go" \
     "src/pkg/y.go"
@@ -252,7 +252,7 @@ expect_line "outside scope: docs/guide.md" "a literal glob that is a prefix of a
 # relative paths that leave the repository, dotted words, directories,
 # ambiguous bare names, and extension-less words that are not root files
 # exist at base as no file, so none is a repository path.
-lint_body "$(printf 'Context lives in docs/prose-only.md.\n\n## Acceptance criteria\n\n- [ ] AC-1: per https://example.com/docs/guide.md, ../docs/guide.md and 127.0.0.1:8080, e.g. src/pkg/y.go stays put; notes.txt, wave-claim, the src/pkg package and/or tests too.\n\n## Notes\n\nSee docs/guide.md.\n')" \
+lint_body "$(printf 'Context lives in docs/prose-only.md.\n\n## Acceptance criteria\n\n- [ ] AC-1: per https://example.com/docs/guide.md, ../docs/guide.md and 127.0.0.1:8080, e.g. src/pkg/y.go stays put; notes.txt, docket-workflow-claim, the src/pkg package and/or tests too.\n\n## Notes\n\nSee docs/guide.md.\n')" \
     "src/pkg/y.go" \
     "src/pkg/y.go"
 expect_clean "non-repository tokens, prose outside the criteria, and a later section"
@@ -266,7 +266,7 @@ expect_clean "a path named only after inspect:"
 
 # Every marker exempts the paths that follow it, through commas, `and` and
 # backticks.
-lint "$(printf -- '- [ ] AC-1: src/pkg/y.go returns the error; Inspect: docs/guide.md, `docs/notes.txt` and bin/wave-claim.\n- [ ] AC-2: run on justfile; guide: src/pkg/notes.txt; the check runs over: .gitignore.')" \
+lint "$(printf -- '- [ ] AC-1: src/pkg/y.go returns the error; Inspect: docs/guide.md, `docs/notes.txt` and bin/docket-workflow-claim.\n- [ ] AC-2: run on justfile; guide: src/pkg/notes.txt; the check runs over: .gitignore.')" \
     "src/pkg/y.go" \
     "src/pkg/y.go"
 expect_clean "paths after each inspect-only marker"

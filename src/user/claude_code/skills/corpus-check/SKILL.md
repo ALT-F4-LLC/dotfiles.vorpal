@@ -89,7 +89,7 @@ Workflow({ scriptPath: "<absolute installed path to corpus-check.js>", args: {si
 
 This fans out one agent per file over both trees (sharded by line range for
 any file over 1500 lines, for example `docket-run/SKILL.md` and
-`workflows/wave.js`; the workflow measures sizes at run time), runs a
+`workflows/docket-workflow.js`; the workflow measures sizes at run time), runs a
 completeness pass that re-dispatches any file or range nothing covered,
 then a cross-boundary pass pairing claims one tree makes about the other,
 then verifies raw findings in per-file batches (three refuters per batch,

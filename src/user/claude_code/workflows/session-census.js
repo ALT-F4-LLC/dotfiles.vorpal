@@ -39,7 +39,7 @@ export const meta = {
 // TEST-BEGIN session-census-config — include before either pure test region.
 // scout/extract only relay a fixed shell command's output through a schema
 // (no judgment involved), so a cheap model is pinned rather than inherited —
-// the same reasoning wave.js:probe and tribunal.js:verify apply to read-only
+// the same reasoning docket-workflow.js:probe and tribunal.js:verify apply to read-only
 // relay agents of this shape.
 const AGENT_CONFIG = {
     scout: { model: 'haiku', effort: 'low' },
@@ -100,10 +100,10 @@ function planAgentCap(fileCount) {
 //   think_text_ratio, which every message can contribute to.
 // * A message spans several lines under one id. Usage repeats on each line
 //   with output_tokens growing, so usage is deduplicated by message id, last
-//   occurrence wins, as wave-usage.js does. Content blocks are merged per
+//   occurrence wins, as docket-workflow-usage.js does. Content blocks are merged per
 //   message instead: a transcript can write each block on its own line, so
 //   last-wins would keep only the final block (measured 9 of 14 tool calls on
-//   one transcript). tool_uses counts distinct block ids, as wave-usage.js
+//   one transcript). tool_uses counts distinct block ids, as docket-workflow-usage.js
 //   does; a thinking or text block that repeats or extends an earlier one
 //   replaces it, and any other block adds. Character and tool counts from
 //   censuses before this rule are lower and not comparable. Row histograms
@@ -711,7 +711,7 @@ Return the JSON object jq printed, field for field, unchanged: no rounding, no r
 }
 
 // TEST-BEGIN census-retry-pipeline — include session-census-config. Exercised
-// directly (not through wave.js's ladder-style marker convention, but the
+// directly (not through docket-workflow.js's ladder-style marker convention, but the
 // same idea): a test sets `files` and `cutoff`, stubs `agent`, `phase`,
 // `log`, `extractPrompt`, `EXTRACT_SCHEMA`, `AGENT_CONFIG`, `COUNT_FIELDS`,
 // `ERROR_TEXT_CHARS`, and a no-barrier `pipeline` matching the real one's

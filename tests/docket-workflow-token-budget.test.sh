@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for wave.js's token-budget check: the session's own
+# Behavior suite for docket-workflow.js's token-budget check: the session's own
 # output-token target ("+500k"-style directive), read from the `budget`
 # global, gates admission the same way the agent-count budget does.
 #
@@ -8,7 +8,7 @@
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it spawns no agent.
 #
-# WHY THIS EXISTS. wave.js never read the `budget` global at all before this
+# WHY THIS EXISTS. docket-workflow.js never read the `budget` global at all before this
 # fix. Under a token target, an agent() call made after the target is
 # exhausted throws (documented: "once spent() reaches total, further
 # agent() calls throw"), and that throw was landing in spawn's catch as a
@@ -31,7 +31,7 @@
 # later same-issue rows are skipped-chain-dead this wave, not spawned into
 # a refusal.
 #
-# HOW. Like tests/wave-harness-cap.test.sh, wraps the extracted stage-ladder
+# HOW. Like tests/docket-workflow-harness-cap.test.sh, wraps the extracted stage-ladder
 # region in an async function with stub spawn/runGate/probe/parallel/log/
 # budget globals; `budget` is reassigned per case (the region reads it as a
 # plain identifier, not through `input`, so the test harness must expose a
@@ -40,14 +40,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/wave.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "wave.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-token-budget.XXXXXX") || fatal "mktemp failed"
@@ -85,7 +85,7 @@ const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget is REASSIGNED per case below (unlike the sibling ladder tests,
 // which stub it once with no target and never touch it again) — this
-// suite is specifically about what wave.js does when budget.total varies.
+// suite is specifically about what docket-workflow.js does when budget.total varies.
 let budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
 let GATES = []
@@ -153,7 +153,7 @@ const start = (theRows, budgetOverride) => {
     RESULTS = new Map()
     HOLD = new Set()   // nothing held in this suite — every row settles immediately
     OPEN = new Map()
-    // wave.js returns {statuses, coordination}; these cases read the statuses.
+    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 const logged = (frag) => LOG.some((l) => l.includes(frag))

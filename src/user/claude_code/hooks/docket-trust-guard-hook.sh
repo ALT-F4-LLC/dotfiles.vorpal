@@ -143,8 +143,6 @@
 #     three words anywhere in the text.
 #   - A file written in one Bash call and run in a later one: the later
 #     call carries no verb, and this hook sees one call at a time.
-#   - A brace word in ARGUMENT position behind a wrapper (`env {docket,trust}
-#     ...`); command-position braces are handled in THE MATCH.
 #   - `cat <<<docket trust add erik key`: the three words are cat's
 #     operands and its stdin, nothing dispatches them.
 # And on the false-DENY side, by design: prose that names the verb in the
@@ -320,6 +318,16 @@ LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
 # read, so the hook refuses rather than allowing.
 CODE_TEXT=$(printf '%s' "$COMMAND" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK") || \
     deny "$REASON_PREFIX the trust-guard hook's line-selection program failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+# The shell removes a backslash-newline and joins the two lines into one, so
+# both passes below read logical lines: a continuation line is an argument,
+# not a command (`jq -n \` then `--arg a b`), and a verb split across lines
+# (`doc\` then `ket trust add`) is one word again. A backslash escaped by
+# another (`\\` at the end of a line) is a literal, so only the last of an
+# odd run joins. The join runs after line selection, which has already
+# dropped comments and quoted-delimiter heredoc bodies, where a trailing
+# backslash joins nothing.
+CODE_TEXT=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk 'BEGIN { RS = "\001"; ORS = "" } { t = $0; out = ""; while (match(t, /\\+\n/)) { run = RLENGTH - 1; out = out substr(t, 1, RSTART - 1) substr(t, RSTART, run - run % 2) (run % 2 ? "" : "\n"); t = substr(t, RSTART + RLENGTH) } print out t }' 2>/dev/null) || \
+    deny "$REASON_PREFIX the trust-guard hook's line-joining pass failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 MARKED=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) || \
     deny "$REASON_PREFIX the trust-guard hook's pre-pass program failed (docket-guard-prepass.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 
@@ -383,13 +391,15 @@ MARKED=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) 
 # ALTERNATION syntax, so it carries none of the risk this check exists for.
 # The same DENY covers the `docket` word itself: an unquoted brace word in
 # command position (`{docket,trust} add erik key`) can expand into the whole
-# invocation, so it denies when it may expand and the letters of docket follow
-# it in order. The zsh precommand modifiers `noglob`, `nocorrect` and `-`
-# keep command position for the next word (zsh still brace-expands behind
-# them), and after `repeat` every later word of the line is checked, because
-# the pre-pass may split its count into several words. A brace word in
-# argument position stays allowed, which leaves `env {docket,trust} ...`
-# behind a wrapper as a known residual.
+# invocation, so it denies when it may expand and the letters of `docket trust
+# add` or `docket trust rm` follow it in order. The zsh precommand modifiers
+# `noglob`, `nocorrect` and `-` keep command position for the next word (zsh
+# still brace-expands behind them), and after `repeat` every later word of the
+# line is checked, because the pre-pass may split its count into several
+# words. A brace word in argument position stays allowed. A brace word behind
+# a wrapper (`env {docket,trust} add`, `env -u {x,docket} trust add`) is what
+# the wrapper launches, which no inert command is, so the call is read
+# unquoted and every word there is in command position.
 MATCH_PROGRAM='
 BEGIN {
     MARK = "\001"
@@ -426,14 +436,18 @@ function may_brace_expand(from,   k) {
     }
     return 0
 }
-# Every word bash builds from a brace is a subsequence of the brace word
-# itself, so a brace can produce docket only when these letters appear in
-# order there. The word starts at first (the brace word after any glued
-# operator) and runs on through the fragments the pre-pass split it into, up
-# to the first unquoted ; | & < > or backtick, which ends it. The test reads no
-# further: letters in later words cannot join the brace word, and a
-# heredoc body full of prose would otherwise spell docket by chance.
-function may_spell_docket(from, first,   k, rest, piece, p) {
+# Every word bash builds from a comma brace is a subsequence of the brace word
+# itself, so a brace can dispatch a trust-store write only when docket, trust,
+# and add or rm each appear as a subsequence from it to the end of its
+# command. Each word is tested on its own, since words built from one brace
+# share letters (`{docke,trus}t` is `docket trust`). The span starts at first
+# (the brace word after any glued operator) and runs on through the words
+# after it, up to the first unquoted ; | & < > or backtick, which ends the
+# command. The test reads no further: a heredoc body full of prose would
+# otherwise spell the verb by chance. A sequence expression can build letters
+# absent from its text (bash 4+ `{a..e..3}` is `a d`); zsh, the shell of the
+# Bash tool, steps no letter range.
+function may_spell_trust_verb(from, first,   k, rest, piece, p) {
     rest = first
     for (k = from + 1; k <= n; k++) {
         piece = words[k]
@@ -443,7 +457,7 @@ function may_spell_docket(from, first,   k, rest, piece, p) {
         }
         rest = rest piece
     }
-    return rest ~ /d.*o.*c.*k.*e.*t/
+    return rest ~ /d.*o.*c.*k.*e.*t/ && rest ~ /t.*r.*u.*s.*t/ && rest ~ /a.*d.*d|r.*m/
 }
 # A word bash reads in command position without making it the command name:
 # an assignment, a reserved word or a zsh precommand modifier. A lone { is the
@@ -609,7 +623,7 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
             } else {
                 if (after_repeat && hw == "") after_repeat = 0
                 at_command = at_command || after_repeat
-                if (at_command && has_brace(hw) && may_brace_expand(i) && may_spell_docket(i, hw)) { print "MATCH"; exit }
+                if (at_command && has_brace(hw) && may_brace_expand(i) && may_spell_trust_verb(i, hw)) { print "MATCH"; exit }
                 cmdpos = (hw == "")
             }
         }

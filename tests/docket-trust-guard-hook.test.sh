@@ -356,6 +356,16 @@ case_command_position_brace_denies() {
         "accepted false DENY: d{o,}cket expands to two command words"
     assert_verdict "{docket,trust} add erik key" "" ALLOW \
         "no agent_type (main conversation): command-position brace word"
+    assert_verdict "{docket,trust} rm erik" executor-write DENY \
+        "command-position brace word ahead of the rm verb"
+    # A wrapper launches the brace word, so the call is read unquoted and the
+    # brace word is tested as a command word.
+    assert_verdict "env {docket,trust} add erik key" executor-write DENY \
+        "brace word launched by env"
+    assert_verdict "env -u {x,docket} trust add erik key" executor-write DENY \
+        "brace word behind env -u, whose option takes the first alternative"
+    assert_verdict "timeout 5 {docket,trust} add erik key" executor-write DENY \
+        "brace word launched by timeout"
 }
 
 # zsh, the Bash tool's shell here, runs `noglob`, `nocorrect`, `-` and
@@ -426,6 +436,56 @@ case_command_position_brace_allows() {
         "group command around a docket read, with a comma later on the line"
     assert_verdict "cat > f.json <<EOF"$'\n''{"a":1,"b":2}'$'\nEOF' executor-write ALLOW \
         "JSON body line of an unquoted heredoc"
+    # The rule denies a brace only when the letters of a trust write follow
+    # it; a comma brace whose later letters spell docket alone dispatches
+    # nothing. xargs and bash make these calls active, read unquoted.
+    assert_verdict "jq -n '{id:1, doc:\"locked set\"}' | xargs echo" executor-write ALLOW \
+        "comma brace spelling only docket, in an active call"
+    assert_verdict "jq -n --arg a b '{id:1, doc:\"locked set\"}' > \$TMPDIR/x.json; bash --version" \
+        executor-write ALLOW "jq payload with a comma brace spelling only docket, beside bash"
+}
+
+# ---- A backslash-newline joins two lines into one ------------------------
+#
+# The shell removes a backslash-newline, so a continuation line is an
+# argument of the line before it, never a command of its own, and a word
+# split across the join is one word. An escaped backslash at a line end, a
+# backslash inside quotes before the line end, and one in a comment or a
+# quoted heredoc body join nothing.
+
+case_backslash_continuation() {
+    local nl=$'\n' inv="docket trust add erik key" multi
+    multi="jq -n \\${nl}--arg a b \\${nl}'{id:1, doc:\"locked set\"}' > \$TMPDIR/x.json"
+    assert_verdict "$multi" executor-write ALLOW \
+        "jq payload continued over three lines"
+    assert_verdict "jq -n --arg a b '{id:1, doc:\"locked set\"}' > \$TMPDIR/x.json" executor-write ALLOW \
+        "the same jq payload on one line"
+    # Read as separate lines, `--arg` is a command word, which makes the call
+    # active and its quoted prose code.
+    assert_verdict "jq -n \\${nl}--arg a b \\${nl}'{\"note\":\"never run ${inv}\"}' > \$TMPDIR/x.json" \
+        executor-write ALLOW "jq payload naming the verb in prose, continued over three lines"
+    assert_verdict "jq -n --arg a b '{\"note\":\"never run ${inv}\"}' > \$TMPDIR/x.json" \
+        executor-write ALLOW "the same jq payload naming the verb, on one line"
+    assert_verdict "echo \\${nl}'${inv}'" executor-write ALLOW \
+        "quoted prose on a continuation line of an inert call"
+    assert_verdict "docket \\${nl}trust add erik key" executor-write DENY \
+        "continuation between docket and trust"
+    assert_verdict "docket trust \\${nl}add erik key" executor-write DENY \
+        "continuation between trust and the verb"
+    assert_verdict "doc\\${nl}ket trust add erik key" executor-write DENY \
+        "continuation inside the docket word"
+    assert_verdict "docket tr\\${nl}ust add erik key" executor-write DENY \
+        "continuation inside the trust word"
+    assert_verdict "echo a\\\\${nl}sh -s <<< '${inv}'" executor-write DENY \
+        "escaped backslash at a line end joins nothing"
+    assert_verdict "echo x'a\\'${nl}sh -s <<< '${inv}'" executor-write DENY \
+        "single-quoted backslash glued before the line end joins nothing"
+    assert_verdict "echo hi # \\${nl}sh -s <<< '${inv}'" executor-write DENY \
+        "backslash ending a comment joins nothing"
+    assert_verdict "cat > f <<'EOF'${nl}x\\${nl}EOF${nl}sh -s <<< '${inv}'" executor-write DENY \
+        "backslash ending a quoted heredoc body line joins nothing"
+    assert_verdict "cat > f <<'EOF' \\${nl}; sh -s <<< '${inv}'${nl}body${nl}EOF" executor-write DENY \
+        "continued heredoc operator line"
 }
 
 # ---- MUST NOT CATCH: a brace bash never expands ---------------------------
@@ -1641,6 +1701,7 @@ case_must_deny_quote_split_words
 case_brace_split_verb_denies
 case_command_position_brace_denies
 case_command_position_brace_allows
+case_backslash_continuation
 case_zsh_modifier_brace_denies
 case_zsh_modifier_brace_allows
 case_leading_dash_command

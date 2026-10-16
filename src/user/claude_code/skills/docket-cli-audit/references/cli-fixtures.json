@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-10-15",
-  "binary_version": "docket version nightly-31-ga499498 (commit: a499498, built: 2026-10-15T00:39:58Z)",
-  "inventory_version": "docket version nightly-31-ga499498 (commit: a499498, built: 2026-10-15T00:39:52Z)",
+  "verified_on": "2026-10-16",
+  "binary_version": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: 2026-10-16T04:08:23Z)",
+  "inventory_version": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: 2026-10-16T04:08:23Z)",
   "scenario_sha256": "04025e433a3c4bcb482826a3d9d9ff9f527335b027219f404057434256f04252",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
@@ -193,7 +193,7 @@
         "version"
       ],
       "exit": 0,
-      "stdout": "docket version nightly-31-ga499498 (commit: a499498, built: <TIMESTAMP>)\n",
+      "stdout": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: <TIMESTAMP>)\n",
       "stderr": ""
     },
     {
@@ -208,11 +208,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-31-ga499498",
-          "commit": "a499498",
+          "version": "nightly-32-gf5a6d04",
+          "commit": "f5a6d04",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-31-ga499498 (commit: a499498, built: <TIMESTAMP>)"
+        "message": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -229,11 +229,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-31-ga499498",
-          "commit": "a499498",
+          "version": "nightly-32-gf5a6d04",
+          "commit": "f5a6d04",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-31-ga499498 (commit: a499498, built: <TIMESTAMP>)"
+        "message": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },

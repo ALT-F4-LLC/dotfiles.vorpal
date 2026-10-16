@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-10-15",
-  "binary_version": "docket version nightly-31-ga499498 (commit: a499498, built: 2026-10-15T00:39:52Z)",
+  "verified_on": "2026-10-16",
+  "binary_version": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: 2026-10-16T04:08:23Z)",
   "probe_contract": "Only --version and command-path --help; no store operations.",
   "commands": [
     {

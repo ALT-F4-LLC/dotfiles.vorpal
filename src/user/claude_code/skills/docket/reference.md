@@ -15,8 +15,8 @@ before parsing it. A nearby source checkout is not proof of an installed
 binary's behavior unless their commits match.
 
 [references/cli-inventory.json](references/cli-inventory.json) records command
-paths, aliases, usage, and local/inherited flags. Refreshed **2026-10-15 UTC**
-against `nightly-31-ga499498` (commit `a499498`, built `2026-10-15T00:39:52Z`);
+paths, aliases, usage, and local/inherited flags. Refreshed **2026-10-16 UTC**
+against `nightly-32-gf5a6d04` (commit `f5a6d04`, built `2026-10-16T04:08:23Z`);
 covers 160 public commands. From this skill directory,
 `python3 scripts/cli_inventory.py --check` checks the inventory; `--write`
 refreshes it after a CLI upgrade. The helper invokes only `--help` and
@@ -545,8 +545,8 @@ Judge a fan-out by its exit code and `failed`.
 
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|
-| `--project` | — | string | `""` | lint against this project's registry instead of the one cwd resolves to (`nightly-209`+) |
-| `--all-projects` | — | bool | `false` | lint against every project, reporting each project's own verdict (`nightly-209`+) |
+| `--project` | — | string | `""` | lint against this project's registry instead of the one cwd resolves to |
+| `--all-projects` | — | bool | `false` | lint against every project, reporting each project's own verdict |
 
 Positional argument required; `-` reads the definition from stdin. Runs the
 exact validation `register` runs and **writes nothing** — no row, no frozen
@@ -590,7 +590,7 @@ fan-out shape `workflow register` uses.
 | `--limit` | — | int | `50` | `0` means no limit |
 | `--deprecated` | — | bool | `false` | include retired versions (`deprecated_at_ms` set); without it only versions still eligible to bind are listed |
 | `--orphans` | — | bool | `false` | narrow to registered names no file in any config root declares; a per-name filesystem verdict, so `--deprecated` has no effect under it and retired rows are listed as they are |
-| `--project` | — | string | `""` | list this project's registry instead of the one cwd resolves to; the write verbs' ref forms and unknown-ref error (`nightly-209`+) |
+| `--project` | — | string | `""` | list this project's registry instead of the one cwd resolves to; the write verbs' ref forms and unknown-ref error |
 
 The plain listing shows every version still eligible to bind, so a
 superseded but unretired version appears beside the binding one and lineage
@@ -673,7 +673,7 @@ register` uses.
 |---|---|---|---|---|
 | `--name` | — | string | `""` | filter to one schema name |
 | `--limit` | — | int | `50` | `0` means no limit |
-| `--deprecated` | — | bool | `false` | include retired versions; without it only versions still in service are listed (`nightly-209`+) |
+| `--deprecated` | — | bool | `false` | include retired versions; without it only versions still in service are listed |
 
 A `Collection`: under `--json=v2` the payload is `{items, total, truncated}`,
 where `total` is the true pre-limit count. Each row carries `name`, `version`,
@@ -689,8 +689,8 @@ version is in service. Human mode marks a retired row `[deprecated]`.
 |---|---|---|---|---|
 | `--body` | — | bool | `false` | emit the stored schema document verbatim |
 
-Omitting `@version` selects the highest version still in service (from
-`nightly-209`; earlier builds take the highest registered). An unregistered
+Omitting `@version` selects the highest version still in service
+(earlier builds take the highest registered). An unregistered
 name or version, or a bare name whose every version is retired, is
 `NOT_FOUND` (exit 2). An explicit `@version` still resolves a retired version,
 with a `status: DEPRECATED` line in human mode. `--body` returns the exact
@@ -708,7 +708,7 @@ risk-report.json` round-trips.
 | `--project` | — | string | `""` | retire the version in this project instead of the one cwd resolves to |
 | `--all-projects` | — | bool | `false` | retire the version in every project, reporting each project's own outcome |
 
-Added in `nightly-209` with store schema version 36. Retires one registered
+Retires one registered
 schema version from service without deleting it: the row stays readable and
 runs that pinned it keep validating against it, but `workflow register`,
 `workflow lint`, and activation refuse new `payload` references to it.

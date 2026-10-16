@@ -46,7 +46,7 @@ the global store; a matching run id in a different store is a different run.
 
 `events list --run RUN-N` resolves the run in whichever project owns it,
 as `run report`, `step show`, and `step artifacts` do (observed in the
-`events list --help` text of build nightly-623-gfefc91d, 2026-10-12). Without
+`events list --help` text of commit fefc91d, 2026-10-12). Without
 `--run`, `events list` is cwd-scoped, so pass `--all-projects` for run-less
 or `--kind` queries. Keep the flag on `--run` queries too: older builds
 answered them per project and could return `ok:true, total 0` for a run

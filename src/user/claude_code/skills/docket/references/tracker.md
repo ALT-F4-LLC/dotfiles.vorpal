@@ -223,7 +223,7 @@ flag is a `CONFLICT`.
 `--merge` skips entities that already exist. Re-importing a project's own
 export exits 0 and reports the skips (`Imported 0 entities, skipped 40
 duplicates`; JSON `data` keys `imported`, `skipped`, `remapped`). Read the
-`skipped` count rather than assuming every row was new. Through nightly-209
+`skipped` count rather than assuming every row was new. On earlier builds
 the same re-import failed with `GENERAL_ERROR` on a foreign-key constraint.
 
 ---

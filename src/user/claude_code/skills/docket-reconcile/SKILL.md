@@ -88,7 +88,7 @@ Every docket registry verb resolves its project from the working directory.
 Never `cd` out of the checkout you are reconciling; pass corpus files as
 absolute paths instead. `workflow register`, `workflow deprecate`, `schema
 register`, and `schema deprecate` take `--project <ref>` to write to another
-project from here. From docket `nightly-209`, `workflow list` and `workflow
+project from here. Current builds also let `workflow list` and `workflow
 lint` take `--project <ref>` too. `schema list` does not, so the planner runs
 every call with the target checkout as the child process's cwd (see Scope
 below).

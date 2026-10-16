@@ -4,15 +4,15 @@ Covers the `docket dispatch` family and `docket next` in step mode (`--run`),
 the single copy of this engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-15 against `docket
-nightly-31-ga499498` (commit `a499498`, built `2026-10-15T00:39:52Z`) by
+contract and parsing traps. Verified 2026-10-16 against `docket
+nightly-32-gf5a6d04` (commit `f5a6d04`, built `2026-10-16T04:08:23Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build. The `dispatch-close`
-reap acknowledgment below was added for `nightly-260-gf08ce73` and checked
+reap acknowledgment below was added for commit `f08ce73` and checked
 against that build's source, not by the sweep. The close-time reap, the
 `usage-rows-missing` definition, and the `--accept-missing-usage` and
-`--backfill-from` constraints were checked against `nightly-623-gfefc91d`'s
+`--backfill-from` constraints were checked against commit `fefc91d`'s
 `--help`, not by the sweep. The `held-by-park` verify verdict was checked
 against the engine source on docket's `feature/engine-improvements` branch,
 since `--help` names no verdicts.
@@ -22,11 +22,11 @@ since `--help` names no verdicts.
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 91 lines
-- [`docket dispatch`](#dispatch-commands) — 352 lines
+- [`docket dispatch`](#dispatch-commands) — 355 lines
   - [`dispatch open`](#dispatch-open) — 78 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 42 lines
-  - [`dispatch close`](#dispatch-close) — 59 lines
+  - [`dispatch close`](#dispatch-close) — 62 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
   - [`dispatch abandon`](#dispatch-abandon) — 22 lines
   - [`dispatch waive-target`](#dispatch-waive-target) — 23 lines
@@ -339,7 +339,10 @@ a statement about steps, not about a manifest, so it breaks the cycle in
 which `next` offers no work until the discrepancy clears and no dispatch is
 open to close. The acceptance clears the discrepancy for `next` and
 `dispatch open`, which refuse on the same conditions. Without the flag,
-closing a manifest that is not open is still a `CONFLICT`.
+closing a manifest that is not open is still a `CONFLICT`. With the flag
+but no open dispatch and no step owing usage, close also refuses
+`CONFLICT` (exit 4: `no dispatch is open for RUN-N and there is no
+missing usage to accept`).
 
 The acceptance is *recorded*, not merely permitted: `close_reason` becomes
 `accepted-missing-usage` and the accepted step list rides in the

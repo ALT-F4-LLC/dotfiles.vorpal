@@ -36,9 +36,9 @@ list what is standing:
 docket vote list --json=v2       # open proposals only, by default
 ```
 
-There is no `--run` filter; match on description and `linked_issues`
-against the run's issue roster (`docket issue list --run RUN-N`),
-then `docket vote show <id>` to confirm. Reconcile every match:
+There is no `--run` filter; match on description against the run's
+issue roster (`docket issue list --run RUN-N`), then `docket vote show
+<id>` and compare its `linked_issues` to confirm. Reconcile every match:
 
 - **Adopt it** when it names this run and the same binding. Pass its id
   to tribunal.js as `voteId`; top up missing seats per SKILL.md's **A

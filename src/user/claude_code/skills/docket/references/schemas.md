@@ -171,7 +171,7 @@ the envelope carries `ok: false`, `error: "N of M project(s) failed"` and the
 shared `code` beside the per-project `data` report; the exit code and
 `failed` count are the verdict, so an `already-deprecated` project exits 4.
 
-Needs docket `nightly-209` or later; the store migrates to schema version 36
+Older builds lack this verb; the store migrates its schema
 on first open.
 
 ### Validation at `step record`

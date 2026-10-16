@@ -955,6 +955,12 @@ python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_
 python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
 ```
 
+Run it as its own Bash call, with no `jq -c` or other `-c` flag in the same
+command: the deny rule `Bash(python* -*c *)` matches a ` -c ` anywhere after
+`python`, so `python3 ... ; jq -c . "$LAUNCH_DIR/launches.json"` is refused
+(measured: the same command passes with `jq --compact-output`). Read the
+launch files in a second call.
+
 Always pass `--tribunal`; without it no generated object carries
 `tribunal`, and the script says so on stderr. `$WRITE_CAP` is the write
 class's effective cap, `.data.limits.write` in this dispatch's

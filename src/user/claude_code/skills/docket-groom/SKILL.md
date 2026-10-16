@@ -521,6 +521,11 @@ Record these findings alongside the value decision:
   statement of the criteria. Remove a size label the issue's files, scope,
   or criteria have outgrown, and add one where they fit the rule; an
   eligible issue carrying neither walks the full `standard-change` chain.
+- **`needs-research` without source URLs:** the research executor fetches
+  only URLs the brief names, so a named external source with no URL in the
+  body cannot be verified. Record each as a readiness gap. Fill a URL only
+  from the issue's own text or linked evidence; otherwise list the source
+  as what would settle it. Do not add or remove the label here.
 - **Unsized or mis-sized:** the issue's `size` field is null or `unknown`,
   or the stored value no longer matches the tier the sizing reference's
   measures give. Record the measures and the tier; the field fill lands

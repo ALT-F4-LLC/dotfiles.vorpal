@@ -1185,7 +1185,7 @@ async function claimPacket(row, r, phaseLabel) {
     const owner = nextOwner(row.step)
     const brief = claimBrief(row, claimCommand(row, r, owner, modulePath))
     const once = () => countedAgent(brief, {
-        label: `${row.step} · claim`,
+        label: `${row.step} → claim`,
         phase: phaseLabel,
         agentType: 'executor-read',
         ...AGENT_CONFIG.claim,
@@ -1275,7 +1275,7 @@ function claimFailure(row, owner, reply, loadError, phaseLabel) {
         if (!isOrphanedClaimConflict(text)) return returned
         log(`${row.step}: claim refused "the step is not pending" — probing the ` +
             `step's real state rather than relaying the refusal as the outcome`)
-        return stepShow(row.step, `${row.step} · claim-conflict`, phaseLabel)
+        return stepShow(row.step, `${row.step} → claim-conflict`, phaseLabel)
             .then((show) => orphanedClaimReport(row.step, text, show) || returned, () => returned)
     }
     const signal = stopSignal(text)
@@ -1319,7 +1319,7 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
     const held = `${row.step} is CLAIMED by ${owner} at attempt ${claim.attempt} ` +
         `with its token parked at ${claim.token}: return it to the pool with ` +
         `${reapInstruction(row.step)} and remove ${claim.dir}`
-    const stepLabel = `${row.step} · ${r.hint}`
+    const stepLabel = `${row.step} → ${r.hint}`
     const opts = (iso) => ({
         label: stepLabel,
         phase: phaseLabel,
@@ -1361,13 +1361,13 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
                 return settleStoppedReply({
                     row, owner, claim, held, text, log,
                     agent: (brief) => countedAgent(brief, {
-                        label: `${row.step} · settle`,
+                        label: `${row.step} → settle`,
                         phase: phaseLabel,
                         agentType: 'executor-read',
                         ...AGENT_CONFIG.settle,
                         schema: COMMAND_OUTPUT_SCHEMA,
                     }),
-                    stepShow: (step) => stepShow(step, `${step} · settle-show`, phaseLabel),
+                    stepShow: (step) => stepShow(step, `${step} → settle-show`, phaseLabel),
                 })
             }
             // "the step is not pending" means already claimed: ask the engine
@@ -1377,7 +1377,7 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
             log(`${row.step}: claim refused "the step is not pending" — probing ` +
                 `the step's real state rather than relaying the refusal as the ` +
                 `outcome`)
-            return stepShow(row.step, `${row.step} · claim-conflict`, phaseLabel)
+            return stepShow(row.step, `${row.step} → claim-conflict`, phaseLabel)
                 .then((show) => {
                     const diagnosed = orphanedClaimReport(row.step, text, show)
                     if (!diagnosed) {
@@ -1401,7 +1401,7 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
                 `event rather than spawning another probe`)
             return escalate()
         }
-        return stepShow(row.step, `${row.step} · null-recovery`, phaseLabel)
+        return stepShow(row.step, `${row.step} → null-recovery`, phaseLabel)
             .then((show) => {
                 if (show === null) {
                     // The recovery probe itself returned nothing: one is enough
@@ -1464,7 +1464,7 @@ function launchExecutor(row, r, type, isWrite, isolated, phaseLabel, { owner, cl
         function notRecorded() {
             if (retried) return escalate()
             return countedAgent(blockProbeBrief(stepLabel), {
-                label: `${row.step} · block-probe`,
+                label: `${row.step} → block-probe`,
                 phase: phaseLabel,
                 agentType: 'executor-read',
                 ...AGENT_CONFIG.blockProbe,
@@ -1913,7 +1913,7 @@ async function runGate(row, phaseLabel) {
     // re-spawns and probe resubmissions are retries; agent-level errors land
     // in `absorbed` and ride the SUCCESS result as notes.
     const acct = { seats: 0, probes: 0, retries: 0, absorbed: [] }
-    const status = (label) => gateStatus(row.step, `${row.step} · ${label}`, phaseLabel, acct)
+    const status = (label) => gateStatus(row.step, `${row.step} → ${label}`, phaseLabel, acct)
     const asText = (g) => JSON.stringify(g)
     const accountingLine = (res) => res.spawn_accounting + (res.notes ?
         ` — ${res.notes.length} agent-level error(s) absorbed (NOT failures for this step)` : '')
@@ -1955,7 +1955,7 @@ async function runGate(row, phaseLabel) {
     // result to pick "deferred" over "died".
     if (!gate.proposal) {
         const show = await probe(`docket step show ${row.step} --json`,
-            `${row.step} · gate:blocked`, phaseLabel, undefined, acct)
+            `${row.step} → gate:blocked`, phaseLabel, undefined, acct)
         log(`${row.step}: gate has no proposal — its predecessors have not all ` +
             `recorded, so the panel cannot seat; skipping this issue's later ` +
             `stages this wave`)
@@ -1975,9 +1975,9 @@ async function runGate(row, phaseLabel) {
     // `acct`; a workflow script has no preemption between awaited steps.
     const [held, context] = await parallel([
         () => HELD_INSTANCE_RE.test(row.instance || '')
-            ? heldCluster(row.step, `${row.step} · gate:held-cluster`, phaseLabel, acct)
+            ? heldCluster(row.step, `${row.step} → gate:held-cluster`, phaseLabel, acct)
             : Promise.resolve(null),
-        () => proposalBody(voteId, row.step, `${row.step} · gate:proposal`, phaseLabel, acct),
+        () => proposalBody(voteId, row.step, `${row.step} → gate:proposal`, phaseLabel, acct),
     ])
     // Name the round's target ref in every seat's brief: seats are NOT seated
     // on the checkout the round was written in.
@@ -1995,7 +1995,7 @@ async function runGate(row, phaseLabel) {
     // The panel is seated by ONE workflow-nesting level into tribunal.js. A
     // throw there must not crash the wave; it is absorbed into `acct`.
     const seatPanel = (panelSeats, isRespawn) => {
-        const seatLabel = (seat) => `${row.step} · seat:${seat}` + (isRespawn ? ' (retry)' : '')
+        const seatLabel = (seat) => `${row.step} → seat:${seat}` + (isRespawn ? ' (retry)' : '')
         return workflow({ scriptPath: args.tribunal }, {
             voteId, gateKind: row.instance, cwd: args.cwd, context,
             voters: panelSeats.map((s) => ({ seat: s.seat, model: s.model, effort: s.effort, variant: s.variant })),
@@ -2302,7 +2302,7 @@ const pairsOf = (items) => items.flatMap((first, index) =>
 const stages = groupRows(rows, stageOf)
 const stageKeys = [...stages.keys()].sort((a, b) => a - b)
 
-log(`wave: ${rows.map((r) => `${r.step}·${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')}`)
+log(`wave: ${rows.map((r) => `${r.step} → ${r.kind === 'executor' ? r.executor : r.kind}`).join(', ')}`)
 log(`wave: ${rows.length} row(s) across stage(s) ${stageKeys.join('→')}`)
 {
     // Say up front which issues the fix-round ancestry guard is
@@ -2362,7 +2362,7 @@ function needsClaimProbe(row) {
 // run holds that step in its saga, so the same skip makes it wait for the step
 // to leave the saga; the next dispatch re-offers it.
 function preClaimSkip(row, phaseLabel) {
-    return stepShow(row.step, `${row.step} · pre-claim`, phaseLabel).then((show) => {
+    return stepShow(row.step, `${row.step} → pre-claim`, phaseLabel).then((show) => {
         const terminal = ['done', 'superseded', 'skipped', 'failed', 'pending']
         if (!show || show.error || !terminal.includes(show.status)) return null
         // blockedReason() (chain-dead region) still reads `text` as
@@ -2397,7 +2397,7 @@ function ancestryVerdict(row, phaseLabel) {
     if (!ancestryVerdicts.has(key)) {
         ancestryVerdicts.set(key, (async () => {
             const ctx = await probe(targetRefCommand(row.step),
-                `${row.step} · ancestry:target`, phaseLabel, row.step)
+                `${row.step} → ancestry:target`, phaseLabel, row.step)
             const target = parseAncestryTargetSha(ctx)
             if (!target) {
                 // Two distinct causes, both fail-open, logged apart so a
@@ -2415,7 +2415,7 @@ function ancestryVerdict(row, phaseLabel) {
                 return null
             }
             const evidence = await probe(ancestryProbeCommand(prior, target),
-                `${row.step} · ancestry:merge-base`, phaseLabel, row.step)
+                `${row.step} → ancestry:merge-base`, phaseLabel, row.step)
             const exit = parseAncestryExit(evidence)
             if (exit === null) {
                 log(`${row.step}: ancestry probe carried no exit marker — ` +
@@ -2433,7 +2433,7 @@ function ancestryVerdict(row, phaseLabel) {
             // hand-off. A dead or unparseable self-check keeps the park.
             const selfCheck = await probe(
                 cherryPickOfTargetCommand(prior, target),
-                `${row.step} · ancestry:self-check`, phaseLabel, row.step)
+                `${row.step} → ancestry:self-check`, phaseLabel, row.step)
             if (parseCherryPickOfTargetExit(selfCheck) === 0) {
                 log(`${row.step}: integrated map carries the judged round's ` +
                     `OWN integration commit — wrong round, fail-open. ` +
@@ -2959,19 +2959,19 @@ function settleRow(row, res) {
     }
 }
 
-// "2 executors + 1 vote": what a phase runs, in place of the engine's stage
+// "exec:2,vote:1": what a phase runs, in place of the engine's stage
 // number. The lane name (the issue key) leads the phase label, so every phase
 // of a launch names its issue.
 function describeGroup(group) {
     const counts = new Map()
     for (const row of group) counts.set(row.kind, (counts.get(row.kind) || 0) + 1)
-    return [...counts].map(([kind, n]) => `${n} ${kind}${n === 1 || kind === 'vote' ? '' : 's'}`).join(' + ')
+    return [...counts].map(([kind, n]) => `${kind === 'executor' ? 'exec' : kind}:${n}`).join(',')
 }
 
 async function runLane(name, laneRows) {
     const byStage = groupRows(laneRows, stageOf)
     const keys = [...byStage.keys()].sort((a, b) => a - b)
-    for (const [pos, k] of keys.entries()) {
+    for (const k of keys) {
         if (parked) break
         const group = byStage.get(k).filter((row) => {
             if (row.issue && deadIssues.has(row.issue)) {
@@ -2996,7 +2996,7 @@ async function runLane(name, laneRows) {
             return true
         })
         if (group.length === 0) continue
-        const label = `${name} · ${pos + 1}/${keys.length} · ${describeGroup(group)}`
+        const label = `${name} → ${describeGroup(group)}`
         const settled = await parallel(group.map((row) => () => runRow(row, label)))
         settled.forEach((res, index) => settleRow(group[index], res))
     }

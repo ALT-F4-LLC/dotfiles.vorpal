@@ -96,7 +96,11 @@ statuses. A bare pass asks the operator to approve or override that
 default scope before judging (§1); any issue id or routing, kind, or
 status word is the operator's choice and skips that question. Before
 surveying, ask the operator through `AskUserQuestion` what any other word
-means; do not guess a filter from it. Honor the operator's explicit constraints in this session,
+means; do not guess a filter from it. A phrase naming an epic or group
+("the design-qa epic") is resolved after the survey against the surveyed
+epics' ids and titles; when none matches, ask with the closest epics and the
+unparented issues sharing the phrase as options, and record the operator's
+chosen ids as the scope. Honor the operator's explicit constraints in this session,
 but treat earlier issue reads or backlog discussion as stale, not current
 evidence. Maintain one ledger through approval and execution so the report
 covers the whole pass. Take the pass id once, at the survey, as the UTC
@@ -133,7 +137,12 @@ Rules:
 - **Judge from evidence.** A duplicate call you cannot defend in one sentence
   is not a duplicate. When a cluster is ambiguous, resolve the missing
   evidence or operator decision through §4a before proposing a merge. An
-  unresolved cluster stays open.
+  unresolved cluster stays open. When a judge and the clustering analyst
+  disagree on a merge, it is unresolved: neither verdict wins by rank. Run
+  the advisor on both one-sentence defenses as review input, then put them
+  to the operator through §4a. An operator answer that only delegates ("ask
+  the advisor") is not a decision: take the advisor's view as review input
+  and ask again with it shown.
 - **Value comes before polish.** Do not invent demand, benefits, urgency,
   estimates, or requirements to justify keeping an issue. A complete issue
   can be worthless; an old or poorly written one can still matter. Missing
@@ -268,7 +277,9 @@ root, and whether it is the engine project, from `docket project list
 --json` and §1's resolution), `issues` (every surveyed non-epic row of
 those projects that the named issue ids and the routing, kind, and
 status filters admit, plus
-every open epic row whatever the filter, so the clustering analyst can
+every open epic row of each judged project whatever the filter, taken
+mechanically from the survey's epic rows and checked against its epic count
+before launch, so the clustering analyst can
 match members to existing epics; each row with its project, id, kind,
 parent, title, labels, assignee, status, stored size, and `runIncluded` as
 §1 established them),
@@ -769,6 +780,15 @@ requirement, run the citation lint on it, store it, and comment the
 drafting once per issue. An issue whose requirement is not established
 from evidence is a §4a decision, not a draft.
 
+A `needs-design` issue is drafted too. Its approach is open by definition
+and the run settles it, so an unchosen approach is not a §4a decision and
+does not block drafting. Draft criteria at the outcome level from the
+established need: the observable result, the boundary conditions the
+evidence names, and one criterion that the run records its design decision
+in a named artifact. Ask the operator only for a fact or constraint the
+outcome itself needs and no evidence supplies. Such an issue is run-ready
+once those criteria pass §2c; the design choice stays the run's.
+
 A stored size that disagrees with the sizing reference's measures is
 corrected the same way an absent one is filled: directly under this
 section when `docket workflow show` confirms no registered workflow
@@ -776,7 +796,9 @@ declares `sizes_any`, with the five counts in the comment, and through §4b
 as a rerouted safe edit when one does. The correction rewrites a field the
 pass itself can re-derive, not prose the operator wrote, so it needs no
 rescope approval. A tier of `oversized` is a §4b split proposal, never a
-size write.
+size write; `oversized` is a finding, not a stored value, so each piece of
+a split carries a stored tier (`trivial`, `small`, `bounded`, or
+`needs-design`) of its own.
 
 Automatic fills preserve prose the operator already wrote. Rewrites to
 existing content apply only as explicitly approved in §4. A content fill

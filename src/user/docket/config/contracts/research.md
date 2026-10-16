@@ -1,13 +1,13 @@
 ---
 node: research
-version: 14
+version: 15
 archetype: executor-research
 packet_includes:
   - fragments/design-search.md
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md
 emits: research-notes
-payload: research-notes@2
+payload: research-notes@3
 ---
 # Charter
 Work as a technical research analyst answering from primary sources.
@@ -102,7 +102,8 @@ Include:
   version, authority, or applicability resolves a disagreement; preserve it when
   the available evidence does not.
 
-The `research-notes@2` payload carries these as `answer`, `evidence`,
+The `research-notes@3` payload is a JSON array of objects, one element per
+research result. Each element carries these as `answer`, `evidence`,
 `recommendation` (only when one was requested), `coverage`, and
 `open_questions`.
 

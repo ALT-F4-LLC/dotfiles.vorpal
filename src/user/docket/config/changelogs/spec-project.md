@@ -3,6 +3,14 @@
 Version history of `workflows/spec-project.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 40
+
+The `research` step's payload repoints from research-notes@2 to
+research-notes@3, which `contracts/research.md` now pins. The object-root
+@2 schema could never record a payload; @3 carries the same fields as an
+array of objects, one element per research result. No topology, routing,
+or limit change.
+
 ## 39
 
 unless_labels gains `docs-only`, the retired label no workflow selects, so

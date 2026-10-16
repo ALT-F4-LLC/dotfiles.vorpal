@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, accept by tribunal vote, then drain the final round's open findings. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 39
+version = 40
 
 [match]
 labels_any = ["spec-project"]
@@ -27,7 +27,7 @@ max_attempts = 2
 name = "research"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "research-notes@2"
+payload = "research-notes@3"
 when = "labels contains needs-research"
 
 [[step]]

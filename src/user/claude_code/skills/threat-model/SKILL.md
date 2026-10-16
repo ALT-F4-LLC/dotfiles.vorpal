@@ -6,7 +6,6 @@ description: >-
   evaluation of security controls.
 argument-hint: "[system, component, or change]"
 model: opus
-effort: medium
 ---
 
 # Threat modeling: the four questions

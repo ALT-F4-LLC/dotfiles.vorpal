@@ -1,6 +1,6 @@
 ---
 fragment: completion-gates
-version: 21
+version: 22
 ---
 # Completion gates
 
@@ -18,7 +18,8 @@ Commit your final edits, then run every required gate once on that commit, from 
 worktree you will record, using the trusted command verbatim and the engine's
 documented execution settings. Issue each gate as its own top-level Bash call of
 the bare command, such as `just tests`: no `sh -c` wrapper, no redirect, pipe, or
-`&&` chain, because the permission allow rules match only the bare form. Save
+`&&` chain, because the permission allow rules match only the bare form. The one
+permitted exception is the `DOCKET_GATE_BASE=` prefix on the vuln-scan gate. Save
 each gate's full output to a file in your private step directory, so one run serves
 every later reading. A later change to a gate's inputs invalidates its result. An
 amend or rebase that leaves `git rev-parse 'HEAD^{tree}'` unchanged changes no input:
@@ -31,6 +32,13 @@ terminal state once with `docket step show STEP-N --json` (and `docket step gate
 STEP-N` for a failed gate's captured output), never in a loop; a status other than
 done, waiting-human, or paused means the gates have not finished, and you report the
 step as pending. A step with no completion gates records inline.
+
+Run the vuln-scan gate, as that one exception to the bare form, as
+`DOCKET_GATE_BASE=<starting-HEAD sha> <bare vuln-scan command>`, where the sha is the
+commit your worktree was created from (its HEAD before your first commit). This
+reproduces the engine's gate result, which scopes the scan to your step's range. A
+bare vuln-scan in a worktree falls back to the branch merge-base and fails on
+advisories outside your step's own range; do not file a gap for those.
 
 A gate expected to run longer than four minutes runs in the background: issue its
 bare command with `run_in_background` set, and make no edits while it runs. Wait for

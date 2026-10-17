@@ -593,6 +593,12 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "command",
         )
         .with_hook(
+            "Stop",
+            None,
+            "bash ~/.claude/hooks/docket-groom-turn-guard-hook.sh",
+            "command",
+        )
+        .with_hook(
             "PreToolUse",
             Some("Bash"),
             "bash ~/.claude/hooks/docket-trust-guard-hook.sh",

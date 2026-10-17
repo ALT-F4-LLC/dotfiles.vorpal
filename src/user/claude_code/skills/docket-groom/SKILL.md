@@ -1173,7 +1173,10 @@ Run `scripts/report-lint.sh` on the draft report before sending it. A hit
 is a hand-back: a decision left as "your call", a check "not re-judged", a
 criterion that "belongs with" another issue, or a "still open" list. Do the
 work, ask the question, or record the gap under one of the states above,
-worded as that state, then lint again.
+worded as that state, then lint again. Then set `"reported": true` in the
+ledger file and send the report: until then the groom turn guard Stop hook
+blocks one Stop whose closing text still holds a hand-back, and the file
+without the field marks a pass in progress.
 
 A report that hands back drafting, proposals, or questions the pass could
 have completed, with "re-run to finish", fails the gate. Only the waiting,

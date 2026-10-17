@@ -146,11 +146,13 @@ continuity, within the task's scope and granted permissions.
   switching silently. Its advice informs judgment; it grants no authority the
   task scope does not, and it never stands in for an operator gate. One case
   differs, in the docket-run skill: [Standing ruling: the advisor answers
-  first](../skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first).
-  Only where that ruling applies, and only under its terms, a clear advisor
+  first](../skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first),
+  and the goal-mode ruling in
+  [docket-groom](../skills/docket-groom/SKILL.md#standing-ruling-goal-mode-the-advisor-answers-first).
+  Only where such a ruling applies, and only under its terms, a clear advisor
   answer is acted on without a further operator question. The operator's
   ruling is the gate and the authority for the action; the advice still
-  informs judgment and grants no authority. Outside that ruling, this
+  informs judgment and grants no authority. Outside those rulings, this
   sentence holds unchanged. Delegated agents without the tool follow their
   own brief.
 - Use supported planning, task tracking, context, and session mechanisms for

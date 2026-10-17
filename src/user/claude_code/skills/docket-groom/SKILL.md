@@ -48,8 +48,8 @@ applies: prefer acceptance criteria a gate or script checks over
 `read-verified` judgment, route work to a docket run that needs no human
 when nothing vital blocks it, and settle a triaged operator decision from
 recorded evidence or precedent where one exists, asking only when the
-decision needs operator-only information. The approval gates in §4 still
-authorize closures, merges, splits, rescopes, and the other listed edits.
+decision needs operator-only information. The approval gates in §4 (a goal
+pass applies the standing ruling below in their place) still authorize closures, merges, splits, rescopes, and the other listed edits.
 
 Run this skill in the main session: the survey, the ledger, every edit,
 the proposal gate, and the final report live here, since §4 needs the main
@@ -59,7 +59,9 @@ Workflow script installed at `~/.claude/workflows/docket-groom.js`, detailed
 in §2. The script edits nothing, runs no docket mutation, and never asks
 the operator anything. Do not delegate the survey, the approval gate, or
 any edit to a subagent, and never rely on one to ask the operator, send a
-live message, or arrange a later handoff.
+live message, or arrange a later handoff. The one advisor launch the goal
+ruling makes per decision is review input from the main session, not a
+delegated gate.
 
 Take a fresh survey for this invocation. Read `$ARGUMENTS` as words in any
 order, each one of:
@@ -72,6 +74,7 @@ order, each one of:
   `task`, or `chore`.
 - **Status filter:** an open status: `backlog`, `todo`, `in-progress`, or
   `review`.
+- **`goal`:** an unattended pass under the standing ruling below.
 - **Issue id:** a project prefix, a hyphen, and a number, such as
   `DOT-1234`, matched case-insensitively. Several ids can be named, as in
   `DOT-1234, DOT-1235`.
@@ -119,7 +122,8 @@ resolution. Judging the pieces and rewritten issues this pass created, by
 §2's script with `recheck: true`, is part of the pass, not a repeat survey.
 
 **Turn discipline.** The operator never types "continue". A turn of this
-pass ends only in one of three ways: an `AskUserQuestion` call, a wait on
+pass ends only in one of three ways (a goal pass has no `AskUserQuestion`
+call, so two): an `AskUserQuestion` call, a wait on
 an advisor or workflow launched this turn with no other pass work left to
 do, or the §5 report. A turn that applies a round, verifies it, and closes
 on a progress report is the defect this rule exists to stop: a list headed
@@ -137,7 +141,8 @@ Rules:
   activate, or advance a docket run.** Grooming is issue hygiene only.
   Docket mutations are limited to the `docket issue` write operations
   described below, including `docket issue edit --parent` and, only for a
-  proposal the operator approved in §4b, `docket issue create`: `-T epic`
+  proposal the operator approved in §4b (in a goal pass, the advisor's clear
+  answer is that approval), `docket issue create`: `-T epic`
   for an epic proposal, and one create per further outcome for a split
   proposal. No other path in this skill creates an issue.
   Read-only `docket issue list`, `docket issue show`, `docket project list`,
@@ -147,7 +152,7 @@ Rules:
 - **Safe edits are yours; approval-gated edits are not.** Apply §3's safe
   edits directly; everything else, including any edit §3 reroutes, goes
   through §4. Only run `docket issue close` for a proposal the operator
-  approved there.
+  approved there (a goal pass: cleared by the advisor).
 - **Judge from evidence.** A duplicate call you cannot defend in one sentence
   is not a duplicate. When a cluster is ambiguous, resolve the missing
   evidence or operator decision through §4a before proposing a merge. An
@@ -161,6 +166,58 @@ Rules:
   estimates, or requirements to justify keeping an issue. A complete issue
   can be worthless; an old or poorly written one can still matter. Missing
   evidence is uncertainty, not proof of either value or worthlessness.
+
+### Standing ruling: goal mode, the advisor answers first
+
+The operator's ruling: a pass run with the word `goal` in `$ARGUMENTS`, under
+a `/goal` the operator typed first, is unattended. It never calls
+`AskUserQuestion` and does not end a turn before §5's report. Every decision
+this skill sends to the operator (§1's scope approval, §4a decisions, and §4b's
+closures, merges, splits, rescopes, epic creations, re-parents,
+protected-issue edits, and `route-loop` labels) goes to the `advisor` agent
+as the same numbered proposal, with its evidence and `Commands:`. A clear
+answer is applied; the ledger records the answer as the basis. The
+operator's ruling is the gate and the authority; the advice stays review
+input. An unclear answer is not acted on: the issue is retained unchanged and
+recorded as `limit` with the exact question, then the pass continues. A pass without `goal` keeps every
+operator gate in this skill unchanged. This ruling sits beside docket-run's
+advisor-first ruling named in the working agreement.
+
+Goal-mode rules:
+
+- **The scope is the default scope**, approved by this ruling. Nothing is out
+  of scope once the groom is accurate: a retained issue's blocker outside the
+  judged set joins the pass for its grooming gaps (criteria, size, relations,
+  routing), never for the implementation it describes, and a blocker's own
+  blockers join the same way.
+- **Ledger.** Persist it with `"mode": "goal"`. Every judged entry carries a
+  `state`: `run-ready`, `waiting` (complete contract plus a real `depends_on`
+  on a groomed issue), `retired`, `held` (protected), or `limit` (a mutation
+  failed or evidence is unavailable, with the exact blocker recorded). Every
+  readiness gap goes in `gaps[]` and carries a `resolution` once closed. The
+  operator-blocked and declined states do not exist. Record a background wait
+  in `"waiting_on"` before ending a turn on it, and clear it when the notice
+  arrives: a stale `waiting_on` switches the Stop hook off, leaving only the
+  `/goal` condition as the guard.
+- **Count, never judge, completion.** After every batch of edits, run
+  `scripts/ledger-open.sh <ledger>` and keep its output in the conversation,
+  since the `/goal` evaluator reads only the conversation. Any open item is
+  the next work, decided and applied in the same turn. At `open=0`, launch the
+  `advisor` agent to check every terminal state against the issues as stored
+  (`docket issue show`), fix what it finds, set `"verified": true`, and run
+  `scripts/ledger-open.sh --final` until it exits 0. Only then lint the report
+  and set `"reported": true`. The Stop hook runs the same script and blocks
+  while items are open, whatever `reported` says; its per-ledger block cap
+  releases a session whose item no edit can resolve, so record such an item
+  as `limit` before the cap.
+- **Resume from the ledger** after compaction; the file carries the mode,
+  the pass id, and every applied edit.
+
+The condition the operator types before invoking the pass:
+
+```text
+/goal Run /docket-groom goal to completion without asking me anything. Done when the conversation shows scripts/ledger-open.sh --final printing open=0 with exit 0 for this pass's ledger, the advisor's check of every terminal state against the stored issues, and the final report sent with report-lint.sh exiting 0. Every judged issue is run-ready, waiting on a named groomed prerequisite, retired, held by protection, or a recorded limit; every operator decision was settled by the advisor and applied; no item is listed as still open, to do, or your call.
+```
 
 ## 1. Survey
 
@@ -1149,7 +1206,8 @@ issue. That recheck applies to non-epic issues. An epic's recheck is that
 it carries `blocked`, that every open child is retained or has a recorded
 gap, and that each membership has its one-sentence defense in the ledger.
 
-Before reporting, run the completion gate against the ledger file. Every
+Before reporting, run the completion gate against the ledger file; a goal
+pass runs `scripts/ledger-open.sh --final` and reports only at exit 0. Every
 judged issue must be in one of these states, and any other state sends the
 pass back to §3 or §4:
 
@@ -1159,15 +1217,18 @@ pass back to §3 or §4:
   design and need only §2b's criteria for that route.
 - **Waiting on a named prerequisite:** complete contract, real `depends_on`.
 - **Blocked on the operator:** a decision asked this pass and deferred,
-  declined, or unanswered, with the exact input needed recorded.
+  declined, or unanswered, with the exact input needed recorded. Not a
+  goal-pass state.
 - **Retired:** closed or merged on an applied proposal.
 - **Declined:** the operator declined a proposal; the issue stays retained,
-  and the declined change and the gap it leaves are recorded.
+  and the declined change and the gap it leaves are recorded. Not a
+  goal-pass state.
 - **Held by protection:** run-included or claimed, with its routed edits
   proposed.
 - **Reported limit:** `AskUserQuestion` unavailable, a proposal outdated, a
   mutation failed or uncertain, or evidence unavailable, with the exact
-  blocker recorded.
+  blocker recorded. A goal pass never has `AskUserQuestion`, so that cause
+  does not apply; the ledger state is `limit`.
 
 Run `scripts/report-lint.sh` on the draft report before sending it. A hit
 is a hand-back: a decision left as "your call", a check "not re-judged", a
@@ -1176,11 +1237,13 @@ work, ask the question, or record the gap under one of the states above,
 worded as that state, then lint again. Then set `"reported": true` in the
 ledger file and send the report: until then the groom turn guard Stop hook
 blocks one Stop whose closing text still holds a hand-back, and the file
-without the field marks a pass in progress.
+without the field marks a pass in progress. A goal pass is blocked on every
+Stop while `scripts/ledger-open.sh` reports open items, whatever the flag says.
 
 A report that hands back drafting, proposals, or questions the pass could
 have completed, with "re-run to finish", fails the gate. Only the waiting,
-operator-blocked, declined, protected, and reported-limit states may remain
+operator-blocked, declined, protected, and reported-limit states (a goal pass:
+waiting, held, and limit) may remain
 non-ready, and a pass scoped to chosen issues (named ids, or an epic's
 children) must leave every one of them run-ready or in one of those states.
 

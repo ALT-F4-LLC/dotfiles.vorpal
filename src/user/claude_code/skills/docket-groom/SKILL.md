@@ -115,7 +115,21 @@ routing, kind, and status filters, and issue ids, does not repeat the
 survey or watch for new work, schedules no wakeups, and never touches the code the
 issues describe. If a gap cannot be resolved within the pass's authority or
 available evidence, report it as incomplete rather than inventing a
-resolution.
+resolution. Judging the pieces and rewritten issues this pass created, by
+§2's script with `recheck: true`, is part of the pass, not a repeat survey.
+
+**Turn discipline.** The operator never types "continue". A turn of this
+pass ends only in one of three ways: an `AskUserQuestion` call, a wait on
+an advisor or workflow launched this turn with no other pass work left to
+do, or the §5 report. A turn that applies a round, verifies it, and closes
+on a progress report is the defect this rule exists to stop: a list headed
+"still open", "still to do", or "next" is work to do now. After every apply,
+go straight to its follow-ups (§4b's post-apply step), draft the next batch,
+and ask it in the same turn. While an advisor or script runs, draft the next
+independent batch instead of ending the turn. Before ending any turn short
+of §5, run `scripts/report-lint.sh` on the closing text; a hit means do the
+item, ask it, or record it under a §5 state. A turn closing on a wait carries no status prose for
+the operator to act on.
 
 Rules:
 
@@ -299,6 +313,13 @@ proposals). It returns one ledger entry per issue and one cluster report
 per project, plus `uncovered` for every issue or project an agent could
 not cover. The script's header comment is its argument and return
 contract; read it before composing the launch.
+
+The script runs again with `recheck: true` after §4b applies a split, rescope, or a
+criteria repair, and again in §5, over exactly the rows the pass created or
+rewrote (plus the open epics): same survey fields, same return, no
+clustering analyst, so you settle each `duplicateCandidates` entry inline. This is how the post-edit judgments run (per-piece
+routing and size, the cap on a repaired issue, §2c on a piece's carried
+criteria). Anything it cannot cover is judged inline in the same turn.
 
 Its return is evidence for this session's ledger, not the ledger itself.
 Read every entry. A judge's decision, defense, repair draft, or split draft
@@ -844,6 +865,13 @@ ask prerequisite questions before questions that depend on them. Present a
 concrete choice the operator can answer without rereading the backlog. Do
 not ask a generic "what should we do with this issue?"
 
+Every operator decision a judge or the clustering analyst surfaced is in
+scope here, including relation corrections, prerequisites flagged as
+unneeded, and a check that belongs on another issue. Decide each from
+evidence, or ask it; never keep it by inertia ("matches its siblings") or
+hand it back in the report as "your call". Ask all of them up front, before
+any approval round: independent questions go together, up to four per call.
+
 Use `AskUserQuestion` in the main session, in manageable batches within the
 tool's limits. Ask every remaining decision in this pass, round after round,
 before the report; a decision left unasked because many are queued is a
@@ -1018,14 +1046,30 @@ require a canonical issue another proposal would close, parent an issue
 to an epic another proposal creates, or repair criteria on an issue
 another proposal would split.
 
+**Author every independent proposal before the first approval gate.** Draft
+all splits, repairs, rescopes, re-parents, closures, merges, relation
+corrections, and epic creations the survey supports, run the advisor once
+over the whole set, and put each independent round to the operator in consecutive
+`AskUserQuestion` calls with no turn end between them, applying each round's approvals before asking the next. Only proposals that
+depend on an applied edit wait for it, and they follow in the same turn
+chain; nothing waits merely because an earlier batch was unfinished.
+
+**After each split, rescope, or criteria repair, in the same turn:** run the `recheck` script over the
+created and rewritten issues; re-judge routing and size labels per piece
+(the split rules above); recheck the cap on every repaired issue; fill any piece
+left with empty criteria, files, or scope under §3; and draft what the
+recheck exposes (a repaired issue now over the cap, a footprint that grew,
+a stale relation) as the next proposals. Ask them without ending the turn.
+
 Every candidate the ledger holds becomes a proposal or a recorded reason it
 cannot: each criteria repair, split, rescope, re-parent, closure, and merge.
 Listing candidates in the report as "not yet proposed" is not a result. Large
 sets go to the operator in rounds, not by omission: one proposal per
 independent change, dependent changes combined as above, grouped by epic
 and several to a round; present a
-round, apply what is approved, and present the next, until none remain. The
-advisor review runs once per round. A round does not restart the survey, and
+round, apply what is approved, and present the next in the same turn, until
+none remain. The advisor review runs once per batch of independent
+proposals, not once per round of an already-reviewed set. A round does not restart the survey, and
 a declined proposal is not asked again.
 
 If there is nothing to propose, finish any remaining §4a triage; proceed to
@@ -1124,6 +1168,12 @@ pass back to §3 or §4:
 - **Reported limit:** `AskUserQuestion` unavailable, a proposal outdated, a
   mutation failed or uncertain, or evidence unavailable, with the exact
   blocker recorded.
+
+Run `scripts/report-lint.sh` on the draft report before sending it. A hit
+is a hand-back: a decision left as "your call", a check "not re-judged", a
+criterion that "belongs with" another issue, or a "still open" list. Do the
+work, ask the question, or record the gap under one of the states above,
+worded as that state, then lint again.
 
 A report that hands back drafting, proposals, or questions the pass could
 have completed, with "re-run to finish", fails the gate. Only the waiting,

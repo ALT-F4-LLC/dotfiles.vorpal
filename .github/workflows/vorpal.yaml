@@ -44,6 +44,8 @@ jobs:
 
       - run: bash tests/docket-groom-scope-lint.test.sh
 
+      - run: bash tests/docket-groom-report-lint.test.sh
+
       - run: bash tests/docket-commit-guard-hook.test.sh
 
       - run: bash tests/docket-reconcile-plan.test.sh

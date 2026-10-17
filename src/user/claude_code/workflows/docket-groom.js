@@ -27,7 +27,7 @@ export const meta = {
 // judge; this script renders the pointers and the per-issue facts, not a
 // paraphrase that could drift from the skill.
 //
-// args: {checkoutRoot, projects, issues, staleWindowDays, todayIso, engineRoot}
+// args: {checkoutRoot, projects, issues, staleWindowDays, todayIso, engineRoot, recheck}
 //   checkoutRoot   — absolute path of the dotfiles checkout; the skill and
 //                    references are read at <checkoutRoot>/src/user/claude_code/skills.
 //   projects       — [{name, prefix, root, engine}] from `docket project list --json`
@@ -53,6 +53,13 @@ export const meta = {
 //                    back as unverified rather than answered from memory. Passed
 //                    whether or not the engine project is judged: engine-related
 //                    issues in the invoking project still take the check.
+//   recheck        — optional boolean. true is the post-edit recheck the skill
+//                    runs inside the same pass over issues the pass created or
+//                    rewrote (split pieces, criteria repairs): issues is then
+//                    those rows plus the open epics, the registry and judges
+//                    run as usual, and no clustering analyst is seated
+//                    (clusters returns empty reports). It is not a second
+//                    survey; the skill reads the entries as it reads the first.
 //
 // return:
 //   registry  — [{project, checkoutOk, workflows:[{name, version, kind,
@@ -131,6 +138,7 @@ const projects = input.projects
 const issues = input.issues
 const staleWindowDays = Number.isInteger(input.staleWindowDays) && input.staleWindowDays > 0 ? input.staleWindowDays : 30
 const todayIso = input.todayIso
+const recheck = input.recheck === true
 const engineRoot = typeof input.engineRoot === 'string' && input.engineRoot !== '' ? input.engineRoot : null
 
 // ---- Schemas -------------------------------------------------------------
@@ -466,7 +474,7 @@ Rules the schema cannot carry:
 - Size: tier "oversized" applies on either ground the reference's cap states: two or more independent outcomes, or one outcome past the bounded ceiling (files, directories, or verification surfaces) even with no bundled criterion — read the reference's current ceiling numbers, do not assume the values in this brief. Bias toward finding the split: the reference's own mined evidence is that a wide single-outcome issue costs sharply more and needs extra rounds, so an issue at or past the ceiling is a decomposition to find, not a large-but-legitimate exception. For oversized, fill splitDraft with piece 0 as what the original keeps and one piece per further outcome or file/surface group (whichever ground triggered it), criteria indexes carried verbatim, dependsOn only where one piece cannot start before another. sizeVerdict is "set" when the stored size is null or unknown and the tier is a size value, "correct" when the stored size differs from the tier, "oversized" for the oversized tier, else "ok".
 - Routing: judge the route-* verdict from the reference's rules in the skill's "Missing or stale routing label" finding; "unrouted" when no rule clearly holds or the size is null or unknown, with what would settle it in defense. Compute matches from the registry above against the issue's labels and stored size: labels_any and labels_all must hold when declared, sizes_any must hold when declared, and any unless_labels hit excludes.
 - Epic: name one open epic from the list above only with a one-sentence defense from the epic's title and description, shared relations, files, scope, or recorded decisions; a shared label alone is not a defense. Never propose an epic in another project.
-- duplicateCandidates are ids you noticed in relations, comments, or the survey that may ask for the same outcome; the cluster analyst settles them, you do not.
+- duplicateCandidates are ids you noticed in relations, comments, or the survey that may ask for the same outcome; the cluster analyst settles them when one runs, otherwise the caller does; you do not.
 - For an engine-related issue (an engine defect or capability gap, in either project), follow the skill's engine check: record the revision, whether the need remains, was partly or fully fixed, or was superseded, or "unverified" with why. For every other issue, engine.related is false and need is "n/a".
 - If issue show refuses or the checkout cannot be entered, return readOk=false with the refusal in notes and leave the other fields at their most conservative values (decision clarify, tier unknown, routing unrouted).
 
@@ -597,7 +605,9 @@ const results = await pipeline(
     async (group) => {
         const readable = group.entries.filter((e) => e.readOk !== false)
         let cluster = null
-        if (readable.length) {
+        if (recheck) {
+            log('docket-groom: recheck pass; no cluster analyst seated')
+        } else if (readable.length) {
             cluster = await agent(clusterPrompt(group.project, readable, group.epics), {
                 label: `cluster:${group.project.name}`,
                 phase: 'Cluster',
@@ -625,7 +635,7 @@ const ledger = groups.flatMap((g) => [
     ...g.epics.map((e) => ({ id: e.id, project: g.project.name, kind: 'epic', title: e.title || '', parent_id: e.parent_id || '', labels: e.labels || [], judged: false })),
     ...g.entries,
 ])
-const clusters = groups.map((g) => ({ project: g.project.name, ...(g.cluster || { duplicates: [], epicMatches: [], epicProposals: [], notes: 'no cluster report returned' }) }))
+const clusters = groups.map((g) => ({ project: g.project.name, ...(g.cluster || { duplicates: [], epicMatches: [], epicProposals: [], notes: recheck ? 'recheck pass: no cluster analyst seated' : 'no cluster report returned' }) }))
 
 const judgedEntries = ledger.filter((e) => e.judged)
 const oversized = judgedEntries.filter((e) => e.size.tier === 'oversized').length

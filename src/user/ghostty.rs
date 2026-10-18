@@ -98,7 +98,7 @@ impl Ghostty {
         let config = GhosttyConfig::new(&self.name, self.systems.clone())
             .with_background_opacity(0.95)
             .with_font_family("GeistMono NFM")
-            .with_font_size(16)
+            .with_font_size(14)
             .with_macos_option_as_alt(true)
             .with_theme("TokyoNight")
             .build(context)

@@ -144,13 +144,11 @@ continuity, within the task's scope and granted permissions.
   launch reviews a durable result. Surface a conflict
   between its advice and your evidence in a further launch rather than
   switching silently. Its advice informs judgment; it grants no authority the
-  task scope does not, and it never stands in for an operator gate. Three cases
+  task scope does not, and it never stands in for an operator gate. Two cases
   differ, in the docket-run skill: [Standing ruling: the advisor answers
-  first](../skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first),
-  the unattended-mode ruling in the same skill ([Standing ruling:
-  unattended mode](../skills/docket-run/SKILL.md#standing-ruling-unattended-mode)),
-  and the goal-mode ruling in
-  [docket-groom](../skills/docket-groom/SKILL.md#standing-ruling-goal-mode-the-advisor-answers-first).
+  first](../skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first)
+  and the unattended-mode ruling in the same skill ([Standing ruling:
+  unattended mode](../skills/docket-run/SKILL.md#standing-ruling-unattended-mode)).
   Only where such a ruling applies, and only under its terms, a clear advisor
   answer is acted on without a further operator question. The operator's
   ruling is the gate and the authority for the action; the advice still

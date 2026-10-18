@@ -38,13 +38,11 @@ question, or when the user asks. Routine work needs only what follows.
   the deliverable durable before the completion call. Its advice is review
   input: weigh it seriously, reconcile conflicts with your own evidence in a
   further launch, and never treat it as authorization or as a substitute for an
-  operator gate. Three cases differ, in the docket-run
+  operator gate. Two cases differ, in the docket-run
   skill: [Standing ruling: the advisor answers
-  first](skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first),
-  the unattended-mode ruling in the same skill ([Standing ruling: unattended
-  mode](skills/docket-run/SKILL.md#standing-ruling-unattended-mode)),
-  and the goal-mode ruling in
-  [docket-groom](skills/docket-groom/SKILL.md#standing-ruling-goal-mode-the-advisor-answers-first).
+  first](skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first)
+  and the unattended-mode ruling in the same skill ([Standing ruling:
+  unattended mode](skills/docket-run/SKILL.md#standing-ruling-unattended-mode)).
   Only where such a ruling applies, and only under its terms, a clear advisor
   answer is acted on without a further operator question. The operator's
   ruling is the gate and the authority for the action; the advice stays

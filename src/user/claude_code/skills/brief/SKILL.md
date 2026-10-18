@@ -321,7 +321,8 @@ its condition. The condition is also the directive for the work, and the
 evaluator reads the conversation only; it cannot run commands or read
 files. The route therefore converts the brief into a goal: before
 confirmation, prepare a single `/goal <condition>` line as the handoff.
-The condition states the Goal as the done-state, keeps each acceptance
+Most conditions exceed 800 characters, so the operator enters it by
+typing `/goal ` and pasting the condition (see §5). The condition states the Goal as the done-state, keeps each acceptance
 criterion's wording, carries the scope, exclusions, and constraints, and
 names the evidence that must appear in the conversation to show each
 criterion met, such as a check's command and its passing output. The
@@ -425,11 +426,17 @@ where a route bullet below says so.
   the Role, since each pass receives the task text verbatim, and
   report the schedule actually established and any relevant lifetime limit.
 - **`/goal`:** Print the confirmed `/goal` line in a fenced block for the
-  operator to type, report the work as pending until they do, and stop. Do
-  not begin the work directly: the line is the handoff, and typing it
-  starts the work in this conversation, where the Role still holds. When
-  several lines were prepared, print them all in order and tell the
-  operator to type each one only after the previous goal clears.
+  operator to enter, report the work as pending until they do, and stop. Do
+  not begin the work directly: the line is the handoff, and entering it
+  starts the work in this conversation, where the Role still holds. A
+  pasted line over 800 characters collapses to a `[Pasted text #N]`
+  placeholder, and a pasted `/goal` prefix may not run as a command: the
+  line can run as an ordinary prompt with no goal set. Tell the operator
+  to type `/goal ` and paste only the condition after it (a 1,126-character
+  condition registered in full this way), and to check that `Goal set:` shows the full condition, not
+  a placeholder, before treating the work as started. When several lines were prepared,
+  print them all in order and tell the operator to type each one only
+  after the previous goal clears.
 - **`/peer`:** Invoke `peer` with `dispatch <session>` and the confirmed
   brief block verbatim as `args`. The peer skill in the receiving session
   re-selects the route by §3 under its own project and confirms it there

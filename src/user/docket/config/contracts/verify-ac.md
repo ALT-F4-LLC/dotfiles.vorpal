@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 25
+version: 26
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -206,8 +206,9 @@ that criterion normally against the same evidence.
 
 # Emit
 `ac-report`: a markdown body and the `ac-report` payload using the supplied
-schema. A frozen workflow version still declaring `ac-report@1` supplies that
-schema, which has no `unmet-out-of-scope` value: there, report such an AC as
+schema. A frozen workflow version still declaring the first `ac-report`
+version supplies a schema with no `unmet-out-of-scope` value: there, report
+such an AC as
 `unmet` with its gap filed, and name the intended status in the body. Include:
 
 - Evaluated issue snapshot, candidate, baseline, and material input limits.

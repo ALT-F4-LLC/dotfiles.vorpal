@@ -52,7 +52,7 @@ lint.
   root, the version that file declares is registered and binding, and every
   other registered version of that name is retired.
 - **Schemas, per version:** the corpus carries several versions of one
-  schema name at once (`findings@12` and `findings@13`), so the unit is
+  schema name at once (`findings@12` and `findings@15`), so the unit is
   `name@version`. Every schema file in any root is registered, in service,
   and hashes to its row's `source_sha256`. Every other registered,
   non-builtin schema version is retired.

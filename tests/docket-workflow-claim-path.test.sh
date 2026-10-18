@@ -117,9 +117,9 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
         const res = await api.claimPacket(row, r, 'lane')
         ok(res.ok && res.owner === 'wave:STEP-12:1' && res.claim.packet === PACKET,
             'a valid module hands the packet to the executor launch')
-        ok(calls.agent.length === 1 && calls.agent[0].opts.label === 'STEP-12 · claim' &&
+        ok(calls.agent.length === 1 && calls.agent[0].opts.label === 'STEP-12 → claim' &&
             calls.agent[0].opts.agentType === 'executor-read' && calls.agent[0].opts.model === 'haiku',
-            'exactly one claim agent ran, haiku, as executor-read, labelled STEP-12 · claim')
+            'exactly one claim agent ran, haiku, as executor-read, labelled STEP-12 → claim')
         const schema = calls.agent[0].opts.schema
         ok(schema && JSON.stringify(schema.required) === '["output"]' && schema.properties.output.type === 'string',
             'the claim agent answers through the command-output schema')
@@ -252,14 +252,14 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
             'at the agent cap nothing is claimed and no module is loaded')
     }
     {
-        const transient = new Error('[STEP-12 · claim] blocked by safety classifier: Stage 2 classifier error (usually transient)')
+        const transient = new Error('[STEP-12 → claim] blocked by safety classifier: Stage 2 classifier error (usually transient)')
         const { api, calls } = wave({ replies: [transient, 'CLAIMED STEP-12'], load: () => goodModule('wave:STEP-12:1') })
         const res = await api.claimPacket(row, r, 'lane')
         ok(res.ok && calls.agent.length === 2 && calls.agent[0].prompt === calls.agent[1].prompt,
             'a transient classifier block resubmits the identical claim brief once')
     }
     {
-        const content = new Error('[STEP-12 · claim] blocked by safety classifier: policy')
+        const content = new Error('[STEP-12 → claim] blocked by safety classifier: policy')
         const { api, calls } = wave({ replies: [content], load: new Error(NOT_FOUND) })
         const res = await api.claimPacket(row, r, 'lane')
         ok(!res.ok && res.result.status === 'spawn-failed' && calls.agent.length === 1,

@@ -8,7 +8,7 @@
 # database, no network, and it spawns no agent.
 #
 # WHY THIS EXISTS. One run's vote gate tallied APPROVED 3/3, yet the
-# completion notification carried a failures entry — "[STEP-N · gate:tally]
+# completion notification carried a failures entry — "[STEP-N → gate:tally]
 # failed: API Error: Connection lost mid-response" — beside the same step's
 # gate-passed verdict, and the 8-spawns-for-3-seats cost was visible nowhere.
 # The failure was retry noise the script had already absorbed; a failure
@@ -146,7 +146,7 @@ let WORKFLOW_CALLS = []
 const workflow = (path, a) => {
     WORKFLOW_CALLS.push({ voters: a.voters.map((v) => v.seat), isRespawn: Boolean(a.isRespawn), context: a.context })
     for (const v of a.voters) {
-        CALLS.push(`${a.step ? a.step.step + ' · ' : ''}seat:${v.seat}${a.isRespawn ? ' (retry)' : ''}`)
+        CALLS.push(`${a.step ? a.step.step + ' → ' : ''}seat:${v.seat}${a.isRespawn ? ' (retry)' : ''}`)
     }
     if (WORKFLOW_SCRIPT.throwErr !== undefined) return Promise.reject(new Error(WORKFLOW_SCRIPT.throwErr))
     const absorbed = []
@@ -216,8 +216,8 @@ const probes = () => CALLS.filter((c) => !c.includes('seat:')).length
 // the record. The gate SUCCEEDS: the result must carry the accounting and
 // the absorbed errors as notes — and nothing failure-shaped.
 const A = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · gate:outcome': [{ reject: API_ERR }, { text: OPEN_ONE_MISSING }, { text: APPROVED }],
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → gate:outcome': [{ reject: API_ERR }, { text: OPEN_ONE_MISSING }, { text: APPROVED }],
 }, {
     'judge-security': [{ error: API_ERR }, {}],
 })
@@ -233,15 +233,15 @@ ok(Array.isArray(A.notes) && A.notes.length === 2,
     `A: both absorbed errors ride the success result as notes (got ${JSON.stringify(A.notes)})`)
 ok((A.notes || []).every((n) => n.includes('NOT a failure') && n.includes('SUCCEEDED')),
     'A: every note names the tally success and disclaims failure')
-ok((A.notes || []).some((n) => n.includes('[STEP-2493 · gate:outcome]') && n.includes(API_ERR)),
+ok((A.notes || []).some((n) => n.includes('[STEP-2493 → gate:outcome]') && n.includes(API_ERR)),
     'A: the dead outcome probe is a note, attributed to its spawn label')
-ok((A.notes || []).some((n) => n.includes('[STEP-2493 · seat:judge-security]')),
+ok((A.notes || []).some((n) => n.includes('[STEP-2493 → seat:judge-security]')),
     'A: the dead seat spawn is a note, attributed to its seat label')
 ok(A.failures === undefined, 'A: no failures field on the success result')
 ok(!/fail/.test(A.status), 'A: nothing failure-shaped in the status')
-ok(calls('STEP-2493 · gate:outcome') === 3,
-    `A: the outcome probe was resubmitted once and re-read once after the re-seat (got ${calls('STEP-2493 · gate:outcome')})`)
-ok(calls('STEP-2493 · seat:judge-security (retry)') === 1, 'A: the missing seat was re-spawned once')
+ok(calls('STEP-2493 → gate:outcome') === 3,
+    `A: the outcome probe was resubmitted once and re-read once after the re-seat (got ${calls('STEP-2493 → gate:outcome')})`)
+ok(calls('STEP-2493 → seat:judge-security (retry)') === 1, 'A: the missing seat was re-spawned once')
 ok(A.reseats === 1,
     `A: the settled result carries the one re-seat (got ${JSON.stringify(A.reseats)})`)
 // The conductor records one `run fact add --kind vote-reseated` per seat, so
@@ -249,8 +249,8 @@ ok(A.reseats === 1,
 ok(A.reseated && A.reseated.proposal === 'DKT-V260' &&
    JSON.stringify(A.reseated.seats) === JSON.stringify(['judge-security']),
     `A: the settled result names the re-seated proposal and seat (got ${JSON.stringify(A.reseated)})`)
-ok(calls('STEP-2493 · seat:judge-architecture (retry)') === 0 &&
-   calls('STEP-2493 · seat:judge-correctness (retry)') === 0,
+ok(calls('STEP-2493 → seat:judge-architecture (retry)') === 0 &&
+   calls('STEP-2493 → seat:judge-correctness (retry)') === 0,
     'A: seats the engine lists as cast are never re-spawned')
 ok(chainDead(A) === false, 'A: the success result does not kill the issue chain')
 ok(runParked(A) === false, 'A: the success result does not park the run')
@@ -259,16 +259,16 @@ ok(runParked(A) === false, 'A: the success result does not park the run')
 // the proposal body is read ONCE and the re-seat is briefed from the same
 // text, never a second read.
 const A2 = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'returned without casting' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: APPROVED }],
-    'STEP-2493 · seat:judge-security (retry)': { text: 'cast recorded' },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'returned without casting' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: APPROVED }],
+    'STEP-2493 → seat:judge-security (retry)': { text: 'cast recorded' },
 })
 ok(A2.status === 'gate-passed' && A2.spawn_accounting === '3 seats, 4 probes, 1 retry',
     `AC: a re-seat adds exactly one probe (got ${JSON.stringify(A2.spawn_accounting)})`)
-ok(calls('STEP-2493 · gate:proposal') === 1 && WORKFLOW_CALLS.length === 2 &&
+ok(calls('STEP-2493 → gate:proposal') === 1 && WORKFLOW_CALLS.length === 2 &&
    WORKFLOW_CALLS[0].context === WORKFLOW_CALLS[1].context,
     `A2: the proposal body is read once and the re-seat is briefed from the same text (got ${JSON.stringify(CALLS)})`)
 ok(LOG.some((l) => l.includes('1 seat(s) returned without a recorded cast (judge-security)')),
@@ -277,12 +277,12 @@ ok(LOG.some((l) => l.includes('1 seat(s) returned without a recorded cast (judge
 // ---- A3: a seat STILL silent after its retry is named, and the gate is
 // decided on the engine's record as it stands.
 await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'nothing' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: envelope('done', 'approved', ['judge-security']) }],
-    'STEP-2493 · seat:judge-security (retry)': { text: 'nothing again' },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'nothing' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: envelope('done', 'approved', ['judge-security']) }],
+    'STEP-2493 → seat:judge-security (retry)': { text: 'nothing again' },
 })
 ok(LOG.some((l) => l.includes('STILL NO CAST from judge-security')),
     `A3: a seat silent after its one re-spawn is named (got ${JSON.stringify(LOG)})`)
@@ -290,12 +290,12 @@ ok(LOG.some((l) => l.includes('STILL NO CAST from judge-security')),
 // ---- B: the SAME noise as A, but the tally REJECTS. Nothing softens a real
 // failure: no notes, no accounting cushion.
 const B = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { reject: API_ERR },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': [{ reject: API_ERR }, { text: OPEN_ONE_MISSING }, { text: REJECTED }],
-    'STEP-2493 · seat:judge-security (retry)': { text: 'cast recorded' },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { reject: API_ERR },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': [{ reject: API_ERR }, { text: OPEN_ONE_MISSING }, { text: REJECTED }],
+    'STEP-2493 → seat:judge-security (retry)': { text: 'cast recorded' },
 })
 ok(B.status === 'gate-rejected', 'B: rejected tally -> status is gate-rejected')
 ok(B.notes === undefined, 'B: a failing gate gets NO absorbed-error notes')
@@ -306,7 +306,7 @@ ok(chainDead(B) === true, 'B: the rejection still kills the issue chain')
 // probe, no panel, so the accounting reports probes and retries ONLY — the
 // seats clause is suppressed rather than logging "0 seats".
 const C = await run({
-    'STEP-2493 · gate:status': { text: APPROVED },
+    'STEP-2493 → gate:status': { text: APPROVED },
 })
 ok(C.status === 'gate-passed', 'C: already-decided approved gate is gate-passed')
 ok(C.spawn_accounting === '1 probe, 0 retries',
@@ -319,7 +319,7 @@ ok(LOG.some((l) => l.includes('no panel seated — 1 probe, 0 retries')),
 ok(C.notes === undefined, 'C: no noise, no notes')
 
 const C2 = await run({
-    'STEP-2493 · gate:status': { text: REJECTED },
+    'STEP-2493 → gate:status': { text: REJECTED },
 })
 ok(C2.status === 'gate-rejected' && CALLS.length === 1,
     'C2: an already-REJECTED gate is read off the same single probe — a done step is not a pass')
@@ -328,7 +328,7 @@ ok(C2.status === 'gate-rejected' && CALLS.length === 1,
 // gate-passed — the exact misread a conductor once made on a security
 // tribunal that never sat.
 const C3 = await run({
-    'STEP-2493 · gate:status': { text: envelope('skipped', 'open', VOTERS) },
+    'STEP-2493 → gate:status': { text: envelope('skipped', 'open', VOTERS) },
 })
 ok(C3.status === 'gate-skipped' && CALLS.length === 1,
     'C3: a skipped step with an untallied ballot reports gate-skipped, not gate-passed')
@@ -338,17 +338,17 @@ ok(C3.status === 'gate-skipped' && CALLS.length === 1,
 // UNKNOWN, which is a park for the conductor, not a pass on the step's
 // status alone.
 const D = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { reject: '[STEP-2493 · gate:outcome] blocked by safety classifier: the brief was refused on content' },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': { reject: '[STEP-2493 → gate:outcome] blocked by safety classifier: the brief was refused on content' },
 })
-ok(calls('STEP-2493 · gate:outcome') === 1, 'D: a content classifier block is NOT resubmitted')
+ok(calls('STEP-2493 → gate:outcome') === 1, 'D: a content classifier block is NOT resubmitted')
 ok(D.status === 'gate-parked' && D.notes === undefined,
     `D: an unreadable tally parks the gate for the conductor, un-softened (got ${D.status})`)
-ok(calls('STEP-2493 · seat:judge-security (retry)') === 0 &&
-   calls('STEP-2493 · seat:judge-architecture (retry)') === 0,
+ok(calls('STEP-2493 → seat:judge-security (retry)') === 0 &&
+   calls('STEP-2493 → seat:judge-architecture (retry)') === 0,
     'D: an unreadable record re-spawns NOBODY — silence is not "every seat missing"')
 ok(LOG.some((l) => l.includes('probe blocked on content')),
     `D: the block is logged as deterministic (got ${JSON.stringify(LOG)})`)
@@ -362,12 +362,12 @@ const BODY = {
     files_changed: [], linked_issues: [],
 }
 const E = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · gate:proposal': { text: BODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { text: APPROVED },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → gate:proposal': { text: BODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': { text: APPROVED },
 })
 ok(E.status === 'gate-passed', 'E: the healthy gate passes')
 ok(E.spawn_accounting === '3 seats, 3 probes, 0 retries',
@@ -378,7 +378,7 @@ ok(probes() === 3, `AC: exactly THREE read-only probes on the normal path (got $
 // The seat brief's case comes from the proposal body, projected WITHOUT its
 // casts: the probe's schema cannot even carry a vote, a score, or an
 // outcome, and the context handed to tribunal.js is the body's own words.
-const PROPOSAL_PROPS = Object.keys(SCHEMAS['STEP-2493 · gate:proposal'].properties)
+const PROPOSAL_PROPS = Object.keys(SCHEMAS['STEP-2493 → gate:proposal'].properties)
 ok(PROPOSAL_PROPS.includes('description') && PROPOSAL_PROPS.includes('rationale') &&
    !PROPOSAL_PROPS.some((k) => /vote|score|outcome|status|verdict/.test(k)),
     `AC: the proposal probe's schema carries the body and no cast (got ${JSON.stringify(PROPOSAL_PROPS)})`)
@@ -391,33 +391,33 @@ ok(!LOG.some((l) => l.includes('proposal body read returned nothing')),
     'E: a body that read cleanly logs no fallback line')
 ok(!LOG.some((l) => l.includes('did not parse') || l.includes('falling back')),
     `AC: no parse-fallback line on a healthy tally (got ${JSON.stringify(LOG)})`)
-ok(SCHEMAS['STEP-2493 · gate:status'] && SCHEMAS['STEP-2493 · gate:status'] === SCHEMAS['STEP-2493 · gate:outcome'],
+ok(SCHEMAS['STEP-2493 → gate:status'] && SCHEMAS['STEP-2493 → gate:status'] === SCHEMAS['STEP-2493 → gate:outcome'],
     'AC: both reads go through the same StructuredOutput schema')
-ok(SCHEMAS['STEP-2493 · gate:status'].properties.outcome.enum.join() === 'approved,rejected,open',
+ok(SCHEMAS['STEP-2493 → gate:status'].properties.outcome.enum.join() === 'approved,rejected,open',
     'the schema pins the three-state outcome the engine documents')
 ok(LOG.some((l) => l.includes('seating judge-architecture, judge-security, judge-correctness')),
     `E: the panel is seated from the row's routed roster (got ${JSON.stringify(LOG)})`)
-ok(calls('STEP-2493 · gate:held-cluster') === 0,
+ok(calls('STEP-2493 → gate:held-cluster') === 0,
     'E: an ordinary gate never spends the held-cluster read')
 
 // A REJECTED proposal is equally conclusive — one read after the panel.
 const E2 = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { text: REJECTED },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': { text: REJECTED },
 })
 ok(E2.status === 'gate-rejected' && probes() === 3,
     'E2: a rejection is read off the same single post-panel probe')
 
 // A gate that did not clear — every seat cast, the ballot still open.
 const E3 = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { text: envelope('ready', 'open', []) },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': { text: envelope('ready', 'open', []) },
 })
 ok(E3.status === 'gate-parked' && LOG.some((l) => l.includes('gate did NOT clear (ready, tally open)')),
     `E3: an undecided ballot parks the gate and the log names the engine's state (got ${JSON.stringify(LOG)})`)
@@ -427,12 +427,12 @@ ok(E3.status === 'gate-parked' && LOG.some((l) => l.includes('gate did NOT clear
 // the evidence — tribunal.js is handed an EMPTY context so the brief says the
 // body could not be read, and the two deaths are notes on the success.
 const E4 = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · gate:proposal': [{ reject: API_ERR }, { reject: API_ERR }],
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { text: APPROVED },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → gate:proposal': [{ reject: API_ERR }, { reject: API_ERR }],
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': { text: APPROVED },
 })
 ok(E4.status === 'gate-passed' && WORKFLOW_CALLS.length === 1 && WORKFLOW_CALLS[0].context === '',
     `E4: a dead proposal read still seats the panel, on an empty context (got ${JSON.stringify(E4)})`)
@@ -446,25 +446,25 @@ ok(E4.spawn_accounting === '3 seats, 4 probes, 1 retry' && Array.isArray(E4.note
 // text to regex, so a non-envelope object is UNKNOWN and nothing is
 // re-seated off it.
 const F = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { text: {} },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': { text: {} },
 })
 ok(F.status === 'gate-parked' && !CALLS.some((c) => c.includes('(retry)')),
     'F: a non-envelope reply parks the gate and re-spawns nobody')
 const F2 = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-2493 · gate:outcome': { text: { error: 'Error: STEP-2493 is a "executor" step, not a gate' } },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
+    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-2493 → gate:outcome': { text: { error: 'Error: STEP-2493 is a "executor" step, not a gate' } },
 })
 ok(F2.status === 'gate-parked' && LOG.some((l) => l.includes('engine error — Error: STEP-2493 is a')),
     `F2: an engine error relayed through the schema is logged verbatim (got ${JSON.stringify(LOG)})`)
 const F3 = await run({
-    'STEP-2493 · gate:status': { text: null },
+    'STEP-2493 → gate:status': { text: null },
 })
 ok(F3.status === 'gate-blocked' && CALLS.length === 1 &&
    LOG.some((l) => l.includes('gate:status probe returned nothing')),
@@ -474,8 +474,8 @@ ok(F3.status === 'gate-blocked' && CALLS.length === 1 &&
 // read that carries the engine's blocked_reason is `step show`, spent here
 // alone so the ladder can say "deferred" instead of "died".
 const G = await run({
-    'STEP-2493 · gate:status':  { text: NO_PROPOSAL },
-    'STEP-2493 · gate:blocked': { text: { output: SHOW_BLOCKED } },
+    'STEP-2493 → gate:status':  { text: NO_PROPOSAL },
+    'STEP-2493 → gate:blocked': { text: { output: SHOW_BLOCKED } },
 })
 ok(G.status === 'gate-blocked' && probes() === 2 && !CALLS.some((c) => c.includes('seat:')),
     `G: a gate with no proposal spends status + step show and seats nobody (got ${JSON.stringify(CALLS)})`)
@@ -486,7 +486,7 @@ ok(chainDead(G) === true, 'G: and the lane still stops this wave')
 // ---- H: a vote row whose roster carries no routing — the run pins no
 // policy.toml, or the row was re-typed — is escalated, never guessed.
 const H = await run({
-    'STEP-2493 · gate:status': { text: OPEN_NOBODY },
+    'STEP-2493 → gate:status': { text: OPEN_NOBODY },
 }, {}, { ...ROW, voter_assignments: undefined })
 ok(H.status === 'gate-blocked' && CALLS.length === 1 &&
    LOG.some((l) => l.includes('carries no voter_assignments')),
@@ -498,16 +498,16 @@ const HELD = {
     ...ROW, instance: 'review-held@2#0',
 }
 const I = await run({
-    'STEP-2493 · gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 · gate:held-cluster': { text: { cluster_index: 0, cluster_count: 10, artifact: 'ARTIFACT-1251', producer_step: 'reconcile@2' } },
-    'STEP-2493 · gate:outcome': { text: APPROVED },
+    'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
+    'STEP-2493 → gate:held-cluster': { text: { cluster_index: 0, cluster_count: 10, artifact: 'ARTIFACT-1251', producer_step: 'reconcile@2' } },
+    'STEP-2493 → gate:outcome': { text: APPROVED },
 }, {}, HELD)
-ok(I.status === 'gate-passed' && calls('STEP-2493 · gate:held-cluster') === 1 &&
+ok(I.status === 'gate-passed' && calls('STEP-2493 → gate:held-cluster') === 1 &&
    I.spawn_accounting === '3 seats, 4 probes, 0 retries',
     `I: a held-cluster gate spends exactly one extra read (got ${JSON.stringify(I.spawn_accounting)})`)
-ok(calls('STEP-2493 · gate:held-cluster') === 1 && !CALLS.some((c) => c.includes('held') && c !== 'STEP-2493 · gate:held-cluster'),
+ok(calls('STEP-2493 → gate:held-cluster') === 1 && !CALLS.some((c) => c.includes('held') && c !== 'STEP-2493 → gate:held-cluster'),
     'I: the cluster read goes through its own schema probe')
-ok(SCHEMAS['STEP-2493 · gate:held-cluster'].properties.cluster_index.type === 'number',
+ok(SCHEMAS['STEP-2493 → gate:held-cluster'].properties.cluster_index.type === 'number',
     'I: the held-cluster reply is schema-validated, never regexed out of step show')
 ok(parseHeldCluster({ cluster_index: 0, cluster_count: 10, artifact: 'A', producer_step: 'p' }).clusterCount === 10 &&
    parseHeldCluster({ cluster_index: 0 }) === null && parseHeldCluster(null) === null && parseHeldCluster({}) === null,
@@ -519,7 +519,7 @@ ok(parseHeldCluster({ cluster_index: 0, cluster_count: 10, artifact: 'A', produc
 // UNKNOWN and the row parks for the conductor, the same as any other
 // silent-panel gate, and no other issue's lane is disturbed.
 const J = await run({
-    'STEP-2493 · gate:status': { text: OPEN_NOBODY },
+    'STEP-2493 → gate:status': { text: OPEN_NOBODY },
 }, { throwErr: 'tribunal.js: args.cwd is required and must be a non-empty string (got ""). Refusing to seat the panel.' })
 ok(J.status === 'gate-parked',
     `J: a workflow() throw never crashes the wave — the tally reads UNKNOWN and the row parks (got ${JSON.stringify(J)})`)

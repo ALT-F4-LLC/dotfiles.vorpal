@@ -129,7 +129,7 @@ const agent = (brief, opts) => {
 }
 const workflow = (path, a) => {
     for (const v of a.voters) {
-        const label = `${a.step.step} · seat:${v.seat}${a.isRespawn ? ' (retry)' : ''}`
+        const label = `${a.step.step} → seat:${v.seat}${a.isRespawn ? ' (retry)' : ''}`
         CALLS.push(label)
         BRIEFS[label] = judgeBrief(v, a.voteId, a.gateKind, a.context, a.cwd, a.isRespawn, a.step, a.target, a.heldCluster)
     }
@@ -173,15 +173,15 @@ const open = (target) => ({
 })
 const APPROVED = { step_status: 'done', proposal: 'DKT-V304', outcome: 'approved', missing_seats: [] }
 const CAST = {
-    'STEP-3187 · gate:proposal': { text: {
+    'STEP-3187 → gate:proposal': { text: {
         description: 'security-vote@1 (security-vote)',
         rationale: 'workflow vote step security-vote@1',
         files_changed: [], linked_issues: [],
     } },
-    'STEP-3187 · seat:judge-security':     { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-3187 · seat:judge-correctness':  { text: 'cast recorded' },
-    'STEP-3187 · gate:outcome': { text: APPROVED },
+    'STEP-3187 → seat:judge-security':     { text: 'cast recorded' },
+    'STEP-3187 → seat:judge-architecture': { text: 'cast recorded' },
+    'STEP-3187 → seat:judge-correctness':  { text: 'cast recorded' },
+    'STEP-3187 → gate:outcome': { text: APPROVED },
 }
 
 const run = async (script) => {
@@ -240,7 +240,7 @@ ok(/jq -c/.test(targetRefCommand('STEP-3187')) &&
 // probed for one, the log says so, and the seats are briefed with the
 // NO-target wording.
 const A = await run({
-    'STEP-3187 · gate:status': { text: open(null) },
+    'STEP-3187 → gate:status': { text: open(null) },
     ...CAST,
 })
 ok(!CALLS.some((c) => /target/.test(c)),
@@ -268,7 +268,7 @@ ok(seatBriefs().every((b) => !/vote show/.test(b) && b.includes('DO NOT READ SIB
 
 // A target the engine carries on the envelope reaches the seats.
 const B = await run({
-    'STEP-3187 · gate:status': { text: open({ sha: REAL, worktree: '/w/vpl-711' }) },
+    'STEP-3187 → gate:status': { text: open({ sha: REAL, worktree: '/w/vpl-711' }) },
     ...CAST,
 })
 ok(seatBriefs().length === 3 &&
@@ -289,7 +289,7 @@ for (const [label, sha] of [
     ['prose', `the commit is ${REAL}`],
 ]) {
     const R = await run({
-        'STEP-3187 · gate:status': { text: open({ sha, worktree: '' }) },
+        'STEP-3187 → gate:status': { text: open({ sha, worktree: '' }) },
         ...CAST,
     })
     ok(seatBriefs().every((b) => !b.includes(sha) && b.includes('NO target ref')) && R.status === 'gate-passed',
@@ -298,7 +298,7 @@ for (const [label, sha] of [
 
 // The worktree half stands alone when only it is carried.
 const D = await run({
-    'STEP-3187 · gate:status': { text: open({ sha: '', worktree: '/w/vpl-711' }) },
+    'STEP-3187 → gate:status': { text: open({ sha: '', worktree: '/w/vpl-711' }) },
     ...CAST,
 })
 ok(seatBriefs().every((b) => b.includes('TARGET WORKTREE:/w/vpl-711') && !/TARGET SHA:/.test(b)),
@@ -309,7 +309,7 @@ ok(D.status === 'gate-passed', 'and does not disturb the gate outcome')
 // answered no, so the path never reaches a seat and no `git -C` is offered
 // against it.
 const E = await run({
-    'STEP-3187 · gate:status': {
+    'STEP-3187 → gate:status': {
         text: { ...open({ sha: REAL, worktree: '/w/vpl-711' }), target_worktree_exists: false },
     },
     ...CAST,
@@ -323,7 +323,7 @@ ok(E.status === 'gate-passed' && E.spawn_accounting === '3 seats, 3 probes, 0 re
 
 // Sha-less and swept is no target at all.
 const F = await run({
-    'STEP-3187 · gate:status': {
+    'STEP-3187 → gate:status': {
         text: { ...open({ sha: '', worktree: '/w/vpl-711' }), target_worktree_exists: false },
     },
     ...CAST,

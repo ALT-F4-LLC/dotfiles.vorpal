@@ -164,8 +164,8 @@ const run = async (script, wfScript, baseline) => {
 // own probes separately counted.
 {
     const { res, seatContribution } = await run({
-        'STEP-9001 · gate:status':  { text: OPEN_NOBODY },
-        'STEP-9001 · gate:outcome': { text: APPROVED },
+        'STEP-9001 → gate:status':  { text: OPEN_NOBODY },
+        'STEP-9001 → gate:outcome': { text: APPROVED },
     }, {
         replies: { voteId: 'DKT-V1', seatsSpawned: 3, absorbed: [] },
     }, 100)
@@ -180,8 +180,8 @@ const run = async (script, wfScript, baseline) => {
 // retry as a fresh 3.
 {
     const { res, seatContribution } = await run({
-        'STEP-9001 · gate:status':  { text: OPEN_NOBODY },
-        'STEP-9001 · gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: APPROVED }],
+        'STEP-9001 → gate:status':  { text: OPEN_NOBODY },
+        'STEP-9001 → gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: APPROVED }],
     }, {
         replies: [
             { voteId: 'DKT-V1', seatsSpawned: 3, absorbed: [] },
@@ -198,7 +198,7 @@ const run = async (script, wfScript, baseline) => {
 // incremented by the panel size the caller asked for.
 {
     const { res, seatContribution } = await run({
-        'STEP-9001 · gate:status': { text: OPEN_NOBODY },
+        'STEP-9001 → gate:status': { text: OPEN_NOBODY },
     }, {
         throwErr: 'tribunal.js: args.cwd is required and must be a non-empty string. Refusing to seat the panel.',
     }, 300)
@@ -213,8 +213,8 @@ const run = async (script, wfScript, baseline) => {
 // for every call.
 {
     const { res, seatContribution } = await run({
-        'STEP-9001 · gate:status':  { text: OPEN_NOBODY },
-        'STEP-9001 · gate:outcome': { text: APPROVED },
+        'STEP-9001 → gate:status':  { text: OPEN_NOBODY },
+        'STEP-9001 → gate:outcome': { text: APPROVED },
     }, {
         replies: { voteId: 'DKT-V1', absorbed: [] },
     }, 400)

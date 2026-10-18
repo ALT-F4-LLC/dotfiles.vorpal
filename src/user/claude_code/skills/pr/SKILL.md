@@ -863,6 +863,7 @@ be checked is not evidence the branch has no PR.
      sessions do, and so the highest-value target of this exact attack),
      the rest of `src/user/claude_code/**` (agents, workflows, hooks, the
      global agreement, settings), `src/user/docket/config/**`,
+     `src/user/docket/bin/**`, `src/user/docket.rs`, `.docket/bin/**`,
      `src/user/claude_code.rs`, `.github/workflows/**`, `tests/**`,
      and any `.env*`/key/credential-shaped path.
 

@@ -138,10 +138,10 @@ supplies the recurring wake-up, and each firing re-enters this skill from
    layout only, as the gates reference defines it. Then, on that tree, run
    build, typecheck, lint when the repository names one, and the full test
    suite yourself and read the output. The
-   worker's report is a claim, not evidence. A fresh failure goes back to
-   the worker as the one follow-up round §3 describes, briefed with the
-   command and its output. When the session can launch agents, launch the `advisor` agent on
-   the rerun result before treating it as a pass.
+   worker's report is a claim, not evidence. A fresh failure goes to a
+   fresh worker as the one follow-up round §3 describes, briefed with the
+   command and its output. When the session can launch agents, launch the
+   `advisor` agent on the rerun result before treating it as a pass.
 5. **Review the diff.** `git diff --stat` and `git diff` against the
    recorded HEAD. Refuse the pass, restoring by path, if any of these hold:
    a test file changed other than to delete a test for removed dead code

@@ -719,10 +719,10 @@ fact about the tree.
 ## Mode selection
 
 The invocation's first word selects the mode: `open`, `ready`, `update`,
-`sync`, `review`, `checks`, `merge`, `close`. No word given defaults to
-`open`. An unrecognized first word is treated as an intent hint for
-`open`/`update`, the way `commit` treats its own argument — it never
-silently maps to `merge` or `close`, which fire only on their exact words.
+`sync`, `review`, `checks`, `merge`, `close`. No word given, or an
+unrecognized first word, is treated as an intent hint for `open`/`update`,
+the way `commit` treats its own argument — it never silently maps to `merge`
+or `close`, which fire only on their exact words.
 
 **An explicit mode word needs no precondition to be selected** — it names
 its own mode outright, and that mode's own step 1 runs whichever
@@ -746,7 +746,7 @@ read, or the `gh pr list` query itself — refuses per the preconditions rule
 above. It never resolves to `open`, because a hint that could not actually
 be checked is not evidence the branch has no PR.
 
-## open (default)
+## open
 
 1. Run preconditions 1-4 and 6. There is no PR yet, so 5 does not apply and
    6's base is the repository default branch.
@@ -861,8 +861,9 @@ be checked is not evidence the branch has no PR.
      In this checkout that means `src/user/claude_code/skills/**` (this
      file and every other skill — the corpus that defines what future
      sessions do, and so the highest-value target of this exact attack),
-     `src/user/claude_code.rs`, `src/user/claude_code/settings.rs`,
-     `src/user/claude_code/hooks/**`, `.github/workflows/**`, `tests/**`,
+     the rest of `src/user/claude_code/**` (agents, workflows, hooks, the
+     global agreement, settings), `src/user/docket/config/**`,
+     `src/user/claude_code.rs`, `.github/workflows/**`, `tests/**`,
      and any `.env*`/key/credential-shaped path.
 
      In an arbitrary checkout the same principle names, at least:

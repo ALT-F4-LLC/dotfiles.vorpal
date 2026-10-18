@@ -48,8 +48,8 @@ const SCRIPTS = '~/.claude/skills/simplify-corpus/scripts'
 const CHUNK_LINES = 200
 
 // Pin models so the run never inherits the caller's quota-limited model. The
-// rewriter runs at high effort: at low effort it searched the file for filler
-// words instead of reading it.
+// rewriter runs at medium effort, not low, so it reads the chunk instead of
+// searching for filler words.
 const AGENT_CONFIG = {
   run: { model: 'haiku', effort: 'low' },
   rewrite: { model: 'opus', effort: 'medium' },

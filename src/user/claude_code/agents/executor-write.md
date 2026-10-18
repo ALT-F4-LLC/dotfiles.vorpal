@@ -98,7 +98,7 @@ only the paths you changed, by name, never a whole-tree add, since a
 worktree can hold untracked files that are not yours. Distinguish completed,
 blocked, and interrupted or failed work; for incomplete work, identify
 what remains and the state available for continuation. For a
-change-summary or disposition hand-back, put issue and run IDs and their
+change-summary hand-back, put issue and run IDs and their
 mapping in the emitted step artifact; a repository document this brief's
 contract emits instead follows that contract's own Emit section, which may
 carry no ID field by house convention. When external sources materially

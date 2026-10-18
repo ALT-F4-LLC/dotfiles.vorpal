@@ -63,7 +63,7 @@ const CROSS_PAIRS = [
   {
     key: 'ac-rules',
     a: 'docket-plan/SKILL.md and docket-groom/SKILL.md acceptance-criterion rules',
-    b: 'src/user/docket/config/contracts/verify-ac.md, schemas/ac-report@2.json, fragments/fix-ac-only.md',
+    b: 'src/user/docket/config/contracts/verify-ac.md, schemas/ac-report@4.json, fragments/fix-ac-only.md',
   },
   {
     key: 'loop-bounds',

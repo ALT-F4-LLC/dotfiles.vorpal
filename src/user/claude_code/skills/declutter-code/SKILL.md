@@ -183,7 +183,7 @@ default.
      at `high`.
    - Worker, gnarly unit (a module, a rename crossing many callers, a
      dedupe that merges near-duplicates with subtle differences): `opus`
-     at `xhigh`; a unit that fails there is retried on `fable` at `xhigh`.
+     at `xhigh`; its one follow-up round (below) seats `fable` at `xhigh`.
 
    Name the seat and why the unit fits the tier.
 
@@ -227,9 +227,10 @@ the worker judged unsafe to apply and why.
 A report that names its gates and shows their output goes to step 4 of §2,
 the rerun; the report alone never commits. A report with no gate output, or
 whose gates fail on the rerun, gets one follow-up round: a fresh `agent()`
-spawn at the same tier, briefed with the first report and the rerun's
-command and output. If the second report still cannot pass the rerun here,
-the unit is blocked (step 3 of §2).
+spawn at the same tier, or on `fable` at `xhigh` for a gnarly unit,
+briefed with the first report and the rerun's command and output. If the
+second report still cannot pass the rerun here, the unit is blocked (step 3
+of §2).
 
 ## Stop
 

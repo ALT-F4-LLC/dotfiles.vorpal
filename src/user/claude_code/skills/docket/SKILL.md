@@ -85,8 +85,10 @@ the engine runs the gates in a detached child. Read the terminal state with
 and treat a step still in its saga as unfinished. Only an inline record (a
 gate-less step, or no detached launcher) carries `failed_gates`. Inspect the
 returned step's status/routing, and when needed `gate status` or `run report`.
-If the detached child dies mid-saga, nothing sweeps the step; re-running
-`step record` finishes it. A skipped or stub
+If the detached child dies mid-saga, nothing sweeps the step; read `step
+show` and `step gates` for the recorded state, since a second `step record`
+can fail with `AUTH_ERROR` once recording has retired the token; report a
+stranded step to the operator as a finding. A skipped or stub
 check does not establish the change passed a real check. Prefer the
 `record` alias to `complete` to avoid a shell-builtin collision in some
 worker environments.

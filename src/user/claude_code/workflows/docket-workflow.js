@@ -2659,8 +2659,10 @@ const seatCount = (row) => Array.isArray(row.voter_assignments) && row.voter_ass
 // cap. Reservations never release: a row that cannot fit is deferred at once,
 // allowing other lanes to continue. Deepest-first admission finishes chains.
 // Project the ordinary path: claim agent + executor + one probe; panel + two
-// status reads + one proposal body read + one blocked/held read. Keep 100
-// agents for retries, re-seats and block probes.
+// status reads + one proposal body read. VOTE_PROBE_COST deliberately
+// over-approximates by reserving a fourth probe for the blocked or held read.
+// AGENT_BUDGET_RESERVE agents stay free for retries, re-seats and block
+// probes.
 function agentCost(row) {
     if (row.kind === 'action') return 0
     if (row.kind === 'vote') return seatCount(row) + VOTE_PROBE_COST

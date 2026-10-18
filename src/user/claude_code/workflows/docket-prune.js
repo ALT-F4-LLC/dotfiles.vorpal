@@ -161,6 +161,8 @@ const SECTION_DEF = 'in a contract, every "# " block after "# Charter" and every
 // Which evidence classes apply to which unit kind. A unit with nothing in
 // any applicable class gets remove; a class that cannot apply is never held
 // against it (a section inside a contract has no consumer of its own).
+// engine is absent on purpose: engine enforcement is a ground for remove or
+// refactor, never support for stay.
 const UNIT_CLASSES = {
     'file:contract': ['consumer', 'run', 'behavior', 'install'],
     'file:fragment': ['consumer', 'run', 'behavior', 'install'],
@@ -168,7 +170,7 @@ const UNIT_CLASSES = {
     'file:schema': ['consumer', 'registry', 'run', 'install'],
     'file:policy': ['consumer', 'run', 'install'],
     'file:readme': ['consumer', 'behavior'],
-    'section': ['behavior', 'friction', 'engine'],
+    'section': ['behavior', 'friction'],
     'row': ['consumer', 'run'],
 }
 
@@ -183,14 +185,14 @@ const REFUTER_FRAMINGS = [
     },
     {
         key: 'burden',
-        angle: 'THE BURDEN. For every unit ruled stay, check that the judge cited evidence in a class that applies to that unit kind, and that the citation is real (open the locator). Refute if a stay rests on assertion, on a class that does not apply, on a citation that does not say what the ruling claims, or on the definition\'s own text.',
+        angle: 'THE BURDEN. For every unit ruled stay, check that the judge cited evidence in a class that applies to that unit kind, and that the citation is real (open the locator). Refute if a stay rests on assertion, on a class that does not apply, on an engine citation, on a citation that does not say what the ruling claims, or on the definition\'s own text.',
     },
 ]
 
 const CITATION_ITEMS = {
     type: 'object',
     properties: {
-        class: { type: 'string', description: 'consumer | registry | run | behavior | friction | install | engine' },
+        class: { type: 'string', description: 'consumer | registry | run | behavior | friction | install | engine (engine supports remove or refactor only, never stay)' },
         locator: { type: 'string', description: 'file:line, RUN-N, grep command, or transcript path:line; never transcript text' },
         note: { type: 'string' },
     },
@@ -807,7 +809,7 @@ function unitRules(surface) {
 - file (the whole definition; unit is the literal "file", kind "file") -> ${(UNIT_CLASSES[`file:${surface}`] || UNIT_CLASSES['file:contract']).join(', ')}
 - section:<heading> (contracts and fragments only; ${SECTION_DEF}) -> ${UNIT_CLASSES.section.join(', ')}
 - row:<executor> (policy.toml [executors] rows only) -> ${UNIT_CLASSES.row.join(', ')}
-Classes: consumer (something in the corpus, harness, or skill tree resolves to it), registry (a frozen record a run pins), run (a run recorded a step that received it), behavior (an executor's output, order of operations, or gate would differ without this text; the digest's applied counts, a fix round or finding that cited it, or the rule's own operative content), friction (the friction ledger attributes entries to it), install (the installed copy exists and matches), engine (the engine source enforces what the text says, which makes the text redundant; ${engineRoot ? `engine checkout at ${engineRoot}` : 'the engine checkout is unavailable this pass, so this class cannot be established'}).`
+Classes: consumer (something in the corpus, harness, or skill tree resolves to it), registry (a frozen record a run pins), run (a run recorded a step that received it), behavior (an executor's output, order of operations, or gate would differ without this text; the digest's applied counts, a fix round or finding that cited it, or the rule's own operative content), friction (the friction ledger attributes entries to it), install (the installed copy exists and matches), engine is a ground for removal, not an evidence class: a citation that the engine source enforces what the text says makes the text redundant and supports remove or refactor, never stay; a finding that the engine does not enforce the text only rebuts that ground and does not by itself keep a unit (${engineRoot ? `engine checkout at ${engineRoot}` : 'the engine checkout is unavailable this pass, so engine redundancy cannot be established and is never charged'}).`
 }
 
 function prosecutePrompt(d, evidence) {
@@ -862,7 +864,7 @@ Evidence gathered this pass for this definition:
 ${evidenceFor(d.path, evidence)}
 
 Read the definition whole and open every locator either side relies on before you rest a ruling on it. Return exactly one ruling per unit the prosecution enumerated (the file, every section, every policy row), uncharged units included. Rules:
-- stay only on a verified citation in a class that applies to the unit kind; the definition's own wording is never evidence for itself.
+- stay only on a verified citation in a class that applies to the unit kind; the definition's own wording is never evidence for itself, and an engine citation never supports stay.
 - refactor when part of the unit earns its place and part does not; cut names the exact sentences or sub-sections to remove, and reason says why what stays earns it.
 - remove when nothing applicable supports the unit, when the defender conceded, or when the engine, a fragment, or CLAUDE.md already carries the rule.
 - A file ruled remove makes every section ruling inside it remove as well; a file ruled stay may still hold sections ruled remove or refactor.
@@ -887,7 +889,7 @@ ${evidenceFor(d.path, evidence)}
 
 Your angle: ${framing.angle}
 
-Work your angle first and let it lead, but every ground below still refutes any ruling: a citation that does not say what the ruling claims (open it), a class held against a unit kind it does not apply to, a stay resting on the definition's own text, a remove that would break a consumer or a gate, a refactor whose cut list removes an operative rule. Return one vote per ruling. When you refute, proposed is the verdict that should replace it and reason names the locator that settles it; when you cannot refute, say what you checked.`
+Work your angle first and let it lead, but every ground below still refutes any ruling: a citation that does not say what the ruling claims (open it), a class held against a unit kind it does not apply to, a stay resting on the definition's own text or on an engine citation, a remove that would break a consumer or a gate, a refactor whose cut list removes an operative rule. Return one vote per ruling. When you refute, proposed is the verdict that should replace it and reason names the locator that settles it; when you cannot refute, say what you checked.`
 }
 
 // ---- Evidence --------------------------------------------------------------
@@ -924,7 +926,7 @@ async function trialPass() {
     if (!input.frictionDir) uncovered.push({ what: 'friction ledger', why: 'no friction directory was given' })
     if ((input.installedConfigDir || input.installedClaudeDir) && !install) missing('install drift')
     if (!input.installedConfigDir && !input.installedClaudeDir) uncovered.push({ what: 'install drift', why: 'no installed tree was given' })
-    if (!engineRoot) uncovered.push({ what: 'engine-source evidence', why: 'no engine checkout was given; the engine class cannot be established this pass' })
+    if (!engineRoot) uncovered.push({ what: 'engine-source evidence', why: 'no engine checkout was given; engine redundancy cannot be established this pass' })
     // Analysts sit at the same index as their project or directory; the name an
     // analyst echoes back is not trusted to match the listing's spelling.
     const runs = runsRaw.map((r, i) => {

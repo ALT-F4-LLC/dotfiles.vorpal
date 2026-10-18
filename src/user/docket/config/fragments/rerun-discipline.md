@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 20
+version: 21
 ---
 # Re-run discipline
 
@@ -45,9 +45,9 @@ the brief's `<TMP>/<STEP-N>.d`, by the literal path the brief pins once. Never
 re-resolve `$TMPDIR` mid-step, since a sandboxed and an unsandboxed call can
 resolve it differently. Use that literal path directly wherever the step
 directory is needed; creating the directory does not redirect writes. Leave
-`GOCACHE` at its default, which
-the sandbox write allowlist covers, and never override the shared `GOMODCACHE`:
-do not set it, redirect it through `GOPATH`, or create a private module cache.
+`GOCACHE` at its default, which the sandbox write allowlist covers, and never
+override the shared `GOMODCACHE`: do not set it, redirect it through `GOPATH`,
+or create a private module cache.
 Do not prefix commands with `TMPDIR=` or other `NAME=value` assignments; such a
 prefix matches no sandbox allow rule and goes to the auto-mode classifier.
 Follow the evidence rules for fresh execution versus cached results. Use a

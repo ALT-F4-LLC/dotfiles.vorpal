@@ -577,11 +577,10 @@ place in this read.
 
 **When the read contradicts the request's premise, verify before
 recording.** A scope map that says "this bug looks already fixed" changes
-the run's shape; verify it yourself: reach an
-explicit verdict (fixed, not fixed, or cannot tell), name the ways your own
-check could be wrong, and reproduce in an isolated scratch dir. The run
-record must not encode a premise your own
-read has already cast doubt on.
+the run's shape; verify it yourself: reach an explicit verdict (fixed, not
+fixed, or cannot tell), name the ways your own check could be wrong, and
+reproduce in an isolated scratch dir. The run record must not encode a premise
+your own read has already cast doubt on.
 
 **A landed-fix check covers every path in the candidate's own scope, not the
 interesting subset.** The `git log`/diff command that answers "has a fix

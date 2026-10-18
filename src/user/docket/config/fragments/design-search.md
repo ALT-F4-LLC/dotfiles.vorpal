@@ -1,6 +1,6 @@
 ---
 fragment: design-search
-version: 6
+version: 7
 ---
 # Design search
 
@@ -25,9 +25,9 @@ proportional to the decision's blast radius.
   the existing implementation is the delivery-time default (code-philosophy
   #9 and rung 2 of the laziness ladder, where your packet includes them),
   not the only candidate. Consider a mechanism the codebase lacks whenever
-  extending would
-  spread one concept across more places, add another special case, or leave
-  the invariant enforced by convention rather than construction. Deliver the
+  extending would spread one concept across more places, add another special
+  case, or leave the invariant enforced by convention rather than
+  construction. Deliver the
   new mechanism only when it wins on correctness, locality of reasoning, and
   deletability.
 - **Question the ask before solving it.** When the stated requirement or

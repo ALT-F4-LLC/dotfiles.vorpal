@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 28
+version: 29
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -15,9 +15,8 @@ home, and record every remaining open cluster at `medium` in one comment on
 this step's issue. Every such cluster must be accounted for, and every
 cluster requiring a new issue must have it filed through completion's
 `--gap-file` transaction. Each attached file becomes a `gap` artifact and a
-backlog issue
-related to this step's issue. Writing a scratch file alone does not drain a
-cluster. A `medium` cluster is never filed as an issue.
+backlog issue related to this step's issue. Writing a scratch file alone does
+not drain a cluster. A `medium` cluster is never filed as an issue.
 
 The workflow controls entry. In the general tracks this step runs once per
 issue round, after that round's final acceptance vote, on that round's

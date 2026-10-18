@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author the seven reserved project spec files in parallel, optionally grounded by a research step. Review and reconcile the findings, accept by tribunal vote, then drain the final round's open findings. A rejection re-enters the bounded revise loop at spec authoring and runs review again."
 name = "spec-project"
-version = 40
+version = 41
 
 [match]
 labels_any = ["spec-project"]
@@ -73,7 +73,7 @@ max_attempts = 2
 name = "synthesize-findings"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@6"
+payload = "findings-cluster@7"
 
 [[step]]
 action = "aggregate"
@@ -82,7 +82,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
-payload = "findings@14"
+payload = "findings@15"
 threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]

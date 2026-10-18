@@ -3,6 +3,15 @@
 Version history of `workflows/spec-doc.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 49
+
+Repoints the synthesize-findings payload to findings-cluster@7 and the
+reconcile payload to findings@15, title and description corrections of
+findings-cluster@6 and findings@14 with identical constraints. The
+revise-tdd-security and revise-tdd steps add the tdd-preflight gate, as the
+tdd-author steps already declare, so a revised TDD passes the same preflight
+as the first draft before it re-enters review.
+
 ## 48
 
 The `research` step's payload repoints from research-notes@2 to

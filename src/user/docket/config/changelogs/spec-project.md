@@ -3,6 +3,13 @@
 Version history of `workflows/spec-project.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 41
+
+Repoints the synthesize-findings payload to findings-cluster@7 and the
+reconcile payload to findings@15, title and description corrections of
+findings-cluster@6 and findings@14 with identical constraints. No topology,
+routing, or limit change.
+
 ## 40
 
 The `research` step's payload repoints from research-notes@2 to

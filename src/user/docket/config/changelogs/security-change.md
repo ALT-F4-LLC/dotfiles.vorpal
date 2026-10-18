@@ -3,6 +3,14 @@
 Version history of `workflows/security-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 56
+
+Repoints the synthesize-findings payload to findings-cluster@7 and the
+reconcile payload to findings@15, title and description corrections of
+findings-cluster@6 and findings@14 with identical constraints. Repoints the
+verify-ac payload to ac-report@4, likewise identical in fields. No topology,
+routing, or limit change.
+
 ## 55
 
 Repoints three payloads to description-only successor schemas. The synthesize

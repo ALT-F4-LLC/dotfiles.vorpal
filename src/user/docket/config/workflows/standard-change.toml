@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 54
+version = 55
 
 [match]
 unless_labels = [
@@ -67,7 +67,7 @@ max_attempts = 2
 name = "synthesize-findings"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "findings-cluster@6"
+payload = "findings-cluster@7"
 
 [[step]]
 action = "aggregate"
@@ -76,7 +76,7 @@ inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
 params = { field = "severity", method = "max", output = "findings" }
-payload = "findings@14"
+payload = "findings@15"
 threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 
 [[step]]
@@ -115,7 +115,7 @@ max_attempts = 2
 name = "verify-ac"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "ac-report@3"
+payload = "ac-report@4"
 threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }
 
 [[step]]

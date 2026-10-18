@@ -1,7 +1,7 @@
 [pipeline]
 description = "Cross-issue disposition: write the verdict comment and close the carrier. Gated on the build/test sanity check and AC verification, with a bounded revise loop. No code-review machinery."
 name = "disposition"
-version = 20
+version = 21
 
 [match]
 labels_any = ["disposition"]
@@ -37,7 +37,7 @@ max_fix_loops = 2
 name = "verify-ac"
 on_fail = "waiting-human"
 packet = ["contracts/{executor}.md"]
-payload = "ac-report@3"
+payload = "ac-report@4"
 threshold = { "fix-loop" = "any(status == unmet)", "verify-ac-vote" = "any(status != met)" }
 
 [[step]]

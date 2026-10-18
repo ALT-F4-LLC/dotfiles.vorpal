@@ -1,11 +1,11 @@
 ---
 node: synthesize-findings
-version: 27
+version: 28
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
 emits: findings
-payload: findings-cluster@6
+payload: findings-cluster@7
 ---
 # Charter
 Work as a bug triager consolidating defect reports from several reviewers.
@@ -34,7 +34,7 @@ this role into diagnosis or verification of the underlying defects.
 Identify the issue, run, review round, current judge artifacts, and declared
 schema. Read each artifact's body and payload, including evidence limitations
 and dispositions. Use the schema supplied for this step; if it is absent,
-retrieve it with `docket schema show findings-cluster@6 --body` from the assigned
+retrieve it with `docket schema show findings-cluster@7 --body` from the assigned
 checkout. An unavailable registered schema is a missing input, not permission
 to substitute a similarly named file or remembered schema.
 
@@ -170,7 +170,7 @@ identities.
 # Emit
 
 Emit `findings` as a markdown body and the array payload, following the brief's
-recording protocol. Use `findings-cluster@6` for structure and the requirements
+recording protocol. Use `findings-cluster@7` for structure and the requirements
 below for completeness. Its validation does not enforce all these requirements.
 
 ## Body
@@ -192,9 +192,9 @@ Keep explanations brief without abbreviating required evidence.
 ## Payload
 
 <!-- CLUSTER-KEYS-BEGIN: tests/contract-cluster-keys.test.sh diffs this
-     sentence's backticked names against findings-cluster@6's top-level
+     sentence's backticked names against findings-cluster@7's top-level
      `.items.properties` keys. Edit both together. -->
-findings-cluster@6's top-level keys are `id`, `title`, `severity`,
+findings-cluster@7's top-level keys are `id`, `title`, `severity`,
 `open_severity`, `member_ids`, `member_sources`, `file`, `line`, `evidence`,
 `alternative`, and `prior_disposition`.
 <!-- CLUSTER-KEYS-END -->

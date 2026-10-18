@@ -3,6 +3,12 @@
 Version history of `workflows/trivial-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 15
+
+Repoints the verify-ac payload to ac-report@4, a title and description
+correction of ac-report@3 with identical fields and constraints. No topology,
+routing, or limit change.
+
 ## 14
 
 Repoints the verify-ac payload to ac-report@3, a description-only successor of

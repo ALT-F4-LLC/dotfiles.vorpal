@@ -13,7 +13,7 @@ or `<role>-<domain>`, kebab-case (`verify-ac`, `judge-correctness`,
 partially drops that executor's name: no `author-tdd` for executor
 `tdd-author`, no `verify` for executor `verify-ac`. An executor may be
 position-named (`fix`, `revise-investigation`) when the position is
-genuinely its own distinct identity, as `fix` already differs from
+its own distinct identity, as `fix` already differs from
 `implement`. A loop-back step that re-runs an executor whose first-pass
 step carries its full name may be named `revise-<doctype>` (`revise-tdd`
 re-running `tdd-author`).
@@ -30,22 +30,22 @@ one file, `contracts/spec-author.md`, referenced by the literal path
 `packet = ["contracts/spec-author.md", ...]`. These seven executors differ
 only in their axis, which selects the reserved output path they may write
 and the specialist and evidence focus the contract assigns; the content
-is genuinely one contract. No other executor may join this exception
+is one contract. No other executor may join this exception
 without updating this file.
 
 Voter-only executors (seated only via a vote step's `voters` list, with no
-packet of their own) are named `<lens>`, matching the review-executor lens
-they stand in for when one exists: `tribunal-architecture`,
-`tribunal-correctness`, `tribunal-design`, `tribunal-security`. Their
-`tribunal-` prefix distinguishes the vote-time identity (defined in
-tribunal.js's LENSES table) from the `judge-`-prefixed review executor of
-the same lens.
+packet of their own) are named `tribunal-<lens>`, where `<lens>` matches the
+review-executor lens they stand in for when one exists:
+`tribunal-architecture`, `tribunal-correctness`, `tribunal-design`,
+`tribunal-security`. The `tribunal-` prefix distinguishes the vote-time
+identity (defined in tribunal.js's LENSES table) from the `judge-`-prefixed
+review executor of the same lens.
 
 ## Gates, vote rules, policy variants, labels
 
 Already kebab-case, already `<role>` or `<role>-<qualifier>` shaped
 throughout this corpus (`ac-commands`, `secret-scan`,
-`security-classifier-reroute`, `opus-medium`, `security-change`,
+`doc-acceptance`, `opus-medium`, `security-change`,
 `blocked`). This file states the shape for new additions; it does not
 mandate renaming anything that already conforms.
 
@@ -54,7 +54,7 @@ Most gate names are this repo's own `just` recipes. The two light tracks
 carries a `diff-scope-<label>` gate (`diff-scope-trivial`,
 `diff-scope-small`) on implement and fix that refuses a working-tree
 footprint the label does not promise (`.docket/bin/diff-scope`);
-a repository bound to the corpus supplies those three recipes like any other
+a repository bound to the corpus supplies those two recipes like any other
 gate. A gate a workflow names that this repo doesn't provide belongs to the
 target project instead: `ui-change.toml`'s `render-verify` and
 `copy-verify` are supplied by whatever repository's own justfile the

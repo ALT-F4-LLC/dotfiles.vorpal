@@ -76,10 +76,10 @@ length to read. The engine families live in docket-run's references:
   - [`workflow list`](#workflow-list) — 26 lines
   - [`workflow show <name>[@<version>]`](#workflow-show) — 17 lines
   - [`workflow init`](#workflow-init) — 18 lines
-- [`docket schema`](#schema-commands) — 84 lines
+- [`docket schema`](#schema-commands) — 83 lines
   - [`schema register <name@version> <file.json>`](#schema-register) — 20 lines
   - [`schema list`](#schema-list) — 16 lines
-  - [`schema show <name>[@<version>]`](#schema-show) — 17 lines
+  - [`schema show <name>[@<version>]`](#schema-show) — 16 lines
   - [`schema deprecate <name>@<version>`](#schema-deprecate) — 27 lines
 - [`docket vote` (alias `v`)](#vote-commands) — 138 lines
   - [`vote create`](#vote-create) — 18 lines
@@ -145,7 +145,7 @@ show`](#issue-show) and `step show`, and `description`/`description_bytes`
 on summary rows (see [`issue list`](#issue-list)).
 
 Four parsing traps (`run status` with no id returns `runs: []` for an empty
-list; older builds returned `null`):
+list):
 
 - **`items` is the v2 key, never the v1 key.** `--json` (v1, the bare flag)
   names the collection after the verb — `events`, `issues`, `steps`, `runs`,
@@ -689,8 +689,7 @@ version is in service. Human mode marks a retired row `[deprecated]`.
 |---|---|---|---|---|
 | `--body` | — | bool | `false` | emit the stored schema document verbatim |
 
-Omitting `@version` selects the highest version still in service
-(earlier builds take the highest registered). An unregistered
+Omitting `@version` selects the highest version still in service. An unregistered
 name or version, or a bare name whose every version is retired, is
 `NOT_FOUND` (exit 2). An explicit `@version` still resolves a retired version,
 with a `status: DEPRECATED` line in human mode. `--body` returns the exact

@@ -37,10 +37,10 @@ docket vote create --json=v2 \
 Cast only the assigned seat's own assessment. Pass its exact `--voter`: the
 default is `git user.name`, so concurrent agents using the default collide
 under one identity. Verify the seat, proposal id, content, and assessment
-against the assignment before casting; there is no amendment path, and the
-record is not read first — unless the proposal is sealed, `vote show` and
-`vote result` print every cast already recorded, and a seat that reads them
-before deciding is no longer deciding alone. A sealed proposal (`vote create
+against the assignment before casting; there is no amendment path. Do not
+run `vote show` or `vote result` before casting: on an unsealed proposal they
+print every cast already recorded, and a seat that reads them before
+deciding is no longer deciding alone. A sealed proposal (`vote create
 --sealed`, or a `vote_rule` with `sealed` set) withholds each cast's verdict,
 weights, findings, and summary until the tally closes. Replace the values
 below with the actual assignment and evidence; a file keeps long rationale

@@ -67,8 +67,10 @@ If a ui issue already carries a size label, remove the size label, never
 the `ui` label. Confirm the binding with `docket workflow show small-change`
 or `docket workflow show trivial-change`.
 
-The brief skill's Size hint uses the same words; docket-plan carries a
-confirmed hint into `--size` after its own measurement.
+The brief skill's Size hint words are `trivial`, `bounded`, `needs-design`,
+and `unknown`. Brief proposes `small` for `bounded` work confined to one or
+two files, and docket-plan confirms the proposed size after its own
+measurement before carrying it into `--size`.
 
 ## The cap
 

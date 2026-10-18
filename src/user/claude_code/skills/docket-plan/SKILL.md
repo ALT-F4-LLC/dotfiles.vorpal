@@ -202,7 +202,7 @@ rows without it carry `description_bytes` (verified on `--json=v2`). Inspect
 the other open issues' dependency links too: they can join later waves when
 every open prerequisite can be included in this same run under the checks
 below. Absence from
-`next` alone no longer excludes an issue from the complete run.
+`next` alone does not exclude an issue from the complete run.
 
 **Align on batch scope before ranking.** The survey tells you what exists.
 Resolve what this run should cover, batching missing decisions into one
@@ -271,7 +271,7 @@ with `docket-groom`, and are applied here as written there:
   `route-run` label on such an issue predates the gate and does not
   override it.
 
-List all four kinds in the proposal under "not free"/"off-scope"; never
+List every kind above in the proposal under "not free"/"off-scope"; never
 drop them silently.
 
 **Build the largest feasible roster, then schedule its waves.** Apply all
@@ -547,7 +547,7 @@ time. Read the repo yourself, with your own `Read`/`Grep`/`Glob`/`Bash`: a
 scope map, and the premise verdict when the request rides on one ("already
 fixed", "already done"). Engine-contract reads (CLI help, the workflow
 corpus under `~/.docket/config/`, the scope-matcher's own rules) and the
-repo survey are both yours now.
+repo survey are both yours.
 
 Any engine fact you use (run status, issue ids, branch state) comes from a
 fresh `docket run status`/`issue list` read in this session, never from
@@ -563,7 +563,8 @@ at kind, which is a closed field (`bug feature task epic chore`, enforced by
 `issue create -T`) that routes nothing. Labels route inside a bound workflow
 too, via `when`-gated steps: a `spec-doc` issue picks its author by the
 colon-form doc label (`doc:tdd`, `doc:adr`, `doc:ux-spec`; no doc label
-means PRD), and `security` / `security-change` push a TDD to the security
+means PRD), and any label in policy's `[security].labels` (`security`,
+`security-change`, `security-load-bearing`) pushes a TDD to the security
 author, so file doc-producing issues with `doc:<type>` or accept the PRD
 default (the hyphen spellings route nothing). Apply `needs-research` per
 §1's rule, never because a workflow happens to support it. `git log
@@ -725,9 +726,10 @@ synthesize-findings 0.60 + verify-ac 0.50 + drain-highs 0.30 = 4.2 × 2 =
 11.4; spec-doc `revise-*` 1.50 + 1.80 + 0.60 + drain-highs 0.30 + record
 0.20 = 4.4 × 2 = 8.8; spec-project (`revise-spec` fans out seven ways at
 0.70) 4.90 + 1.80 + 0.60 + 0.30 = 7.6 × 2 = 15.2. Votes and `reconcile`
-cost nothing. The other tracks' figures predate the closure rule above
-and undercount any step after their owning step, so compute them the same
-way from `docket workflow show <wf>` rather than from a remembered number:
+cost nothing. For the other tracks (security-change, small-change,
+trivial-change, investigation, disposition), compute the round the same way
+from `docket workflow show <wf>` using the closure rule above, rather than
+from a remembered number:
 this is a worked example of the read, not a substitute for it, and every
 one of these files is versioned.
 
@@ -760,8 +762,7 @@ the encoded caps at `0` regardless of the forecast. If an explicit cap is
 too small, fit the roster without dropping agreed deliverables, or obtain
 agreement, through `AskUserQuestion`, to a concrete scope reduction or budget increase before
 recording. Never silently replace the budget policy with the computed
-forecast. The dry-run total sums only the steps activation materializes:
-`loop = true` steps instantiate only on loop entry.
+forecast.
 
 Ids render with each project's prefix: the store is machine-global and the
 number is the identity, so `DKT-<n>` and a bare number parse in any

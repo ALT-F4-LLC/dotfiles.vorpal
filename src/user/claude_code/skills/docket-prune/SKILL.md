@@ -83,7 +83,14 @@ other verdict forward. `all` re-tries every definition.
    `git status --porcelain -- src/user/docket/config/cut-ledger.json` and
    stop if it is modified or staged: a pass lands as one commit, and a
    pre-existing edit would be swept into it.
-2. Enumerate the corpus with hashes, from the repository root:
+2. Read the ledger with `jq . src/user/docket/config/cut-ledger.json`; a
+   ledger with `"pass": 0` and no verdicts is the first pass. Set the pass
+   number `<n>` to the ledger's `pass` plus one (1 on a first pass); it is
+   the `pass` arg and the `$PASS` §3 writes. Choose a scratch directory
+   `$SCRATCH` under `$TMPDIR`, empty and unique to this pass (for example
+   `$TMPDIR/docket-prune/pass-<n>`), and take the UTC timestamp `$NOW` with
+   `date -u +%Y-%m-%dT%H:%M:%SZ`.
+3. Enumerate the corpus with hashes, from the repository root:
 
    ```bash
    git ls-files -- src/user/docket/config | grep -v -e '/cut-ledger\.json$' -e '/changelogs/' | while read -r f; do
@@ -93,20 +100,13 @@ other verdict forward. `all` re-tries every definition.
    done | jq -s . > "$SCRATCH/definitions.json"
    ```
 
-   Read the ledger with `jq . src/user/docket/config/cut-ledger.json`; a
-   ledger with `"pass": 0` and no verdicts is the first pass.
-3. Gather the evidence roots: `docket project list --json` for the
+4. Gather the evidence roots: `docket project list --json` for the
    projects (name, prefix, identity as root); the docket engine checkout at
    the docket.git project's identity path if that directory exists, else
    null; every directory under `~/.claude/projects` as transcript
    directories; `~/.claude/friction`, `~/.docket/config`, and `~/.claude`
    when they exist, else null. Expand `~` to a literal absolute path
    yourself.
-4. Set the pass number `<n>` to the ledger's `pass` plus one (1 on a first
-   pass); it is the `pass` arg and the `$PASS` §3 writes. Choose a scratch
-   directory under `$TMPDIR`, empty and unique to this pass (for example
-   `$TMPDIR/docket-prune/pass-<n>`), and take the UTC timestamp with
-   `date -u +%Y-%m-%dT%H:%M:%SZ`.
 
 ## 2. Run the workflow
 

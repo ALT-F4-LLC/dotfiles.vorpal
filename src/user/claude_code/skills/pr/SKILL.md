@@ -233,9 +233,9 @@ that cannot reach the remote to the operator (**Push rules**).
 ## Push rules
 
 - `git push -u origin <head-branch>` — the head branch only, never the base.
-- After `sync`'s rebase: `git push --force-with-lease=<head-branch>:<sha>`
-  where `<sha>` is the head branch's remote-tracking sha captured **before**
-  `git fetch` runs, plus `--force-if-includes`. A bare `--force-with-lease`
+- After `sync`'s rebase: `git push --force-with-lease=<head-branch>:<sha>
+  --force-if-includes origin <head-branch>` where `<sha>` is the head
+  branch's remote-tracking sha captured **before** `git fetch` runs. A bare `--force-with-lease`
   (no `=<ref>:<sha>`) is as forbidden as plain `--force`: it compares
   against a ref the immediately preceding fetch just refreshed, silently
   discarding a commit another session pushed in between. `git-push`'s own
@@ -665,6 +665,8 @@ class is attribution-shaped, so both refuse rather than strip. `/Users/`
 and `/home/` are bounded to a path segment (`/<user>/`) so they do not fire
 on an unrelated mid-sentence slash.
 
+Scope and maintenance of the denylist:
+
 - Does not apply to this skill's own terminal report, which is not published
   anywhere.
 - **CI log tails go to the terminal report only, never into a PR comment or
@@ -826,7 +828,7 @@ be checked is not evidence the branch has no PR.
 5. On a clean rebase: run the **pre-push range scan** above — a rebase can
    import commits this agent never authored, which is the range scan's whole
    case — then `git push --force-with-lease=<head-branch>:<sha
-   captured in step 1> --force-if-includes`. A commit another session pushed
+   captured in step 1> --force-if-includes origin <head-branch>`. A commit another session pushed
    between step 1 and this push falls outside the lease's expected value and
    aborts the push rather than being silently discarded.
 6. Report the rebase result and, if pushed, the new commit range.

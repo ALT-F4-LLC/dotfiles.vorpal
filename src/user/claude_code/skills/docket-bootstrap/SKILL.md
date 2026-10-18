@@ -153,8 +153,8 @@ Workflow({ scriptPath: "<absolute installed path to docket-bootstrap.js>", args:
 } })
 ```
 
-Delegates three independent seams, combining them only when the repo is
-small:
+The script delegates three independent seams and combines them only when
+the repo is small:
 
 - Build/CI: real build and check commands, CI jobs, prerequisites, and merge
   gates.

@@ -14,8 +14,8 @@ this session's agents, schedules and watches and filing what is
 unfinished — use `finish` (`skills/finish/SKILL.md`), which hands any live
 run back here.
 
-**Not a replacement for the loop.** You run inside or alongside the
-docket-run session already driving RUN-N. Nothing here schedules steps,
+**Not a replacement for the loop.** You run inside the docket-run session
+already driving RUN-N. Nothing here schedules steps,
 dispatches waves, or makes routing decisions — docket-run's contract,
 untouched.
 
@@ -33,6 +33,10 @@ Only an explicit operator instruction to stop immediately and accept
 losing in-flight work — "pause now, kill the wave," "stop right now,
 don't wait" — selects hard. An ambiguous "pause the run" is graceful; do
 not infer hard from tone alone, and say which mode you use before you act.
+
+Either mode also resets an unattended run to attended once the run is
+paused: write `attended` to `<scratchpad>/conductor.d/RUN-N.mode` and
+record the note described under **Resuming**.
 
 ## Graceful halt
 
@@ -195,7 +199,7 @@ every other path the prompt names from command output as well.
 holds for this run stays in its session-private file and goes into
 neither the resume doc nor the chat copy: a resume prompt is readable by
 anyone with the store or the transcript. The resuming session re-mints it
-with `docket run conduct RUN-N` as its first action, which retires this
+with `docket run conduct RUN-N` as its first seat-taking action, which retires this
 session's token; the prompt says so and nothing more.
 
 **Engine-recoverable state — link to it, do not restate it:**
@@ -216,14 +220,14 @@ preflight (`docket doctor`), the stale-install diffs against the last
 
 **Before writing the prompt, check it against this list — each item
 filled in or explicitly marked not applicable, never silently dropped:**
-the Checkout, branch and worktree lines pasted from `print`; every wave's `wfId` and journal path; the full
+the Checkout, branch and worktree lines pasted from `print`; every wave's `wfId` and journal path; the unattended queue entries (or not applicable when attended); the full
 original `Workflow` args for anything a later session might resume; every
 un-integrated writer sha with its worktree path; whether this run's
 budget raise has already been used; operator precedent rulings and any
 unexecuted answer; held peer authorization claims; every tribunal
 proposal id with its tally; foreign `wf_*` worktree entries observed;
 every step id the graceful halt refused; every advisory note carrying
-**`DISPOSITION REQUIRED:`**; and that the first action named is `docket
+**`DISPOSITION REQUIRED:`**; and that the first seat-taking action named is `docket
 run conduct RUN-N` with no token anywhere in the prompt. Check this list
 as a gate, not from memory.
 
@@ -280,7 +284,7 @@ late-firing stale resume nudge a no-op) — then run id, the
 `**Checkout:**`, `**Branch:**` and `**Worktree:**` lines from `print`,
 why it was paused, the halt mode used, a one-paragraph state
 summary (where the run stands, what is unfinished),
-`docket run conduct RUN-N --json=v2` as the first action (captured to a
+`docket run conduct RUN-N --json=v2` as the first seat-taking action (captured to a
 session-private file per docket-run's **The conductor capability**, never
 printed; it retires the token this session held), then `docket run resume
 RUN-N --reason '<why>'` redirecting that file, then the session-only
@@ -339,7 +343,7 @@ run from. On exit 1, stop and report both paths it
 names to the operator: a docket read from another checkout scopes to
 another project, and a Checkout that does not match is either a typo in
 the prompt or a session started in the wrong place. On exit 0, take the
-seat with `docket run conduct RUN-N --json=v2` as the first action
+seat with `docket run conduct RUN-N --json=v2` as the first seat-taking action
 (docket-run's **The conductor capability** says how to capture the token
 without printing it), run `run resume` under that fresh token, then
 follow into `docket-run`'s own attach procedure — seat preflight and the

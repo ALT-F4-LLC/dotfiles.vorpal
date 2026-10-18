@@ -93,10 +93,10 @@ each field only when the installed CLI supports it:
   material harm.
 - Type: `bug` for a broken contract or implementation, `task` for an
   improvement or extraction, `chore` for a coherent paper-cut batch.
-- Label: `shadow`. The label and the `Shadow fingerprint:` line keep this
-  skill's former name so new findings match prior ones. Required file metadata (`-f`) names each remedy source
-  path; required `--scope` globs bound that work. Verify both persisted after
-  creation.
+- Label: `shadow`, the stable label that links findings across audits. Keep
+  the `Shadow fingerprint:` line in the description.
+- Required file metadata (`-f`) names each remedy source path; required
+  `--scope` globs bound that work. Verify both persisted after creation.
 - No assignee, claim, run membership, routing label, or transition to
   in-progress. This skill supplies the intake; it never reserves execution.
 - Remedy: on the highest rung of the

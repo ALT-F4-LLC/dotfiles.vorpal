@@ -14,13 +14,13 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 534 lines
+- [`docket step`](#step-commands) — 536 lines
   - [`step artifacts`](#step-artifacts) — 36 lines
   - [`step claim`](#step-claim) — 45 lines
   - [`step reap`](#step-reap) — 36 lines
   - [`step complete`](#step-complete) — 69 lines
   - [`step fail`](#step-fail) — 23 lines
-  - [`step annotate`](#step-annotate) — 49 lines
+  - [`step annotate`](#step-annotate) — 51 lines
   - [`step resolve`](#step-resolve) — 117 lines
   - [`step approve|reject`](#step-approve-reject) — 42 lines
   - [`step context`](#step-context) — 52 lines
@@ -41,7 +41,7 @@ then **completed** with an artifact.
 | `step hold STEP-N --reason R` | **conductor** | parks one READY step `waiting-human` (park class `held`, `--reason` as its park reason; event `step-held`) so dispatch stops offering it while the rest of its issue runs; any other status is `CONFLICT` (exit 4), so reap a claimed step first; resolve it like any park (`step resolve --as retry\|skip`) |
 | `step complete STEP-N --artifact-file F …` | **yes** (until the artifact records) | the saga |
 | `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
-| `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | no | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |
+| `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | **conductor** for `--integrated-sha`; none for `--metadata` alone | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |
 | `step approve\|reject STEP-N --authority A [--authority-ref R] [--note …] [--value V]` | **conductor** | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
 | `step resolve STEP-N --as … --authority A [--authority-ref R]` | **conductor** | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
 | `step show STEP-N` | no | read-only; effective status |
@@ -340,8 +340,10 @@ record re-checkable.
 
 The merge is the **same rule `step complete --metadata` uses** — shallow,
 last-write-wins, 16 KiB cap on the supplied bytes, non-object refused — and
-it is **token-free**: the lease retired with the artifact, and this is an
-operator-side act about the record, not a completion. The merge is logged
+the `--metadata` form is **token-free**: the lease retired with the artifact,
+and this is an operator-side act about the record, not a completion.
+`--integrated-sha` requires the run's conductor capability, through the same
+channels and refusals as the conductor verbs above. The merge is logged
 as a `step-annotated` event carrying the annotation **verbatim**.
 
 Refusals: a step that has not reached a terminal status is `CONFLICT`

@@ -13,9 +13,9 @@ help, fixture record, or isolated behavior.
 
 `scripts/evaluate.py` compares a candidate and optional baseline across exact
 model IDs and effort settings, supplying the entry point while Claude reads
-supporting references as needed. The twelve independent scenarios in
+supporting references as needed. The independent scenarios in
 `evals/cases.json` cover voter identity, accepted records with failing gates,
-confirmed success, interrupted recording, lease expiry, project selection,
+confirmed success, detached gate recording, interrupted recording, lease expiry, project selection,
 pagination, literal descriptions and idempotency, claim attribution, gap
 headers, guard denial, and inspection after a retained handoff.
 

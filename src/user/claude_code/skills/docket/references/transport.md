@@ -129,7 +129,7 @@ exactly as it did when the flag was a boolean.
 | Value | Mode | Notes |
 |---|---|---|
 | (flag absent) | human | |
-| `--json` (bare) | JSON v1 | legacy per-verb response shapes, with the additive amendments below |
+| `--json` (bare) | JSON v1 | see the paragraph below |
 | `--json=v1` | JSON v1 | explicit form |
 | `--json=true`, `--json=1` | JSON v1 | retained from the boolean-flag era |
 | `--json=v2` | JSON v2 | uniform envelope, see below |
@@ -142,7 +142,7 @@ depend on an exact serialized key set or byte sequence across releases.
 
 | Payload | Shape |
 |---|---|
-| `issue show`, `issue list` | `scope` appears **when the issue declares one, and only then** — no declared scope emits no key and stays byte-identical to the pre-scope shape; a declared-but-empty scope emits `[]` |
+| `issue show`, `issue list` | `scope` appears **when the issue declares one, and only then** — no declared scope emits no key; a declared-but-empty scope emits `[]` |
 | `issue show`, `issue list` | `resolution` appears **when a routing has set one**, so an abandoned issue stops being indistinguishable from a finished one |
 | `issue show` | `run_disposition` appears **when a run abandoned its work on the issue** |
 | every issue payload | `issue` mirrors `id`, **unconditionally** — see below |
@@ -394,6 +394,7 @@ or running as an agent. `--json` mode never launches an interactive form:
 missing required fields are always a `VALIDATION_ERROR`.
 
 ---
+
 ## Workflow: Watch Mode
 
 Any watch-eligible command (see [`--watch` eligibility](#--watch-eligibility))
@@ -409,5 +410,3 @@ Watch mode runs until `Ctrl-C` (SIGINT) or SIGTERM: an interactive-terminal
 mechanism only. Never pass `--watch` or `--follow` from an agent; nothing
 ends them there, the call dies at the tool timeout, and its output is lost.
 Poll with one-shot reads and a stop condition instead (see [SKILL.md](../SKILL.md)).
-
----

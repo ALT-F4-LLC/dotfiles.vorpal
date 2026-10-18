@@ -16,10 +16,10 @@ commit `fefc91d`'s `--help`, not by the sweep.
 
 ## Contents
 
-- [`docket events`](#events-commands) — 206 lines
+- [`docket events`](#events-commands) — 207 lines
   - [`events list`](#events-list) — 107 lines
   - [`events prune`](#events-prune) — 49 lines
-  - [Attribution](#events-attribution) — 42 lines
+  - [Attribution](#events-attribution) — 43 lines
 
 <a id="events-commands"></a>
 
@@ -110,8 +110,8 @@ both hold a `fix@1` and a `RUN-6` and the ids alone do not say whose.
 predecessor's stamp, so the documented oldest-first-arrival reading holds for
 `at_ms` as well as for `seq`.
 
-**Gate events carry their verdict**: `detail=<gate> verdict=<v>
-exit=<n>`, so a failing gate is distinguishable from a passing one on the
+**Gate events carry their verdict** in `data` (`detail`, `verdict`,
+`exit`); human mode renders them as `detail=<gate> verdict=<v> exit=<n>`, so a failing gate is distinguishable from a passing one on the
 feed itself. An unmatched gate carries no `exit` at all — it never ran, and
 `exit=0` would read as a pass.
 
@@ -151,10 +151,10 @@ them.
 Exactly one of `--before` / `--before-run` is required: a destructive verb
 with a default target is how a log gets deleted by a typo.
 
-**It refuses more than it accepts.** Two refusals, neither negotiable:
+**It refuses more than it accepts.** One refusal and one hold-back:
 
 - **Events of runs that have not reached `done` or `abandoned`** are never
-  deleted (`CONFLICT`, exit 4, naming the runs). A live run's events are
+  deleted, and the refusal is not negotiable (`CONFLICT`, exit 4, naming the runs). A live run's events are
   what the engine *computes from* — its budget floor is summed from its
   `step-claimed` events, and its saga resumes from its `gate-started`
   events — so pruning them would change the run, not only its record.
@@ -206,6 +206,7 @@ carries `authority`, plus `authority_ref` when `--authority-ref` was given;
 `run-resumed` carries neither. A budget breach writes its own `run-paused`
 with `data.reason = "budget"`, and the rollup's automatic pause and resume
 carry no `data`.
+
 `lease-reaped` is attributed to `next` whether the lease expired or
 `docket step reap` forced it; `data.forced` plus the operator's `reason`
 separates the two.

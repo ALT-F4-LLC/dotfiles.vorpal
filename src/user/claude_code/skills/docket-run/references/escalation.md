@@ -271,8 +271,9 @@ the approval note and option text.
 
 **`override-pass` records a generic pass; it evaluates and routes
 nothing.** Steps interposed on that outcome (a tribunal gate after a
-verify, a conditioned re-review) go `skipped` instead, with only a
-post-mutation warning. Resolve interposed steps directly when their
+verify, a conditioned re-review) go `skipped` instead. Without
+`--drop-interposed`, which acknowledges that the interposed steps are
+skipped, the engine refuses the override before anything commits. Resolve interposed steps directly when their
 condition should still apply, and read `docket next` / `step show`
 afterward to see what the engine actually left standing.
 
@@ -320,10 +321,11 @@ click. For an advisor-settled decision, the advisor's answer quoted,
 prefixed `advisor-first ruling:`. When the panel decided, name it instead:
 `--note "panel <proposal-id>: <one-line tally>"`.
 
-**A note is audit-trail only; it never renders into any brief.** The
-packet template carries only the step header, frozen issue body, input
-artifacts, pins, and output spec. Guidance for future work travels only
-as a body.
+**A resolve `--note` is audit-trail only; it never renders into any
+brief.** The packet template carries only the step header, frozen issue
+body, input artifacts, pins, and output spec. Guidance for future work
+travels as a run note (`docket run note add`), or as an issue body edit
+followed by `docket run refresh-body`.
 
 **An operator ruling with no engine route of its own** has one workable
 channel: apply it as its own commit on the shared branch, verbatim in

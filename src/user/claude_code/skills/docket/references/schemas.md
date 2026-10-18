@@ -171,9 +171,6 @@ the envelope carries `ok: false`, `error: "N of M project(s) failed"` and the
 shared `code` beside the per-project `data` report; the exit code and
 `failed` count are the verdict, so an `already-deprecated` project exits 4.
 
-Older builds lack this verb; the store migrates its schema
-on first open.
-
 ### Validation at `step record`
 
 A step that declares `payload = "name@version"` has its `--payload-file`
@@ -204,6 +201,8 @@ token gets `AUTH_ERROR` and learns nothing about the schema.
 | Reference is not `name@version` with a version ≥ 1 | `VALIDATION_ERROR` | 3 |
 | Malformed JSON, or a document that does not compile as JSON Schema | `VALIDATION_ERROR` | 3 |
 | `ordered_enum` without a usable sibling `enum` | `VALIDATION_ERROR` | 3, naming the property path |
+| `conservative_end` with a value other than `"upper"` or `"lower"` | `VALIDATION_ERROR` | 3, naming the property path |
+| `conservative_end` on a property without `"ordered_enum": true` | `VALIDATION_ERROR` | 3, naming the property path |
 | Re-registering different bytes at an existing `name@version` | `CONFLICT` | 4 |
 | `schema show` on an unregistered name or version, or a bare name whose every version is retired | `NOT_FOUND` | 2 |
 | `schema deprecate` on an already-retired version | `CONFLICT` | 4 |
@@ -213,6 +212,4 @@ token gets `AUTH_ERROR` and learns nothing about the schema.
 | `workflow register` or `workflow lint` naming a retired schema as `payload` | `VALIDATION_ERROR` | 3 |
 | `--payload-file` fails the step's declared schema at `step record` | `VALIDATION_ERROR` | 3 |
 | `--payload-file` omitted on a step that declares `payload` | `VALIDATION_ERROR` | 3 |
-
----
 

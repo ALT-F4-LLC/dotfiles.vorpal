@@ -233,7 +233,8 @@ EOF
 
 Substitute the literal scratchpad path before running it; `$RUN` and the
 angle-bracket slots stay as written and are filled per use. A `finish`,
-done, or abandoned run removes it with the token.
+done, or abandoned run removes it with the token, `$RUN.mode`, `$RUN.queue`,
+and the verbs file.
 
 **Supply it per command, by redirecting the file into stdin.** Every
 conductor verb, in every example below and on every path this file names
@@ -274,7 +275,7 @@ other conductor verb.
 **The file lives as long as this session drives the run.** A pause keeps
 it (a same-session resume needs it; a new session re-mints and retires it
 anyway); a done or abandoned run, or a `finish`, removes it (`rm
-<scratchpad>/conductor.d/$RUN.token`, and `$RUN.mode` and `$RUN.queue`). A helper you spawn never receives
+<scratchpad>/conductor.d/$RUN.token`, and `$RUN.mode`, `$RUN.queue`, and the verbs file). A helper you spawn never receives
 the path or the token; every ruling stays yours.
 
 ## Which run
@@ -342,7 +343,7 @@ sha is integrated), re-derive and cite it from the engine or git instead.
 (`~/.claude/projects/<cwd-slug>/memory/`, `MEMORY.md`; the slug flattens
 `/`, `.`, `_` as `-`) before the first dispatch. A standing instruction to
 sync an external tracker binds you at every point it names (activation,
-first dispatch, each later milestone), survives a re-docket-plan hop, and
+first dispatch, each later milestone), survives a re-plan hop, and
 traces back through the request chain to wherever the external id was
 last named.
 
@@ -726,7 +727,7 @@ docket next --run $RUN --json=v2 | jq '{
 
 `issues` approximates the wave launches step 2 makes: one per issue lane,
 up to 20. The number you launch is what step 2's **Split the launches**
-prints, since writer lanes the engine never co-staged share one launch.
+prints, since lanes beyond the free slots go to `deferred.jsonl`.
 
 Pass no `--limit` on the `--run` form, and read v2: only v2 carries the
 pre-cut `total` and an explicit `truncated`. `writers` is the wave-length
@@ -995,7 +996,7 @@ the dispatch report. Use a fresh `$LAUNCH_DIR` per split under the
 session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M` at the
 open and `<scratchpad>/launch-DISPATCH-M-R<k>` for its k-th refill). Pass
 launch i's `args` as the generated args object in `args-<i>.json`,
-unedited. docket-workflow.js no longer re-derives the partition, and its hash check
+unedited. docket-workflow.js does not re-derive the partition, and its hash check
 proves only that the module matches the object's own `rows_sha256`, so
 pass each object whole to its own launch.
 
@@ -1471,8 +1472,8 @@ Excluding a class does not mean its spend is counted elsewhere: seats
 never record usage at `docket vote cast`, so seat spend reaches the
 ledger only through the transcripts, in the panel back-fill below.
 
-Read the verify stage's answer by shape, not exit alone, per **A `verify`
-refusal on a step that recorded and then parked** and the dead-holder test
+Read the verify stage's answer by shape, not exit alone, per **A step that
+recorded and then parked does not fail `verify`** and the dead-holder test
 in **Crashed-relay reconciliation** step 2, both above. `close`'s own reconciliation
 (`close_reason: "reconciled"`) remains authoritative and refuses outright
 on a genuine discrepancy.
@@ -1595,8 +1596,7 @@ At each integration point, write steps first, in step-id order:
    '{"writer_sha":"<sha>"}' < <scratchpad>/conductor.d/$RUN.token`, a
    conductor verb. The plain `--metadata` form stays token-free. The
    engine verifies ancestry, re-records
-   `issue.diff` from the patch, and sets `integrated_sha`; a verbatim
-   pick keeps the plain `--metadata` form.
+   `issue.diff` from the patch, and sets `integrated_sha`.
 
 A cherry-pick touching `.claude/skills/**` can fail under the sandbox on
 the unlink; verify the sha and paths, then retry with the sandbox lifted.
@@ -1748,8 +1748,8 @@ operator can recover the work. Abandoned runs sweep nothing.
 
 The close report also names every tribunal convocation this session ran,
 with proposal ids, since panel cost lives entirely outside the run
-ledger and can equal the run's whole tracked spend on re-docket-plan-heavy
-runs. Each named convocation owes a seats-mode usage back-fill (`docket
+ledger and can equal the run's whole tracked spend on runs with many
+re-plans. Each named convocation owes a seats-mode usage back-fill (`docket
 vote backfill-usage`), checked against `run report`'s `Coverage:` line. It names the issues filed for seat
 conditions ([Escalating to the operator](references/escalation.md)) and
 any stash your own integration or diagnosis created.
@@ -2449,7 +2449,7 @@ beside the verbs file. While unattended, the verbs file's `advisor-first`
 lines run with `unattended-ruling` substituted for that ref and for the
 reason's opening. A new session starts attended. Pause mode resets the
 mode to attended (file write, then the note above) and the done,
-abandoned, and `finish` cleanup removes both files.
+abandoned, and `finish` cleanup removes `$RUN.mode` and `$RUN.queue`.
 
 **On entering unattended**, best-effort, read `defaultMode` from
 `~/.claude/settings.json` and the project settings. When it would prompt on

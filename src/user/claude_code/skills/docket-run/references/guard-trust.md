@@ -14,16 +14,16 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket guard`](#guard-commands) — 118 lines
+- [`docket guard`](#guard-commands) — 119 lines
   - [`guard record`](#guard-record) — 18 lines
-  - [`guard spawn`](#guard-spawn) — 46 lines
-- [`docket trust`](#trust-commands) — 186 lines
+  - [`guard spawn`](#guard-spawn) — 47 lines
+- [`docket trust`](#trust-commands) — 184 lines
   - [`trust add <name> -- <argv...>`](#trust-add) — 66 lines
   - [`trust list`](#trust-list) — 16 lines
   - [`trust probe [--run RUN-N]`](#trust-probe) — 23 lines
   - [`trust rm <name>`](#trust-rm) — 20 lines
-  - [The trust audit trail](#trust-audit) — 41 lines
-- [Project registration events](#trust-tenancy-audit) — 15 lines
+  - [The trust audit trail](#trust-audit) — 39 lines
+- [Project registration events](#project-registration-events) — 17 lines
 
 <a id="guard-commands"></a>
 
@@ -135,8 +135,9 @@ use records a `spawn-admitted` event naming the proposal and hold. Use it
 with `--run`, not `--active`, since the exception concerns one run's
 panel.
 
-**Both guards write nothing, except that acknowledgment** — and, when
-`--deciding-vote` is used, its audit event. Neither reaps and neither
+**No guard writes anything except `guard spawn`'s `--ack-reap`
+acknowledgment and the `spawn-admitted` event it records for a
+`--deciding-vote` or `--usage-join` carve-out.** Neither reaps and neither
 auto-abandons an expired dispatch.
 
 **The guard is an early check, not a lock.** Between its allow and the
@@ -327,9 +328,9 @@ no database at the resolved path, the change is applied and a
 The warning prints on stderr and rides in the JSON response's `warnings`
 array; like the argv disclosure, it is not suppressible.
 
-### Project registration events
+<a id="project-registration-events"></a>
 
-<a id="trust-tenancy-audit"></a>
+### Project registration events
 
 Registering a project writes a `project-registered` event carrying the
 `cwd`, the resolved `identity`, and the `verb` that triggered it. Like a

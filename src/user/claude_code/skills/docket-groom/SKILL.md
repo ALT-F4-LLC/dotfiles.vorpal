@@ -16,7 +16,7 @@ description: >-
   re-parenting, protected-issue edits, and the route-loop label need
   operator approval. One survey per invocation; no
   implementation, no watch.
-argument-hint: "[issue ids, e.g. DOT-1234, DOT-1235] [stale window, e.g. 14d] [engine] [routed|all] [kinds, e.g. bugs] [statuses, e.g. todo]"
+argument-hint: "[issue ids, e.g. DOT-1234, DOT-1235] [stale window, e.g. 14d] [engine] [routed|all] [kinds, e.g. bugs] [statuses, e.g. todo] [goal]"
 ---
 
 # docket-groom
@@ -677,11 +677,14 @@ excludes, so an epic without `blocked` would be selected by a bare
 expected, not a stale-binding finding; an epic without it is a readiness gap
 whose repair is adding the label under §3.
 
-For every retained non-epic issue, also confirm its labels match exactly one
-intended workflow using [docket-plan](../docket-plan/SKILL.md)'s binding
-probe as reference, including local workflow definitions in its owning
-project. Zero matches, several matches, an unavailable registry, or a
-mismatch with the intended work remains a readiness gap. Resolve uncertain
+For every retained non-epic issue carrying `route-run` (or no routing label
+yet), also confirm its labels match exactly one intended workflow using
+[docket-plan](../docket-plan/SKILL.md)'s binding probe as reference,
+including local workflow definitions in its owning project. `route-direct`
+and `route-loop` issues are expected to match zero workflows; zero matches
+is not a gap for them. For the rest, zero matches, several matches, an
+unavailable registry, or a mismatch with the intended work remains a
+readiness gap. Resolve uncertain
 intent in §4a; do not choose a workflow merely to obtain a match or modify
 workflow definitions during grooming.
 

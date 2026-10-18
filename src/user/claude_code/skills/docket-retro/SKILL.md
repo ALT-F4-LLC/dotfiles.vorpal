@@ -238,7 +238,9 @@ Workflow({scriptPath: "<home>/.claude/workflows/tribunal.js", args: {
 
 By `scriptPath` only and never by name, `args` a real object, each voter
 carrying the routing triple looked up from the pinned policy exactly as
-docket-run's tribunal launch does (its python lookup, pasted verbatim); the
+docket-run's tribunal launch does (resolved with docket-run's installed
+`seat_roster.py`, run by its installed path, never as an inline interpreter
+program); the
 script reads no files and parses no policy. The path is the installed
 `<home>/.claude/workflows/tribunal.js` with `<home>` expanded to a literal
 absolute path (the tool expands no `~`), and there is no source-tree

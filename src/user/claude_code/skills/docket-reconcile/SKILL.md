@@ -289,7 +289,7 @@ plain DEPRECATE, not an ORPHAN: retiring it changes no routing, and the
 engine refuses it while any live workflow still depends on it.
 
 When the session can launch agents, launch the `advisor` agent on the plan before presenting
-it for that decision.
+it for approval.
 
 ## Step 3 — apply, then verify by assertion
 

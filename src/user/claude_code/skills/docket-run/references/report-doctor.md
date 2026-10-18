@@ -40,8 +40,8 @@ ballot is withheld here as everywhere. `--json` wraps the two lists with
 it, and nothing here reaches a seat: routing policy stays outside the store,
 and a track record fed back into a panel becomes an incentive to agree with
 it. Read it at retro; the engine acts on none of it. `reaps`, `forced_reaps`,
-and `override_passes` count events, so a ruling `events prune` removed
-leaves all three together.
+and `override_passes` count events, so events removed by `events prune` drop out of all three
+counts.
 
 | Flag | Short | Type | Default | Notes |
 |---|---|---|---|---|

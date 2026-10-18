@@ -187,7 +187,7 @@ as the finding.
   covers it. Confirm from the suspect's sweep that nothing still depends
   on it, gate the removal through §4 like any other deviation, get §5
   approval on the blast-radius picture, then execute the removal — delete
-  the file, retire the references that named it — through §7–§8, landing
+  the file, retire the references that named it — through §6–§8, landing
   its own commit.
 - **addition** — a named gap the evidence shows the corpus not covering.
   Launch `evidence` for the nearest sibling on the surface the gap demands
@@ -331,8 +331,9 @@ verifiers are pointed at:
   vote-rule thresholds
 
 The wave runner, `src/user/claude_code/workflows/docket-workflow.js`, is the authority
-for everything the engine never sees: how policy rows resolve to a variant
-and seat. It pipes the packet out of the engine's claim envelope and assembles
+for everything the engine never sees. The engine resolves policy rows to a
+variant and seat; the runner and `tribunal.js` consume the resolved triple.
+The runner pipes the packet out of the engine's claim envelope and assembles
 none of it. The `LENSES` table vote-seat names resolve against lives in
 `src/user/claude_code/workflows/tribunal.js`.
 

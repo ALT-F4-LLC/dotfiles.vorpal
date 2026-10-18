@@ -3,13 +3,11 @@
 # diff-scope — refuse a change whose working-tree footprint exceeds what its
 # track promised.
 #
-# Wired as `diff-scope-docs`, `diff-scope-trivial` and `diff-scope-small` on
-# the implement and fix steps of docs-only, trivial-change and small-change
-# (src/user/docket/config/workflows/). Those tracks bind on a LABEL alone:
-# `docs-only`, `trivial`, `small`. Nothing in the engine reads the diff, so
-# before this gate an issue labelled docs-only could ship a code change past
-# document-only gates (no build, tests, secret-scan, vuln-scan, threat model
-# or security vote), and a 400-line change labelled trivial met zero judges.
+# Wired as `diff-scope-trivial` and `diff-scope-small` on the implement and fix
+# steps of trivial-change and small-change (src/user/docket/config/workflows/).
+# Those tracks bind on a LABEL alone: `trivial`, `small`. Nothing in the
+# engine reads the diff, so before this gate a 400-line change labelled
+# trivial met zero judges.
 # The plan skill's sizing rule describes the footprint each label promises;
 # this script is the mechanical half of that promise.
 #

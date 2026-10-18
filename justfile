@@ -195,10 +195,7 @@ secret-scan:
     .docket/bin/secret-scan
 
 # One gate per light track: the working-tree footprint must match the label the
-# track binds on (docs only; one small edit; two files in one directory).
-diff-scope-docs:
-    .docket/bin/diff-scope docs-only
-
+# track binds on (one small edit; two files in one directory).
 diff-scope-trivial:
     .docket/bin/diff-scope trivial
 

@@ -2,8 +2,9 @@
 #
 # doc-validate — a changed doc carries the header this repo's docs carry.
 #
-# Wired as the `doc-validate` gate on docs-only's implement step. Adapted from
-# docket.git's scripts/qa/doc-validate.sh, with two deliberate differences:
+# Wired as the `doc-validate` gate on the implement steps of trivial-change and
+# small-change. Adapted from docket.git's scripts/qa/doc-validate.sh, with two
+# deliberate differences:
 #
 #   - Anchored to THIS repository (git toplevel from the script's own path,
 #     the same anchor secret-scan uses), never to the caller's cwd and never

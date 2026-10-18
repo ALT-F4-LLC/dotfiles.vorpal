@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-10-16",
-  "binary_version": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: 2026-10-16T04:08:23Z)",
-  "inventory_version": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: 2026-10-16T04:08:23Z)",
-  "scenario_sha256": "04025e433a3c4bcb482826a3d9d9ff9f527335b027219f404057434256f04252",
+  "verified_on": "2026-10-18",
+  "binary_version": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: 2026-10-18T19:59:50Z)",
+  "inventory_version": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: 2026-10-18T19:59:50Z)",
+  "scenario_sha256": "e2a1c41e9699488ec8cdfe69680af63cea542954ee39b7acaebe3606facf4638",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
     "exercised": [
@@ -193,7 +193,7 @@
         "version"
       ],
       "exit": 0,
-      "stdout": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: <TIMESTAMP>)\n",
+      "stdout": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: <TIMESTAMP>)\n",
       "stderr": ""
     },
     {
@@ -208,11 +208,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-32-gf5a6d04",
-          "commit": "f5a6d04",
+          "version": "nightly-35-g9d8eaf8",
+          "commit": "9d8eaf8",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: <TIMESTAMP>)"
+        "message": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -229,11 +229,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-32-gf5a6d04",
-          "commit": "f5a6d04",
+          "version": "nightly-35-g9d8eaf8",
+          "commit": "9d8eaf8",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-32-gf5a6d04 (commit: f5a6d04, built: <TIMESTAMP>)"
+        "message": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -7787,8 +7787,8 @@
         "docket",
         "schema",
         "register",
-        "findings@13",
-        "schemas/findings@13.json",
+        "findings@12",
+        "schemas/findings@12.json",
         "--json"
       ],
       "exit": 0,
@@ -7796,8 +7796,8 @@
         "ok": true,
         "data": {
           "name": "findings",
-          "version": 13,
-          "source_path": "schemas/findings@13.json",
+          "version": 12,
+          "source_path": "schemas/findings@12.json",
           "source_sha256": "<HEX64>",
           "ordered_fields": [
             "open_severity",
@@ -7806,7 +7806,7 @@
           "builtin": false,
           "created_at_ms": "<N>"
         },
-        "message": "Registered findings@13 (ordered: open_severity, severity)"
+        "message": "Registered findings@12 (ordered: open_severity, severity)"
       },
       "stderr": ""
     },
@@ -7817,11 +7817,11 @@
         "docket",
         "schema",
         "register",
-        "findings@13",
-        "schemas/findings@13.json"
+        "findings@12",
+        "schemas/findings@12.json"
       ],
       "exit": 0,
-      "stdout": "findings@13 is already registered with these bytes\n",
+      "stdout": "findings@12 is already registered with these bytes\n",
       "stderr": ""
     },
     {
@@ -7831,8 +7831,8 @@
         "docket",
         "schema",
         "register",
-        "findings@13",
-        "schemas/findings@13.json",
+        "findings@12",
+        "schemas/findings@12.json",
         "--format",
         "json"
       ],
@@ -7841,8 +7841,8 @@
         "ok": true,
         "data": {
           "name": "findings",
-          "version": 13,
-          "source_path": "schemas/findings@13.json",
+          "version": 12,
+          "source_path": "schemas/findings@12.json",
           "source_sha256": "<HEX64>",
           "ordered_fields": [
             "open_severity",
@@ -7852,7 +7852,7 @@
           "created_at_ms": "<N>",
           "row_version": 1
         },
-        "message": "findings@13 is already registered with these bytes"
+        "message": "findings@12 is already registered with these bytes"
       },
       "stderr": ""
     },
@@ -7900,7 +7900,7 @@
         "10"
       ],
       "exit": 0,
-      "stdout": "aggregate@1 <HEX12> builtin\nfindings@13 <HEX12> ordered: open_severity, severity\n",
+      "stdout": "aggregate@1 <HEX12> builtin\nfindings@12 <HEX12> ordered: open_severity, severity\n",
       "stderr": ""
     },
     {
@@ -7929,8 +7929,8 @@
             },
             {
               "name": "findings",
-              "version": 13,
-              "source_path": "schemas/findings@13.json",
+              "version": 12,
+              "source_path": "schemas/findings@12.json",
               "source_sha256": "<HEX64>",
               "ordered_fields": [
                 "open_severity",
@@ -7973,8 +7973,8 @@
             },
             {
               "name": "findings",
-              "version": 13,
-              "source_path": "schemas/findings@13.json",
+              "version": 12,
+              "source_path": "schemas/findings@12.json",
               "source_sha256": "<HEX64>",
               "ordered_fields": [
                 "open_severity",
@@ -8009,8 +8009,8 @@
           "schemas": [
             {
               "name": "findings",
-              "version": 13,
-              "source_path": "schemas/findings@13.json",
+              "version": 12,
+              "source_path": "schemas/findings@12.json",
               "source_sha256": "<HEX64>",
               "ordered_fields": [
                 "open_severity",
@@ -8035,7 +8035,7 @@
         "findings"
       ],
       "exit": 0,
-      "stdout": "findings@13\nsha256: <HEX64>\nsource: schemas/findings@13.json\n\nordered fields (2): open_severity, severity\n`--body` prints the declared order, which is each field's `enum` array as written.\n",
+      "stdout": "findings@12\nsha256: <HEX64>\nsource: schemas/findings@12.json\n\nordered fields (2): open_severity, severity\n`--body` prints the declared order, which is each field's `enum` array as written.\n",
       "stderr": ""
     },
     {
@@ -8053,8 +8053,8 @@
         "ok": true,
         "data": {
           "name": "findings",
-          "version": 13,
-          "source_path": "schemas/findings@13.json",
+          "version": 12,
+          "source_path": "schemas/findings@12.json",
           "source_sha256": "<HEX64>",
           "ordered_fields": [
             "open_severity",
@@ -8082,8 +8082,8 @@
         "ok": true,
         "data": {
           "name": "findings",
-          "version": 13,
-          "source_path": "schemas/findings@13.json",
+          "version": 12,
+          "source_path": "schemas/findings@12.json",
           "source_sha256": "<HEX64>",
           "ordered_fields": [
             "open_severity",
@@ -8103,11 +8103,11 @@
         "docket",
         "schema",
         "show",
-        "findings@13",
+        "findings@12",
         "--body"
       ],
       "exit": 0,
-      "stdout": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"title\": \"findings@13\",\n  \"description\": \"The RECONCILE document, replacing findings@11. findings@11 added a conditional requiring `open_severity` on any element lacking a settling `prior_disposition` ruling, enforced at the aggregate step. Engine rule V30 (internal/workflow/schemas.go) validates a declared aggregate-step schema by probing it with a synthetic element built only from that schema's own declared fields plus the four keys `aggregate` always writes (`severity`, `members`, `held`, `operator_resolved`); the probe carries neither `open_severity` nor `prior_disposition`, so it always falls into findings@11's \\\"open, no ruling\\\" branch and always fails — no `if/else` or `dependentRequired` on an aggregate-step schema can ever pass this probe, so findings@11 could never register. The check was also redundant by construction: findings-cluster@5, synthesize-findings' own payload, already requires `open_severity` on every open cluster before reconcile ever runs, and `aggregate` carries every non-severity key of its input through to its output verbatim (including `open_severity` and `prior_disposition`), so nothing reconcile's schema could check was ever at risk of going missing between the two steps. findings@13 is byte-identical to findings@10 in every constraint — same `required: [\\\"severity\\\"]`, same fields, same ladders, `additionalProperties` stays true — dropping only the unenforceable conditional. `open_severity` keeps `ordered_enum: true`: reconcile's own threshold predicates (`any(open_severity >= blocker)`, `any(open_severity >= high)`) are ordered comparisons, and the engine defines those only over a field whose registered schema declares that order (internal/engine/threshold.go). findings@11 stays registered for any run that already declared it; it is orphaned once every consuming workflow repoints here.\",\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"id\": {\n        \"description\": \"Stable identifier for the finding or cluster, unique within the payload. Not `required`: the builtin `aggregate` carries through only the input element's own keys, so a schema requiring `id` would make aggregate's pass-through payloads unregisterable.\",\n        \"type\": \"string\",\n        \"minLength\": 1\n      },\n      \"title\": {\n        \"description\": \"One-line statement of the defect.\",\n        \"type\": \"string\",\n        \"minLength\": 1\n      },\n      \"severity\": {\n        \"description\": \"The finding's severity, on 02 §6's five-value ladder. The enum's document order IS the order thresholds compare on (`any(severity >= high)`) and the order `aggregate` reduces over: info < low < medium < high < blocker. Judges author on the general or security ladder fragment and map onto these values at emit time.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"],\n        \"ordered_enum\": true\n      },\n      \"open_severity\": {\n        \"description\": \"The cluster's severity WHILE IT REMAINS OPEN, as a scalar on the same five-value ladder as `severity` (max of the member severities for a multi-member cluster). Present ONLY on a cluster with no settling prior_disposition ruling; omitted on settled ground, so `any(open_severity >= high)` reads the open set and nothing else. Emitted by synthesize-findings (findings-cluster@5, which requires it on every open cluster) and carried through `aggregate` verbatim like every non-severity key. Not independently enforced here: findings-cluster@5 is upstream of every reconcile input, so a synthesize payload missing it on an open cluster is refused before it ever reaches this step.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"],\n        \"ordered_enum\": true\n      },\n      \"file\": {\n        \"description\": \"Repo-relative path the finding is anchored to.\",\n        \"type\": \"string\"\n      },\n      \"line\": {\n        \"description\": \"1-indexed line within `file`. Optional per 02 §6. An explicit `null` is ALSO valid — synthesize-findings emits `line: null` for a finding whose scope is the whole file or the whole commit, where there is no single line to anchor to; that is distinct from simply omitting the key. `minimum` applies only when the value is a number, so the integer case stays constrained and null passes untouched.\",\n        \"type\": [\"integer\", \"null\"],\n        \"minimum\": 1\n      },\n      \"evidence\": {\n        \"description\": \"What a skeptic can re-run or re-read to confirm the finding.\",\n        \"type\": \"string\"\n      },\n      \"alternative\": {\n        \"description\": \"A concrete alternative to the flagged approach. OPTIONAL at every severity: the judge-design rule pairing a blocker with an alternative is a prose obligation in that contract, and synthesize-findings — which emits this same payload and adds no alternative — would be refused by a schema-level conditional.\",\n        \"type\": \"string\"\n      },\n      \"members\": {\n        \"description\": \"The cluster's member severities, in arrival order. Present on the `aggregate` output ONLY. It is NOT how synthesize-findings carries a cluster: synthesize declares `payload = \\\"findings-cluster@5\\\"`, whose scalar-or-array `severity` is the `aggregate` builtin's INPUT contract, reading member severities from each input element's own `severity` field rather than from a `members` array; the linkage between elements of one cluster is carried in `member_ids` and `member_sources` (findings-cluster@5), not here. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable.\",\n        \"type\": \"array\",\n        \"minItems\": 1\n      },\n      \"held\": {\n        \"description\": \"Set by the builtin `aggregate` (06 §2): the cluster's spread reached `hold_spread`, so it is excluded from automatic routing and materializes a `<step>-held` human step. Absent on any step whose `aggregate` declares no `hold_spread`, since a hold can never trigger there.\",\n        \"type\": \"boolean\"\n      },\n      \"demoted_from\": {\n        \"description\": \"Set by `aggregate` when the computed value sits below the cluster's maximum member — the recorded demotion trail (02 §6). Absent when nothing was demoted, which today means absent everywhere: every aggregate step in the corpus declares `method = \\\"max\\\"`, and max never computes below its own maximum member. It stays declared so the trail keeps one meaning and stays pinned to the five-value ladder wherever one does appear — carried forward on a cluster an earlier, reducing method produced, or emitted again if a workflow ever reduces by anything other than max. `additionalProperties` is true, so dropping the declaration would leave the key unchecked rather than refused.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"]\n      },\n      \"operator_resolved\": {\n        \"description\": \"Set when an operator accepted a held cluster's value via `docket step approve|reject`; thresholds re-apply over the resolved set (02 §6). It records that THIS round's hold was decided, and does not survive into a later round — `prior_disposition` is what carries a decision forward.\",\n        \"type\": \"boolean\"\n      },\n      \"prior_disposition\": {\n        \"description\": \"How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field. A re-review round's payload spans the STANDING SET, not the delta: a finding still open is carried forward with this key set even when it did not re-occur in that round's inputs, emitted as one element carrying the scalar the previous aggregate reduced it to rather than its original member array — spread 0, so `hold_spread` cannot re-hold ground an operator already ruled on.\",\n        \"type\": \"object\",\n        \"properties\": {\n          \"round\": {\n            \"description\": \"The fix-loop round the ruling was made in, 0-based — round 0 is the first review, before any fix step ran.\",\n            \"type\": \"integer\",\n            \"minimum\": 0\n          },\n          \"ruling\": {\n            \"description\": \"What was decided, in the decider's terms. Conventional forms: `accepted` (the computed value stood), `corrected-to-<severity>` (approved with `--value`), `rejected`, or `deferred` (accepted on the promise of later work, which `follow_up_issue` must then name).\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          },\n          \"ruled_by\": {\n            \"description\": \"Who decided: `operator`, or `panel <proposal-id>` where a tribunal did. A ruling with no name is not a ruling anyone can re-read.\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          },\n          \"follow_up_issue\": {\n            \"description\": \"The issue id the deferred work was filed as. REQUIRED IN PRACTICE when `ruling` is a deferral: a deferral with no issue is the evaporation this field exists to make visible. Not schema-required, because a schema-level conditional here would refuse payloads the aggregate legitimately carries through.\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          }\n        },\n        \"additionalProperties\": true\n      }\n    },\n    \"required\": [\"severity\"],\n    \"additionalProperties\": true\n  }\n}\n",
+      "stdout": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"title\": \"findings@12\",\n  \"description\": \"Successor to findings@10, the CLUSTER document declared on the review and design-qa steps that feed a reconcile stage, and on the review steps in workflows with no reconcile stage. findings@10's own description incorrectly claimed reconcile-step usage: every workflow's reconcile step had already repointed to findings@11 before this correction. findings@12 is declared on review and design-qa steps only. Identical to findings@10 in every constraint — same `required: [\\\"severity\\\"]`, same `severity` and `open_severity` ladders and declared order, same optional `id`/`open_severity`/`members`/`held`/`demoted_from`/`operator_resolved`/`prior_disposition`, `additionalProperties` stays true. The engine enforces byte-identity on a frozen registration, so even a prose-only correction lands as a fresh version rather than an in-place edit. findings@10 stays registered for runs that already declared it; it is now orphaned once every consuming workflow and contract repoints here.\",\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"id\": {\n        \"description\": \"Stable identifier for the finding or cluster, unique within the payload. Not `required`: the builtin `aggregate` carries through only the input element's own keys, so a schema requiring `id` would make aggregate's pass-through payloads unregisterable.\",\n        \"type\": \"string\",\n        \"minLength\": 1\n      },\n      \"title\": {\n        \"description\": \"One-line statement of the defect.\",\n        \"type\": \"string\",\n        \"minLength\": 1\n      },\n      \"severity\": {\n        \"description\": \"The finding's severity, on 02 §6's five-value ladder. The enum's document order IS the order thresholds compare on (`any(severity >= high)`) and the order `aggregate` reduces over: info < low < medium < high < blocker. Judges author on the general or security ladder fragment and map onto these values at emit time.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"],\n        \"ordered_enum\": true\n      },\n      \"open_severity\": {\n        \"description\": \"The cluster's severity WHILE IT REMAINS OPEN, as a scalar on the same five-value ladder as `severity` (max of the member severities for a multi-member cluster). Present ONLY on a cluster with no settling prior_disposition ruling; omitted on settled ground, so `any(open_severity >= high)` reads the open set and nothing else. Emitted by synthesize-findings and carried through `aggregate` verbatim like every non-severity key.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"],\n        \"ordered_enum\": true\n      },\n      \"file\": {\n        \"description\": \"Repo-relative path the finding is anchored to.\",\n        \"type\": \"string\"\n      },\n      \"line\": {\n        \"description\": \"1-indexed line within `file`. Optional per 02 §6. An explicit `null` is ALSO valid — synthesize-findings emits `line: null` for a finding whose scope is the whole file or the whole commit, where there is no single line to anchor to; that is distinct from simply omitting the key. `minimum` applies only when the value is a number, so the integer case stays constrained and null passes untouched.\",\n        \"type\": [\"integer\", \"null\"],\n        \"minimum\": 1\n      },\n      \"evidence\": {\n        \"description\": \"What a skeptic can re-run or re-read to confirm the finding.\",\n        \"type\": \"string\"\n      },\n      \"alternative\": {\n        \"description\": \"A concrete alternative to the flagged approach. OPTIONAL at every severity: the judge-design rule pairing a blocker with an alternative is a prose obligation in that contract, and synthesize-findings — which emits this same payload and adds no alternative — would be refused by a schema-level conditional.\",\n        \"type\": \"string\"\n      },\n      \"members\": {\n        \"description\": \"The cluster's member severities, in arrival order. Present on the `aggregate` output ONLY. It is NOT how synthesize-findings carries a cluster: synthesize declares `payload = \\\"findings-cluster@5\\\"`, whose scalar-or-array `severity` is the `aggregate` builtin's INPUT contract, reading member severities from each input element's own `severity` field rather than from a `members` array; the linkage between elements of one cluster is carried in `member_ids` and `member_sources` (findings-cluster@5), not here. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable.\",\n        \"type\": \"array\",\n        \"minItems\": 1\n      },\n      \"held\": {\n        \"description\": \"Set by the builtin `aggregate` (06 §2): the cluster's spread reached `hold_spread`, so it is excluded from automatic routing and materializes a `<step>-held` human step. Absent on any step whose `aggregate` declares no `hold_spread`, since a hold can never trigger there.\",\n        \"type\": \"boolean\"\n      },\n      \"demoted_from\": {\n        \"description\": \"Set by `aggregate` when the computed value sits below the cluster's maximum member — the recorded demotion trail (02 §6). Absent when nothing was demoted, which today means absent everywhere: every aggregate step in the corpus declares `method = \\\"max\\\"`, and max never computes below its own maximum member. It stays declared so the trail keeps one meaning and stays pinned to the five-value ladder wherever one does appear — carried forward on a cluster an earlier, reducing method produced, or emitted again if a workflow ever reduces by anything other than max. `additionalProperties` is true, so dropping the declaration would leave the key unchecked rather than refused.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"]\n      },\n      \"operator_resolved\": {\n        \"description\": \"Set when an operator accepted a held cluster's value via `docket step approve|reject`; thresholds re-apply over the resolved set (02 §6). It records that THIS round's hold was decided, and does not survive into a later round — `prior_disposition` is what carries a decision forward.\",\n        \"type\": \"boolean\"\n      },\n      \"prior_disposition\": {\n        \"description\": \"How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field. A re-review round's payload spans the STANDING SET, not the delta: a finding still open is carried forward with this key set even when it did not re-occur in that round's inputs, emitted as one element carrying the scalar the previous aggregate reduced it to rather than its original member array — spread 0, so `hold_spread` cannot re-hold ground an operator already ruled on. Clustering only the delta, rather than the standing set, previously dropped 24 open findings, nine of them high, out of a later aggregate in a run that hit this exact gap.\",\n        \"type\": \"object\",\n        \"properties\": {\n          \"round\": {\n            \"description\": \"The fix-loop round the ruling was made in, 0-based — round 0 is the first review, before any fix step ran.\",\n            \"type\": \"integer\",\n            \"minimum\": 0\n          },\n          \"ruling\": {\n            \"description\": \"What was decided, in the decider's terms. Conventional forms: `accepted` (the computed value stood), `corrected-to-<severity>` (approved with `--value`), `rejected`, or `deferred` (accepted on the promise of later work, which `follow_up_issue` must then name).\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          },\n          \"ruled_by\": {\n            \"description\": \"Who decided: `operator`, or `panel <proposal-id>` where a tribunal did. A ruling with no name is not a ruling anyone can re-read.\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          },\n          \"follow_up_issue\": {\n            \"description\": \"The issue id the deferred work was filed as. REQUIRED IN PRACTICE when `ruling` is a deferral: a deferral with no issue is the evaporation this field exists to make visible (a past run had two approved hold remedies, no next round, and no issue anywhere in the store). Not schema-required, because a schema-level conditional here would refuse payloads the aggregate legitimately carries through.\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          }\n        },\n        \"additionalProperties\": true\n      }\n    },\n    \"required\": [\"severity\"],\n    \"additionalProperties\": true\n  }\n}\n",
       "stderr": ""
     },
     {
@@ -8117,7 +8117,7 @@
         "docket",
         "schema",
         "show",
-        "findings@13",
+        "findings@12",
         "--body",
         "--json"
       ],
@@ -8125,7 +8125,7 @@
       "json": {
         "ok": true,
         "data": {
-          "body": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"title\": \"findings@13\",\n  \"description\": \"The RECONCILE document, replacing findings@11. findings@11 added a conditional requiring `open_severity` on any element lacking a settling `prior_disposition` ruling, enforced at the aggregate step. Engine rule V30 (internal/workflow/schemas.go) validates a declared aggregate-step schema by probing it with a synthetic element built only from that schema's own declared fields plus the four keys `aggregate` always writes (`severity`, `members`, `held`, `operator_resolved`); the probe carries neither `open_severity` nor `prior_disposition`, so it always falls into findings@11's \\\"open, no ruling\\\" branch and always fails — no `if/else` or `dependentRequired` on an aggregate-step schema can ever pass this probe, so findings@11 could never register. The check was also redundant by construction: findings-cluster@5, synthesize-findings' own payload, already requires `open_severity` on every open cluster before reconcile ever runs, and `aggregate` carries every non-severity key of its input through to its output verbatim (including `open_severity` and `prior_disposition`), so nothing reconcile's schema could check was ever at risk of going missing between the two steps. findings@13 is byte-identical to findings@10 in every constraint — same `required: [\\\"severity\\\"]`, same fields, same ladders, `additionalProperties` stays true — dropping only the unenforceable conditional. `open_severity` keeps `ordered_enum: true`: reconcile's own threshold predicates (`any(open_severity >= blocker)`, `any(open_severity >= high)`) are ordered comparisons, and the engine defines those only over a field whose registered schema declares that order (internal/engine/threshold.go). findings@11 stays registered for any run that already declared it; it is orphaned once every consuming workflow repoints here.\",\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"id\": {\n        \"description\": \"Stable identifier for the finding or cluster, unique within the payload. Not `required`: the builtin `aggregate` carries through only the input element's own keys, so a schema requiring `id` would make aggregate's pass-through payloads unregisterable.\",\n        \"type\": \"string\",\n        \"minLength\": 1\n      },\n      \"title\": {\n        \"description\": \"One-line statement of the defect.\",\n        \"type\": \"string\",\n        \"minLength\": 1\n      },\n      \"severity\": {\n        \"description\": \"The finding's severity, on 02 §6's five-value ladder. The enum's document order IS the order thresholds compare on (`any(severity >= high)`) and the order `aggregate` reduces over: info < low < medium < high < blocker. Judges author on the general or security ladder fragment and map onto these values at emit time.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"],\n        \"ordered_enum\": true\n      },\n      \"open_severity\": {\n        \"description\": \"The cluster's severity WHILE IT REMAINS OPEN, as a scalar on the same five-value ladder as `severity` (max of the member severities for a multi-member cluster). Present ONLY on a cluster with no settling prior_disposition ruling; omitted on settled ground, so `any(open_severity >= high)` reads the open set and nothing else. Emitted by synthesize-findings (findings-cluster@5, which requires it on every open cluster) and carried through `aggregate` verbatim like every non-severity key. Not independently enforced here: findings-cluster@5 is upstream of every reconcile input, so a synthesize payload missing it on an open cluster is refused before it ever reaches this step.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"],\n        \"ordered_enum\": true\n      },\n      \"file\": {\n        \"description\": \"Repo-relative path the finding is anchored to.\",\n        \"type\": \"string\"\n      },\n      \"line\": {\n        \"description\": \"1-indexed line within `file`. Optional per 02 §6. An explicit `null` is ALSO valid — synthesize-findings emits `line: null` for a finding whose scope is the whole file or the whole commit, where there is no single line to anchor to; that is distinct from simply omitting the key. `minimum` applies only when the value is a number, so the integer case stays constrained and null passes untouched.\",\n        \"type\": [\"integer\", \"null\"],\n        \"minimum\": 1\n      },\n      \"evidence\": {\n        \"description\": \"What a skeptic can re-run or re-read to confirm the finding.\",\n        \"type\": \"string\"\n      },\n      \"alternative\": {\n        \"description\": \"A concrete alternative to the flagged approach. OPTIONAL at every severity: the judge-design rule pairing a blocker with an alternative is a prose obligation in that contract, and synthesize-findings — which emits this same payload and adds no alternative — would be refused by a schema-level conditional.\",\n        \"type\": \"string\"\n      },\n      \"members\": {\n        \"description\": \"The cluster's member severities, in arrival order. Present on the `aggregate` output ONLY. It is NOT how synthesize-findings carries a cluster: synthesize declares `payload = \\\"findings-cluster@5\\\"`, whose scalar-or-array `severity` is the `aggregate` builtin's INPUT contract, reading member severities from each input element's own `severity` field rather than from a `members` array; the linkage between elements of one cluster is carried in `member_ids` and `member_sources` (findings-cluster@5), not here. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable.\",\n        \"type\": \"array\",\n        \"minItems\": 1\n      },\n      \"held\": {\n        \"description\": \"Set by the builtin `aggregate` (06 §2): the cluster's spread reached `hold_spread`, so it is excluded from automatic routing and materializes a `<step>-held` human step. Absent on any step whose `aggregate` declares no `hold_spread`, since a hold can never trigger there.\",\n        \"type\": \"boolean\"\n      },\n      \"demoted_from\": {\n        \"description\": \"Set by `aggregate` when the computed value sits below the cluster's maximum member — the recorded demotion trail (02 §6). Absent when nothing was demoted, which today means absent everywhere: every aggregate step in the corpus declares `method = \\\"max\\\"`, and max never computes below its own maximum member. It stays declared so the trail keeps one meaning and stays pinned to the five-value ladder wherever one does appear — carried forward on a cluster an earlier, reducing method produced, or emitted again if a workflow ever reduces by anything other than max. `additionalProperties` is true, so dropping the declaration would leave the key unchecked rather than refused.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"]\n      },\n      \"operator_resolved\": {\n        \"description\": \"Set when an operator accepted a held cluster's value via `docket step approve|reject`; thresholds re-apply over the resolved set (02 §6). It records that THIS round's hold was decided, and does not survive into a later round — `prior_disposition` is what carries a decision forward.\",\n        \"type\": \"boolean\"\n      },\n      \"prior_disposition\": {\n        \"description\": \"How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field. A re-review round's payload spans the STANDING SET, not the delta: a finding still open is carried forward with this key set even when it did not re-occur in that round's inputs, emitted as one element carrying the scalar the previous aggregate reduced it to rather than its original member array — spread 0, so `hold_spread` cannot re-hold ground an operator already ruled on.\",\n        \"type\": \"object\",\n        \"properties\": {\n          \"round\": {\n            \"description\": \"The fix-loop round the ruling was made in, 0-based — round 0 is the first review, before any fix step ran.\",\n            \"type\": \"integer\",\n            \"minimum\": 0\n          },\n          \"ruling\": {\n            \"description\": \"What was decided, in the decider's terms. Conventional forms: `accepted` (the computed value stood), `corrected-to-<severity>` (approved with `--value`), `rejected`, or `deferred` (accepted on the promise of later work, which `follow_up_issue` must then name).\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          },\n          \"ruled_by\": {\n            \"description\": \"Who decided: `operator`, or `panel <proposal-id>` where a tribunal did. A ruling with no name is not a ruling anyone can re-read.\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          },\n          \"follow_up_issue\": {\n            \"description\": \"The issue id the deferred work was filed as. REQUIRED IN PRACTICE when `ruling` is a deferral: a deferral with no issue is the evaporation this field exists to make visible. Not schema-required, because a schema-level conditional here would refuse payloads the aggregate legitimately carries through.\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          }\n        },\n        \"additionalProperties\": true\n      }\n    },\n    \"required\": [\"severity\"],\n    \"additionalProperties\": true\n  }\n}\n",
+          "body": "{\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"title\": \"findings@12\",\n  \"description\": \"Successor to findings@10, the CLUSTER document declared on the review and design-qa steps that feed a reconcile stage, and on the review steps in workflows with no reconcile stage. findings@10's own description incorrectly claimed reconcile-step usage: every workflow's reconcile step had already repointed to findings@11 before this correction. findings@12 is declared on review and design-qa steps only. Identical to findings@10 in every constraint — same `required: [\\\"severity\\\"]`, same `severity` and `open_severity` ladders and declared order, same optional `id`/`open_severity`/`members`/`held`/`demoted_from`/`operator_resolved`/`prior_disposition`, `additionalProperties` stays true. The engine enforces byte-identity on a frozen registration, so even a prose-only correction lands as a fresh version rather than an in-place edit. findings@10 stays registered for runs that already declared it; it is now orphaned once every consuming workflow and contract repoints here.\",\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"id\": {\n        \"description\": \"Stable identifier for the finding or cluster, unique within the payload. Not `required`: the builtin `aggregate` carries through only the input element's own keys, so a schema requiring `id` would make aggregate's pass-through payloads unregisterable.\",\n        \"type\": \"string\",\n        \"minLength\": 1\n      },\n      \"title\": {\n        \"description\": \"One-line statement of the defect.\",\n        \"type\": \"string\",\n        \"minLength\": 1\n      },\n      \"severity\": {\n        \"description\": \"The finding's severity, on 02 §6's five-value ladder. The enum's document order IS the order thresholds compare on (`any(severity >= high)`) and the order `aggregate` reduces over: info < low < medium < high < blocker. Judges author on the general or security ladder fragment and map onto these values at emit time.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"],\n        \"ordered_enum\": true\n      },\n      \"open_severity\": {\n        \"description\": \"The cluster's severity WHILE IT REMAINS OPEN, as a scalar on the same five-value ladder as `severity` (max of the member severities for a multi-member cluster). Present ONLY on a cluster with no settling prior_disposition ruling; omitted on settled ground, so `any(open_severity >= high)` reads the open set and nothing else. Emitted by synthesize-findings and carried through `aggregate` verbatim like every non-severity key.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"],\n        \"ordered_enum\": true\n      },\n      \"file\": {\n        \"description\": \"Repo-relative path the finding is anchored to.\",\n        \"type\": \"string\"\n      },\n      \"line\": {\n        \"description\": \"1-indexed line within `file`. Optional per 02 §6. An explicit `null` is ALSO valid — synthesize-findings emits `line: null` for a finding whose scope is the whole file or the whole commit, where there is no single line to anchor to; that is distinct from simply omitting the key. `minimum` applies only when the value is a number, so the integer case stays constrained and null passes untouched.\",\n        \"type\": [\"integer\", \"null\"],\n        \"minimum\": 1\n      },\n      \"evidence\": {\n        \"description\": \"What a skeptic can re-run or re-read to confirm the finding.\",\n        \"type\": \"string\"\n      },\n      \"alternative\": {\n        \"description\": \"A concrete alternative to the flagged approach. OPTIONAL at every severity: the judge-design rule pairing a blocker with an alternative is a prose obligation in that contract, and synthesize-findings — which emits this same payload and adds no alternative — would be refused by a schema-level conditional.\",\n        \"type\": \"string\"\n      },\n      \"members\": {\n        \"description\": \"The cluster's member severities, in arrival order. Present on the `aggregate` output ONLY. It is NOT how synthesize-findings carries a cluster: synthesize declares `payload = \\\"findings-cluster@5\\\"`, whose scalar-or-array `severity` is the `aggregate` builtin's INPUT contract, reading member severities from each input element's own `severity` field rather than from a `members` array; the linkage between elements of one cluster is carried in `member_ids` and `member_sources` (findings-cluster@5), not here. Values are the same ladder as `severity`; the constraint is not repeated as an `enum` here because `aggregate@1` leaves `members` unconstrained and the conjunction of the two documents must stay satisfiable.\",\n        \"type\": \"array\",\n        \"minItems\": 1\n      },\n      \"held\": {\n        \"description\": \"Set by the builtin `aggregate` (06 §2): the cluster's spread reached `hold_spread`, so it is excluded from automatic routing and materializes a `<step>-held` human step. Absent on any step whose `aggregate` declares no `hold_spread`, since a hold can never trigger there.\",\n        \"type\": \"boolean\"\n      },\n      \"demoted_from\": {\n        \"description\": \"Set by `aggregate` when the computed value sits below the cluster's maximum member — the recorded demotion trail (02 §6). Absent when nothing was demoted, which today means absent everywhere: every aggregate step in the corpus declares `method = \\\"max\\\"`, and max never computes below its own maximum member. It stays declared so the trail keeps one meaning and stays pinned to the five-value ladder wherever one does appear — carried forward on a cluster an earlier, reducing method produced, or emitted again if a workflow ever reduces by anything other than max. `additionalProperties` is true, so dropping the declaration would leave the key unchecked rather than refused.\",\n        \"type\": \"string\",\n        \"enum\": [\"info\", \"low\", \"medium\", \"high\", \"blocker\"]\n      },\n      \"operator_resolved\": {\n        \"description\": \"Set when an operator accepted a held cluster's value via `docket step approve|reject`; thresholds re-apply over the resolved set (02 §6). It records that THIS round's hold was decided, and does not survive into a later round — `prior_disposition` is what carries a decision forward.\",\n        \"type\": \"boolean\"\n      },\n      \"prior_disposition\": {\n        \"description\": \"How this same locus was already ruled on in an EARLIER fix-loop round. Set by synthesize-findings when its inputs identify a cluster as a re-occurrence, and carried through unchanged by `aggregate`. Its presence is the signal that the cluster is settled ground rather than a discovery: a reader — human or panel — owes it a re-read of the earlier ruling before spending a second decision. Absent on a genuinely new cluster, which is the ordinary case. Every sub-field is optional so a partially-known disposition is still recordable; an empty object records nothing and is no better than omitting the field. A re-review round's payload spans the STANDING SET, not the delta: a finding still open is carried forward with this key set even when it did not re-occur in that round's inputs, emitted as one element carrying the scalar the previous aggregate reduced it to rather than its original member array — spread 0, so `hold_spread` cannot re-hold ground an operator already ruled on. Clustering only the delta, rather than the standing set, previously dropped 24 open findings, nine of them high, out of a later aggregate in a run that hit this exact gap.\",\n        \"type\": \"object\",\n        \"properties\": {\n          \"round\": {\n            \"description\": \"The fix-loop round the ruling was made in, 0-based — round 0 is the first review, before any fix step ran.\",\n            \"type\": \"integer\",\n            \"minimum\": 0\n          },\n          \"ruling\": {\n            \"description\": \"What was decided, in the decider's terms. Conventional forms: `accepted` (the computed value stood), `corrected-to-<severity>` (approved with `--value`), `rejected`, or `deferred` (accepted on the promise of later work, which `follow_up_issue` must then name).\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          },\n          \"ruled_by\": {\n            \"description\": \"Who decided: `operator`, or `panel <proposal-id>` where a tribunal did. A ruling with no name is not a ruling anyone can re-read.\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          },\n          \"follow_up_issue\": {\n            \"description\": \"The issue id the deferred work was filed as. REQUIRED IN PRACTICE when `ruling` is a deferral: a deferral with no issue is the evaporation this field exists to make visible (a past run had two approved hold remedies, no next round, and no issue anywhere in the store). Not schema-required, because a schema-level conditional here would refuse payloads the aggregate legitimately carries through.\",\n            \"type\": \"string\",\n            \"minLength\": 1\n          }\n        },\n        \"additionalProperties\": true\n      }\n    },\n    \"required\": [\"severity\"],\n    \"additionalProperties\": true\n  }\n}\n",
           "name": "findings"
         }
       },
@@ -14193,7 +14193,7 @@
         "STEP-1"
       ],
       "exit": 0,
-      "stdout": "ARTIFACT KIND BYTES PAYLOAD SHA256\n----------------------------------------------------------------------------\nARTIFACT-1 check-report 35 - <HEX12>\nARTIFACT-2 issue.diff 28326 - <HEX12>\n\nRead one in full: docket step artifact ARTIFACT-1\n\n",
+      "stdout": "ARTIFACT KIND BYTES PAYLOAD SHA256\n----------------------------------------------------------------------------\nARTIFACT-1 check-report 35 - <HEX12>\nARTIFACT-2 issue.diff 27510 - <HEX12>\n\nRead one in full: docket step artifact ARTIFACT-1\n\n",
       "stderr": ""
     },
     {
@@ -14225,7 +14225,7 @@
               "kind": "issue.diff",
               "producer": "check@0",
               "sha256": "<HEX64>",
-              "bytes": 28326,
+              "bytes": 27510,
               "created_at_ms": "<N>"
             }
           ]
@@ -14263,7 +14263,7 @@
               "kind": "issue.diff",
               "producer": "check@0",
               "sha256": "<HEX64>",
-              "bytes": 28326,
+              "bytes": 27510,
               "created_at_ms": "<N>"
             }
           ]
@@ -15329,7 +15329,7 @@
               "executor": "prober",
               "issue": "DKT-2",
               "sha256": "<HEX64>",
-              "bytes": 28326
+              "bytes": 27510
             }
           ],
           "metadata": [
@@ -19296,10 +19296,10 @@
         "docket",
         "schema",
         "deprecate",
-        "findings@13"
+        "findings@12"
       ],
       "exit": 0,
-      "stdout": "findings@13 retired from service. It stays registered and readable, runs that pinned it still validate against it, and new payload references to it are refused.\n",
+      "stdout": "findings@12 retired from service. It stays registered and readable, runs that pinned it still validate against it, and new payload references to it are refused.\n",
       "stderr": ""
     },
     {
@@ -19309,13 +19309,13 @@
         "docket",
         "schema",
         "deprecate",
-        "findings@13",
+        "findings@12",
         "--json"
       ],
       "exit": 4,
       "json": {
         "ok": false,
-        "error": "findings@13 is already deprecated: schema version is already deprecated",
+        "error": "findings@12 is already deprecated: schema version is already deprecated",
         "code": "CONFLICT"
       },
       "stderr": ""
@@ -19327,14 +19327,14 @@
         "docket",
         "schema",
         "deprecate",
-        "findings@13",
+        "findings@12",
         "--format",
         "json"
       ],
       "exit": 4,
       "json": {
         "ok": false,
-        "error": "findings@13 is already deprecated: schema version is already deprecated",
+        "error": "findings@12 is already deprecated: schema version is already deprecated",
         "code": "CONFLICT"
       },
       "stderr": ""
@@ -19364,8 +19364,8 @@
             },
             {
               "name": "findings",
-              "version": 13,
-              "source_path": "schemas/findings@13.json",
+              "version": 12,
+              "source_path": "schemas/findings@12.json",
               "source_sha256": "<HEX64>",
               "ordered_fields": [
                 "open_severity",
@@ -19407,8 +19407,8 @@
             },
             {
               "name": "findings",
-              "version": 13,
-              "source_path": "schemas/findings@13.json",
+              "version": 12,
+              "source_path": "schemas/findings@12.json",
               "source_sha256": "<HEX64>",
               "ordered_fields": [
                 "open_severity",
@@ -19433,7 +19433,7 @@
         "docket",
         "schema",
         "deprecate",
-        "findings@13",
+        "findings@12",
         "--restore",
         "--json"
       ],
@@ -19442,8 +19442,8 @@
         "ok": true,
         "data": {
           "name": "findings",
-          "version": 13,
-          "source_path": "schemas/findings@13.json",
+          "version": 12,
+          "source_path": "schemas/findings@12.json",
           "source_sha256": "<HEX64>",
           "ordered_fields": [
             "open_severity",
@@ -19452,7 +19452,7 @@
           "builtin": false,
           "created_at_ms": "<N>"
         },
-        "message": "findings@13 restored to service."
+        "message": "findings@12 restored to service."
       },
       "stderr": ""
     },
@@ -19463,12 +19463,12 @@
         "docket",
         "schema",
         "deprecate",
-        "findings@13",
+        "findings@12",
         "--project",
         "DKT"
       ],
       "exit": 0,
-      "stdout": "schema deprecate findings@13 — 1 project (1 target(s))\n\n  repo (DKT) deprecated findings@13\n\n1 project(s) succeeded.\n",
+      "stdout": "schema deprecate findings@12 — 1 project (1 target(s))\n\n  repo (DKT) deprecated findings@12\n\n1 project(s) succeeded.\n",
       "stderr": ""
     },
     {
@@ -19478,7 +19478,7 @@
         "docket",
         "schema",
         "deprecate",
-        "findings@13",
+        "findings@12",
         "--project",
         "DKT",
         "--json"
@@ -19488,7 +19488,7 @@
         "ok": false,
         "data": {
           "operation": "schema deprecate",
-          "subject": "findings@13",
+          "subject": "findings@12",
           "scope": "project",
           "results": [
             {
@@ -19497,7 +19497,7 @@
               "identity": "<SCRATCH>/repo",
               "prefix": "DKT",
               "outcome": "already-deprecated",
-              "detail": "findings@13 is already deprecated: schema version is already deprecated",
+              "detail": "findings@12 is already deprecated: schema version is already deprecated",
               "code": "CONFLICT"
             }
           ],
@@ -19565,7 +19565,7 @@
               "project": "repo",
               "identity": "<SCRATCH>/repo",
               "prefix": "DKT",
-              "outcome": "registered",
+              "outcome": "unchanged",
               "ref": "findings@12"
             }
           ],
@@ -19585,9 +19585,9 @@
         "findings@12",
         "--all-projects"
       ],
-      "exit": 0,
-      "stdout": "schema deprecate findings@12 — every project in the store (1 target(s))\n\n  repo (DKT) deprecated findings@12\n\n1 project(s) succeeded.\n",
-      "stderr": ""
+      "exit": 4,
+      "stdout": "schema deprecate findings@12 — every project in the store (1 target(s))\n\n  repo (DKT) already-deprecated findings@12 is already deprecated: schema version is already deprecated\n\n0 project(s) succeeded, 1 failed. Nothing was rolled back: each project's registry is its own, and the projects that succeeded are done.\n",
+      "stderr": "Error: 1 of 1 project(s) failed\n"
     },
     {
       "id": "schema-deprecate-all-projects",
@@ -20119,7 +20119,7 @@
         "audit"
       ],
       "exit": 0,
-      "stdout": "scanned 1 instance-config root(s) for current versions:\n  <SCRATCH>/home/.docket/config\n\nrepo (DKT)\n  behind workflow sweep-dev registered 1, current 2\n  orphaned schema findings registered @12 @13 [all deprecated]\n  orphaned workflow sweep-park registered @1\n  orphaned workflow sweep-stdin registered @1 [all deprecated]\n\n1 of 1 project(s) carry findings: 1 name(s) behind, 3 orphaned.\nA behind name is adopted by the next `docket run activate` in that project. An orphaned one may still be declared in its project's own repository config, which this audit does not read. Confirm from that checkout first (a workflow with `docket workflow list --orphans`, a schema in its `.docket/config/schemas/`), then retire it with `docket workflow deprecate` or `docket schema deprecate`.\n",
+      "stdout": "scanned 1 instance-config root(s) for current versions:\n  <SCRATCH>/home/.docket/config\n\nrepo (DKT)\n  behind workflow sweep-dev registered 1, current 2\n  orphaned schema findings registered @12 [all deprecated]\n  orphaned workflow sweep-park registered @1\n  orphaned workflow sweep-stdin registered @1 [all deprecated]\n\n1 of 1 project(s) carry findings: 1 name(s) behind, 3 orphaned.\nA behind name is adopted by the next `docket run activate` in that project. An orphaned one may still be declared in its project's own repository config, which this audit does not read. Confirm from that checkout first (a workflow with `docket workflow list --orphans`, a schema in its `.docket/config/schemas/`), then retire it with `docket workflow deprecate` or `docket schema deprecate`.\n",
       "stderr": ""
     },
     {
@@ -20159,8 +20159,7 @@
                   "kind": "schema",
                   "name": "findings",
                   "versions": [
-                    12,
-                    13
+                    12
                   ],
                   "retired": true
                 },
@@ -20227,8 +20226,7 @@
                   "kind": "schema",
                   "name": "findings",
                   "versions": [
-                    12,
-                    13
+                    12
                   ],
                   "retired": true
                 },

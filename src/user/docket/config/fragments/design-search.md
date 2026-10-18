@@ -1,6 +1,6 @@
 ---
 fragment: design-search
-version: 5
+version: 6
 ---
 # Design search
 
@@ -24,7 +24,8 @@ proportional to the decision's blast radius.
 - **Weigh at least one candidate that is not the existing path.** Extending
   the existing implementation is the delivery-time default (code-philosophy
   #9 and rung 2 of the laziness ladder, where your packet includes them),
-  not the only candidate. Consider a mechanism the codebase lacks whenever extending would
+  not the only candidate. Consider a mechanism the codebase lacks whenever
+  extending would
   spread one concept across more places, add another special case, or leave
   the invariant enforced by convention rather than construction. Deliver the
   new mechanism only when it wins on correctness, locality of reasoning, and

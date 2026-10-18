@@ -496,7 +496,7 @@ Project: ${project.name}, checkout: ${project.root} (cd there before every docke
 
 ${READ_ONLY}
 
-Read ${groomSkill}, section "2b. Check issue quality and execution fit", for the "Duplicates" and "Ungrouped" findings, and the epic rules in "2a" (an epic's value is its open sub_issues; never nest an epic under an epic; never propose a parent in another project).
+Read ${groomSkill}, section "2b. Check issue quality and execution fit", for the "Duplicates" and "Ungrouped" findings, the epic rule in "2a" (an epic's value is its open sub_issues), and the "Ungrouped" rules (never nest an epic under an epic; never propose a parent in another project).
 
 Open epics in this project:
 ${epicLine}

@@ -57,7 +57,8 @@ const ERROR_DETAIL_LENGTH = 300
 // one group, one remedy, one file, so it is `--size small` by
 // construction; a group is never merged with another into one filing.
 //
-// Subjects starting with "(" are unclassified: they are never filed, and
+// Subjects starting with "(" name nothing to act on (an outage, a bypass
+// without a denial, or unclassified): they are never filed, and
 // appear in the summary and in `skipped`.
 
 // TEST-BEGIN sandbox-friction-group — evaluate with the settings above; run as
@@ -239,8 +240,8 @@ async function fileGroups(groups) {
     const skipped = groups
         .filter((g) => g.subject.startsWith('('))
         .map((g) => {
-            log(`sandbox-friction: not filing ${g.subject} (${g.count} events): unclassified`)
-            return {subject: g.subject, why: 'unclassified subject names nothing to act on'}
+            log(`sandbox-friction: not filing ${g.subject} (${g.count} events): non-actionable subject`)
+            return {subject: g.subject, why: 'non-actionable subject (outage, bypass without denial, or unclassified)'}
         })
     const actionable = groups.filter((g) => !g.subject.startsWith('('))
 

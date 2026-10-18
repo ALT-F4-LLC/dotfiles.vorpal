@@ -461,7 +461,7 @@ YOUR SEAT:      ${r.seat}
 YOUR LENS:      ${text}
 ${gateLine}
 THE PROPOSAL:   ${voteId}${step ? targetNote : ''}${workingDirLine ? `\n${workingDirLine}` : ''}${respawnNote}${activationNote}
-${setupBlock}${caseBlock}${!step ? targetNote : ''}
+${setupBlock}${caseBlock}
 
 BOUND YOUR INVESTIGATION — then vote. A seat that keeps reading past the
 evidence its verdict rests on does not reach a different verdict; it reaches

@@ -43,8 +43,8 @@ export const meta = {
 // in commands so the shell expands `~`.
 const SCRIPTS = '~/.claude/skills/simplify-corpus/scripts'
 
-// One rewriter given all 2,105 lines of docket-run cut four filler words. A
-// chunk is small enough to read sentence by sentence.
+// A chunk is small enough for a rewriter to read sentence by sentence; one
+// rewriter over a whole large file only trimmed a few filler words.
 const CHUNK_LINES = 200
 
 // Pin models so the run never inherits the caller's quota-limited model. The

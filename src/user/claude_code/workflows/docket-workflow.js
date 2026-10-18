@@ -63,7 +63,7 @@ export const meta = {
 // Invoked by the docket-run skill on an open dispatch, always as
 // Workflow({scriptPath}) — never by name, and once per issue, every
 // launch in the same conductor turn. args is lane_units.py's args-<i>.json,
-// passed unedited: {rowsModule, rows_sha256, unit, harnessCap, cwd,
+// passed unedited: {rowsModule, rows_sha256, unit?, harnessCap?, cwd,
 // tribunal, integrated?}. rowsModule is a module under
 // <cwd>/.claude/docket-packets returning {v: 1, rows_sha256, rows}; the wave
 // loads it and refuses the launch, before any claim, when the module's
@@ -734,8 +734,10 @@ function runParked(res) {
 // `STEP-N recorded (<status>)`, where <status> is the terminal state the
 // executor read with `docket step show` after record (done, waiting-human, or
 // paused; pending when the engine's detached gate run had not finished), or
-// carries one of the brief's stop signals on
-// a line of its own, which means the step was NOT recorded. A reply with a
+// carries a stop signal on a line of its own (the brief's NETWORK GATE
+// BLOCKED, RECORD BLOCKED, or WRITE BLOCKED, or docket-workflow-claim's CLAIM
+// FAILED or CLAIM INCOMPLETE), which means the step was NOT recorded.
+// BOOTSTRAP DENIED is read separately by isBootstrapDenied. A reply with a
 // record tail is recorded whatever its prose quotes; a reply with neither is
 // `unrecorded`, and `step show` says what happened. COMMIT BLOCKED is not a
 // stop signal: the writer reports it and goes on to record.
@@ -967,7 +969,7 @@ async function settleStoppedReply({ row, owner, claim, held, text, agent, stepSh
         log(`${row.step}: the reply ends in neither a record tail nor a stop ` +
             `signal — settling it unrecorded; this issue's later stages are ` +
             `deferred this wave; \`docket step show ${row.step}\` says what ` +
-            `actually happened`)
+            `happened`)
         return { step: row.step, status: 'unrecorded', text }
     }
     if (!SETTLE_SIGNALS.includes(signal)) {

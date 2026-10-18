@@ -1,7 +1,7 @@
 export const meta = {
     name: 'docket-bootstrap',
     description: 'Internal: launched through scriptPath by docket-bootstrap; gathers the read-only repository-mining and gate-union evidence one bind needs and returns it with citations. Args, stages, and cost in the header comment.',
-    whenToUse: 'Never by name. Read-only: every agent inspects the checkout or the installed corpus and writes nothing. The caller keeps environment setup, spec authoring, every operator approval, trust mutation, and activation in the main session.',
+    whenToUse: 'Never by name. Read-only: every agent inspects the checkout or the installed corpus and writes only scratch files. The caller keeps environment setup, spec authoring, every operator approval, trust mutation, and activation in the main session.',
     phases: [
         { title: 'Mine', detail: 'one executor-read analyst per seam (build/CI, gates/scripts, docs/history) reads the repository, or one combined analyst for a small repo' },
         { title: 'Gate union', detail: 'one executor-read analyst per installed workflow TOML parses its gates (pre-gates flagged), actions, and consumer steps' },

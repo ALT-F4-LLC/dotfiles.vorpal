@@ -10,7 +10,7 @@ export const meta = {
 
 // ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is a one-line summary;
-// this block is the single copy of the argument and return contract).
+// this block and the args and return block further down are the contract).
 //
 // What it does:
 // Measure a completed wave's token spend from its agent transcripts and emit

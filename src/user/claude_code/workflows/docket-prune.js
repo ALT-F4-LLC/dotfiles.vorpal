@@ -8,7 +8,7 @@ export const meta = {
         { title: 'Defend', detail: 'one defender per definition answers every charge with a consumer, a run, or a behavior difference, cited' },
         { title: 'Judge', detail: 'one judge per definition rules per unit; no evidence in an applicable class is remove' },
         { title: 'Refute', detail: 'three refuters per definition (consumer, behavior, burden); a majority that agrees on another verdict overrides the judge' },
-        { title: 'Record', detail: 'one writer lands the merged ledger candidate and one issue body per cut under the scratch directory' },
+        { title: 'Record', detail: 'sharded writers land the merged ledger candidate and one issue body per cut under the scratch directory' },
     ],
 }
 
@@ -104,8 +104,8 @@ export const meta = {
 // whole-corpus pass over 70 definitions is about 480 agents, well inside
 // the Workflow tool's 1000-agent lifetime cap but wall-clock bound by the
 // ~16-slot concurrency cap. Definitions beyond the judge bound are
-// returned as deferred and, carrying no verdict, are judged first next
-// pass.
+// returned as deferred; a deferred definition has no verdict or keeps its
+// stale-hash verdicts, so the next pass plans it for judgment again.
 // ---------------------------------------------------------------------------
 
 // Pin models so a launch never inherits the caller's quota-limited model.

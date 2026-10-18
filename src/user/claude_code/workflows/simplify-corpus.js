@@ -32,8 +32,8 @@ export const meta = {
 //
 // How the simplify skill is used. The built-in simplify skill reviews changed
 // code for reuse, simplification, efficiency, and altitude and applies the
-// fixes; its instructions were not read when this script was written, so
-// whether it takes a file target is learned by the simplifier that loads it.
+// fixes. Whether it takes a file target is not assumed; the simplifier that
+// loads it finds out at run time.
 // Each simplifier copies its file into the scratch mirror and, when the Skill
 // tool is available, invokes simplify there with the untracked candidate as
 // the change under review. When the tool is unavailable, or the skill's
@@ -46,9 +46,11 @@ export const meta = {
 // kind-specific mechanical check: a syntax parse for code, a protected-span
 // subset diff for Markdown (a simplifier may delete protected content but
 // never invent or alter it), and a strictly-greater version for versioned
-// docket files. simplify-check.sh runs all of it, a runner agent returns its
-// report verbatim, and this file parses the report; a missing or unparsable
-// report rejects. Survivors face three refuters leading from different
+// docket files. simplify-check.sh runs the syntax gate and the protected-span
+// checks and reports sizes and versions, a runner agent returns its report
+// verbatim, and this file parses the report and enforces the shrink and
+// strictly-greater-version rules from it; a missing or unparsable report
+// rejects. Survivors face three refuters leading from different
 // angles (behavior or meaning, the reader or caller, churn); two upholds
 // accept. Behavior preservation is judged, not proven: the skill's landing
 // gates (test suites naming the file, self-hygiene for Rust, the module parse

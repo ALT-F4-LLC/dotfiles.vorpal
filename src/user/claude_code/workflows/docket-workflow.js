@@ -3034,10 +3034,12 @@ if (budget.total) {
 }
 
 // The launch's coordination counts, for docket-retro's integration-health
-// row: what the store cannot see about a wave (a refused claim writes no
-// event, a deferred row never claims). Computed here from the launch's own
-// rows and settled statuses, so no conductor relay can drop them. `reseats`
-// counts judges re-spawned in runGate. Instance ordinals
+// row: the counts the store holds only in part. A row deferred for budget,
+// a parked run, a dead chain, or a pre-claim hold never claims; a refused
+// claim writes `claim-refused`, which names the run, issue, step, and owner
+// but not the launch or how the wave settled it. Computed here from the
+// launch's own rows and settled statuses, so no conductor relay can drop
+// them. `reseats` counts judges re-spawned in runGate. Instance ordinals
 // are the engine's: `@0` is a step's first minting (`review@0#k`,
 // `verify-ac-vote@0`) and a fix round's rows carry the round, so first pass
 // means ordinal 0.

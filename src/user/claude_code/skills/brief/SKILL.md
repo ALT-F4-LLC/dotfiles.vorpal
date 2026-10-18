@@ -5,7 +5,8 @@ description: >-
   to revise an existing brief. Turns a freeform work request into a faithful,
   checkable brief: clarifies material decisions in up to three question
   rounds, then confirms the brief and routes it to /docket-plan, /loop,
-  /goal, /peer, another orchestration skill, or direct execution.
+  /goal, /peer, or another orchestration skill that runs the work under a
+  goal, loop, or workflow. It never runs the work outside one of those.
 argument-hint: "<freeform work request or revision to an existing brief>"
 model: opus
 ---
@@ -264,7 +265,7 @@ Apply these rules in order:
    reaches `/docket-plan` only when the operator names it explicitly (it
    then gets `route-run` on recording) — otherwise point at
    `/docket-groom` to set a routing label first; `route-direct` means
-   direct execution; `route-loop` continues at rule 4. A
+   `/goal`; `route-loop` continues at rule 4. A
    label that contradicts the operator's ask is surfaced, never resolved
    silently.
 3. **Security-sensitive `unknown` requiring investigation:** recommend
@@ -274,7 +275,7 @@ Apply these rules in order:
    requested lifetime. Recommend `/docket-plan` when a pass is larger or
    uncertain, or coordination across passes needs a plan.
 5. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial`:**
-   test in this order. Recommend direct execution when the work leaves a
+   test in this order. Recommend `/goal` when the work leaves a
    decision or judgment open, a criterion needs judgment to check, or the
    deliverable is an assessment. Otherwise recommend `/docket-plan` when the
    work can go through a docket run, and `/goal` when the operator wants it
@@ -284,8 +285,7 @@ Apply these rules in order:
 
 **Documentation updates never go through a run.** When the whole scope is a
 documentation edit, rules 3 through 6 never recommend `/docket-plan`: recommend
-direct execution, or `/goal` when the operator wants it now in this
-conversation. An issue that tracks the work gets `route-direct` through
+`/goal`, or `/loop` under rule 4 when Shape is `iterative`. An issue that tracks the work gets `route-direct` through
 `/docket-groom`. Design documents authored through `spec-doc` are a separate
 track.
 
@@ -296,7 +296,8 @@ needed to authorize the work may not.
 
 Consider other orchestration skills available in this session when one
 materially fits better; alternatives must satisfy the same docket and
-security requirements. Exclude `/brief` itself, and do not offer
+security requirements and must run the work under a goal, loop, or
+workflow (a docket run). Exclude `/brief` itself, and do not offer
 `workflow` as a standalone route.
 
 **Peer relay.** `/peer` is a relay route, not an executing one: it hands
@@ -323,16 +324,38 @@ confirmation, prepare a single `/goal <condition>` line as the handoff.
 The condition states the Goal as the done-state, keeps each acceptance
 criterion's wording, carries the scope, exclusions, and constraints, and
 names the evidence that must appear in the conversation to show each
-criterion met, such as a check's command and its passing output. If the brief does not fit the command's 4,000-character condition
-limit, report that instead of truncating. A session holds one goal, and a
-new one replaces it, so say so at confirmation when a goal may be active.
-Offer the route only when `/goal` is available in this session; it runs
-as a hook, so settings that disable hooks remove it.
+criterion met, such as a check's command and its passing output. The
+condition also carries these duties:
+
+- The work creates no docket issues, plan artifacts, schedules, or teams.
+- Each acceptance criterion is verified with a check suited to it, and the
+  check's output appears in the conversation.
+- For an issue routed `route-direct`, the issue is closed once the
+  criteria are verified, and the output of
+  `docket issue comment add <id> -m "<what landed and where>"` and then
+  `docket issue close <id>` appears in the conversation.
+- When the work leaves open a decision the brief does not record as
+  delegated, the decision belongs to the operator: it is asked through `AskUserQuestion`, the agent does
+  not make it, and the goal is met only when the assessment, its
+  evidence, and the operator's recorded answer appear in the conversation.
+
+The evaluator checks that the named evidence is present, not whether the
+work is good, so a cleared goal is not a quality review. If the brief does
+not fit the command's 4,000-character condition limit, report that instead
+of truncating. A session holds one goal, and a new one replaces it, so say
+so at confirmation when a goal may be active. When a compound request
+yields several `/goal` briefs, merge them into one condition if it fits
+the limit; otherwise prepare one line per brief, in dependency order. Offer the route only when `/goal` is available in this
+session; it runs as a hook, so settings that disable hooks remove it.
+When a rule requires `/goal` and it is unavailable, emit the brief with
+the blocker and offer only `/peer` to a live session where `/goal` is
+available, or the brief alone. Never perform the work outside a goal,
+loop, or workflow.
 
 Recommend only routes whose entry points and required capabilities are
 available. If a required route is unavailable, emit the brief with the
-blocker rather than silently downgrading to direct execution or another
-workflow.
+blocker rather than performing the work outside a goal, loop, or
+workflow, or silently switching routes.
 
 Respect the selected skill's documented input contract. If it requires a
 different structure, prepare a lossless handoff before confirmation,
@@ -345,8 +368,7 @@ information, report the incompatibility.
 
 Present the complete brief verbatim, followed by every route this skill
 can select, including routes §3 excludes: `/docket-plan`, `/loop`,
-`/goal`, `/peer`, direct execution, and any orchestration
-alternative weighed under §3. Give each route one line stating why it fits or which §3
+`/goal`, `/peer`, and any orchestration alternative weighed under §3. Give each route one line stating why it fits or which §3
 rule excludes it, and mark the recommended route. If
 the downstream input requires a different structure, show the prepared
 handoff as well.
@@ -405,7 +427,9 @@ where a route bullet below says so.
 - **`/goal`:** Print the confirmed `/goal` line in a fenced block for the
   operator to type, report the work as pending until they do, and stop. Do
   not begin the work directly: the line is the handoff, and typing it
-  starts the work in this conversation, where the Role still holds.
+  starts the work in this conversation, where the Role still holds. When
+  several lines were prepared, print them all in order and tell the
+  operator to type each one only after the previous goal clears.
 - **`/peer`:** Invoke `peer` with `dispatch <session>` and the confirmed
   brief block verbatim as `args`. The peer skill in the receiving session
   re-selects the route by §3 under its own project and confirms it there
@@ -415,15 +439,12 @@ where a route bullet below says so.
   settle the work: the peer's own notice, with the idle notice as the
   fallback. A sent brief is pending, never done.
 - **Another orchestration skill:** Invoke its available entry point with
-  the confirmed brief or handoff and follow its workflow.
-- **Direct:** Perform the work under the confirmed brief, and under its
-  Role unless it is `none`, without creating
-  docket issues, plan artifacts, schedules, or teams. Verify the acceptance
-  criteria with checks suited to the work. For an issue routed
-  `route-direct`, close it once the criteria are verified:
-  `docket issue comment add <id> -m "<what landed and where>"`, then
-  `docket issue close <id>`.
+  the confirmed brief or handoff and follow its workflow. Select it only
+  when it runs the work under a goal, loop, or workflow.
 - **Just give me the brief:** Emit the block verbatim and stop.
+
+No route performs the work directly in this conversation outside a goal,
+loop, or workflow.
 
 After confirmation, proceed within the approved scope. Reopen briefing
 only when new facts materially change the scope, risk, or route, not for

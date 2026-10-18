@@ -4,8 +4,8 @@ Covers the `docket guard` and `docket trust` families, the single copy of this
 engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-16 against `docket
-nightly-32-gf5a6d04` (commit `f5a6d04`, built `2026-10-16T04:08:23Z`) by
+contract and parsing traps. Verified 2026-10-18 against `docket
+nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -177,7 +177,7 @@ These verbs need no `.docket/` database: the store is user-level.
 | `--flaky` | bool | `false` | may fail intermittently; re-runs on failure, each attempt recorded |
 | `--stub` | bool | `false` | this is a **placeholder**, not the check its name implies; every result it produces is flagged `stub` in `step gates` and counted in the run report |
 | `--stub-reason` | string | `""` | free-text reason recorded and shown alongside `stub` in `trust list` and its rendering; requires `--stub` |
-| `--network` | stringSlice | `nil` | hosts this command must reach (repeatable). **Declares a requirement; grants nothing.** A gate that names any receives the proxy variables and `DOCKET_GATE_NETWORK`; one that names none is unchanged |
+| `--network` | strings | `nil` | hosts this command must reach (repeatable). **Declares a requirement; grants nothing.** A gate that names any receives the proxy variables and `DOCKET_GATE_NETWORK`; one that names none is unchanged |
 | `--declared-file` | stringArray | `nil` | repo-relative file the command reads, such as a sourced script (repeatable); its content is pinned from this checkout |
 | `--timeout` | string | `""` | per-command timeout (e.g. `90s`, `10m`); the engine applies 5m at run time when the trust entry names no timeout |
 | `--yes` | bool | `false` | skip the interactive confirmation (the argv is **still** disclosed) |

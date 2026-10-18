@@ -5,8 +5,8 @@ family and `docket pin show` (consumer: the docket-run skill), except two
 verbs: `run verify-pins` is documented in [pins.md](pins.md), and `run fact
 add` in the docket-run [SKILL.md](../SKILL.md). Response shapes and parsing
 traps live in docket's
-[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-16 against `docket
-nightly-32-gf5a6d04` (commit `f5a6d04`, built `2026-10-16T04:08:23Z`) by
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-18 against `docket
+nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.

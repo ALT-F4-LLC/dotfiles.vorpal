@@ -344,7 +344,7 @@ to a different prefix. Projects rarely carry the same actions: each one fell
 behind at its own last activation. An action shared by every plan can run
 once with `--all-projects`; `--all-projects` reports a project where there
 was nothing to do as `unchanged` (a register, counted as a success),
-not-registered (no recorded fixture), or `already-deprecated` (a deprecate,
+not-registered, or `already-deprecated` (a deprecate,
 counted as a failure: `ok:false`, code `CONFLICT`, exit 4). Run a
 deprecate shared by every plan that way only when you read each project's
 outcome rather than the exit code alone. Run the rest per project with

@@ -1,12 +1,12 @@
 ---
 fragment: doc-house-style
-version: 9
+version: 10
 ---
 # Doc house style
 
 Apply this style to documentation written or revised for the task. Structural
 requirements, such as required sections, their order, frontmatter fields, and
-diagram presence, come from the consuming contract's Emit section, not from a
+diagram presence, come from the consuming contract or task brief, not from a
 gate. Keep that required structure; apply brevity within it. These rules
 govern whether the content lets someone act without guessing.
 

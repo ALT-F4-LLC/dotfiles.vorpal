@@ -1,7 +1,7 @@
 ---
 node: dispose
-version: 12
-archetype: executor-write
+version: 13
+archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
   - fragments/writing-for-humans.md

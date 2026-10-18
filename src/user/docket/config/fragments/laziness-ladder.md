@@ -1,6 +1,6 @@
 ---
 fragment: laziness-ladder
-version: 8
+version: 9
 ---
 # Laziness ladder
 
@@ -9,7 +9,8 @@ least code and machinery to maintain.
 
 The ladder orders delivery, not the design search that precedes it: weigh the
 alternatives first, then stop at the first rung that satisfies the actual
-requirements for the chosen design. Keep the search proportional to the task:
+requirements for the chosen design. Keep the search proportional to the task.
+The rungs, in order:
 
 1. **Does this need to exist now?** Skip speculative additions. Complete what
    was requested; do not re-argue its necessity.

@@ -1,6 +1,6 @@
 ---
 fragment: rerun-discipline
-version: 19
+version: 20
 ---
 # Re-run discipline
 
@@ -40,12 +40,12 @@ include staged, unstaged, or untracked candidate changes; include all relevant
 candidate inputs in the private snapshot before relying on its results. If the
 intended state cannot be established, keep the dependent conclusion unverified.
 
-Allocate each attempt's scratch inside your assigned private step directory
-(the brief's `<TMP>/<STEP-N>.d`, by the literal path the brief pins once;
-never re-resolve `$TMPDIR` mid-step, since a sandboxed and an unsandboxed
-call can resolve it differently) and use that literal `<TMP>/<STEP-N>.d`
-path directly wherever a private-step-directory reference is needed;
-creating it alone does not redirect writes. Leave `GOCACHE` at its default, which
+Allocate each attempt's scratch inside your assigned private step directory:
+the brief's `<TMP>/<STEP-N>.d`, by the literal path the brief pins once. Never
+re-resolve `$TMPDIR` mid-step, since a sandboxed and an unsandboxed call can
+resolve it differently. Use that literal path directly wherever the step
+directory is needed; creating the directory does not redirect writes. Leave
+`GOCACHE` at its default, which
 the sandbox write allowlist covers, and never override the shared `GOMODCACHE`:
 do not set it, redirect it through `GOPATH`, or create a private module cache.
 Do not prefix commands with `TMPDIR=` or other `NAME=value` assignments; such a
@@ -71,7 +71,8 @@ A code-mutating probe, including a positive control or planted mutant, runs
 only in a private copy of the state being tested. Keep the mutation confined
 to that copy and preserve the control result and mutation diff as evidence.
 That evidence lands inline in your own seat's emitted findings or
-investigation, not as a scratch-directory path another step cannot read. Never plant or undo a scratch mutation in the shared checkout.
+investigation, not as a scratch-directory path another step cannot read.
+Never plant or undo a scratch mutation in the shared checkout.
 
 Never use `git stash` to obtain a clean tree: the stash stack is shared by the
 repository's worktrees. For a committed comparison base, use the one baseline

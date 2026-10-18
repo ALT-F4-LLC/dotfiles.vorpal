@@ -1,6 +1,6 @@
 ---
 fragment: design-search
-version: 4
+version: 5
 ---
 # Design search
 
@@ -8,8 +8,8 @@ Search wide, deliver narrow. Before committing to a design, a mechanism, an
 interface, a test strategy, a diagnosis, or a plan, weigh materially different
 candidates and choose on the merits. The delivered change is still the
 smallest clear implementation of the winner: code-philosophy and the laziness
-ladder govern what you ship, this fragment governs what you weigh before
-shipping.
+ladder, where your packet includes them, govern what you ship; this fragment
+governs what you weigh before shipping.
 
 Skip the search, and say so in one line, when the requirement fixes the shape
 of the change: a rename, a copied value, a one-line data fix, a repair whose
@@ -22,9 +22,9 @@ proportional to the decision's blast radius.
   candidate to beat, not the default: ask what this problem needs that it
   does not provide, and what it carries that this problem does not need.
 - **Weigh at least one candidate that is not the existing path.** Extending
-  the existing implementation is the delivery-time default under
-  code-philosophy #9 and rung 2 of the laziness ladder, not the only
-  candidate. Consider a mechanism the codebase lacks whenever extending would
+  the existing implementation is the delivery-time default (code-philosophy
+  #9 and rung 2 of the laziness ladder, where your packet includes them),
+  not the only candidate. Consider a mechanism the codebase lacks whenever extending would
   spread one concept across more places, add another special case, or leave
   the invariant enforced by convention rather than construction. Deliver the
   new mechanism only when it wins on correctness, locality of reasoning, and
@@ -35,8 +35,9 @@ proportional to the decision's blast radius.
   criterion is an implementation choice within the boundary: build it and
   record the reframe among the decisions. A reframe that would touch an
   undeclared path or change an acceptance criterion is a proposal: record it
-  with its reasoning, route it under scope-discipline's amendment rule, and
-  deliver the stated ask.
+  with its reasoning, route it under scope-discipline's amendment rule where
+  your packet includes it (otherwise as your contract directs), and deliver
+  the stated ask.
 - **Compare, then commit.** Keep candidates that differ in mechanism, not in
   spelling. Judge each by the criteria the codebase already uses: correctness,
   locality of reasoning, deletability, what it leaves to maintain, and what

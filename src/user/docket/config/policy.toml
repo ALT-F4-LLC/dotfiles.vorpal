@@ -1,5 +1,5 @@
 [policy]
-version = 42
+version = 43
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -58,7 +58,7 @@ ceiling = "opus-max"
 labels = ["security-change", "security-load-bearing", "security"]
 never = ["fable"]
 nodes = ["judge-security", "threat-model", "tdd-author-security", "spec-author-security", "tribunal-security"]
-reason = "As observed at policy version 42: Claude Opus 5.5 launched with the same class of biology, cybersecurity, and distillation safeguards as Claude Fable 5.1, all of which fall back to another model transparently (cyber -> Opus 4.8, biology -> Opus 5), so a flagged request hops to a fallback on an Opus seat exactly as on a Fable seat. Naming Opus no longer avoids the hop; it only avoids paying Fable's rate ($10 / $50 per million input / output tokens against Opus 5.5's $4 / $20) for the same fallback run, which is why `never` keeps Fable off these nodes. The hop is narrower than the version-32 wording implied: the policy on both models allows vulnerability discovery in source code and blocks compiled-binary vulnerability discovery, penetration testing, and exploit development, so a secure code review of a diff is inside the permitted set and the residual is dual-use edge cases. Do not seat Sonnet on these nodes: Sonnet 5.5's cyber fallback is Sonnet 5 (Terminal-Bench 4.0 10.3% against Sonnet 5.5's 70.6%), a far steeper cliff than Opus 4.8; Haiku 5.5 blocks with no fallback at all. Residual unchanged: nothing in the step record catches the hop, so the serving model surfaces only in the transcript-read usage back-fill, whose ledger rows carry units and quantities only."
+reason = "As observed at policy version 42: Claude Opus 5.5 launched with the same class of biology, cybersecurity, and distillation safeguards as Claude Fable 5.1, all of which fall back to another model transparently (cyber -> Opus 4.8, biology -> Opus 5), so a flagged request hops to a fallback on an Opus seat exactly as on a Fable seat. Naming Opus does not avoid the hop; it only avoids paying Fable's rate ($10 / $50 per million input / output tokens against Opus 5.5's $4 / $20) for the same fallback run, which is why `never` keeps Fable off these nodes. The hop is narrow: the policy on both models allows vulnerability discovery in source code and blocks compiled-binary vulnerability discovery, penetration testing, and exploit development, so a secure code review of a diff is inside the permitted set and the residual is dual-use edge cases. Do not seat Sonnet on these nodes: Sonnet 5.5's cyber fallback is Sonnet 5 (Terminal-Bench 4.0 10.3% against Sonnet 5.5's 70.6%), a far steeper cliff than Opus 4.8; Haiku 5.5 blocks with no fallback at all. Residual: nothing in the step record catches the hop, so the serving model surfaces only in the transcript-read usage back-fill, whose ledger rows carry units and quantities only."
 
 [escalation]
 on_failure = "one-hop"

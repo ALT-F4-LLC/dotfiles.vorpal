@@ -3,6 +3,13 @@
 Version history of `policy.toml`, newest first. Each heading is the
 `[policy].version` the entry describes.
 
+## 43
+
+`[security].reason` states the current behavior only: it drops the
+version-32 comparison and the "no longer" and "residual unchanged"
+phrasing. No row, variant, `never`, `ceiling`, `labels`, `nodes`, or
+`[escalation]` change.
+
 ## 42
 
 Nine executor rows move; `[security].reason` is rewritten and dated

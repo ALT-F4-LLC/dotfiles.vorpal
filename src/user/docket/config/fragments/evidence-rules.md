@@ -1,6 +1,6 @@
 ---
 fragment: evidence-rules
-version: 11
+version: 12
 ---
 # Evidence rules
 
@@ -90,7 +90,7 @@ unresolved question warrants it.
   contract exempts its selected items from a check by name.
 - **Search the open backlog before filing.** Before attaching any gap file,
   search the owning project's open issues for the same locus and defect: run
-  `docket issue list --status backlog,todo,in-progress --limit 1000`, adding
+  `docket issue list --status backlog,todo,in-progress,review --limit 1000`, adding
   `--project` when the finding's home is another project, and read the bodies
   of likely matches with `docket issue show <id>`. A listing that returns the
   full 1000 rows is truncated under the absence rule above. A match names the

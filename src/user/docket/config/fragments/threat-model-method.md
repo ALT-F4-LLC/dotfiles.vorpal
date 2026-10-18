@@ -1,6 +1,6 @@
 ---
 fragment: threat-model-method
-version: 4
+version: 5
 ---
 # Threat modeling: the four questions
 
@@ -41,7 +41,9 @@ Work all four questions:
    passed, failed, or not run. A verification plan is not a verification result.
    Identify unresolved work and any pending risk-acceptance decision.
 
-Label material factual claims **OBSERVED**, **INFERRED**, or **UNKNOWN**. For observations,
+Label material factual claims **OBSERVED**, **INFERRED**, or **UNKNOWN**
+(uncertainty about a fact). A coverage or verification claim that was not
+established is **UNVERIFIED**, as in evidence-rules. For observations,
 cite the artifact or runtime result and its scope; observing source code does not
 establish deployment or runtime enforcement. For inferences, state the supporting
 evidence and reasoning. For material uncertainties, name the smallest practical check

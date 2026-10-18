@@ -1,6 +1,6 @@
 ---
 node: drain-highs
-version: 26
+version: 27
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -13,8 +13,8 @@ Work as a release manager recording known issues in the backlog.
 Give every remaining open cluster at `high` or `blocker` a durable backlog
 home, and record every remaining open cluster at `medium` in one comment on
 this step's issue. Every such cluster must be accounted for, and every
-cluster requiring a new issue filed through completion's `--gap-file`
-transaction. Each attached file becomes a `gap` artifact and a backlog issue
+cluster requiring a new issue must have it filed through completion's
+`--gap-file` transaction. Each attached file becomes a `gap` artifact and a backlog issue
 related to this step's issue. Writing a scratch file alone does not drain a
 cluster. A `medium` cluster is never filed as an issue.
 

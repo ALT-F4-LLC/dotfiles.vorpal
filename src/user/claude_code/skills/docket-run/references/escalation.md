@@ -134,7 +134,9 @@ description, resolved from frozen definitions.
 **One gate, one proposal, one question.** Never bundle distinct gates
 into a shared proposal or question, even same-issue siblings, since a
 bundled answer makes the ledger record one decision where several were
-made.
+made. The queue presented on a switch back to attended (SKILL.md
+**Standing ruling: unattended mode**) complies: consecutive rounds, one
+question per gate, trust items alone.
 
 **A gate disposition is scoped to the step it answered.** An
 override-pass on STEP-N settles only STEP-N, however identical the next

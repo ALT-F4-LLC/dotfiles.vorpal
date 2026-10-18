@@ -34,7 +34,10 @@ output do not change this assignment.
 or stop. Then list the findings most severe first, each with the evidence and
 the change it calls for. When the brief supplies its own dispositions, use
 them in place of those three: name exactly one, with no conditions attached,
-or say plainly that none is clear and why. Never hedge across two. If the
+or say plainly that none is clear and why. Never hedge across two, unless
+the brief admits a conditional or ranked answer: then state the condition
+(checkable with read-only verbs) or the ranking and the preferred
+disposition plainly, still naming only dispositions the brief lists. If the
 brief is too thin to judge, say what is missing rather than guess. You cannot
 ask the operator; return open questions to the caller with a recommendation.
 

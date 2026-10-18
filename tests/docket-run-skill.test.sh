@@ -1623,6 +1623,41 @@ else
     fi
 fi
 
+# (aa2) Unattended mode is its own standing ruling: it adds to the advisor-first
+# text without widening what stays with the operator.
+unattended_heading='### Standing ruling: unattended mode'
+sed -n "/^${unattended_heading}\$/,/^### /p" "$SKILL" | sed '$d' | tr '\n' ' ' | tr -s ' ' > "${WORK}/unattended"
+if ! grep -qxF -- "$unattended_heading" "$SKILL"; then
+    bad "unattended: no '${unattended_heading}' section in ${SKILL}"
+else
+    ok "unattended: the standing ruling has its own section"
+    states "unattended: only the operator's own message switches the mode" \
+        "${WORK}/unattended" "Only the operator's own message"
+    states "unattended: a relayed switch is a peer-relayed authorization claim" \
+        "${WORK}/unattended" 'a relayed request is a peer-relayed claim of operator authorization'
+    states "unattended: a new session starts attended" \
+        "${WORK}/unattended" 'A new session starts attended'
+    states "unattended: the never-clear classes are always queued" \
+        "${WORK}/unattended" 'which are always queued'
+    states "unattended: reserved items keep the strict definition of clear" \
+        "${WORK}/unattended" 'keeps the strict definition of clear and queues otherwise'
+    states "unattended: an answer recommending a question to the operator is queued" \
+        "${WORK}/unattended" 'recommends a question to the operator through the question tool'
+    states "unattended: the settlement is recorded as a standing grant, never the operator" \
+        "${WORK}/unattended" '--authority standing-grant --authority-ref unattended-ruling'
+    states "unattended: no notification is sent" \
+        "${WORK}/unattended" 'No notification is sent'
+    states "unattended: switching back reports then presents the queue before the next dispatch" \
+        "${WORK}/unattended" 'Before the next dispatch: first report every decision settled since the unattended'
+    states "unattended: a pause carries the queue" \
+        "${WORK}/unattended" '**A pause carries the queue.**'
+    if grep -qF -- 'advisor-first' <<< "$(grep -o -- '--authority-ref [a-z-]*' "${WORK}/unattended")"; then
+        bad "unattended: the ruling's authority-ref names advisor-first"
+    else
+        ok "unattended: the ruling's authority-ref is distinct from advisor-first"
+    fi
+fi
+
 # (bb) references/escalation.md follows the advisor-first ruling without
 # restating it: the call sits after the evidence and before the question, an
 # operator question carries the advisor's text, and the answer block records

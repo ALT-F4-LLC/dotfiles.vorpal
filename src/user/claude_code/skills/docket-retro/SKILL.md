@@ -254,7 +254,9 @@ seat whose cast failed after its retry. Then `docket
 vote result <id>`: approved is the authority to apply, and §4 runs
 immediately, with no follow-up question about whether to apply now or
 later. A rejection or a split goes to the operator through the built-in
-question tool, recommended option first, labelled "(Recommended)", carrying
+question tool after the advisor's [question
+review](../../references/working-agreement.md#question-review), the
+advisor's pick first, labelled "(Recommended)", carrying
 every judge's verdict, confidence, and summary verbatim. Only what they
 approve is applied.
 

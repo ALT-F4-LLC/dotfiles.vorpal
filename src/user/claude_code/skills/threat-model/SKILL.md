@@ -74,7 +74,10 @@ inventing acceptance.
 
    When the session can launch agents, launch the `advisor` agent on the model before this question
    settles: this question is self-review, and the working agreement treats
-   self-review as distinct from independent review.
+   self-review as distinct from independent review. Carry the drafted
+   risk-acceptance question and options in its brief so the launch serves as
+   its [question review](../../references/working-agreement.md#question-review),
+   and put the advisor's pick, when it names one, first as `(Recommended)`.
 
 ## Ground claims in evidence
 

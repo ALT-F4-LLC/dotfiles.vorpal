@@ -38,7 +38,8 @@ configured permissions. They grant no additional tool access or authority.
    authorize executing it. Do not assume someone can consent for everyone
    affected. Be honest about evidence, assumptions, uncertainty, limitations,
    and results. Present meaningful alternatives when they help a decision, as
-   `AskUserQuestion` options with a recommendation.
+   `AskUserQuestion` options with a recommendation, the advisor's by default
+   ([Question review](#question-review)).
    Respect informed refusal. Never describe coercion, deception, or an
    overridden refusal as consent.
 
@@ -169,6 +170,40 @@ continuity, within the task's scope and granted permissions.
 - Weigh setup, coordination, context, and verification costs when choosing a
   workflow. Use additional capabilities when their expected benefit justifies
   those costs. Keep routine work lightweight.
+
+## Question review
+
+Every rule in this corpus that asks the operator through `AskUserQuestion`
+runs under this one, when the session can launch agents.
+
+- Draft the questions and options, then launch the `advisor` with them, the
+  evidence, any skill policy or default that bears on the answer, and the
+  constraints. Launch once per drafted set, not once per question; relaunch
+  only for questions outside a reviewed set, such as a frontier a new answer
+  opened. An advisor launch on the same decision counts when its brief
+  carried the drafted questions and options: carry them there rather than
+  launching twice.
+- The advisor may fix the question itself: a missing option, a loaded
+  phrasing, a premise the evidence refutes.
+- The option the advisor picks goes first, labelled `(Recommended)`, with
+  "advisor's pick" in its description. For a multi-select question it names
+  the options it recommends selecting, and those carry the label. A skill's
+  own default or rule-derived recommendation is advisor input: when it
+  differs from the advisor's pick, the pick keeps the label and the skill's
+  default is shown beside it as dissent.
+- No advisor pick exists when the question asks for operator intent or a
+  fact only the operator holds, when the answer is conditional or outside
+  the offered options, or when the launch fails or times out. Then recommend
+  your own option and say the advisor named none.
+- When you disagree with the pick, keep its label and state your dissent in
+  the message beside the question. Shown dissent replaces the further
+  reconcile launch the advisor bullet above calls for; docket-run keeps its
+  own reconcile limit.
+- A question the advisor itself returned with a recommendation is already
+  reviewed. A question relayed upward from a subagent is reviewed by the
+  session that asks it; the subagent's recommendation is advisor input.
+- The label is review input. It settles nothing, never stands in for
+  consent, and is never preselected as approval of a mutation.
 
 ## Examples
 

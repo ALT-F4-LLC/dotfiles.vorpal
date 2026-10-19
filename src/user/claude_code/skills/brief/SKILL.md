@@ -117,11 +117,15 @@ whether it runs now in this conversation or through a docket run is such a decis
 rule 5 routes on it. Ask concrete questions about the work
 rather than asking the operator to classify its complexity. Offer a
 recommendation when evidence supports one; do not recommend guesses about
-facts.
+facts. Each round's drafted questions pass the advisor's [question
+review](../../references/working-agreement.md#question-review) before they
+are asked, and the advisor's pick takes `(Recommended)`; a later round
+needs its own review only for questions the earlier review did not see.
 
 The role question, when §2 calls for it, is a dedicated question in the
 current round. Its options are the two or three roles the request
-genuinely supports, strongest first with `(Recommended)` in its label;
+genuinely supports, the advisor's pick first with `(Recommended)` in its
+label and your strongest-first ordering as its input;
 never pad the list with generic stances to reach the harness minimum.
 
 Fold answers into the brief and continue when they expose another
@@ -375,7 +379,11 @@ the downstream input requires a different structure, show the prepared
 handoff as well.
 
 When the session can launch agents, launch the `advisor` agent on the drafted brief and route
-before presenting them, and fold its input into the draft.
+before presenting them, and fold its input into the draft. Its brief
+carries the drafted confirmation question, so this launch is its question
+review. The advisor picks among the routes §3 leaves eligible, with the
+§3-derived route as its input; its pick is the recommended route below,
+and a differing §3 route is shown beside it as dissent.
 
 Then use `AskUserQuestion` to confirm the displayed brief, route, and any
 prepared handoff. For multiple briefs, confirm the set and its routes

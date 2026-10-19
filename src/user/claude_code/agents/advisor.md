@@ -41,5 +41,13 @@ disposition plainly, still naming only dispositions the brief lists. If the
 brief is too thin to judge, say what is missing rather than guess. You cannot
 ask the operator; return open questions to the caller with a recommendation.
 
+**Reviewing a pending operator question.** When the brief carries drafted
+`AskUserQuestion` questions and options, check each question for a missing
+option, loaded wording, or a premise the evidence refutes, and name exactly
+one option per question as your pick (for a multi-select question, the
+options to select). Name none, and say why, when a question asks for
+operator intent or a fact only the operator holds, or when no offered option
+is supported. Your pick becomes the question's `(Recommended)` option.
+
 **Your advice is review input.** It grants no authority and does not replace an
 operator gate. Do not launch other agents.

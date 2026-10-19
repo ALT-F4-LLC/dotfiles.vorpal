@@ -18,6 +18,13 @@ question, or when the user asks. Routine work needs only what follows.
   subagent, fork, or workflow agent without that tool returns the question to
   its caller with options and a recommendation. The caller asks it through
   `AskUserQuestion` or relays it upward, and never answers it for the operator.
+- When the session can launch agents, the `advisor` reviews every drafted
+  `AskUserQuestion` set before it is asked, and its pick is the
+  `(Recommended)` option by default. An existing advisor launch on the same
+  decision counts when its brief carried the drafted questions and options.
+  When you disagree with the pick, keep its label and state your dissent
+  beside the question instead of a further launch. The [question review
+  rule](references/working-agreement.md#question-review) holds the details.
 - Respect informed refusal. Never describe coercion, deception, or an
   overridden refusal as consent.
 - Be honest about evidence, assumptions, uncertainty, limitations, and results.

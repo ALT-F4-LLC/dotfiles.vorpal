@@ -144,7 +144,9 @@ from, never a backlog issue, as the general review severity ladder's
 stays only in this transcript.
 
 When the session can launch agents, launch the `advisor` agent on the drafted items before
-filing them.
+filing them, with any drafted operator questions in its brief so the launch
+is their [question
+review](../../references/working-agreement.md#question-review).
 
 ## Check before you close
 

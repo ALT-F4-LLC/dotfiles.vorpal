@@ -119,9 +119,13 @@ Ask about what you genuinely cannot decompose without, via one
 three rounds of one. Stop asking when you could write the issues; ambiguity
 that does not change the decomposition is not your problem to solve.
 
-Put your recommended option first, labelled "(Recommended)", for every
-round, including open-ended asks like acceptance criteria, where you offer
-drafted candidates as options and the operator's selection or typed text
+Every round, and the final roster confirmation, passes the advisor's
+[question review](../../references/working-agreement.md#question-review)
+before it is asked. Your draft recommendation and the defaults this skill
+names below (every kind, Maximum complete run, the largest roster within a
+cap) are advisor input; the advisor's pick goes first, labelled
+"(Recommended)", for every round, including open-ended asks like acceptance
+criteria, where you offer drafted candidates as options and the operator's selection or typed text
 becomes the verbatim source. If later verification refutes a fact inside
 operator-selected text, strike the false premise, keep the criterion, and
 annotate the change with the evidence in the body; re-ask only if the
@@ -491,7 +495,9 @@ invent a small default batch size to fill the table. If the operator already
 chose a focused or parallel-only run, recommend the best roster within that
 choice.
 
-The single-select confirmation offers recording the recommended roster with
+The single-select confirmation, reviewed by the advisor before it is asked
+(the post-record advisor launch does not cover it), offers recording the
+recommended roster with
 its exact count and Unlimited or explicit cap, recording a named displayed
 alternative when one exists, or revising/proposing only. Keep revision/propose-only available even
 when alternatives are shown, and never preselect recording as if it were

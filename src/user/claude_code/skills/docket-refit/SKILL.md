@@ -236,7 +236,8 @@ Then get the target spec from the operator. Iterate a vague ask ("simplify
 it", "make it stricter") until it names concrete behavior: which steps or
 rows, which gates, what happens on rejection, who escalates to whom, which
 consumers must keep working unchanged. Batch what is underdetermined into
-one `AskUserQuestion` round, recommended option first, and let every detail
+one `AskUserQuestion` round, advisor's pick first under [question
+review](../../references/working-agreement.md#question-review), and let every detail
 with a conventional answer default; the proposal's shape is weighed below,
 never defaulted. When the operator hands you a numbered spec, treat it as
 the contract and ask only about what it leaves open.
@@ -358,7 +359,8 @@ candidate, never a fact the design may lean on. Store verbs (`docket
 Where the verified engine and the operator's spec collide, the resolution is
 the operator's. Present each collision as an `AskUserQuestion`: what the
 engine actually does, the faithful-but-costly option, the cheap
-approximation, the wait-for-the-engine option — recommendation first, with
+approximation, the wait-for-the-engine option — the advisor's pick first
+under question review, with
 the tradeoff stated in one line each. Never implement a downgrade the
 operator has not picked.
 
@@ -394,7 +396,8 @@ chosen, and the reason, so the operator approves a decision and not only a
 drawing.
 
 When the session can launch agents, launch the `advisor` agent on the design before rendering
-the artifact.
+the artifact, with the drafted approval question in its brief so the launch
+serves as its question review.
 
 Present the artifact link and ask for approval via `AskUserQuestion`
 (approve / revise). A revision request loops back through §4's gates if it

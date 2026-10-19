@@ -862,7 +862,11 @@ operator to repeat a settled decision or perform routine investigation.
 
 For each remaining operator decision, prepare a concise question with the
 affected issues, the exact unresolved choice, relevant evidence, viable
-options and tradeoffs, and a recommendation when supported. Explain what
+options and tradeoffs, and a recommendation when supported. Run the
+drafted batch through the advisor's [question
+review](../../references/working-agreement.md#question-review) before
+asking it; the advisor's pick takes `(Recommended)` and your recommendation
+is its input. Explain what
 each answer would change or unblock. Group issues sharing one decision, and
 ask prerequisite questions before questions that depend on them. Present a
 concrete choice the operator can answer without rereading the backlog. Do
@@ -1078,7 +1082,10 @@ a declined proposal is not asked again.
 If there is nothing to propose, finish any remaining §4a triage; proceed to
 §5 only when no further decisions or authorized edits can be completed.
 When the session can launch agents, launch the `advisor` agent on the proposal batch before
-showing it, and fold its input in with the rest of the batch.
+showing it, and fold its input in with the rest of the batch. Its brief
+carries the drafted approval questions, so this launch is their question
+review: the advisor names which proposals it recommends applying, and those
+options carry `(Recommended)` (for `Apply all` / `Apply none`, its pick).
 When proposals are ready, show the numbered proposals in chat, including
 their proposed content and `Commands:`, then make an initial
 `AskUserQuestion` call for that batch in the main session:

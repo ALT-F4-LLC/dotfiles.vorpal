@@ -2347,7 +2347,12 @@ premise-check run, and the status of every cited tracker read. The agent
 sees only its brief, so put the question in the launch prompt: the
 decision's class, the evidence with every failing row quoted, the paths to
 read, and the dispositions the engine's verbs can honor, as a list to choose
-one from.
+one from. That list is the drafted operator question's options, so this
+launch is also the drafted question's
+[review](../../references/working-agreement.md#question-review); never
+launch a second advisor for it. When the decision reaches the operator, the
+advisor's pick takes `(Recommended)` as
+[references/escalation.md](references/escalation.md) describes.
 
 **A clear answer settles the decision.** An answer is clear when the
 advisor names exactly one disposition the engine verbs can honor, states
@@ -2518,7 +2523,10 @@ disposition, verb, the advisor's answer quoted). Then recheck each queued
 entry (`docket step show` for a step, `run status` for a run-level
 matter), drop any already resolved, and present the rest through
 consecutive question-tool rounds, one question per gate, a trust item
-alone in its own question. This is the one deliberate exception to holding
+alone in its own question. Each entry already quotes its advisor answer,
+which serves as that question's review: launch no new advisor. Label its
+pick `(Recommended)` when it named one; otherwise recommend your own option
+and say the advisor named none. This is the one deliberate exception to holding
 at most one open question. Remove each entry as it is answered.
 
 **A pause carries the queue.** **Pause mode** writes every queued entry

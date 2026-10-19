@@ -114,18 +114,30 @@ above in hand: the gate verdicts read, the artifact read in full, the
 premise-check run, and the status of every cited tracker read. The advisor
 sees only its brief, so put that evidence in it, quoted or by path; a launch
 made on a slice or a paraphrase weighs evidence
-nobody read. An answer the standing ruling counts as clear settles the
-decision, and no question is asked.
+nobody read. Carry the drafted operator question and its options in the
+same brief, so this launch is also the question's [question
+review](../../../references/working-agreement.md#question-review) and no
+further launch is made for it. An answer the standing ruling counts as clear
+settles the decision, and no question is asked.
 
 **A question that follows an answer that was not clear carries the
 advisor's text.** Put it whole in your accompanying message, in a fenced
 block labelled as the advisor's answer and as review input, beside the
-evidence; after a reconcile call, both answers. Never fold it into the
-question text, an option, or your own finding, and state your recommended
-option separately, as your reading of the evidence. A class the ruling
-names as never clear carries the advisor's framing the same way, and a
-trust matter still carries the exact `docket trust add ... -- <argv>` line
-the operator would run.
+evidence; after a reconcile call, both answers. The advisor's single
+disposition, or its preferred one when it ranked them, takes
+`(Recommended)`; after a reconcile call, the reconcile answer's pick does.
+That includes an answer left unclear only because it contradicted your
+evidence. The label and an "advisor's pick" note in its description are
+the only advisor content on an option. Never fold the advisor's text into
+the question text, an option, or your own finding; state your reading of
+the evidence beside the label as agreement or dissent. No advisor pick
+exists for a conditional answer, two unranked dispositions, an answer that
+defers the choice, a disposition outside the offered options, or a failed
+or timed-out launch: recommend your own option and say the advisor named
+none. A class the ruling names as never clear carries the advisor's
+framing the same way and has no advisor pick, since its answer is never a
+disposition; a trust matter still carries the exact `docket trust add ...
+-- <argv>` line the operator would run.
 
 Present every gate the advisor's answer left unsettled through the
 question tool, recommended option first, each answer's real routing in its
@@ -151,8 +163,9 @@ So offer the class option at the first such gate instead of assuming it
 at the second, when a park can plainly recur: "Override-pass this step
 only (Recommended)" / "Override-pass this step and any recurrence of
 this exact defect class for the rest of this run" / "Park and stop the
-issue." The class choice goes advisor-first like any other decision. Every
-recurrence still gets its own resolve verb, its own note, and the durable
+issue." The "(Recommended)" shown is this skill's default; the advisor's
+pick replaces it, since the class choice goes advisor-first like any other
+decision. Every recurrence still gets its own resolve verb, its own note, and the durable
 fix issue the broken-check rule below requires, each recorded under the
 authority that named the class: the operator form for a class the operator
 named, the advisor-first form for one a clear advisor answer named. For a
@@ -283,9 +296,10 @@ sha**, since the verb writes a pass without re-pointing the step at a
 fixed tree (`step annotate --integrated-sha` does, once integrated; see
 below). So a conductor patch under override-pass alone is invisible
 downstream: the next dispatch carries the pre-patch sha as target, and
-the panel reads the failing tree. Present `retry` as recommended (its
-precondition is the rendered-brief check above); override-pass will
-re-find the gate failure and open a fix round on a defect already fixed.
+the panel reads the failing tree. Pass `retry` to the advisor as this
+skill's default (its precondition is the rendered-brief check above); its
+pick takes `(Recommended)`, with `retry` shown as dissent when they differ.
+Override-pass will re-find the gate failure and open a fix round on a defect already fixed.
 
 **If the operator rules the conductor patch anyway**, land it as its own
 commit, integrate it, then re-point the step's record immediately:

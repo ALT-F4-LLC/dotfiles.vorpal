@@ -234,6 +234,9 @@ and a schema fix is an operator-decision item.
 
 When the session can launch agents, launch the `advisor` agent on the staged batch before
 presenting it, and fold its input in with the rest of the classification.
+Carry the drafted approval question in its brief so the launch is its
+[question review](../../references/working-agreement.md#question-review);
+the options the advisor recommends carry `(Recommended)`.
 
 Present the staged semantic batch with `AskUserQuestion`: group by file, show
 each fix's before and after, and cite the fixture record or inventory hunk it

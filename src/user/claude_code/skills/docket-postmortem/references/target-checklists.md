@@ -61,7 +61,7 @@ docket skill's [automation reference](../../docket/references/automation.md).
 
 | Touch | Evidence to inspect |
 |---|---|
-| Questions | Every `AskUserQuestion` in the driving transcripts and the digests' `operator_touches`: what was asked, whether an artifact, prior ruling, or standing rule already held the answer, and how long the run waited. |
+| Questions | Every `AskUserQuestion` in the driving transcripts and the digests' `operator_touches`: what was asked, whether an artifact, prior ruling, or standing rule already held the answer, whether the advisor reviewed it first and its `(Recommended)` label matches the advisor's pick, and how long the run waited. |
 | Parks and holds | `run-paused`, `step-held`, `waiting-human` routing, and `step-resolved` in the events trail: which standing ruling could have answered it machine-side, and which needed a vital condition. |
 | Acknowledgments | `--ack-reap`, `--accept-missing-usage`, budget raises, and trust grants: each is vital only under its named condition; a routine acknowledgment is automatable. |
 | Corrections | Operator messages that corrected the conductor or a seat: each is evidence of a missing check or contract, not only a slip. |

@@ -111,6 +111,8 @@ jobs:
 
       - run: bash tests/docket-postmortem-workflow.test.sh
 
+      - run: bash tests/declutter-code-decide.test.sh
+
       - run: bash tests/simplify-corpus-decide.test.sh
 
       - run: yq --version | grep -Eq 'mikefarah/yq.* version v4\.'

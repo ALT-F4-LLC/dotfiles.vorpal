@@ -71,7 +71,8 @@ will transform, on a clean tree.
    repositories. Confirm `git status --porcelain` is empty and HEAD is
    unchanged before continuing.
 4. A failing run is a proven guard for that site. A passing run means
-   nothing guards it: ledger the site as `no coverage` and leave it alone.
+   nothing guards it: ledger the site as `no coverage`, queue its finding
+   `skipped` at the current HEAD, and leave it alone.
    A run that errors for a reason unrelated to the change (a flaky test, a
    timeout) is retried once; a second error counts as `no coverage`.
 
@@ -90,7 +91,9 @@ compiler, linter, or type checker reports the symbol unused; or the
 guarding condition is a literal that cannot vary. Reflection, string-built
 symbol names, plugin registries, and exported entry points that an external
 consumer may call defeat search; when the language or framework uses any
-of these near the unit, treat the symbol as reachable and leave it alone.
+of these near the unit, treat the symbol as reachable, leave it alone, and
+queue the finding `skipped` at the current HEAD. A reference that exists is a
+false positive instead, and the unit is `blocked` under §2.
 After the removal, build, typecheck, lint when the repository names one,
 and the full suite must pass; in a repository with no test command, build,
 typecheck, and lint when named must pass.
@@ -103,7 +106,8 @@ longer needs, a compile-time-only cast the type checker no longer needs.
 No probe and no reachability search; build, typecheck, and the lint gate
 must still pass afterwards, and the full suite runs once at the end of the
 pass with everything else. In a repository with no lint gate, removing a
-lint suppression is not an inert edit; the suppression stays. Inert edits and reachability removals are the
+lint suppression is not an inert edit; the suppression stays and its finding
+is queued `skipped`. Inert edits and reachability removals are the
 only kinds the pass may apply in a unit no test references.
 
 ## Frozen contracts
@@ -166,3 +170,116 @@ Expiry, checked at the start of every tick before the ledger is read:
 The ledger is session state, not repository state. It is never committed,
 and a new session starts with none by design: the operator's own commits
 between sessions change the answers.
+
+## Session files
+
+Three files live in the same directory as the ledger, beside it. All are
+session state, never committed, and survive context compaction, which is why
+state lives there and not in the conversation. Read them at the start of
+every tick.
+
+- `declutter-ledger.md`: the [ledger](#ledger).
+- `declutter-findings.md`: the [findings queue](#findings-queue).
+- `declutter-state.md`: one line, `depth: <simple|standard|deep>`, written
+  when the depth is first resolved. A missing or unreadable file means
+  `simple`.
+
+## Findings queue
+
+A report-only finding confirmed by a refuter is queued, not dropped, so it
+can be taken to a decision and resolved. One line per finding:
+
+```text
+<fingerprint> | <state> | <HEAD at the time> | <one-line note>
+```
+
+The fingerprint is `<repo-relative path>#<item>#<enclosing symbol>`, with
+the item named as the catalog names it. It carries no line numbers and no
+HEAD, so a rerun of discovery finds the same finding and does not queue it
+twice. It is also the key passed back to discovery as `refutedKeys`: the
+first column of every `refuted`, `skipped`, `declined`, `undecided`,
+`withheld`, `blocked`, and `resolved` line, unchanged, so those items are not re-found and
+re-refuted. A cleanup finding (a catalog entry with a proof class) has the
+same shape, `<path>#<entry>#<enclosing symbol>`. The symbol is the bare name
+of the innermost enclosing function, method, or class, or the declared name
+for a top-level declaration or import. Build a key by replacing
+each `|` or line break with a space, collapsing runs of whitespace to one
+space, removing spaces around each `#`, dropping a trailing `()`, and
+trimming the symbol; the workflow does
+the same. States:
+
+- `open`: confirmed, not yet put to a decision.
+- `decided`: the decision is recorded in the note (the option chosen and who
+  chose it); not yet applied.
+- `resolved`: applied and landed; the note carries the commit hash.
+- `declined`: the decision was to leave it. Never re-queued within a
+  session.
+- `blocked`: the decided change failed its gates after one follow-up round,
+  or its diff review refused it. A block writes no unit ledger entry.
+- `undecided`: the advisor gave no clear answer. Never asked again this
+  session; listed in the final report.
+- `withheld`: a finding an unattended run may not decide (a frozen contract,
+  a dependency removal, an orphan-file deletion). Asked at the next attended
+  invocation in the same session, and listed in the final report so the
+  operator can rerun the skill attended. Session files do not carry across
+  sessions.
+- `refuted`: a refuter explicitly rejected it. A refuter that returned
+  nothing refutes nothing.
+- `skipped`: a confirmed cleanup finding the pass left alone because it had
+  no guard: a surviving probe site, a failed reachability proof, or a lint
+  suppression in a repository with no lint gate. Its key is passed back so
+  the finding stops holding a refutation slot.
+- `stale`: the entry's path changed after it was recorded.
+
+Expiry, checked at the start of every tick: an `open`, `decided`,
+`refuted`, or `skipped` entry whose path shows `git log <recorded HEAD>..HEAD -- <its path>`
+non-empty is marked `stale` and never trusted from the file. The next
+discovery round re-confirms a stale report-only item (back to `open`) or does
+not find it. A stale `refuted` or `skipped` key is only a suppression and is
+dropped.
+A `stale` entry still present at the following tick is dropped, and its
+key is no longer passed back. `blocked` follows the ledger's `blocked` rule.
+`resolved`, `declined`, `undecided`, and `withheld` stay for the session.
+
+## Security-boundary paths
+
+A path is a security boundary when any `/`-, `.`-, `_`-, or `-`-delimited
+component of it is one of: `auth`, `authn`, `authz`, `oauth`, `session`,
+`sessions`, `secret`, `secrets`, `crypto`, `cipher`, `permission`,
+`permissions`, `sandbox`, `acl`, `rbac`, `credential`, `credentials`,
+`token`, `tokens`, `password`, `passwd`, `jwt`, `tls`, `ssl`, `csrf`, `login`
+(case-insensitive). The discovery workflow applies the same list as a
+backstop to what its scouts judge. The diff review applies it to every
+touched path, and a `security boundary` ledger entry marks the rest.
+
+## Queued units
+
+A discovery round yields a ranked queue the tick works down. The queue saves
+ranking, never proof: the guard (mutation probe, reachability proof, ledger
+check) reruns at pick time on the current tree, and discovery-time evidence
+is never reused.
+
+A queued unit stays only while
+`git diff --quiet <scout HEAD> HEAD -- <unit paths> <its test paths> <its evidence paths>`
+is clean. Evidence paths are the other files a finding depends on: a
+duplicate's partner, the callers of a pass-through or flag argument, the
+callers of a rename. A unit that fails the check is dropped to the next
+discovery round.
+
+After a landing, re-run the baseline only when `git status --porcelain` is
+not empty or HEAD is not the commit this tick just landed. The rerun in
+declutter's step 4 already passed on that exact tree.
+
+## Decided changes
+
+A decided finding may change behavior, because the operator chose it. It is
+the one kind of change the frozen-behavior rule does not cover, and only as
+far as the decision says. The worker applies exactly the option recorded in
+the queue entry and nothing else. Its proof is the full gate run: build,
+typecheck, lint when the repository names one, and the full suite pass. A
+test file changes only if the decision names it (strengthening a hollow test
+is the usual case); any other test edit is a refusal. A decided change never
+touches a [frozen contract](#frozen-contracts) unless an attended operator's
+decision names that contract; a decision recorded by the advisor never does.
+Dependency removal and orphan-file deletion are decisions only an attended
+operator makes, because they change the supply chain or delete entry points.

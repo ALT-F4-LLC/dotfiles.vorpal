@@ -17,7 +17,9 @@ Every entry carries a proof class the skill's §2 applies:
 - `probe`: a transformation of live code. The site must fail a mutation
   probe first, then build, typecheck, and the full suite must pass after.
 
-Each entry: Signal, Why, Simplification, Risk, Proof, Source. A source
+Each entry: Signal, Why, Simplification, Risk, Proof, Source. An entry with
+no Proof class is report-only: the scout names it and the worker never
+applies it. A source
 marked `unsourced` is practitioner consensus the research found no primary
 source for. The last two sections list what the scout reports but the
 worker never touches, and what looks like cruft and is not.
@@ -243,6 +245,47 @@ worker never touches, and what looks like cruft and is not.
 - Source: https://github.com/dabit3/deslop lists redundant `return
   undefined`.
 
+### Write-only local
+- Signal: a local variable assigned and never read. Linters name it: pylint
+  `W0612`, ESLint `no-unused-vars`, rustc `unused_variables`, `go vet`.
+- Why: bookkeeping from an abandoned approach that still reads as if it
+  matters.
+- Simplification: delete the binding. When the right-hand side is a call
+  with effects, keep the call and drop only the binding.
+- Risk: a binding held for its destructor or scope guard (RAII guards, lock
+  guards, context managers) is read by its lifetime. Languages that use that
+  idiom keep any binding the linter does not report.
+- Proof: `reachability`, and only when the compiler or linter reports it.
+- Source: https://pylint.readthedocs.io/en/stable/user_guide/messages/warning/unused-variable.html;
+  https://eslint.org/docs/latest/rules/no-unused-vars.
+
+### Dead store
+- Signal: a variable assigned a value that is overwritten on every path
+  before any read, often a default assigned above a branch that always
+  assigns.
+- Why: the first assignment says the value matters and it does not.
+- Simplification: delete the first assignment, or fold the two into one
+  declaration.
+- Risk: the discarded right-hand side may have effects, and a closure,
+  debugger, or `finally` block may read the first value. Check both.
+- Proof: `probe`.
+- Source: unsourced; a case of Remove Dead Code,
+  https://refactoring.com/catalog/.
+
+### Unused export in a private package
+- Signal: an exported symbol with no importer anywhere in the tree, in a
+  package the gates reference's published-library test does not match.
+- Why: exported while unfinished or after its last caller moved, so it
+  keeps a public face on code nothing uses.
+- Simplification: delete the symbol, or drop its `export` when the file
+  still uses it.
+- Risk: a package that is private by the gates test may still be imported by
+  a path alias, a dynamic `import()`, or a tool outside the tree. Any such
+  path leaves the symbol alone.
+- Proof: `reachability`.
+- Source: unsourced; a case of Remove Dead Code,
+  https://refactoring.com/catalog/.
+
 ## Needless indirection
 
 ### Forwarding wrapper
@@ -389,6 +432,30 @@ worker never touches, and what looks like cruft and is not.
 - Proof: `probe`.
 - Source: https://github.com/dabit3/deslop.
 
+### Re-export-only barrel
+- Signal: a file whose whole content is re-exports of other modules
+  (`export * from`, `export { x } from`, `pub use`, `from .x import *`).
+- Why: a layer every import passes through that decides nothing, and a
+  common source of circular imports.
+- Simplification: point each importer at the defining module and delete the
+  barrel.
+- Risk: the barrel may be a package's public entry point, which is a
+  published export and frozen. A barrel that sets an import order other
+  code relies on, or that carries a side-effect import, stays.
+- Proof: `probe` at the redirected importers.
+- Source: unsourced.
+
+### Variable returned immediately
+- Signal: `const r = f(x); return r;` with nothing between the assignment
+  and the return, and no debugging or annotation purpose.
+- Why: a name that adds nothing the expression does not say.
+- Simplification: Inline Variable: `return f(x);`.
+- Risk: a named temporary may document a non-obvious value, or sit where a
+  debugger breakpoint is useful. Keep it when the name says more than the
+  call does.
+- Proof: `probe`.
+- Source: https://refactoring.com/catalog/ (Inline Variable).
+
 ## Duplication
 
 ### Duplicate helper across files
@@ -485,6 +552,18 @@ worker never touches, and what looks like cruft and is not.
   them differently, the chain stays.
 - Proof: `probe`.
 - Source: https://github.com/dabit3/deslop.
+
+### Else after return
+- Signal: an `else` block following an `if` branch that always returns,
+  throws, breaks, or continues.
+- Why: indentation that implies the two branches are peers when the first
+  already ends the flow.
+- Simplification: drop the `else` and unindent its body.
+- Risk: none for behavior when the first branch cannot fall through.
+  Confirm it cannot on every path, including a `finally` that runs after it.
+- Proof: `probe`.
+- Source: https://refactoring.com/catalog/ (Replace Nested Conditional with
+  Guard Clauses).
 
 ### Rewrapping try/catch
 - Signal: a `try` around one call whose `catch` throws a new error with
@@ -614,8 +693,10 @@ worker never touches, and what looks like cruft and is not.
 
 ## Report only
 
-The scout names these; the worker never applies them, because the fix
-changes behavior or needs a decision this loop cannot make.
+The scout names these; the worker never applies them on its own, because
+the fix changes behavior or needs a decision this loop cannot make. A
+refuter-confirmed item enters the [findings queue](gates.md#findings-queue)
+and is resolved only by a recorded decision, as the skill's §3 describes.
 
 - **Swallowed exception.** An empty catch, or one that only logs on a path
   where the error matters. Removing it changes behavior, and a re-test of
@@ -636,6 +717,16 @@ changes behavior or needs a decision this loop cannot make.
 - **Feature flag read from the environment**, whatever its default. An
   external setter is unobservable from the tree.
   https://launchdarkly.com/docs/guides/flags/technical-debt
+- **Unused dependency in a manifest** (`package.json`, `Cargo.toml`,
+  `pyproject.toml`, `go.mod`). Removing it rewrites the lockfile and changes
+  the supply chain, and a dependency may be loaded by plugin discovery,
+  a build script, or a peer requirement that search cannot see.
+- **Orphan file** that nothing in the tree references. Entry points,
+  templates, scripts run by hand, and files loaded by convention defeat
+  search, so deleting one is a decision for the operator.
+- **Repeated magic literal**: the same non-trivial string or number in
+  three or more places. Naming it is Extract Constant, but whether the
+  copies mean the same thing needs the operator's judgment.
 - **Complexity outlier** (cyclomatic or cognitive) whose only fix is a
   redesign. Extracting guard clauses or a named condition is a catalog
   entry; re-architecting a function is a rewrite, and the diff review

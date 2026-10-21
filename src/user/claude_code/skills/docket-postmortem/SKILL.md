@@ -127,7 +127,9 @@ run activate RUN-N`, `docket run pause RUN-N`, `docket run resume RUN-N`,
 `docket run abandon RUN-N`, or `/docket-run RUN-N`. A transcript that merely
 mentions the id, this audit included, is not a driver. Read cwd from
 transcript metadata and corroborate it with the run's project identity.
-Record each session's line count and byte size; §4 shards on them.
+Record each session's line count (`awk 'END { print NR }'`, which counts a
+last line with no newline) and byte size; §4 condenses on the line count and
+shards on the sizes.
 
 **Inventory every log.** Under each driving session's directory, every
 `subagents/workflows/<wfId>/agent-<id>.jsonl` and every
@@ -227,6 +229,11 @@ The script covers every surface:
   inventoried log and write one digest per log under `$AUDIT/digests`:
   models, usage, tool mix, tool errors, sandbox and hook denials, engine
   refusals, repeated commands, operator touches, and the flags they raise.
+- **Condense.** One low-effort agent per driving transcript runs a fixed jq
+  program that keeps every message's text, cuts tool calls and results to a
+  stated length, and carries `src_line` on every record. The shards below are
+  cut from that copy, and each cut is returned in `uncovered` as a coverage
+  limit. A failed condensation falls back to sharding the raw transcript.
 - **Conductor.** One reader per byte-bounded shard of every driving
   transcript, against the conductor checklist.
 - **Layers.** One analyst each for waves, panels and gates, the engine

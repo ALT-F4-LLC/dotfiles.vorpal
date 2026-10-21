@@ -75,6 +75,7 @@ extract docket-postmortem-refute-tally > "${WORK}/tally.js"  || fatal "bad or mi
 extract docket-postmortem-plan         > "${WORK}/plan.js"   || fatal "bad or missing TEST markers for docket-postmortem-plan"
 extract docket-postmortem-digest-jq    > "${WORK}/jq.js"     || fatal "bad or missing TEST markers for docket-postmortem-digest-jq"
 extract docket-postmortem-inventory    > "${WORK}/inventory.js" || fatal "bad or missing TEST markers for docket-postmortem-inventory"
+extract docket-postmortem-condense-jq  > "${WORK}/condense.js" || fatal "bad or missing TEST markers for docket-postmortem-condense-jq"
 
 # ---- Fixtures for the inventory read ---------------------------------------
 # A 528-line inventory like RUN-125's: 2 main transcripts, 526 workflow logs.
@@ -127,11 +128,49 @@ digest() { # <fixture> <line>
 digest "${WORK}/flagged.jsonl" 7 > "${WORK}/flagged.digest.json" || fatal "digest program failed on the flagged fixture"
 digest "${WORK}/clean.jsonl" 8   > "${WORK}/clean.digest.json"   || fatal "digest program failed on the clean fixture"
 
+# ---- Fixtures for the transcript condensation ------------------------------
+# 100 turns, each an assistant text beside a 5000-character tool call, then a
+# 30000-character tool result; then lines the program must not lose: invalid
+# JSON, a blank line, a system record, and a thinking block.
+jq -c -n 'def big($k): [range(0; $k) | "x"] | join("");
+    {type: "user", uuid: "u0", timestamp: "2026-09-20T00:00:00Z", message: {role: "user", content: "Operator: drive the run."}},
+    (range(1; 101) as $i |
+        {type: "assistant", uuid: "a\($i)", timestamp: "2026-09-20T00:01:00Z", message: {role: "assistant", model: "claude-opus-5-5", content: [{type: "text", text: "Step \($i) text kept whole."}, {type: "tool_use", id: "t\($i)", name: "Bash", input: {command: big(5000)}}]}},
+        {type: "user", uuid: "r\($i)", timestamp: "2026-09-20T00:02:00Z", message: {role: "user", content: [{type: "tool_result", tool_use_id: "t\($i)", content: big(30000)}]}})' > "${WORK}/transcript.jsonl" || fatal "could not build the transcript fixture"
+printf '%s\n' 'not json at all' '' '{"type":"system","subtype":"compact","uuid":"s1","timestamp":"2026-09-20T00:03:00Z","content":"Conversation compacted"}' '{"type":"assistant","uuid":"th1","timestamp":"2026-09-20T00:04:00Z","message":{"role":"assistant","content":[{"type":"thinking","thinking":"short thought"},{"type":"text","text":"Final answer."}]}}' >> "${WORK}/transcript.jsonl"
+cat >> "${WORK}/transcript.jsonl" <<'JSONL'
+{"type":"user","uuid":"m1","timestamp":"2026-09-20T00:05:00Z","isMeta":true,"message":{"role":"user","content":[{"type":"text","text":"Stop hook feedback: keep going"}]}}
+{"type":"user","uuid":"m2","timestamp":"2026-09-20T00:05:01Z","origin":{"kind":"task-notification"},"message":{"role":"user","content":"<task-notification>done</task-notification>"}}
+{"type":"user","uuid":"m3","timestamp":"2026-09-20T00:05:02Z","isCompactSummary":true,"isSidechain":true,"message":{"role":"user","content":"This session is being continued"}}
+{"type":"attachment","uuid":"at1","timestamp":"2026-09-20T00:05:03Z","attachment":{"type":"queued_command","prompt":"operator says stop"}}
+{"type":"attachment","uuid":"at2","timestamp":"2026-09-20T00:05:04Z","attachment":{"type":"hook_success","content":"ok"}}
+{"type":"queue-operation","timestamp":"2026-09-20T00:05:05Z","operation":"enqueue","content":"queued operator prompt"}
+{"type":"summary","summary":"A compacted summary","leafUuid":"x"}
+{"type":"assistant","uuid":"sv1","timestamp":"2026-09-20T00:05:06Z","message":{"role":"assistant","content":[{"type":"server_tool_use","id":"s1","name":"web_search","input":{"query":"q"}}]}}
+{"type":"user","uuid":"ar1","timestamp":"2026-09-20T00:05:07Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"s1","content":[{"type":"text","text":"part one"},{"type":"image"}]}]}}
+{"type":"user","uuid":"nm1","timestamp":"2026-09-20T00:05:08Z","message":null}
+JSONL
+node -e '
+const src = require("fs").readFileSync(process.argv[1], "utf8")
+const m = src.match(/const CONDENSE_JQ = String\.raw`([\s\S]*?)`/)
+if (!m) { console.error("CONDENSE_JQ not found in its region"); process.exit(1) }
+require("fs").writeFileSync(process.argv[2], m[1])
+' "${WORK}/condense.js" "${WORK}/condense.jq" || fatal "could not extract CONDENSE_JQ"
+jq -c -n -R -f "${WORK}/condense.jq" "${WORK}/transcript.jsonl" > "${WORK}/condensed.jsonl" || fatal "the condensation program failed on the transcript fixture"
+jq -c -n -R '[foreach inputs as $r (0; . + 1; . as $n | (try ($r | fromjson) catch null) | select(type == "object" and .type == "assistant") | .message.content[]? | select(.type == "text") | {line: $n, text: .text})]' "${WORK}/transcript.jsonl" > "${WORK}/source.texts.json" || fatal "could not list the source assistant texts"
+
 {
     cat "${WORK}/config.js"
     cat "${WORK}/tally.js"
     cat "${WORK}/plan.js"
     cat "${WORK}/inventory.js"
+    cat "${WORK}/condense.js"
+    printf 'const CONDENSED = %s\n' "$(jq -s -c . "${WORK}/condensed.jsonl")"
+    printf 'const SOURCE_TEXTS = %s\n' "$(cat "${WORK}/source.texts.json")"
+    printf 'const SOURCE_LINES = %s\n' "$(awk 'END { print NR }' "${WORK}/transcript.jsonl")"
+    printf 'const SOURCE_BYTES = %s\n' "$(wc -c < "${WORK}/transcript.jsonl" | tr -d ' ')"
+    printf 'const CONDENSED_BYTES = %s\n' "$(wc -c < "${WORK}/condensed.jsonl" | tr -d ' ')"
+    printf 'const CONDENSE_PROGRAM = %s\n' "$(jq -R -s . "${WORK}/condense.jq")"
     printf 'const INVENTORY_OUT = %s\n' "$(jq -R -s . "${WORK}/inventory.out")"
     printf 'const INVENTORY_SHORT_OUT = %s\n' "$(jq -R -s . "${WORK}/inventory.short.out")"
     printf 'const INVENTORY_EXPECTED = %s\n' "$(cat "${WORK}/inventory.expected.json")"
@@ -329,6 +368,55 @@ ok(planShards(0, 0, SHARD_BYTES).length === 0, 'shards: an empty transcript plan
     ok(MODEL_UNKNOWN_TOLERANCE === 0.05, 'config: model-unknown tolerance is 5%')
 }
 
+// ---- transcript condensation ---------------------------------------------
+{
+    ok(CONDENSED.length === SOURCE_LINES, `condense: one record per source line (${CONDENSED.length} of ${SOURCE_LINES})`)
+    ok(CONDENSED.every((r, i) => Number.isInteger(r.src_line) && r.src_line === i + 1), 'condense: every record carries src_line equal to its source line number')
+    const kept = CONDENSED.filter((r) => r.type === 'assistant').flatMap((r) => r.blocks.filter((b) => b.t === 'text').map((b) => ({ line: r.src_line, text: b.text })))
+    ok(kept.length === SOURCE_TEXTS.length && SOURCE_TEXTS.every((s, i) => kept[i].line === s.line && kept[i].text === s.text), `condense: every assistant text is kept whole, at its source line (${kept.length} of ${SOURCE_TEXTS.length})`)
+    ok(CONDENSED.filter((r) => r.blocks).every((r) => 'uuid' in r && 'timestamp' in r && typeof r.role === 'string'), 'condense: uuid, timestamp and role stay on every conversation record')
+    ok(CONDENSED[1].model === 'claude-opus-5-5', 'condense: the assistant model is kept')
+    const call = CONDENSED[1].blocks.find((b) => b.t === 'tool_use')
+    ok(call.input.length === CONDENSE_CALL_CHARS && call.cut > 0 && call.name === 'Bash', `condense: a tool call is cut to ${CONDENSE_CALL_CHARS} characters and says how many were lost (cut ${call.cut})`)
+    const result = CONDENSED[2].blocks.find((b) => b.t === 'tool_result')
+    ok(result.text.length === CONDENSE_RESULT_CHARS && result.cut === 30000 - CONDENSE_RESULT_CHARS && result.is_error === false, `condense: a tool result is cut to ${CONDENSE_RESULT_CHARS} characters (cut ${result.cut})`)
+    ok(CONDENSED[0].blocks[0].text === 'Operator: drive the run.', 'condense: operator text is kept whole')
+    const by = (uuid) => CONDENSED.find((r) => r.uuid === uuid)
+    ok(JSON.stringify(CONDENSED.filter((r) => r.unparsed).map((r) => r.src_line)) === '[202,203]', 'condense: a non-JSON and a blank line become unparsed markers at their own line')
+    ok(by('s1').type === 'system' && by('s1').text === 'Conversation compacted' && by('s1').subtype === 'compact', 'condense: a system record keeps its subtype and text')
+    ok(by('th1').blocks[0].t === 'thinking' && by('th1').blocks[1].text === 'Final answer.', 'condense: thinking is marked and the text beside it kept')
+    ok(by('m1').meta === true && by('m2').origin === 'task-notification' && by('m3').compact === true && by('m3').sidechain === true, 'condense: meta, origin, compact and sidechain are carried when set')
+    ok(!('meta' in by('u0')) && !('origin' in by('u0')) && !('compact' in by('u0')), 'condense: an operator message carries none of the injected-text flags')
+    ok(by('m2').blocks[0].text === '<task-notification>done</task-notification>' && by('m1').blocks[0].text === 'Stop hook feedback: keep going', 'condense: injected text is kept whole beside its flag')
+    ok(by('at1').subtype === 'queued_command' && by('at1').text === 'operator says stop', 'condense: a queued command attachment keeps its prompt whole')
+    ok(by('at2').subtype === 'hook_success' && by('at2').text.includes('"content":"ok"'), 'condense: another attachment keeps its type and body')
+    ok(CONDENSED.some((r) => r.type === 'queue-operation' && r.text === 'queued operator prompt'), 'condense: a queue-operation record keeps its content')
+    ok(CONDENSED.some((r) => r.type === 'summary' && r.text === 'A compacted summary'), 'condense: a summary record keeps its summary')
+    ok(by('sv1').blocks[0].t === 'server_tool_use' && by('sv1').blocks[0].input.includes('"query":"q"'), 'condense: a server tool call keeps its input')
+    ok(by('ar1').blocks[0].text === 'part one\n[image]', 'condense: an array-shaped tool result is joined and cut')
+    ok(CONDENSED.some((r) => r.uuid === 'nm1' && r.text === ''), 'condense: a record with a null message still yields a record')
+    ok(CONDENSE_PROGRAM.includes('clipped(1500)') && CONDENSE_PROGRAM.includes('clipped(400)') && CONDENSE_CALL_CHARS === 1500 && CONDENSE_RESULT_CHARS === 400, 'condense: the jq limits match the stated constants')
+    // Shards drop by the byte ratio. A small shard size makes the fixture split.
+    const shardBytes = 100_000
+    const raw = planShards(SOURCE_LINES, SOURCE_BYTES, shardBytes).length
+    const small = planShards(CONDENSED.length, CONDENSED_BYTES, shardBytes).length
+    ok(CONDENSED_BYTES * 8 < SOURCE_BYTES, `condense: the condensed file is under an eighth of the source (${CONDENSED_BYTES} of ${SOURCE_BYTES} bytes)`)
+    ok(raw >= 30 && small * 8 <= raw, `condense: the shard count drops by the byte ratio (${raw} to ${small})`)
+    // The relay's reply is checked against the session.
+    const session = { lines: 100, bytes: 5_000_000 }
+    const good = { sourceLines: 100, lines: 100, bytes: 400_000, unparsed: 0, error: '' }
+    ok(resolveCondensed(good, session).ok === true, 'condense reply: matching counts are accepted')
+    ok(resolveCondensed(null, session).ok === false, 'condense reply: no reply is refused')
+    ok(resolveCondensed({ ...good, error: 'jq: error' }, session).ok === false, 'condense reply: an error is refused')
+    ok(resolveCondensed({ ...good, lines: 99 }, session).ok === false, 'condense reply: a record missing from the condensed file is refused')
+    ok(resolveCondensed({ ...good, sourceLines: 101 }, session).ok === false, 'condense reply: a source count that differs from args.sessions is refused')
+    ok(resolveCondensed({ ...good, bytes: 0 }, session).ok === false, 'condense reply: an empty condensed file is refused')
+    ok(resolveCondensed({ ...good, bytes: '400000' }, session).ok === false, 'condense reply: a non-integer count is refused')
+    ok(resolveCondensed({ ...good, unparsed: 100 }, session).ok === false, 'condense reply: a file that is all unparsed markers (the program run without -R) is refused')
+    ok(resolveCondensed({ ...good, unparsed: 10 }, session).ok === true && resolveCondensed({ ...good, unparsed: 11 }, session).ok === false, 'condense reply: more than a tenth unparsed is refused')
+    ok(resolveCondensed({ sourceLines: 100, lines: 100, bytes: 400_000, error: '' }, session).ok === false, 'condense reply: a missing unparsed count is refused')
+}
+
 // ---- digest program ------------------------------------------------------
 {
     const f = FLAGGED_DIGEST
@@ -357,6 +445,20 @@ for want in 'spent,' 'digestBatches: digestBatches.length' 'shards: shardPlan.le
 done
 refute=$(grep -c 'refuteSeatCap(spent, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER_FINDING, REFUTE_CAP)' "$POSTMORTEM")
 [ "$refute" -eq 1 ] || { echo "FAIL: the refute stage is bounded by refuteSeatCap(spent, ...)"; wiring=1; }
+cstage=$(grep -n 'resolveCondensed(await seat(condenseBrief' "$POSTMORTEM" | head -1 | cut -d: -f1)
+cshard=$(grep -n 'const shardPlan = sessions.flatMap' "$POSTMORTEM" | head -1 | cut -d: -f1)
+if [ -n "$cstage" ] && [ -n "$cshard" ] && [ "$cstage" -lt "$cshard" ] && [ -n "$pre" ] && [ "$cshard" -lt "$pre" ] && grep -q 'condensed.get(s.sessionId)' "$POSTMORTEM" && grep -q 'condensed: source.condensed' "$POSTMORTEM" && grep -q 'planShards(source.lines, source.bytes, SHARD_BYTES)' "$POSTMORTEM" && ! grep -q 'planShards(s.lines' "$POSTMORTEM"; then
+    echo "PASS: the conductor shards are cut from the condensed copy, after condensation and before the budget preflight"
+else
+    echo "FAIL: the conductor shards are cut from the condensed copy, after condensation and before the budget preflight (condense line '${cstage}', shard line '${cshard}', preflight line '${pre}')"
+    wiring=1
+fi
+if grep -qF "jq -c -n -R -f '\${jqFile}' '\${session.transcript}' > '\${outFile}' &&" "$POSTMORTEM"; then
+    echo "PASS: the condensation relay runs the program with -R over the transcript and writes the out file"
+else
+    echo "FAIL: the condensation relay runs the program with -R over the transcript and writes the out file"
+    wiring=1
+fi
 dig=$(grep -n 'parallel(digestBatches.map' "$POSTMORTEM" | head -1 | cut -d: -f1)
 
 if [ -n "$pre" ] && [ -n "$dig" ] && [ "$pre" -lt "$dig" ]; then

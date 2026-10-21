@@ -3,6 +3,7 @@ export const meta = {
     description: 'Internal: launched through scriptPath by the docket-postmortem skill after a docket-run has completed; audits one terminal run read-only across every surface: conductor transcripts in shards, a deterministic digest of every agent log, a deep read of every agent log, one analyst per layer, grouped patterns, three refuters per candidate, and one reconciler. Args and cost in the header comment.',
     whenToUse: 'Never by name. Read-only: every agent reads captures, transcripts, journals, agent logs, and docket read verbs on a terminal run, and writes only to the audit directory. The caller keeps run selection, the captures, the inventory, every filing write, and the review in the main session, and relaunches with the returned deferred lines until none remain.',
     phases: [
+        { title: 'Condense', detail: 'one low-effort agent per driving session transcript runs a fixed jq condensation (tool calls and results cut, text kept, src_line on every record) so the conductor shards are cut from the condensed copy' },
         { title: 'Digest', detail: 'low-effort agents run one fixed jq program over every inventoried log, in line-range batches, and write one digest per log' },
         { title: 'Conductor', detail: 'one reader per byte-bounded shard of every driving session transcript' },
         { title: 'Layers', detail: 'one analyst per layer: wave, panels, engine, harness, memory-config, operator touches' },
@@ -40,8 +41,10 @@ export const meta = {
 //                  paths of the §2 captures; a null path is a refused capture.
 //   sessions     — [{sessionId, transcript, role, cwd, lines, bytes}]: every
 //                  conversation that drove the run. role is one of activate,
-//                  drive, pause, resume, finish. lines and bytes size the
-//                  conductor shards.
+//                  drive, pause, resume, finish. lines must be the transcript's
+//                  line count (the condensation is checked against it); bytes
+//                  size the shards when condensation fails and the raw transcript
+//                  is sharded instead.
 //   inventory    — {file, kinds?, bytes?}: file is the absolute path of the
 //                  §2 inventory TSV (columns: line, path, kind, wfId,
 //                  sessionId, bytes; line N of the file carries line=N).
@@ -98,22 +101,25 @@ export const meta = {
 //   uncovered     — [{what, why}] every gap, bound, and null return.
 //   summary       — one line for the skill's report.
 //
-// Cost: one inventory read agent (plus one retry at most),
+// Cost: one inventory read agent (plus one retry at most), one condensation
+// relay per driving session (plus one retry each at most),
 // ceil(inventory/DIGEST_BATCH) digest agents (plus one retry each at
 // most), one reader per conductor shard, LAYERS.length analysts, one
 // pattern analyst, up to REFUTE_CAP candidates x REFUTERS_PER_FINDING
 // refuters, one reconciler; every remaining agent under the cap goes to
 // deep reads. A large run (a thousand agent logs) needs one continuation
 // launch; planDeepReads says so up front and the return names the lines.
-// Before seating any digest, conductor, or layer agent, planBudget checks that
-// the inventory read, the fixed stage-1 seats, and the reserve (pattern
-// analyst, REFUTE_CAP x REFUTERS_PER_FINDING refuter seats, reconciler) fit
-// under AGENT_CAP less AGENT_CAP_MARGIN; when they do not, the launch throws
-// with the counts and seats no agent past the inventory read. The fixed seats
-// are paid once, so a continuation launch cannot rescue a plan whose stage 1
-// alone is too large. Digest retries are not in that count; the refute stage
-// seats only as many candidates as the cap leaves room for (refuteSeatCap) and
-// returns the rest as uncovered.
+// The condensation relays run first, so the shard count the preflight sees is
+// the condensed one; their seats (up to two per session) are spent even when
+// the plan then fails. Before seating any digest, conductor, or layer agent,
+// planBudget checks that the seats spent so far, the fixed stage-1 seats, and
+// the reserve (pattern analyst, REFUTE_CAP x REFUTERS_PER_FINDING refuter
+// seats, reconciler) fit under AGENT_CAP less AGENT_CAP_MARGIN; when they do
+// not, the launch throws with the counts and seats nothing further. The fixed
+// seats are paid once, so a continuation launch cannot rescue a plan whose
+// stage 1 alone is too large. Digest retries are not in that count; the
+// refute stage seats only as many candidates as the cap leaves room for
+// (refuteSeatCap) and returns the rest as uncovered.
 // ---------------------------------------------------------------------------
 
 // Pin models so a launch never inherits the caller's quota-limited model.
@@ -211,6 +217,25 @@ function planDigestBatches(total, size) {
     return out
 }
 
+// Validate one condensation relay's reply against the session it condensed.
+// The fixed program emits one record per source line, so a good condensed
+// file has exactly the session's line count, and the relay's own count of the
+// source must agree with the caller's. Anything else (no reply, an error, a
+// count mismatch, an empty file) is not ok, and the session is sharded raw.
+function resolveCondensed(reply, session) {
+    const bad = (reason) => ({ ok: false, lines: 0, bytes: 0, reason })
+    if (reply == null) return bad('no usable result')
+    if (typeof reply.error === 'string' && reply.error !== '') return bad(reply.error)
+    const whole = (n) => Number.isInteger(n) && n >= 0
+    if (!whole(reply.sourceLines) || !whole(reply.lines) || !whole(reply.bytes)) return bad('the counts were not integers')
+    if (reply.sourceLines !== session.lines) return bad(`the source has ${reply.sourceLines} lines; args.sessions says ${session.lines}`)
+    if (reply.lines !== session.lines) return bad(`the condensed file has ${reply.lines} records for ${session.lines} source lines`)
+    if (reply.bytes <= 0) return bad('the condensed file is empty')
+    if (!whole(reply.unparsed)) return bad('the unparsed count was not an integer')
+    if (reply.unparsed * 10 > session.lines) return bad(`${reply.unparsed} of ${session.lines} records are unparsed; the program was likely run without -R`)
+    return { ok: true, lines: reply.lines, bytes: reply.bytes, unparsed: reply.unparsed, reason: null }
+}
+
 // Plan the deep reads under an agent budget. Main transcripts are never
 // deep-read here. Flagged logs come first, one per reader, in line order;
 // clean logs are packed largest-first into readers of at most batchBytes
@@ -238,7 +263,8 @@ function planDeepReads(candidates, kinds, bytes, flaggedSet, agentBudget, batchB
     return { batches, deferred: [...deferredFlagged, ...deferredClean] }
 }
 
-// Preflight for stage 1: the agents already spent (the inventory read), the
+// Preflight for stage 1: the agents already spent (the inventory read and the
+// condensation relays), the
 // fixed stage-1 seats (digest batches, conductor shards, layer analysts), and
 // the reserve for the pattern analyst, refuters, and reconciler must fit under
 // the Workflow tool's cap less the margin. Deep reads take whatever is left,
@@ -264,7 +290,7 @@ function planBudget(plan, kinds, bytes) {
     const launches = Math.ceil(deepReaders / perLaunch)
     const ok = total <= limit
     const message = ok ? null
-        : `the agent plan does not fit: spent+planned ${fixed} (inventory read ${spentSoFar} + ${plan.digestBatches} digest batches + ${plan.shards} conductor shards + ${plan.layers} layer analysts) + reserved ${reserved} (pattern analyst, ${plan.reserved - 2} refuter seats, reconciler) = ${total} > cap ${plan.cap} - margin ${plan.margin} = ${limit}, ${total - limit} over, before the about ${deepReaders} deep readers a full pass needs (about ${launches} launch(es) of ${perLaunch} once stage 1 fits). Stage 1 runs whole in the first launch and cannot be split across launches, so this run is more than one launch can audit: report it as uncovered. Fewer conductor shards lower the fixed cost; SHARD_BYTES sets the shard size.`
+        : `the agent plan does not fit: spent+planned ${fixed} (already seated ${spentSoFar} + ${plan.digestBatches} digest batches + ${plan.shards} conductor shards + ${plan.layers} layer analysts) + reserved ${reserved} (pattern analyst, ${plan.reserved - 2} refuter seats, reconciler) = ${total} > cap ${plan.cap} - margin ${plan.margin} = ${limit}, ${total - limit} over, before the about ${deepReaders} deep readers a full pass needs (about ${launches} launch(es) of ${perLaunch} once stage 1 fits). Stage 1 runs whole in the first launch and cannot be split across launches, so this run is more than one launch can audit: report it as uncovered. Fewer conductor shards lower the fixed cost; SHARD_BYTES sets the shard size.`
     return { ok, fixed, reserved, total, limit, cap: plan.cap, margin: plan.margin, deepReaders, launches, message }
 }
 
@@ -483,6 +509,67 @@ def txt: if type == "string" then . elif type == "array" then map(if type == "ob
 `
 // TEST-END docket-postmortem-digest-jq
 
+// TEST-BEGIN docket-postmortem-condense-jq — the fixed condensation of one
+// driving transcript, run by one relay agent per session as
+// `jq -c -n -R -f <file> <transcript>`. It emits exactly one record per
+// source line, in order, so a record's src_line is its line in the original:
+//   - assistant and operator text is kept in full;
+//   - a tool call's input is cut to CONDENSE_CALL_CHARS characters and a tool
+//     result to CONDENSE_RESULT_CHARS, each cut marked with cut: <chars lost>;
+//   - thinking is cut like a tool call;
+//   - uuid, timestamp, type, role and model are kept on every record, with
+//     meta, origin, compact and sidechain when set, so injected text (hook
+//     feedback, skill bodies, task notifications, peer messages, compact
+//     summaries) is told apart from what an operator typed;
+//   - an attachment keeps its type as subtype and its text (a queued
+//     command's prompt whole, any other body cut like a tool call);
+//   - a line that is not a JSON object becomes {src_line, unparsed: true}, so
+//     no line goes missing.
+// Readers cite the original transcript at src_line.
+const CONDENSE_CALL_CHARS = 1500
+const CONDENSE_RESULT_CHARS = 400
+const CONDENSE_JQ = String.raw`
+def clipped($n): if length > $n then {v: .[0:$n], cut: (length - $n)} else {v: ., cut: 0} end;
+def withcut($c): if $c.cut > 0 then . + {cut: $c.cut} else . end;
+def resulttext:
+    if (.content | type) == "string" then .content
+    elif (.content | type) == "array" then
+        ([.content[] | if type == "object" then (.text // ("[" + (.type // "part") + "]")) else tostring end] | join("\n"))
+    else (.content | tostring) end;
+def blk:
+    if type == "string" then {t: "text", text: .}
+    elif type != "object" then {t: "unknown"}
+    elif .type == "text" then {t: "text", text: (.text // "")}
+    elif .type == "thinking" then ((.thinking // "") | clipped(1500)) as $c | {t: "thinking", text: $c.v} | withcut($c)
+    elif .type == "tool_use" or .type == "server_tool_use" then ((.input | tojson) | clipped(1500)) as $c | {t: .type, name: .name, id: .id, input: $c.v} | withcut($c)
+    elif .type == "tool_result" then (resulttext | clipped(400)) as $c | {t: "tool_result", id: .tool_use_id, is_error: (.is_error // false), text: $c.v} | withcut($c)
+    else {t: (.type // "unknown")} end;
+def flags:
+    (if .isMeta then {meta: true} else {} end)
+    + (if .origin != null then {origin: (.origin | if type == "object" then (.kind // "other") else . end)} else {} end)
+    + (if .isCompactSummary then {compact: true} else {} end)
+    + (if .isSidechain then {sidechain: true} else {} end);
+def rec($n):
+    {src_line: $n, uuid: (.uuid // null), timestamp: (.timestamp // null), type: (.type // null)} + flags
+    + (if (.type == "user" or .type == "assistant") and ((.message | type) == "object") then
+        {role: (.message.role // .type)}
+        + (if .message.model then {model: .message.model} else {} end)
+        + {blocks: (.message.content | if type == "array" then map(blk) elif type == "string" then [{t: "text", text: .}] else [] end)}
+      elif .type == "attachment" then
+        (.attachment // {}) as $a
+        | (if $a.type == "queued_command" and ($a.prompt | type) == "string" then {v: $a.prompt, cut: 0} else ($a | tojson | clipped(1500)) end) as $c
+        | {subtype: ($a.type // null), text: $c.v} | withcut($c)
+      else
+        ((.content // .summary // "") | if type == "string" then . else tojson end | clipped(1500)) as $c
+        | {subtype: (.subtype // null), text: $c.v} | withcut($c)
+      end);
+foreach inputs as $raw (0; . + 1;
+    . as $n
+    | (try ($raw | fromjson) catch null) as $r
+    | if ($r | type) == "object" then ($r | rec($n)) else {src_line: $n, unparsed: true, chars: ($raw | length)} end)
+`
+// TEST-END docket-postmortem-condense-jq
+
 const SEVERITIES = ['load-bearing', 'friction', 'paper-cut']
 const RUNGS = ['engine', 'deterministic-code', 'contract-or-config', 'standing-ruling', 'human-gate']
 const SURFACES = ['conductor', 'wave', 'executor', 'panel', 'gate', 'engine', 'harness', 'hook', 'sandbox', 'model', 'memory', 'config', 'brief', 'workflow-script', 'operator']
@@ -535,6 +622,7 @@ const memoryRoots = Array.isArray(input.memoryRoots) ? input.memoryRoots : []
 const auditDir = input.auditDir
 const nowIso = input.nowIso
 const digestDir = `${auditDir}/digests`
+const condenseDir = `${auditDir}/condensed`
 
 let spent = 0
 function seat(prompt, opts) { spent++; return agent(prompt, opts) }
@@ -773,6 +861,40 @@ jq -c -s '{written: length, errors: (map(select(.digestError == true)) | length)
 Return the JSON object the last command printed, field for field, unchanged, with error set to "". If a command failed instead, return written 0, errors 0, flagged [], and the error text in error.`
 }
 
+const CONDENSE_RESULT_SCHEMA = {
+    type: 'object',
+    properties: {
+        sourceLines: { type: 'integer', description: 'Lines in the source transcript, from the final command, verbatim' },
+        lines: { type: 'integer', description: 'Lines in the condensed file, from the final command, verbatim' },
+        bytes: { type: 'integer', description: 'Bytes in the condensed file, from the final command, verbatim' },
+        unparsed: { type: 'integer', description: 'Records marked unparsed in the condensed file, from the final command, verbatim' },
+        error: { type: 'string', description: 'Command error text, or "" when the commands ran' },
+    },
+    required: ['sourceLines', 'lines', 'bytes', 'unparsed', 'error'],
+}
+
+function condenseBrief(session, index, outFile) {
+    const jqFile = `${auditDir}/condense.jq.${index}`
+    return `Condense one driving transcript with a fixed jq program. Run exactly these commands, verbatim, and do nothing else.
+
+mkdir -p '${condenseDir}'
+cat > '${jqFile}' <<'POSTMORTEM_CONDENSE_JQ_EOF'
+${CONDENSE_JQ.trim()}
+POSTMORTEM_CONDENSE_JQ_EOF
+jq -c -n -R -f '${jqFile}' '${session.transcript}' > '${outFile}' && printf '{"sourceLines":%s,"lines":%s,"bytes":%s,"unparsed":%s}\\n' "$(awk 'END { print NR }' '${session.transcript}')" "$(awk 'END { print NR }' '${outFile}')" "$(wc -c < '${outFile}' | tr -d ' ')" "$(grep -c '"unparsed":true' '${outFile}' || true)"
+
+Return the JSON object the last command printed, field for field, unchanged, with error set to "". If a command failed instead, return sourceLines 0, lines 0, bytes 0, unparsed 0, and the error text in error.`
+}
+
+// The opening of a conductor reader's shard paragraph. A condensed shard is a
+// line range of the condensed copy: each record's src_line is its line in the
+// original transcript, which is what a locator cites.
+function shardIntro(session, shard) {
+    const who = `session ${session.sessionId}, role ${session.role}`
+    if (!shard.condensed) return `Your shard: lines ${shard.from}-${shard.to} of ${session.transcript} (${who}).`
+    return `Your shard: lines ${shard.from}-${shard.to} of ${shard.file}, a condensed copy of ${session.transcript} (${who}). Each record is one source line: src_line is its line in the original, uuid and timestamp are kept, message text is whole (a record with meta or origin set is injected text such as hook feedback, a skill body, a task notification or a peer message, not something the operator typed), tool calls are cut to ${CONDENSE_CALL_CHARS} characters, tool results to ${CONDENSE_RESULT_CHARS}, and a cut carries cut: <characters lost>. Cite the original transcript at src_line, never the condensed file. When a cut hides evidence a finding needs, read that src_line of the original.`
+}
+
 function conductorBrief(session, shard, index, count) {
     return `You are conductor reader ${index} of ${count} for a retrospective audit of one finished Docket run.
 
@@ -780,7 +902,7 @@ ${BOUNDARY}
 
 ${RUN_FACTS}
 
-Your shard: lines ${shard.from}-${shard.to} of ${session.transcript} (session ${session.sessionId}, role ${session.role}). Read every record in that range to the end, with jq or sed by line range, never a whole-file cat. Read the session's digest line (kind main) in ${digestDir} and the events capture for context around your range; read other ranges only to resolve a record in yours.
+${shardIntro(session, shard)} Read every record in that range to the end, with jq or sed by line range, never a whole-file cat. Read the session's digest line (kind main) in ${digestDir} and the events capture for context around your range; read other ranges only to resolve a record in yours.
 
 Judge against the "Docket-run conductor" checklist in target-checklists.md and the pinned docket-run SKILL.md the run evidenced. Every operator touch in your range (an AskUserQuestion, an operator message, an escalation, an acknowledgment flag, a permission prompt) is a candidate unless a vital condition from the automation reference applies; say which.
 
@@ -923,7 +1045,34 @@ if (!continuation) {
     const digestBatches = planDigestBatches(total, DIGEST_BATCH)
     log(`docket-postmortem: auditing ${run.id} (${run.status}); ${total} inventoried logs in ${digestBatches.length} digest batch(es); ${sessions.length} driving session(s)`)
 
-    const shardPlan = sessions.flatMap((s) => planShards(s.lines, s.bytes, SHARD_BYTES).map((shard) => ({ session: s, shard })))
+    // Condense each driving transcript first: tool output dominates a
+    // conductor's bytes, and the digests and deep reads already cover it.
+    // Shards are cut from the condensed copy, so the shard count (and the
+    // budget preflight below) follows the condensed size.
+    const condenseSessions = sessions.filter((s) => s.lines > 0)
+    if (condenseSessions.length > 0) phase('Condense')
+    const condensed = new Map()
+    await parallel(condenseSessions.map((s, i) => async () => {
+        const out = `${condenseDir}/${s.sessionId}.jsonl`
+        const opts = { label: `condense:${s.sessionId.slice(0, 8)}`, phase: 'Condense', schema: CONDENSE_RESULT_SCHEMA, ...AGENT_CONFIG.digest }
+        let v = resolveCondensed(await seat(condenseBrief(s, i + 1, out), opts), s)
+        if (!v.ok) {
+            log(`docket-postmortem: condensing ${s.sessionId} failed (${v.reason}); retrying once`)
+            v = resolveCondensed(await seat(condenseBrief(s, i + 1, out), { ...opts, label: `${opts.label}:retry` }), s)
+        }
+        if (!v.ok) {
+            log(`docket-postmortem: condensing ${s.sessionId} failed twice (${v.reason}); sharding the raw transcript`)
+            return
+        }
+        condensed.set(s.sessionId, { file: out, lines: v.lines, bytes: v.bytes })
+        uncovered.push({ what: `bound: conductor tool output, session ${s.sessionId}`, why: `condensed from ${s.bytes} to ${v.bytes} bytes for the conductor readers: tool calls cut to ${CONDENSE_CALL_CHARS} characters, tool results to ${CONDENSE_RESULT_CHARS}, thinking to ${CONDENSE_CALL_CHARS}; text kept whole; the original at ${s.transcript} holds the rest` })
+    }))
+
+    const shardPlan = sessions.flatMap((s) => {
+        const c = condensed.get(s.sessionId)
+        const source = c ? { file: c.file, lines: c.lines, bytes: c.bytes, condensed: true } : { file: s.transcript, lines: s.lines, bytes: s.bytes, condensed: false }
+        return planShards(source.lines, source.bytes, SHARD_BYTES).map((range) => ({ session: s, shard: { ...range, file: source.file, condensed: source.condensed } }))
+    })
     shardCount = shardPlan.length
 
     const budget = planBudget({ spent, digestBatches: digestBatches.length, shards: shardPlan.length, layers: LAYERS.length, reserved: RESERVED_AGENTS, cap: AGENT_CAP, margin: AGENT_CAP_MARGIN }, inventory.kinds, inventory.bytes)

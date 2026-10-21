@@ -1030,13 +1030,14 @@ refused lanes waiting for a return that can have freed their holder;
 every other row of the manifest of record is work that remains. Each time one launch returns while the dispatch is open, right after
 launching its usage join (step 3), before waiting on the rest:
 
-1. Run `docket dispatch extend --run $RUN --json`. It appends the steps
-   that became ready since the open (a fix round minted when its step
-   recorded, a held-cluster gate, an `on_fail` route, a limit-cut chain
-   tail) to the same open manifest. Apply the kind filter to any appended
-   rows and append them, as JSON lines, to the kept rows file. No verb
-   re-reads the open manifest, so that file is the manifest of record:
-   keep it for the whole dispatch.
+1. Extend the open manifest. `refill.sh` (below) runs
+   `docket dispatch extend --run $RUN --json` itself; never run it by hand
+   or pipe it into a count. It appends the steps that became ready since the
+   open (a fix round minted when its step recorded, a held-cluster gate, an
+   `on_fail` route, a limit-cut chain tail) to the same open manifest, and
+   the script appends every non-human row among them, as JSON lines, to the
+   kept rows file. No verb re-reads the open manifest, so that file is the
+   manifest of record: keep it for the whole dispatch.
 2. Write the returned launch's `statuses` array, as the wave returned
    it, to `$STATUSES_FILE` under the session's scratchpad with the Write
    tool, then append the steps it settled to `$SETTLED_FILE`, one step id
@@ -1095,6 +1096,34 @@ launching its usage join (step 3), before waiting on the rest:
    return, never at a bounce return. Add the new launches' transcript
    directories to the watcher below, restart it, then end the turn
    again.
+
+Steps 1, 2, 4 and 5 are one installed script, so the bookkeeping is not
+hand-run: write the returned launch's `statuses` array to `$STATUSES_FILE`,
+do step 3's reaps, then run, as its own Bash call from the run's work tree,
+
+```bash
+bash ~/.claude/skills/docket-run/scripts/refill.sh --run "$RUN" --rows "$ROWS_FILE" --settled "$SETTLED_FILE" --held "$HELD_FILE" --pending "$PENDING_FILE" --launch-dir "$LAUNCH_DIR" --statuses "$STATUSES_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
+```
+
+adding `--reaped` when step 3 reaped a dead holder at this return (the
+return is then never a bounce), `--integrated "$INTEGRATED_FILE"` when the
+dispatch carries it, and omitting `--write-cap` when the open's answer has
+no `limits.write`. The script runs `docket dispatch extend` itself, appends
+every appended row that is not a human row and not already in
+`$ROWS_FILE`, settles and holds as steps 2 and 4 say, rebuilds
+`$PENDING_FILE`, re-splits it with lane_units.py, and prints N alone on
+stdout. Extend's rows exist only in its answer, which the engine never
+repeats, so the script saves the answer as `$ROWS_FILE.extend.json` and
+removes it only once the rows are kept. Exit 1 before extend (a bad rows or
+statuses file) leaves everything as it was. Exit 1 after extend names that
+file: append its rows to `$ROWS_FILE`, delete the file, and run the script
+again (it refuses while the file exists), which is
+safe because repeated settled and held lines are ignored. A `reap hold`
+line on stderr means extend reaped an expired lease and raised a hold that
+denies the next launch: verify it as under **`--ack-reap`** before step 6.
+Step 6 launches what the script wrote. Never pipe `docket dispatch
+extend` into a count or a filter by hand: an answer read that way did not
+reach the kept rows file, and its rows waited for the next dispatch.
 
 Re-splitting all pending rows, never the appended rows alone, keeps both
 invariants lane_units.py computes: an appended write-class row never runs

@@ -692,11 +692,19 @@ exactly three things:**
    present whatever remains to the operator through the question tool and wait. In unattended mode, the queue goes through the switch-back procedure instead. A vote step merely ready is work for you, mid-loop, not this.
 2. An engine **refusal** you cannot resolve: report it verbatim and stop.
 3. `next` returns **no rows and nothing is running**, and the roster is
-   covered. Compare `run status`'s bound-issue roster against issues
-   whose chains reached a terminal step before saying "done": when
-   counts cannot cover the roster, issues sit unexpanded and the state is
-   phase quiesced, not finished. Report it as phase quiesced, name the
-   waiting issues, and surface the re-activation gate.
+   covered. Read `docket run status $RUN --json | jq '.data.unexpanded'`
+   before saying "done": it lists each bound issue that holds no step,
+   with its `blocked_by` chains, each a list of `{issue, status}` hops
+   from the direct blocker to the root blocker that holds it (an issue
+   with no unmet blocker carries an empty list); a done blocker drops out
+   of a chain, any other status counts as unmet, and the field is absent
+   when every issue holds a step. When it is present, issues sit
+   unexpanded and the state is phase quiesced, not finished. Report it as
+   phase quiesced, name the waiting issues with each one's own `status`,
+   and surface the re-activation gate with that block pasted into
+   the question. Never state what a release unblocks, or that an issue is
+   absent from the run, from a diff you typed of `issue list --run`
+   against the step list: the block is the engine's answer.
 
 Anything else is the middle of the loop, not a stop: stop-and-ask
 gates live inside it, each stated where it arises, including symlink

@@ -891,4 +891,12 @@ drifted ref, both hashes, and pointing at `docket run repin` as the remedy.
 Absent whenever every pin is sound. Skipped for a terminal run: its pins
 are history.
 
+**Unexpanded roster issues are listed unprompted.** The JSON payload
+carries `unexpanded` (`omitempty`) and the human rendering prints the same
+block: each bound issue that holds no step, with its `blocked_by` chains,
+lists of `{issue, status}` hops from the direct blocker to the root
+blocker, capped at 16 chains (`blocked_by_truncated` marks a cut). A done
+blocker drops out; any other status counts as unmet. Absent when every
+bound issue holds a step.
+
 None of the `run` verbs are watch-eligible.

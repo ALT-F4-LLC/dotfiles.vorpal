@@ -531,7 +531,8 @@ ${isWrite ? `
      and wait on none; the engine runs them. A step with no gates records
      inline.` : ''}
    - TERMINAL STATE: after record exits 0, read the step once with
-     \`docket step show ${row.step} --json\`, and for a failed or parked step
+     \`docket step show ${row.step} --json | jq -r '.data.status'\` (the
+     status sits at .data.status; .data.step is the step id string), and for a failed or parked step
      \`docket step gates ${row.step}\` for the failed gate's captured output.
      Never loop on it. A status of done, waiting-human, or paused is the
      step's terminal state. Any other status means the engine's detached

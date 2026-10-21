@@ -309,7 +309,9 @@ THE EVIDENCE IS IN THE RECORD, not in this brief: this gate readied mid-wave,
 so read what the claims rest on yourself before you vote —
 
   docket run status ${step.run} --json (this run's state; there is no \`run show\`)
-  docket step show ${step.step} / docket step context ${step.step} --json
+  docket step show ${step.step} --json | jq -r '.data.status'   (the status; .data.step is the step id string)
+  docket step context ${step.step} --json | jq -r '.data.context.inputs[] | "\\(.artifact) \\(.kind)"'
+  (the JSON is {ok, data}; an artifact payload is a JSON string, or null on an input with no payload, so read one with select(.payload) | .payload | fromjson)
   (no \`run activate --dry-run\` here: a step vote previews no activation, and
    the verb is one dropped flag from activating the run)
   git log --oneline -20 / git diff / git show <sha>
@@ -354,7 +356,9 @@ have read-only tools; use them. Useful and safe from ${cwd}:
 
   cd ${cwd} && docket run status RUN-N --json   (there is no \`run show\`)
   cd ${cwd} && docket run activate RUN-N --dry-run --json   (--dry-run is load-bearing: without it this ACTIVATES the run)
-  cd ${cwd} && docket step show STEP-N / step context STEP-N / step render STEP-N
+  cd ${cwd} && docket step show STEP-N --json | jq -r '.data.status'   (the status; .data.step is the step id string)
+  cd ${cwd} && docket step context STEP-N --json | jq -r '.data.context.inputs[] | "\\(.artifact) \\(.kind)"'   (a payload is a JSON string, or null: select(.payload) | .payload | fromjson)
+  cd ${cwd} && docket step render STEP-N
   cd ${cwd} && docket step artifacts STEP-N   (then \`docket step artifact ARTIFACT-N\`)
   cd ${cwd} && git log --oneline -20 / git diff / git show <sha>
 

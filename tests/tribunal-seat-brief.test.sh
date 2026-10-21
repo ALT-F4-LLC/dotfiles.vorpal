@@ -63,6 +63,7 @@ grep -q 'judgeBrief' "${WORK}/brief.js" || fatal "seat-brief region does not con
 
 {
     cat <<'JS'
+import { execFileSync } from 'node:child_process'
 // The only globals judgeBrief reaches for outside its own TEST fence.
 const lensOf = (seat) => ({ role: 'stub-role', text: 'STUB LENS.' })
 const TARGET_SHA_RE = /^[0-9a-f]{40}$/
@@ -102,6 +103,32 @@ ok(!mid.includes('docket run activate'),
     'mid-wave brief never names docket run activate, even with --dry-run')
 ok(mid.includes(`docket step show ${STEP.step}`),
     'mid-wave brief names docket step show for its own step')
+// The step read names its field path: seats otherwise guess .data.step.status,
+// but .data.step is the step id string and the status sits at .data.status.
+ok(mid.includes(`docket step show ${STEP.step} --json | jq -r '.data.status'`),
+    'mid-wave brief pins the step show read to jq -r \'.data.status\'')
+ok(mid.includes(`docket step context ${STEP.step} --json | jq -r '.data.context.inputs[]`) && mid.includes('select(.payload) | .payload | fromjson'),
+    'mid-wave brief pins the step context read to .data.context.inputs[] and names a payload read that survives a null payload')
+// The pinned filters, taken from the rendered briefs, run on an envelope shaped
+// like `docket step show/context --json` output: a status read and a context
+// read (one string payload, one null payload) must print what the brief says.
+const SHOW = JSON.stringify({ ok: true, data: { step: 'STEP-3187', instance: 'security-vote@1', kind: 'vote', status: 'done', attempt: 1, metadata: { variant: 'opus-high' } } })
+const CONTEXT = JSON.stringify({ ok: true, data: { context: { inputs: [
+    { artifact: 'ARTIFACT-1', kind: 'findings', producer_step: 'STEP-1', body: '', payload: '[{"id":"F1"}]' },
+    { artifact: 'ARTIFACT-2', kind: 'issue.body', producer_step: 'STEP-2', body: 'text', payload: null },
+] } } })
+const filterOf = (brief, verb) => {
+    const m = new RegExp(`docket step ${verb} (?:STEP-3187|STEP-N) --json \\| jq -r '([^\\n]+)'`).exec(brief)
+    return m ? m[1] : ''
+}
+const jq = (filter, input) => { try { return execFileSync('jq', ['-r', filter], { input, encoding: 'utf8' }).trim() } catch (e) { return `jq failed: ${e.message}` } }
+for (const [label, b] of [['mid-wave', mid], ['conversational', conv]]) {
+    ok(jq(filterOf(b, 'show'), SHOW) === 'done', `${label} brief: the step show filter prints done on a step show envelope (got ${JSON.stringify(jq(filterOf(b, 'show'), SHOW))})`)
+    ok(jq(filterOf(b, 'context'), CONTEXT) === 'ARTIFACT-1 findings\nARTIFACT-2 issue.body',
+        `${label} brief: the step context filter lists each input as artifact and kind (got ${JSON.stringify(jq(filterOf(b, 'context'), CONTEXT))})`)
+    ok(jq('.data.context.inputs[] | select(.payload) | .payload | fromjson | .[0].id', CONTEXT) === 'F1' && b.includes('select(.payload) | .payload | fromjson'),
+        `${label} brief: the payload read it names parses a string payload and skips a null one`)
+}
 
 // The status read is not gated behind a target ref or held cluster — every
 // seat sees it regardless of what else the gate carries — and the activation

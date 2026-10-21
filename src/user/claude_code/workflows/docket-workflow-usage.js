@@ -199,7 +199,9 @@ const DEFAULT_MODE = 'steps'
 // re-check of a relayed bootstrap:false that returns no usable answer, an
 // extraction agent that returns nothing, a jq failure that survives its retry,
 // a step key that is not STEP-N or an executor brief that names no step to
-// record, and a dispatched agent that carries no usage. A bootstrap:false confirmed on that re-check is not an
+// record, a steps-mode directory holding only usage-join agents (a lane
+// mismatch: args.dir names another join's workflow, so the run measured
+// nothing for the lane and is not the lane's join), and a dispatched agent that carries no usage. A bootstrap:false confirmed on that re-check is not an
 // error: it is folded into wave overhead instead, since docket-workflow.js never
 // dispatches an agent without a bootstrap brief.
 // ---------------------------------------------------------------------------
@@ -254,6 +256,12 @@ const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
 // claim agent runs docket-workflow-claim for an executor and is wave overhead: its
 // brief never spells a claim or record of the step, so it never joins one.
 //
+// usage_join marks this workflow's own scout and extract relay: their briefs
+// open with fixed sentences (read after the harness preamble, as cast_join
+// reads its opening). It is read ahead of exec and probe because a relay's brief
+// embeds this file's jq source, which sets both. A usage-join agent is overhead,
+// and a steps-mode directory of nothing else is a lane mismatch.
+//
 // reseat is the sentence tribunal.js opens a re-seated judge's brief with.
 // tool_uses counts distinct tool_use block ids over every assistant line, not
 // the deduplicated messages: see TOOL USE IS COUNTED BY BLOCK ID above. The
@@ -283,7 +291,8 @@ const BRIEF_DEFS_JQ = `def bootstrap_candidate: .type == "user"
     and (.message.content | type == "string"
         and startswith("[Workflow harness — user request]") | not);
 def bootstrap_text: .message.content | if type == "string" then . else tojson end;
-def cast_join: if sub("^\\\\[Workflow harness —[^\\\\n]*\\\\n"; "") | .[0:200]
+def brief_head: sub("^\\\\[Workflow harness —[^\\\\n]*\\\\n"; "") | .[0:200];
+def cast_join: if brief_head
         | contains("You are executing one step of a Docket run") then null
     else capture("(?:^|\\\\n|\\\\\\\\n)[ \\\\t]*(?:Cast with:[ \\\\t]*)?(?:cd\\\\s+\\\\S+\\\\s+&&\\\\s+)?docket vote cast\\\\s+(?<proposal>\\\\S+)\\\\s+--voter\\\\s+(?<voter>\\\\S+)") end;
 `
@@ -308,6 +317,7 @@ const EXTRACT_JQ = `${BRIEF_DEFS_JQ}[inputs | fromjson? | select(type == "object
         or test("Run exactly this one command:(?:\\\\\\\\n|\\\\s)+\`?docket\\\\s+(?:[a-z-]+\\\\s+)?(?:show|context|list|tally|next|log)\\\\b"))),
     exec: ($b | contains("You are executing one step of a Docket run")),
     claim_agent: ($b | contains("WAVE CLAIM: not a step execution")),
+    usage_join: ($b | brief_head | (contains("You are a read-only scout.") or contains("You are a read-only measurement relay for one transcript file."))),
     step_mention: (($b | [match("STEP-\\\\d+")][0].string) // null),
     reseat: ($b | contains("THIS IS A SECOND ATTEMPT AT YOUR SEAT")),
     tool_uses: ([$lines[] | select(.type == "assistant") | .message.content
@@ -382,7 +392,8 @@ function normalizeKeys(x) {
     return out
 }
 
-// The three questions, in the one order that cannot misfile a read: briefed
+// A usage-join agent is set aside first (see usage_join above). Then the
+// three questions, in the one order that cannot misfile a read: briefed
 // to cast? briefed only to read? briefed to record? First yes wins. `file`
 // appears only in labels and error text.
 function classify(raw, mode, file) {
@@ -415,6 +426,20 @@ function classify(raw, mode, file) {
         return { bucket: 'error', key: null,
                  label: `${file}: no user message — cannot classify (agent answer: ${JSON.stringify(x)})` }
     }
+    // A usage-join agent (scout, extract relay) is never a lane agent: its
+    // spend is overhead, and reduceRows refuses a directory made only of them.
+    // It is read ahead of exec and probe because a relay's brief embeds this
+    // file's jq source and sets both. A usage-join marker beside a step record
+    // is a relay error, never overhead: it would move a step's usage out of
+    // the ledger without a word.
+    if (x.usage_join) {
+        if (x.record) {
+            return { bucket: 'error', key: null,
+                     label: `${file}: reads as a usage-join agent but names ${JSON.stringify(x.record)} — the relay copied usage_join onto a step record` }
+        }
+        return { bucket: 'overhead', key: null, usageJoin: true,
+                 label: `usage-join agent${x.step_mention ? `, mentions ${x.step_mention}` : ''}` }
+    }
     // An executor brief never carries a probe marker, so both together mean
     // drift, and the claimant path (with its own drift error) still wins.
     const probe = x.probe && !x.exec
@@ -438,11 +463,28 @@ function classify(raw, mode, file) {
     return { bucket: 'row', key: record, label: record }
 }
 
+// A served model name as the API spells it. The haiku relay intermittently
+// returns it JSON-quoted ('"claude-opus-5-5"'); one layer is stripped, and
+// anything that is still not a model name is no observation, so the back-fill
+// never stores a quoted or prose value as model_resolved.
+const MODEL_NAME_RE = /^[a-z0-9][a-z0-9.-]*$/
+const modelName = (v) => {
+    const m = unquote(v)
+    return typeof m === 'string' && MODEL_NAME_RE.test(m) ? m : null
+}
+
 function modelObservation(file, extract, classification, mode) {
-    const models = Array.isArray(extract.models_observed)
-        ? [...new Set(extract.models_observed.filter((model) =>
-            typeof model === 'string' && model !== '' && model !== '<synthetic>'))].sort()
-        : []
+    // Unquote first, so a quoted "<synthetic>" is skipped like a bare one.
+    const relayed = (Array.isArray(extract.models_observed) ? extract.models_observed : [])
+        .filter((model) => typeof model === 'string')
+        .map(unquote)
+        .filter((model) => model !== '' && model !== '<synthetic>')
+    const named = relayed.map(modelName).filter((model) => model !== null)
+    const models = [...new Set(named)].sort()
+    const invalidModels = relayed.length - named.length
+    const lastModel = typeof extract.last_model === 'string' && extract.last_model !== ''
+        ? modelName(extract.last_model) : null
+    const lastModelInvalid = typeof extract.last_model === 'string' && extract.last_model !== '' && lastModel === null
     const efforts = Array.isArray(extract.efforts_observed)
         ? [...new Set(extract.efforts_observed.filter((effort) =>
             typeof effort === 'string' && effort !== ''))].sort()
@@ -452,9 +494,9 @@ function modelObservation(file, extract, classification, mode) {
         kind: classification.bucket === 'overhead' ? 'overhead' : mode === 'seats' ? 'seat' : 'step',
         key: classification.key,
         models,
-        last_model: typeof extract.last_model === 'string' && extract.last_model !== ''
-            ? extract.last_model : null,
-        complete: extract.model_observation_complete === true && models.length > 0,
+        last_model: lastModel,
+        complete: extract.model_observation_complete === true && models.length > 0
+            && invalidModels === 0 && !lastModelInvalid,
         source: 'assistant.message.model',
         effort_source: 'assistant.effort',
         effort_resolved: efforts.length === 1 ? efforts[0] : 'unknown',
@@ -493,12 +535,16 @@ function reduceRows(results, mode, exclude) {
     // error, not a zero row. Directory order does not decide which of the
     // two is read first, hence the deferral.
     const silent = []
+    let usageJoinAgents = 0
+    let laneAgents = 0
     for (const { file, extract } of results) {
         const c = classify(extract, mode, file)
         if (c.bucket === 'error') {
             errors.push(c.label)
             continue
         }
+        if (c.usageJoin) usageJoinAgents++
+        else if (c.bucket === 'row' || c.bucket === 'seated') laneAgents++
         if (c.bucket === 'seated' || c.bucket === 'unattributed') {
             skipped.push({ file, reason: c.bucket, key: c.key, label: c.label })
             continue
@@ -526,6 +572,12 @@ function reduceRows(results, mode, exclude) {
         total.tool_uses += toolUses(extract)
         total.files++
         total.observation = observation
+    }
+    // A directory of only usage-join agents is another join's workflow, not the
+    // lane: a hand-typed wrong dir otherwise yields a join of the join, with no
+    // step to back-fill, and invites a repeat join.
+    if (mode === 'steps' && usageJoinAgents > 0 && laneAgents === 0) {
+        errors.push(`lane mismatch: args.dir holds ${usageJoinAgents} usage-join agent(s) (scout, extract) and no lane executor; it is a usage-join workflow directory, not the lane's. This run measured nothing for the lane and is not the lane's join: point args.dir at the lane's own workflow directory`)
     }
     for (const { file, id, c } of silent) {
         if (totals.has(id)) {
@@ -711,6 +763,7 @@ const EXTRACT_SCHEMA = {
         probe: { type: 'boolean' },
         exec: { type: 'boolean' },
         claim_agent: { type: 'boolean' },
+        usage_join: { type: 'boolean' },
         step_mention: { type: ['string', 'null'] },
         reseat: { type: 'boolean' },
         tool_uses: { type: 'integer' },
@@ -766,7 +819,7 @@ jq -c -n -R -f "\${TMPDIR:-/tmp}/docket-workflow-usage-$$.jq" ${shellPath(file)}
 
 The transcript path is exact and must be copied character for character, including the one \`*\` that stands in for the flattened project name (the shell resolves it; do not replace it). A hyphen where a dot might be expected (\`github-com\`) is correct and is not a typo; do not "correct" any part of the path.
 ${retry === 'path' ? '\nThis is a SECOND run: the first run reported that jq could not open the file, which means the path was retyped incorrectly. Copy the path from the command above byte for byte.\n' : retry ? '\nThis is a SECOND, independent run of the same command against the same file — a prior run reported bootstrap:false and is being re-checked. Run the command fresh; do not reuse or assume any earlier result.\n' : ''}
-jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, claim_agent, step_mention, reseat, tool_uses, models_observed, last_model, efforts_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model and effort names come only from the extracted fields; missing observations remain empty, and a null last_model stays null. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
+jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, claim_agent, usage_join, step_mention, reseat, tool_uses, models_observed, last_model, efforts_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model and effort names come only from the extracted fields; missing observations remain empty, and a null last_model stays null. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
 const listing = await scoutedListing(mode, dir,

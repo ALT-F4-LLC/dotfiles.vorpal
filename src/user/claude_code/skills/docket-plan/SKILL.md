@@ -1055,6 +1055,33 @@ the four obligations below apply to them:
   is tracker-side, outside the run, so the body-freeze rule does not apply
   to it.
 
+**Dry-run gate: a routing warning needs a recorded security answer before
+you present.** After the recording commands and before the advisor review
+and the presentation, run `docket run activate <run> --dry-run --json`. It
+computes the activation in one transaction and rolls it back, so it mints no
+conductor token; it is the one form of the activate verb a planning session
+runs, never without `--dry-run`. Read the `routing_warnings` array of its
+envelope (absent when empty; this build's `--help` does not document it):
+each entry names a bound issue without the engine's security label (`docket
+config get routing.security_label`) whose scope overlaps a security-labelled
+issue's in the run, or whose title, scope or body matches
+`routing.security_lexicon`; `overlaps`, `terms` and `reason` say which. An
+issue already carrying `security`, `security-change` or
+`security-load-bearing` needs no answer. Every other entry needs a recorded
+security answer for its issue, the same two answers as the security-label
+flag above (a security label the operator applies, or the operator's
+decision to keep the lighter binding), written in the issue body and the
+plan artifact. For an entry without one,
+do not present the run: put the question to the operator through
+`AskUserQuestion` in one question round, naming the issue, the entry's
+`reason` and the label it lacks; record the answer as the flag above does
+and repeat the dry run until no entry lacks an answer. The answer is the
+operator's alone, since the security boundary is information no session
+holds; never answer it yourself. An empty or absent `routing_warnings`
+needs no answer here, and is not a clearance: the guarded-path flag above
+still applies. A dry run that fails for any other reason is reported, not
+skipped.
+
 ## 4. Leave later phases uncomposed when you honestly cannot compose them
 
 Some requests cannot be planned to the end: "audit and then build what we
@@ -1099,4 +1126,5 @@ skill, carrying the operator's words; it activates under its own token
 capture (`--dry-run` first, since it is the same transaction rolled back)
 and surfaces the drive/park/abandon choice to the operator. A silent stop
 is not permission to skip the handoff, and a planning session never runs
-the activate verb itself.
+the activate verb itself, except the `--dry-run` form the dry-run gate in §3
+runs, which mints no token.

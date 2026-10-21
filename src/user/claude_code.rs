@@ -122,8 +122,13 @@ const PUBLISHING_ASK_VERBS: &[&str] = &[
 /// form is denied outright. Deny rules match each subcommand, including one
 /// nested in a subshell, a substitution, or a loop body, and are evaluated
 /// before the auto-mode classifier. The `-*c` / `-*e` shapes catch combined
-/// flags (`bash -lc`, `perl -pi -e`, `python3 -uc`) at the cost of a rare
-/// false positive on an unrelated `-c`/`-e` flag after the program name.
+/// flags (`bash -lc`, `perl -pi -e`) at the cost of a rare false positive on
+/// an unrelated `-c`/`-e` flag after the program name. The python rows
+/// anchor the code flag to an option word (` -c`, ` -Ic`, ...) instead,
+/// because a `-*c ` glob also matched a script argument such as
+/// `launch-d10c --tribunal` and refused the prescribed lane splitter; a
+/// combined spelling beyond the listed flag letters is left to the auto-mode
+/// hard-deny prose.
 /// Wrappers the harness itself strips (`timeout`, `nice`, `nohup`, bare
 /// `xargs`) need no row: the rules already see the inner command.
 /// AUTO_MODE_HARD_DENY_RULES restates the same rule as prose for the
@@ -144,7 +149,22 @@ const SHELL_INDIRECTION_DENY_PATTERNS: &[&str] = &[
     "Bash(node --print *)",
     "Bash(osascript -*e *)",
     "Bash(perl -*e *)",
-    "Bash(python* -*c *)",
+    "Bash(python* -Bc*)",
+    "Bash(python* -Ec*)",
+    "Bash(python* -Ic*)",
+    "Bash(python* -Oc*)",
+    "Bash(python* -Pc*)",
+    "Bash(python* -Rc*)",
+    "Bash(python* -Sc*)",
+    "Bash(python* -bc*)",
+    "Bash(python* -c*)",
+    "Bash(python* -dc*)",
+    "Bash(python* -ic*)",
+    "Bash(python* -qc*)",
+    "Bash(python* -sc*)",
+    "Bash(python* -uc*)",
+    "Bash(python* -vc*)",
+    "Bash(python* -xc*)",
     "Bash(ruby -*e *)",
     "Bash(script *)",
     "Bash(setsid *)",
@@ -1516,7 +1536,22 @@ mod tests {
             "Bash(node -*p *)",
             "Bash(osascript -*e *)",
             "Bash(perl -*e *)",
-            "Bash(python* -*c *)",
+            "Bash(python* -Bc*)",
+            "Bash(python* -Ec*)",
+            "Bash(python* -Ic*)",
+            "Bash(python* -Oc*)",
+            "Bash(python* -Pc*)",
+            "Bash(python* -Rc*)",
+            "Bash(python* -Sc*)",
+            "Bash(python* -bc*)",
+            "Bash(python* -c*)",
+            "Bash(python* -dc*)",
+            "Bash(python* -ic*)",
+            "Bash(python* -qc*)",
+            "Bash(python* -sc*)",
+            "Bash(python* -uc*)",
+            "Bash(python* -vc*)",
+            "Bash(python* -xc*)",
             "Bash(ruby -*e *)",
             "Bash(script *)",
             "Bash(setsid *)",

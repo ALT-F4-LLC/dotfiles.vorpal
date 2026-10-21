@@ -969,10 +969,15 @@ python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUN
 ```
 
 Run it as its own Bash call, with no `jq -c` or other `-c` flag in the same
-command: the deny rule `Bash(python* -*c *)` matches a ` -c ` anywhere after
-`python`, so `python3 ... ; jq -c . "$LAUNCH_DIR/launches.json"` is refused
-(measured: the same command passes with `jq --compact-output`). Read the
-launch files in a second call.
+command: the deny rules `Bash(python* -c*)` and its combined-flag spellings
+(`-Ic*`, `-uc*`, and the other listed letters) match a ` -c` flag anywhere
+after `python`, so `python3 ... ; jq -c . "$LAUNCH_DIR/launches.json"` is
+refused (measured under the earlier, wider rule: the same command passes with
+`jq --compact-output`; the rows now match by construction, assuming the
+harness matches the whole compound command as well as each part). A path or
+argument ending in `c`, such as `launch-d10c`, matches no row; an argument
+starting with `-c`, or with a listed `-<letter>c`, does. Read the launch files
+in a second call.
 
 Always pass `--tribunal`; without it no generated object carries
 `tribunal`, and the script says so on stderr. `$WRITE_CAP` is the write

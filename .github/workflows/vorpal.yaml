@@ -93,6 +93,8 @@ jobs:
 
       - run: bash tests/pr-skill.test.sh
 
+      - run: bash tests/python-code-flag-deny.test.sh
+
       - run: bash tests/reserved-name-check.test.sh
 
       - run: bash tests/sandbox-bypass-guard-hook.test.sh

@@ -468,6 +468,77 @@ else
     wiring=1
 fi
 
+# Seats return their notes; none is told to write a notes file. The sensitive-path
+# guard refuses a write into the audit directory from a seat, so a brief that
+# asks for one burns a refusal per seat and loses the notes.
+POSTMORTEM_SKILL="${POSTMORTEM_SKILL_FILE:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-postmortem/SKILL.md}"
+# Every line that interpolates the audit directory is a digest or condense path:
+# the two directory constants and the two jq program files those seats write.
+stray=$(grep -F '${auditDir}' "$POSTMORTEM" | grep -vE '^const (digestDir|condenseDir) = |^    const jqFile = `\$\{auditDir\}/(digest|condense)\.jq\.\$\{index\}`$' | grep -vE '^//' | head -3)
+if [ -z "$stray" ]; then
+    echo "PASS: only the digest and condense paths interpolate the audit directory"
+else
+    echo "FAIL: only the digest and condense paths interpolate the audit directory (stray: ${stray})"
+    wiring=1
+fi
+boundary=$(awk 'index($0, "const BOUNDARY = `") { open = 1 } open { print } open && /`$/ { exit }' "$POSTMORTEM")
+if [ -n "$boundary" ] && ! printf '%s\n' "$boundary" | grep -qF '${auditDir}' && printf '%s\n' "$boundary" | grep -qF 'Write no file'; then
+    echo "PASS: the shared boundary text grants no write under the audit directory"
+else
+    echo "FAIL: the shared boundary text grants no write under the audit directory"
+    wiring=1
+fi
+for fn in conductorBrief layerBrief deepBrief patternsBrief refuteBrief reconcileBrief; do
+    if awk -v s="function ${fn}(" 'index($0, s) { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -qF 'Write no file'; then
+        echo "PASS: ${fn} tells the seat to write no file"
+    else
+        echo "FAIL: ${fn} tells the seat to write no file"
+        wiring=1
+    fi
+done
+for schema in CANDIDATES_SCHEMA DEEP_SCHEMA VERDICT_SCHEMA RECONCILE_SCHEMA; do
+    if awk -v s="const ${schema} = {" 'index($0, s) { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -q '^        notes: { type'; then
+        echo "PASS: ${schema} carries a notes field"
+    else
+        echo "FAIL: ${schema} carries a notes field"
+        wiring=1
+    fi
+done
+if awk 'index($0, "const VERDICT_SCHEMA = {") { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -E "^    required: " | grep -q notes; then
+    echo "FAIL: VERDICT_SCHEMA does not require notes (a refuter that omits them must still vote)"
+    wiring=1
+else
+    echo "PASS: VERDICT_SCHEMA does not require notes (a refuter that omits them must still vote)"
+fi
+missing=""
+for site in "keepNotes(name," 'keepNotes(`layer ' 'keepNotes(`deep ' "keepNotes('patterns'," 'keepNotes(`refute ' "keepNotes('reconcile',"; do
+    grep -qF -- "$site" "$POSTMORTEM" || missing="${missing} ${site}"
+done
+if [ -z "$missing" ] && grep -q '^    seatNotes,$' "$POSTMORTEM"; then
+    echo "PASS: every note-returning seat feeds seatNotes and the return carries it"
+else
+    echo "FAIL: every note-returning seat feeds seatNotes and the return carries it (missing:${missing})"
+    wiring=1
+fi
+if grep -qF 'verdicts: votes.map((v) => (v == null ? v : (({ notes, ...rest }) => rest)(v)))' "$POSTMORTEM"; then
+    echo "PASS: refuter notes do not ride into the reconciler brief or a continuation"
+else
+    echo "FAIL: refuter notes do not ride into the reconciler brief or a continuation"
+    wiring=1
+fi
+if grep -qF 'const NOTES_MAX = 1200' "$POSTMORTEM" && grep -qF 'notes.slice(0, NOTES_MAX)' "$POSTMORTEM"; then
+    echo "PASS: a seat's notes are bounded before they reach the return"
+else
+    echo "FAIL: a seat's notes are bounded before they reach the return"
+    wiring=1
+fi
+if [ -f "$POSTMORTEM_SKILL" ] && grep -q 'seatNotes' "$POSTMORTEM_SKILL" && grep -qF 'notes-<launch ordinal>.md' "$POSTMORTEM_SKILL" && grep -qF 'with the Write tool, never a shell heredoc' "$POSTMORTEM_SKILL"; then
+    echo "PASS: the skill persists the returned notes with the Write tool, as data"
+else
+    echo "FAIL: the skill persists the returned notes with the Write tool, as data"
+    wiring=1
+fi
+
 node "${WORK}/suite.mjs"
 suite=$?
 [ "$suite" -eq 0 ] && [ "$wiring" -eq 0 ]

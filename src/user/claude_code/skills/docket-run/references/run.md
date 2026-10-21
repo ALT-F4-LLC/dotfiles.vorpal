@@ -15,7 +15,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 869 lines
+- [`docket run`](#run-commands) — 870 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 32 lines
@@ -24,7 +24,7 @@ examples reflect the swept commands as of that build.
   - [`run refresh-files RUN-N --issue <ID> --reason R`](#run-refresh-files) — 28 lines
   - [`run report RUN-N`](#run-report) — 105 lines
   - [`run activate RUN-N`](#run-activate) — 218 lines
-  - [`run conduct RUN-N`](#run-conduct) — 46 lines
+  - [`run conduct RUN-N`](#run-conduct) — 47 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 92 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
@@ -584,9 +584,10 @@ rotated) and then the token on its own stdout line, `step claim`'s
 discipline, so a session whose stdout lands in a transcript uses `--json`
 and extracts the field without printing it.
 
-The conductor verbs — the nine operator verbs `step
+The conductor verbs — the ten operator verbs `step
 approve|reject|resolve|reap|hold`, `run pause|resume|abandon` (with or
-without `--issue`), `run fact add`, and the eleven ruling verbs `step
+without `--issue`), `run hold-issue`, `run fact add`, and the eleven ruling
+verbs `step
 integrate`, `step annotate --integrated-sha`, `run note add`, `run refresh-scope`,
 `run refresh-body`, `run refresh-files`, `run repin`, `dispatch
 waive-target`, `dispatch abandon`, `dispatch close

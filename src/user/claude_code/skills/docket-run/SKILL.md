@@ -113,11 +113,11 @@ engine mutating verb, a trust verb, or a launch; those stay yours.
 ## The conductor capability
 
 The engine binds the CONDUCTOR VERBS to a run-scoped CONDUCTOR CAPABILITY:
-the nine operator verbs, `docket step approve|reject|resolve|reap|hold`,
-`docket run pause|resume|abandon` (with or without `--issue`), and `docket
-run fact add`; and the eleven ruling verbs, `docket step integrate`,
-`docket step annotate --integrated-sha` (the plain `--metadata` form stays
-token-free), `docket
+the ten operator verbs, `docket step approve|reject|resolve|reap|hold`,
+`docket run pause|resume|abandon` (with or without `--issue`), `docket run
+hold-issue`, and `docket run fact add`; and the eleven ruling verbs,
+`docket step integrate`, `docket step annotate --integrated-sha` (the
+plain `--metadata` form stays token-free), `docket
 run note add`, `docket run refresh-scope`, `docket run refresh-body`,
 `docket run refresh-files`, `docket run repin`, `docket dispatch
 waive-target`, `docket dispatch abandon`, `docket dispatch close
@@ -213,6 +213,7 @@ docket guard spawn --run $RUN   # after a reconciled close; exit 2 names a hold 
 docket guard spawn --run $RUN --ack-reap <seq>
 docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
 docket step hold STEP-N --reason "<the repeated failure, and the operator's word to hold it>" < <scratchpad>/conductor.d/$RUN.token
+docket run hold-issue $RUN <ISSUE> --reason "<the operator's note id and word>" < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --batch --authority standing-grant --authority-ref batch-grant < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as fix-round --authority standing-grant --authority-ref <proposal id> < <scratchpad>/conductor.d/$RUN.token
@@ -952,6 +953,24 @@ passed through is the one mistake the wave still refuses. Write the kept
 rows as JSON lines, one row per line, with `jq -c '.data.rows[] |
 select(.kind != "human")'` over the open's answer: the refill below
 appends to that file and filters it line by line.
+
+**An operator's hold on an issue is an engine hold, never a filter.** When
+the operator rules that an issue's rows wait, run `docket run hold-issue
+$RUN <ISSUE> --reason "<the operator's note id and word>" < <scratchpad>/conductor.d/$RUN.token`.
+It parks every pending step of the issue, ready and staged alike,
+waiting-human (park class `held`), so no dispatch offers any of its rows;
+the open's answer lists them under `held` with the reason. Never write the
+hold as a `jq` exclusion over the rows file: a staged row cannot be
+filtered by what is ready, and the exclusion lives only in this
+conversation. The verb refuses, and changes nothing, while any step of the
+issue is claimed, running, or gated, and when the issue has no pending
+step: reap a claimed step whose holder is gone (**A dead spawn is reaped,
+not waited out**), let a running or gated step record, then hold. Release
+is per step, `docket step resolve STEP-N --as retry --authority operator
+--note "<their words>" < <scratchpad>/conductor.d/$RUN.token`, which
+resets the step's retry budget. Steps minted after the hold are not held:
+hold the issue again after an expansion. `dispatch extend` answers with no
+`held` list.
 
 **Split the launches before you launch.** From the kept rows (the file
 you wrote after the kind filter), the installed script partitions the

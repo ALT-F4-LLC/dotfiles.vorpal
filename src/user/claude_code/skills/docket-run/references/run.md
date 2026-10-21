@@ -15,7 +15,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 861 lines
+- [`docket run`](#run-commands) — 869 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 32 lines
@@ -29,7 +29,7 @@ examples reflect the swept commands as of that build.
   - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
-  - [`run status [RUN-N]`](#run-status) — 30 lines
+  - [`run status [RUN-N]`](#run-status) — 38 lines
 
 <a id="run-commands"></a>
 

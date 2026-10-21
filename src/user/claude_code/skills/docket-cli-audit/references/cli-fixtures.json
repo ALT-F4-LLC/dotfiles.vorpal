@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-10-18",
-  "binary_version": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: 2026-10-18T19:59:50Z)",
-  "inventory_version": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: 2026-10-18T19:59:50Z)",
+  "verified_on": "2026-10-21",
+  "binary_version": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: 2026-10-20T23:48:26Z)",
+  "inventory_version": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: 2026-10-20T23:48:26Z)",
   "scenario_sha256": "e2a1c41e9699488ec8cdfe69680af63cea542954ee39b7acaebe3606facf4638",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {

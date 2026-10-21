@@ -17,6 +17,12 @@ const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
 // must be readable through the ~/.ssh read-deny.
 const GIT_AGENT_SIGNING_KEY_PATH: &str = "~/.ssh/agent-signing";
 const GIT_AGENT_SIGNING_KEY_PUBLIC_PATH: &str = "~/.ssh/agent-signing.pub";
+// Author and committer identity for agent commits. Must equal the [user]
+// block in git/config: the GIT_AUTHOR_* and GIT_COMMITTER_* variables outrank
+// config, so a value inherited from the host environment would otherwise win
+// and the commit would not match the principal in allowed_signers.
+const GIT_IDENTITY_NAME: &str = "Erik Reinert";
+const GIT_IDENTITY_EMAIL: &str = "4638629+erikreinert@users.noreply.github.com";
 /// Placeholder in the auto-mode prose for the comma-joined scratch roots.
 /// The roots carry the invoking user's uid, so the rows that name them are
 /// expanded through `expand_scratch_roots` when the config is evaluated
@@ -579,6 +585,10 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
         .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
         .with_env("ENABLE_TOOL_SEARCH", "true") // REASON: Deferred MCP tool loading is off when ANTHROPIC_BASE_URL is not a first-party host
+        .with_env("GIT_AUTHOR_EMAIL", GIT_IDENTITY_EMAIL)
+        .with_env("GIT_AUTHOR_NAME", GIT_IDENTITY_NAME)
+        .with_env("GIT_COMMITTER_EMAIL", GIT_IDENTITY_EMAIL)
+        .with_env("GIT_COMMITTER_NAME", GIT_IDENTITY_NAME)
         .with_env("GIT_CONFIG_COUNT", &GIT_CONFIG.len().to_string());
 
     for (i, (key, value)) in GIT_CONFIG.iter().enumerate() {
@@ -881,10 +891,10 @@ mod tests {
         claude_home, component_name, home_install, owned, sandbox_filesystem_deny_read_paths,
         sandbox_just_tempdir, sandbox_scratch_roots, settings, settings_with, HostInputs,
         AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS, SANDBOX_ALLOW_READ_PATHS,
-        SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS, SENSITIVE_PATHS_DENY_EDIT_ONLY,
-        SENSITIVE_PATHS_DENY_READ_ONLY, SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS,
-        TRUST_STORE_PATHS,
+        GIT_IDENTITY_EMAIL, GIT_IDENTITY_NAME, PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS,
+        SANDBOX_ALLOW_READ_PATHS, SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS,
+        SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
+        SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS, TRUST_STORE_PATHS,
     };
     use crate::file::FileCreate;
 
@@ -981,6 +991,14 @@ mod tests {
             home_install(GIT_ALLOWED_SIGNERS_CONFIG_PATH),
             "${HOME}/.config/git/allowed_signers"
         );
+    }
+
+    #[test]
+    fn agent_identity_matches_the_git_config_user_block() {
+        let config = include_str!("git/config");
+
+        assert!(config.contains(&format!("email = \"{GIT_IDENTITY_EMAIL}\"")));
+        assert!(config.contains(&format!("name = \"{GIT_IDENTITY_NAME}\"")));
     }
 
     #[test]

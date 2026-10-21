@@ -2533,6 +2533,11 @@ const PROGRESSING_BLOCKS = [
     'a detached pre-gate run for its target is in flight',
 ]
 
+// What a writer left in the saga holds its same-issue successors on: the
+// first PROGRESSING_BLOCKS clause, the one a claim agent would have been
+// refused with.
+const WRITER_PENDING_DEFERRAL = PROGRESSING_BLOCKS[0]
+
 // Returns the engine's blocked_reason when it names a still-progressing
 // predecessor, else null. Null is the SAFE answer: under-claiming a deferral
 // costs one imprecise line; over-claiming one tells the operator to wait for
@@ -2965,6 +2970,23 @@ function settleRow(row, res) {
               `dispatch rather than dead`
             : `${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
               `stages will not be launched this wave`)
+    } else if (row.issue && !deadIssues.has(row.issue) && isWriter(row) &&
+               out.status === 'returned' && recordTail(out.text) === 'pending') {
+        // A writer that recorded pending is still in the engine's saga (its
+        // gates run detached), so its same-issue `after` successors are
+        // unclaimable. Each would cost a claim agent to learn that from a
+        // CONFLICT; settle them as the deferred tail without the spawn. The
+        // status is skipped-chain-dead, not skipped-not-ready: the refill
+        // relaunches a not-ready row in the same dispatch, where the writer
+        // row is gone and each review would spawn its claim agent again.
+        // Known limits: the writer read pending once, so a gate that ends
+        // seconds later would have let a claim succeed (the lane now waits a
+        // dispatch), and the deferral is issue-wide. An earlier failure in the
+        // issue keeps its own wording.
+        deadIssues.set(row.issue, { step: row.step, status: 'recorded-pending',
+            deferral: WRITER_PENDING_DEFERRAL })
+        log(`${row.step}: writer recorded pending — issue ${row.issue}'s later ` +
+            `rows wait on its saga; deferring them without a claim agent`)
     }
 }
 

@@ -419,6 +419,52 @@ for (const s of ['pending', 'failed', 'superseded']) {
         `DOT-560 fence: "${s}" still kills the rest of the issue's chain`)
 }
 
+// ---- a writer that recorded pending defers its same-issue reviews unspawned ----
+// The engine holds the writer's step in its saga while its gates run detached,
+// so each later review row would be refused "an `after` predecessor is not
+// done" by a claim agent. The lane settles them as the deferred tail instead.
+const WRITER = (step, issue, stage) => ({ step, issue, stage, kind: 'executor', executor: 'implement', class: 'write' })
+const WRITER_LANE = () => [
+    WRITER('STEP-3001', 'HRN-40', 0),
+    ex('STEP-3002', 'HRN-40', 1),
+    ex('STEP-3003', 'HRN-40', 1),
+    ex('STEP-3004', 'HRN-40', 1),
+    ex('STEP-3101', 'HRN-41', 0),
+    ex('STEP-3102', 'HRN-41', 1),
+]
+const REVIEWS = ['STEP-3002', 'STEP-3003', 'STEP-3004']
+out = await run(WRITER_LANE(), {
+    'STEP-3001': { step: 'STEP-3001', status: 'returned', text: 'Recorded, gates running detached.\n\nSTEP-3001 recorded (pending)' },
+})
+ok(REVIEWS.every((s) => !SPAWNED.includes(s) && !PROBED.includes(s)),
+    'a writer recorded pending: none of its three reviews spawns a claim agent or a probe')
+ok(REVIEWS.every((s) => statusOf(out, s) === 'skipped-chain-dead'),
+    'and the result lists all three as deferred (skipped-chain-dead)')
+ok(LOG.some((l) => l.includes('STEP-3002') && l.includes('later stages deferred') && l.includes('an `after` predecessor is not done')),
+    'and the log names the writer as the progressing predecessor, not a death')
+ok(SPAWNED.includes('STEP-3101') && SPAWNED.includes('STEP-3102') && statusOf(out, 'STEP-3102') === 'returned',
+    "and the other issue's lane runs both stages unaffected")
+
+// Controls: a writer recorded done still ladders; a NON-writer that returns
+// pending defers nothing (a stage-2 row behind it still spawns); and a real
+// failure in the same stage keeps its "chain died" wording, never "Nothing failed".
+out = await run(WRITER_LANE(), {})
+ok(REVIEWS.every((s) => SPAWNED.includes(s) && statusOf(out, s) === 'returned'),
+    'a writer recorded done: its reviews spawn and return as before')
+out = await run([...WRITER_LANE(), ex('STEP-3005', 'HRN-40', 2)], {
+    'STEP-3002': { step: 'STEP-3002', status: 'returned', text: 'STEP-3002 recorded (pending)' },
+})
+ok(SPAWNED.includes('STEP-3005') && statusOf(out, 'STEP-3005') === 'returned',
+    'a non-writer recorded pending defers nothing: the stage-2 row behind it spawns')
+out = await run([WRITER('STEP-3001', 'HRN-40', 0), WRITER('STEP-3006', 'HRN-40', 0), ex('STEP-3002', 'HRN-40', 1)], {
+    'STEP-3001': { step: 'STEP-3001', status: 'spawn-failed', text: null },
+    'STEP-3006': { step: 'STEP-3006', status: 'returned', text: 'STEP-3006 recorded (pending)' },
+})
+ok(statusOf(out, 'STEP-3002') === 'skipped-chain-dead' && !SPAWNED.includes('STEP-3002') &&
+   LOG.some((l) => l.includes('STEP-3002') && l.includes('chain died')) &&
+   !LOG.some((l) => l.includes('STEP-3002') && l.includes('Nothing failed')),
+    'a failed same-stage sibling keeps the chain-died wording when a writer also recorded pending')
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS

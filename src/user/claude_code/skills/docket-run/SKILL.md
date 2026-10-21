@@ -614,14 +614,13 @@ tool call with another:**
 2. **Back-fill the panel's seat usage**: the seats-mode case of **A
    panel you convened yourself gets the same treatment** (loop step 3):
 
-   ```
-   Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
-              args: {dir: "<tribunal-transcript-dir>", mode: "seats", exclude: []} })
+   ```bash
+   bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<tribunal-transcript-dir>" --mode seats > "<scratchpad>/panel.tmp" && mv "<scratchpad>/panel.tmp" "<scratchpad>/panel.json"
    ```
 
    ```bash
    docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
-     --from-json - < "<scratchpad>/panel.json"   # the return's `rows` ARRAY, not the whole envelope
+     --from-json - < "<scratchpad>/panel.json"   # the script's stdout: the `rows` ARRAY, not the whole envelope
    ```
 
    Never run `run activate` in the same call as reading the tally.
@@ -1178,7 +1177,7 @@ not.** A wave agent parked on a permission prompt leaves its launch's task
 output empty and sends nothing until it finishes, so at dispatch open,
 beside the launches, start ONE watcher for the whole dispatch: a Bash
 call with `run_in_background: true` listing every launch's transcript
-directory (the same `<transcript-dir>` docket-workflow-usage reads). It takes each
+directory (the same `<transcript-dir>` usage_join.sh reads). It takes each
 agent transcript's (`agent-<agentId>.jsonl`) last-entry time from its
 modification time, since transcripts are append-only, and exits when a
 running agent's transcript has had no new entry for 15 minutes. Its exit
@@ -1374,7 +1373,7 @@ one call back-fills, verifies, and closes, each stage gating the next: a
 failed back-fill runs no verify and no close, a failed verify runs no
 close, and nothing is ever half-closed. Read its full output, verify
 stage included, before acting on the close or calling `next`; never pipe
-it through `head` or `tail`. A panel's seats-mode join launches beside
+it through `head` or `tail`. A panel's seats-mode join runs beside
 the next wave, after the close. Never issue `docket next --run` while the
 dispatch is open.
 (Shell paper-cut: quote `echo '---'`, since zsh equals-expands an
@@ -1392,11 +1391,11 @@ dispatch), and only that hold gets the ack-reap panel under
 
 **This order binds one dispatch's own sequence, not the relationship
 between dispatches.** When more than one dispatch or panel is genuinely
-in flight, launch their `docket-workflow-usage.js` joins concurrently; each join
+in flight, run their `usage_join.sh` joins concurrently; each join
 still precedes its own dispatch's write, verify, and close. "Precedes" is
 the order of calls, not when the join's usage record lands: the engine's
 grace window can still bill a step after the close returns, as
-`docket-workflow-usage.js`'s header comment explains.
+`docket-workflow-usage.js`'s header comment explains (the script reads the same transcripts).
 
 Two ways the back-fill gets skipped, both losing the run's only record of
 its spend: treating **"nothing was claimed"** as a reason (a wave whose
@@ -1421,7 +1420,7 @@ notification (step 2's dead-launch check) or a session resumes onto a
 dispatch whose wave no longer exists. The order is the same as a normal
 close, with one difference at the end:
 
-1. Back-fill first: launch the `docket-workflow-usage.js` join over whatever
+1. Back-fill first: run `usage_join.sh` over whatever
    transcripts exist, before anything else, since abandon has no later
    window.
 2. `docket dispatch verify --run $RUN`, then `docket step show STEP-N` for
@@ -1441,19 +1440,19 @@ close, with one difference at the end:
 **Pause mode** and a resume prompt point here rather than restating it.
 
 ```
-// 1. the join is a workflow (below); its return carries the rows and you check the shape.
+// 1. the join is a script (below); its stdout is the rows and you check the shape.
 // The join measures tokens only. A wave's coordination counts (rounds, gate passes,
 // re-seats, claim conflicts, ancestry parks, budget/chain deferrals) come from the
 // `coordination` field of that wave's own return, which docket-workflow.js computes; the join has none.
-Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
-           args: {dir: "<transcript-dir>", mode: "steps", exclude: []} })
+bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<transcript-dir>" --mode steps > "<scratchpad>/wave-<wfId>.tmp" && mv "<scratchpad>/wave-<wfId>.tmp" "<scratchpad>/wave-<wfId>.json"
 ```
 
 ```bash
-# 2. as each launch's join returns, land its `rows` array on disk with the Write
-#    tool as "<scratchpad>/wave-<wfId>.json", copied from the completion notification
-#    byte for byte — never retyped, never reshaped. Nothing else goes in that
-#    file: the workflow's overhead and skip lines are in its return, not `rows`.
+# 2. the redirect and mv above land each launch's `rows` array as
+#    "<scratchpad>/wave-<wfId>.json" with no retyping; nothing else goes in that
+#    file: the reader's overhead and skip lines are on stderr, not in `rows`.
+#    A join that exits 1 leaves no .json, so the merge in 3 cannot skip it:
+#    check that every launch has its file before merging.
 # 3. once every launch has returned, merge every launch's file into one array,
 #    one file per launch named, refill launches included:
 jq -s add "<scratchpad>/wave-<wfId-0>.json" "<scratchpad>/wave-<wfId-1>.json" > "<scratchpad>/dispatch-<M>-rows.json"
@@ -1509,49 +1508,53 @@ on a genuine discrepancy.
 
 **This is the transcript-token path, not a workaround for one.** An
 executor cannot observe its own token consumption; tokens reach the
-ledger through docket-workflow-usage → `backfill-usage` by design. `docket step
+ledger through usage_join.sh → `backfill-usage` by design. `docket step
 record --usage '{"unit": n, ...}'` is the other channel, opaque to the
 engine, at most 32 units per call; `budget.unit` names the one unit the
 run's cap counts.
 
-**Launch docket-workflow-usage over the transcript directory**: the installed
-`~/.claude/workflows/docket-workflow-usage.js`, with
-`args: {dir, mode: "steps", exclude: []}`. The coordination counts are
-not the join's: read them from the `coordination` field of the wave's
-own return (per the join's comment above). It fans one
-low-effort agent per `agent-*.jsonl` file to run a fixed jq program and
-returns `rows`: four typed units per step,
-deduplicated by message id, keyed by the step each agent's `docket step
-claim/record STEP-N` obligation names. A read-only probe or a claim
-agent (its brief closes `WAVE CLAIM`) carries no claim/record obligation
-and sums into `overhead`, attributed to no step, since back-filling a
-read or a claim onto the step it served would invent spend. Report that total separately; never `exclude` your way around it.
-The workflow throws when a brief names no step or an agent carries no
-usage; report that rather than papering over it. Only if the installed
-workflow is absent (drift, stop-and-report) delegate to one
-`executor-read` agent, briefed verbatim with
-[references/usage-join.md](references/usage-join.md). Either way, check
-the shape (every dispatched step present, quantities integers) before
-piping.
+**Run usage_join.sh over the transcript directory**: the installed
+`~/.claude/skills/docket-run/scripts/usage_join.sh`, a deterministic
+reader that spawns no agent:
 
-A background helper is invisible to `ListAgents` while it runs; its
-completion notification is the only status surface (**Seat**'s
-`TaskStop` rule applies here too).
+```bash
+bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<transcript-dir>" --mode steps > "<scratchpad>/wave-<wfId>.tmp" && mv "<scratchpad>/wave-<wfId>.tmp" "<scratchpad>/wave-<wfId>.json"
+```
+
+It runs the fixed jq program over every `agent-*.jsonl` file itself and
+prints `rows`, four typed units per step, as one JSON array on stdout,
+exactly the rows `docket-workflow-usage.js` returns, so the file is the
+array `backfill-usage` reads and needs no Write step. Usage is deduplicated
+by message id, keyed by the step each agent's `docket step claim/record
+STEP-N` obligation names. A read-only probe or a claim agent (its brief
+closes `WAVE CLAIM`) carries no claim/record obligation and sums into the
+overhead on stderr, attributed to no step, since back-filling a read or a
+claim onto the step it served would invent spend. Report that total
+separately; never `--exclude` your way around it. Pass `--exclude
+STEP-N,STEP-M` only for a step a prior dispatch's back-fill already
+carries. The coordination counts are not the join's: read them from the
+`coordination` field of the wave's own return. The script exits 1 with
+nothing on stdout when a brief names no step or an agent carries no usage;
+report that rather than papering over it. Only if the installed script is
+absent (drift, stop-and-report) delegate to one `executor-read` agent,
+briefed verbatim with [references/usage-join.md](references/usage-join.md).
+Either way, check the shape (every dispatched step present, quantities
+integers) before piping.
+
 
 **A panel you convened yourself gets the same treatment, keyed by
 seat.** A tribunal.js seat carries a proposal id, never a step id, so
-`dispatch backfill-usage` cannot receive it. Launch the same workflow
-with `mode: "seats"` and pipe its rows to the vote-scoped verb, once per
+`dispatch backfill-usage` cannot receive it. Run the same reader
+with `--mode seats` and pipe its rows to the vote-scoped verb, once per
 panel, right after reading the tally:
 
 ```
-Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
-           args: {dir: "<tribunal-transcript-dir>", mode: "seats", exclude: []} })
+bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<tribunal-transcript-dir>" --mode seats > "<scratchpad>/panel.tmp" && mv "<scratchpad>/panel.tmp" "<scratchpad>/panel.json"
 ```
 
 ```bash
-# The return's `rows` ARRAY landed on disk with the Write tool, each row exactly as
-# returned. The verb reads a bare array of {voter, unit, quantity} (extra keys such as
+# The script's stdout, the `rows` ARRAY, landed on disk by the redirect, each row exactly as
+# printed. The verb reads a bare array of {voter, unit, quantity} (extra keys such as
 # `proposal` are ignored); the whole {rows, overhead, skipped} envelope is refused.
 docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
   --from-json - < "<scratchpad>/panel.json"

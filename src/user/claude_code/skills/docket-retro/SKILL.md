@@ -159,13 +159,13 @@ not tune.
 `model_requested` / `effort_requested`, set at routing, and
 `model_resolved` / `effort_resolved`, annotated from the transcript's
 assistant turns (`message.model` and the top-level `effort`); a row
-reading `unknown` is one the annotate path missed, which docket-workflow-usage.js
+reading `unknown` is one the annotate path missed, which usage_join.sh
 back-fills from the transcript. Read them off the
 step itself (`docket step show` /
 `step context`): `run report`'s `metadata` is a rollup of key to distinct
 values with counts, so it shows aggregate skew but never which step asked
 for what. A failed or crashed step contributes none of the four keys;
-measure drift from the driving conversation's docket-workflow-usage results, or state
+measure drift from usage_join.sh's serving-models lines in the driving conversation, or state
 that it was not measured. Read attempt counts alongside.
 
 **Lease and duration limits, if steps are being reaped mid-work.** Liveness

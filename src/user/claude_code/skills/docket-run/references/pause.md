@@ -135,7 +135,7 @@ every other path the prompt names from command output as well.
 - **Every wave this session launched** — every launch of a dispatch
   counts as its own wave here: its `wfId`, its
   `unit: {index, of, classCap}`, and the journal/transcript directory path
-  docket-run used for `docket-workflow-usage`. Without the `wfId` and that directory,
+  docket-run passed to `usage_join.sh`. Without the `wfId` and that directory,
   usage for that wave can never be back-filled
   (`--source "wave-journal:<wfId>"` on the combined `dispatch close
   --backfill-from`, or on a crashed-relay back-fill), and
@@ -175,7 +175,7 @@ every other path the prompt names from command output as well.
   needs to know one is outstanding.
 - **Every tribunal proposal id convened this session**, with a one-line
   tally each. Panel spend reaches the ledger through the seats-mode
-  docket-workflow-usage join piped to
+  usage_join.sh read piped to
   `docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>"` —
   back-fill every panel this session convened before recording the
   snapshot, in both halt modes, and carry into the snapshot only the

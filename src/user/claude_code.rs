@@ -657,6 +657,14 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
             "command",
         )
+        // Refuses a Bash command the permission system already denied when it
+        // is reissued, however spelled, with no operator turn in between.
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/docket-denied-reissue-guard-hook.sh",
+            "command",
+        )
         .with_hook(
             "SessionStart",
             None,

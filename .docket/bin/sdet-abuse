@@ -95,6 +95,7 @@ readonly MIN_CASES=10
 ENFORCING=(
   docket-advisor-first-hook.sh
   docket-commit-guard-hook.sh
+  docket-denied-reissue-guard-hook.sh
   docket-groom-turn-guard-hook.sh
   docket-park-notice-hook.sh
   docket-run-guard-hook.sh

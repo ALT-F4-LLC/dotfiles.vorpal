@@ -319,7 +319,7 @@ gate_row() {
 gate_packet pass "$WORK/gates-pass.txt"
 gate_packet fail "$WORK/gates-fail.txt"
 # No gate row to abridge: the bulk sits in a section this script never cuts.
-{ printf '== INPUT issue.diff from implement@0\n'; jq -rn '"d" * 600000'; } >"$WORK/too-big.txt"
+{ printf '== INPUT issue.diff from implement@0\n'; jq -rn '"d" * 900000'; } >"$WORK/too-big.txt"
 
 C="$WORK/cap-pass"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 set_args
@@ -346,8 +346,8 @@ sed '/^== INPUT gate-results from /{n;d;}' "$WORK/gates-pass.txt" >"$C/packet.ex
 sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' | sed '/^== INPUT gate-results from /{n;d;}' >"$C/packet.actual"
 diff "$C/packet.actual" "$C/packet.expected" >/dev/null
 check $? "every line outside the gate rows is unchanged"
-[ "$(sed -n '1p' "$C/stub.log")" = "step render STEP-7" ] && [ "$(sed -n '2p' "$C/stub.log" | cut -d' ' -f1-3)" = "step claim STEP-7" ]
-check $? "the packet is rendered and sized before the claim"
+[ "$(sed -n '1p' "$C/stub.log" | cut -d' ' -f1-3)" = "step claim STEP-7" ] && ! grep -q '^step render' "$C/stub.log"
+check $? "the packet is sized from the claim's own render, with no separate render before it"
 sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"
 node "$WORK/success/load.mjs" "$MODULE" "$C/packet.out"
 check $? "the abridged module evaluates as a script body"
@@ -365,27 +365,43 @@ set_args
 STUB_RENDER="$WORK/packet.txt" run_claim cap-small success "${ARGS[@]}"
 sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"
 [ "$RC" -eq 0 ] && cmp -s "$C/packet.out" "$WORK/packet.txt" && [ "$(modval "$MODULE" '.packet_abridged')" = "false" ] &&
-    [[ "$OUT" == *" abridged=0 "* ]]
-check $? "a packet whose module fits is never abridged"
+    [ "$(modval "$MODULE" '.packet_by_reference')" = "false" ] && [[ "$OUT" == *" abridged=0 "* ]]
+check $? "a packet whose module fits is never abridged or by reference"
 
-C="$WORK/cap-refused"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+# A packet that no gate-row abridgment can bring under the cap degrades to a
+# by-reference packet instead of failing the claim.
+C="$WORK/cap-byref"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 set_args
-STUB_RENDER="$WORK/too-big.txt" run_claim cap-refused success "${ARGS[@]}"
-[ "$RC" -eq 1 ] && [[ "$OUT" == "CLAIM FAILED: STEP-7: the packet module would be about "*" bytes, over the Workflow script cap of 524288 bytes, with gate output abridged; nothing was claimed" ]]
-check $? "an oversized render is CLAIM FAILED naming the size and the cap (got $RC: ${OUT:0:200})"
-! grep -q '^step claim' "$C/stub.log" && ! grep -q '^step fail' "$C/stub.log" && [ ! -e "$MODULE" ] && [ ! -e "$C/tmp/STEP-7.d/STEP-7.token" ]
-check $? "the oversized render stops before the claim: no lease, no token, no module"
+STUB_PACKET_FILE="$WORK/too-big.txt" run_claim cap-byref success "${ARGS[@]}"
+[ "$RC" -eq 0 ] && [ -f "$MODULE" ] && [ "$(wc -c <"$MODULE" | tr -d ' ')" -lt "$CAP" ] &&
+    [[ "$OUT" == "CLAIMED STEP-7 attempt=3 packet_bytes=$(wc -c <"$WORK/too-big.txt" | tr -d ' ') module_bytes=$(wc -c <"$MODULE" | tr -d ' ') abridged=1 sha256="* ]]
+check $? "a 900 KB packet with no gate row to abridge claims with exit 0 and a module under the cap (got $RC: ${OUT:0:200})"
+[ "$(modval "$MODULE" '.packet_by_reference')" = "true" ] && [ "$(modval "$MODULE" '.packet_abridged')" = "true" ]
+check $? "the module records that its packet is by reference"
+[ "$(modval "$MODULE" '.packet_sha256')" = "$(sha256_of "$WORK/too-big.txt")" ] &&
+    cmp -s "$C/tmp/STEP-7.d/STEP-7.packet.md" "$WORK/too-big.txt" &&
+    [ "$(modval "$MODULE" '.packet_file')" = "$C/tmp/STEP-7.d/STEP-7.packet.md" ]
+check $? "packet_file and its packet_sha256 match the engine's packet"
+modval "$MODULE" '.packet' | grep -qF "$C/tmp/STEP-7.d/STEP-7.packet.md" &&
+    modval "$MODULE" '.packet' | grep -qF "$(sha256_of "$WORK/too-big.txt")" &&
+    modval "$MODULE" '.packet' | grep -q '^== STEP STEP-7 (by reference)$'
+check $? "the by-reference packet names the packet file and its sha256"
+! grep -q '^step fail' "$C/stub.log" && [ -e "$C/tmp/STEP-7.d/STEP-7.token" ]
+check $? "the by-reference claim keeps its lease: no step fail, token in place"
+F="$C/tmp/STEP-7.d/STEP-7.packet.folded.md"
+modval "$MODULE" '.packet' | grep -qF "$F" && [ "$(tr -d '\n' <"$F" | cksum)" = "$(tr -d '\n' <"$WORK/too-big.txt" | cksum)" ] &&
+    [ "$(awk '{ if (length($0) > m) m = length($0) } END { print m }' "$F")" -le 1500 ]
+check $? "the stub names a folded copy whose lines stay within 1,500 bytes and whose bytes match the packet"
 
-# The render before the claim fit, or printed nothing; the claim's own did not.
-C="$WORK/cap-released"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
+# Gate rows abridged, yet the packet still over the cap: the realistic route to by reference.
+{ cat "$WORK/gates-pass.txt"; printf '== INPUT issue.diff from implement@0\n'; jq -rn '"d" * 600000'; } >"$WORK/gates-big.txt"
+C="$WORK/cap-byref-gates"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 set_args
-STUB_PACKET_FILE="$WORK/too-big.txt" run_claim cap-released success "${ARGS[@]}"
-[ "$RC" -eq 5 ] && [[ "$OUT" == "CLAIM INCOMPLETE: STEP-7: the packet module is "*" bytes, over the Workflow script cap of 524288 bytes, with gate output abridged; the lease was ended with docket step fail" ]]
-check $? "an oversized claimed packet is CLAIM INCOMPLETE naming the size and the cap (got $RC: ${OUT:0:200})"
-grep -q '^step fail STEP-7 --note the packet module is [0-9]* bytes, over the Workflow script cap of 524288 bytes' "$C/stub.log" &&
-    [ "$(cat "$C/fail.stdin")" = "$TOKEN_VALUE" ] && [ ! -e "$C/tmp/STEP-7.d" ] && [ ! -e "$MODULE" ] && [ ! -e "$MODULE.partial" ]
-check $? "its lease is ended with docket step fail, and no module or step dir remains"
-
+STUB_PACKET_FILE="$WORK/gates-big.txt" run_claim cap-byref-gates success "${ARGS[@]}"
+[ "$RC" -eq 0 ] && [ "$(modval "$MODULE" '.packet_by_reference')" = "true" ] &&
+    [ "$(modval "$MODULE" '.packet_sha256')" = "$(sha256_of "$WORK/gates-big.txt")" ] &&
+    [ "$(wc -c <"$MODULE" | tr -d ' ')" -lt "$CAP" ]
+check $? "abridged gate rows that still leave the packet over the cap fall back to by reference (got $RC: ${OUT:0:200})"
 # ---- stale modules are swept, fresh ones kept ------------------------------------
 C="$WORK/sweep"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 mkdir -p "$C/repo/.claude/docket-packets"

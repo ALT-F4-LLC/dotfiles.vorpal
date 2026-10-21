@@ -255,8 +255,9 @@ function archetype(row, hint) {
 // spawn prompt is not. No executor spawns without a packet: a claim that
 // yields no valid module launches nothing. The Workflow tool refuses a script
 // file over 524,288 bytes, so docket-workflow-claim abridges long gate-results output
-// when the module would not fit (packet_abridged), and refuses the claim when
-// it still would not: CLAIM FAILED before the lease, CLAIM INCOMPLETE after.
+// when the module would not fit (packet_abridged), and when it still would
+// not, hands the executor a short by-reference packet that names the packet
+// file and its sha256 (packet_by_reference).
 //
 // HOW THESE BRIEFS ARE WORDED, and it is load-bearing: state the required
 // form, omit the defense. A brief never addresses the safety classifier,
@@ -382,6 +383,7 @@ function packetFromModule(mod, row, owner) {
         sha256: typeof mod.packet_sha256 === 'string' ? mod.packet_sha256 : '',
         reMinted: mod.re_minted === true,
         abridged: mod.packet_abridged === true,
+        byReference: mod.packet_by_reference === true,
     }
 }
 // TEST-END packet
@@ -442,7 +444,8 @@ YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). Every
 ${row.step} below is your real, already-substituted step id. The wave claimed
 it for you with \`docket step claim ${row.step} --owner ${owner} --render\`
 (attempt ${claim.attempt}): the lease is live, and the work packet the engine
-rendered at that claim closes this brief, verbatim. Claiming again re-keys
+rendered at that claim closes this brief, verbatim; when it opens with
+\`(by reference)\`, the file it names holds the packet. Claiming again re-keys
 the lease and voids the parked token.${isolationNote}
 
 1. YOUR PRIVATE STEP SCRATCH DIR is ${dir} (mode 0700). EVERYTHING you write
@@ -1224,7 +1227,8 @@ async function claimPacket(row, r, phaseLabel) {
             log(`${row.step}: claimed by ${owner} at attempt ${claim.attempt}` +
                 (claim.reMinted ? ' (re-minted)' : '') +
                 `; packet of ${claim.packet.length} characters loaded from ${modulePath}` +
-                (claim.abridged ? ' (gate output abridged to fit the script cap)' : ''))
+                (claim.byReference ? ' (by reference: the executor reads the packet file)'
+                    : claim.abridged ? ' (gate output abridged to fit the script cap)' : ''))
             return { ok: true, owner, claim }
         }
         const text = `${row.step}: packet module ${modulePath} REFUSED — ${claim.why}; ` +

@@ -2372,7 +2372,11 @@ classifier paragraph under **Before the loop**, not this ruling.
 The operator ruled once, and the ruling stands for every run until they
 withdraw it: always consult the advisor before the operator, and come to
 the operator when an answer is not clear. This section is that ruling,
-and "advisor-first" anywhere in this file names this route.
+and "advisor-first" anywhere in this file names this route. A hook enforces
+it on a conductor's `AskUserQuestion`: the call is refused unless, since the
+last operator answer, a completed advisor launch whose brief names the
+question's header, a step id in it, or its full text exists, or a run note
+records an advisor ruling for that step.
 
 **Every decision this file sends to the operator goes to the `advisor`
 agent first.** That holds under any wording (a gate, a park, a question, a

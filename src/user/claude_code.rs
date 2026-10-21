@@ -616,6 +616,15 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "bash ~/.claude/hooks/docket-park-notice-hook.sh",
             "command",
         )
+        // Holds a docket-run conductor to the advisor-first standing ruling:
+        // an operator question is refused until a completed advisor review
+        // or a recorded advisor ruling covers it.
+        .with_hook(
+            "PreToolUse",
+            Some("AskUserQuestion"),
+            "bash ~/.claude/hooks/docket-advisor-first-hook.sh",
+            "command",
+        )
         .with_hook(
             "PreToolUse",
             Some("Bash"),

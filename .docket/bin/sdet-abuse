@@ -93,6 +93,7 @@ readonly MIN_CASES=10
 # and are registered; ADVISORY hooks observe, inject, or record and always
 # allow; UNWIRED hooks can decide but are deliberately not registered.
 ENFORCING=(
+  docket-advisor-first-hook.sh
   docket-commit-guard-hook.sh
   docket-groom-turn-guard-hook.sh
   docket-park-notice-hook.sh

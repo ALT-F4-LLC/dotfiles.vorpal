@@ -81,7 +81,7 @@ parser.
 passed.** For a step that declares completion gates, record returns at once
 with "Recorded, gates and routing running detached:" and no `failed_gates`;
 the engine runs the gates in a detached child. Read the terminal state with
-`step show STEP-N --json` and a failed gate's output with `step gates STEP-N`,
+`step show STEP-N --json=v2` and a failed gate's output with `step gates STEP-N --json=v2`,
 and treat a step still in its saga as unfinished. Only an inline record (a
 gate-less step, or no detached launcher) carries `failed_gates`. Inspect the
 returned step's status/routing, and when needed `gate status` or `run report`.
@@ -205,6 +205,19 @@ out of argv, comments, artifacts, and logs. Send it via `DOCKET_TOKEN` or
 stdin on the owning worker's commands; see [transport](references/transport.md)
 for surviving the capability across separate Bash invocations.
 
+Record the routing facts the dispatcher already knows in the claim itself, so
+they survive worker failure: `docket step claim STEP-N --owner NAME --metadata
+'{"model_requested":"opus","effort_requested":"high","variant":"opus-high"}'
+--json=v2`. Leave `model_resolved` and `effort_resolved` out, or set them to
+`"unknown"`, until the serving model and effective effort are observed, and
+omit `--cost-multiplier` unless the dispatcher resolved a differently priced
+variant.
+
+A gap file for `step complete --gap-file` starts with the issue title alone on
+line one, then `Key: value` lines (`Severity`, `Kind`, `Labels` as a comma
+list), then a blank line and the body. Do not write the title as a `Title:`
+header; `step complete --help` documents the full header set.
+
 - `CONFLICT` on claim means another live claim or a scheduling condition
   may hold the step. Inspect current state instead of spawning duplicate
   work.
@@ -281,7 +294,11 @@ contents list: search for the command or heading before loading a section.
 For live diagnosis, prefer `doctor` for attachment checks, `gate status` for
 a gate's outcome and missing seats, and `run report` for status, artifacts,
 checks, and spend. `run status` is the inspection verb; there is no `run
-show`. Use `run note add` for a correction that later work packets
+show`. Its default list is the active runs only and stops at 50, so a
+complete active-run check is `run status --json=v2 --limit 0`; `--all` widens
+the list to finished runs and is not part of that check. To recover one run
+after compaction, read `run status RUN-N --json=v2` and `step show STEP-N
+--json=v2`; they change nothing, unlike `next`, `step claim`, or `step record`. Use `run note add` for a correction that later work packets
 must carry, and `run refresh-scope` after an authorized scope edit when an
 active run needs the new declaration; on a run bound to a conductor
 capability both need its token, so they belong to the session driving the

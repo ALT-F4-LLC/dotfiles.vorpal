@@ -60,6 +60,8 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 extract seat-brief > "${WORK}/brief.js" || fatal "bad or missing TEST markers for seat-brief"
 [ -s "${WORK}/brief.js" ] || fatal "extracted seat-brief region is empty"
 grep -q 'judgeBrief' "${WORK}/brief.js" || fatal "seat-brief region does not contain judgeBrief"
+extract vote-result-schema > "${WORK}/schema.js" || fatal "bad or missing TEST markers for vote-result-schema"
+grep -q 'VOTE_RESULT_SCHEMA' "${WORK}/schema.js" || fatal "vote-result-schema region does not contain VOTE_RESULT_SCHEMA"
 
 {
     cat <<'JS'
@@ -69,6 +71,7 @@ const lensOf = (seat) => ({ role: 'stub-role', text: 'STUB LENS.' })
 const TARGET_SHA_RE = /^[0-9a-f]{40}$/
 JS
     cat "${WORK}/brief.js"
+    cat "${WORK}/schema.js"
 } > "${WORK}/suite.mjs"
 
 cat >> "${WORK}/suite.mjs" <<'JS'
@@ -173,6 +176,26 @@ for (const [label, b] of [['conversational', conv], ['mid-wave', mid]]) {
         `${label} brief never reads a summary back through $(cat`)
     ok(!b.includes('cat > <TMP>/'),
         `${label} brief never writes a summary file under <TMP>`)
+}
+
+// ---- the vote-result relay schema ----------------------------------------
+// The probe's reply is validated by the harness against VOTE_RESULT_SCHEMA. A
+// relay that turned 'approved' or 'rejected' into 'ok' must fail validation,
+// and every status the engine can emit must pass. The engine's list is
+// internal/model/proposal.go validProposalStatuses.
+{
+    const allowed = (v) => {
+        const p = VOTE_RESULT_SCHEMA.properties.status
+        return typeof v === 'string' && (p.enum === undefined || p.enum.includes(v))
+    }
+    for (const s of ['open', 'approved', 'rejected', 'committed', 'closed']) {
+        ok(allowed(s), `vote-result schema: engine status '${s}' passes`)
+    }
+    for (const s of ['ok', 'OK', 'approve', 'success', '', 'pending']) {
+        ok(!allowed(s), `vote-result schema: relayed status '${s}' fails validation`)
+    }
+    ok(VOTE_RESULT_SCHEMA.properties.status.enum === VOTE_STATUSES && VOTE_STATUSES.length === 5, 'vote-result schema: the status enum is the engine list, five values')
+    ok(VOTE_RESULT_SCHEMA.properties.final_outcome === undefined && !VOTE_RESULT_JQ.includes('final_outcome'), 'vote-result schema: final_outcome is not projected or relayed (the engine writes free text there)')
 }
 
 console.log(`\n${pass} passed, ${fail} failed`)

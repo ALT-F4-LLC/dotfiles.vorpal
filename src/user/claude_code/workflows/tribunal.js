@@ -48,7 +48,7 @@ export const meta = {
 // variant}; tribunal.js only fills an open one.
 //
 // Return: CONVERSATIONAL {voteId, outcome, seatsSpawned, respawns, respawned,
-// replies} — `outcome` is the probe's {status, final_outcome, votes} read of
+// replies} — `outcome` is the probe's {status, votes} read of
 // the vote record, or null when the final probe returned nothing (the first
 // read is retried once, the read after a re-seat is not; unknown, never "no
 // casts"), `respawns` counts the seats re-spawned once, and
@@ -545,15 +545,23 @@ reads.`
 // the harness, is the record or it is nothing. A conversational proposal has
 // no step, so `docket gate status` cannot address it; `vote result` is the
 // read — the tally and who cast, which is all the verifier needs.
+// TEST-BEGIN vote-result-schema — extracted and exercised by
+// tests/tribunal-seat-brief.test.sh; keep it free of workflow globals.
 const VOTE_RESULT_JQ =
-    `jq -c '{status: .data.status, final_outcome: .data.final_outcome, ` +
+    `jq -c '{status: .data.status, ` +
     `votes: [.data.votes[]? | {voter_name, verdict}]}'`
+
+// The engine's proposal statuses (internal/model/proposal.go, validProposalStatuses).
+// The relay once turned 'approved' and 'rejected' into 'ok'; an enum makes the
+// harness reject any status the engine cannot emit. final_outcome is not projected:
+// the engine writes the operator's --reason or commit outcome there, free text no
+// enum can list and nothing here reads, so an unrelayed value cannot be rewritten.
+const VOTE_STATUSES = ['open', 'approved', 'rejected', 'committed', 'closed']
 
 const VOTE_RESULT_SCHEMA = {
     type: 'object',
     properties: {
-        status: { type: 'string' },
-        final_outcome: { type: 'string' },
+        status: { type: 'string', enum: VOTE_STATUSES },
         votes: {
             type: 'array',
             items: {
@@ -565,6 +573,7 @@ const VOTE_RESULT_SCHEMA = {
         error: { type: 'string' },
     },
 }
+// TEST-END vote-result-schema
 
 // A seat's whole reply. The cast is its deliverable; this field carries the
 // one thing its text was ever for, a cast that failed twice.

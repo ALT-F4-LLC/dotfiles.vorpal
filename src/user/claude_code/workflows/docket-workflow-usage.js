@@ -192,7 +192,8 @@ const DEFAULT_MODE = 'steps'
 //                  complete covers parsed, deduplicated usage-bearing messages;
 //                  it does not certify that the transcript or task finished.
 // Throws on an invalid args.dir or args.mode; on a scout listing whose
-// files_exit is not 0; in seats mode, on a scout with no seats listing or a
+// files_exit is not 0, or that is still short of its printed files_count
+// (or, in seats mode, seats_count) after one re-run of the scout; in seats mode, on a scout with no seats listing or a
 // non-zero seats_exit; when the directory holds no agent transcripts; and
 // whenever `errors` is non-empty. `errors` collects, among others, a fresh
 // re-check of a relayed bootstrap:false that returns no usable answer, an
@@ -600,7 +601,8 @@ function rebuildListing(dir, listed) {
 // POSIX shell or zsh: `$?` after `var=$(cmd)` is cmd's status.
 const listCommand = (dir) =>
     `listing=$(find ${shellPath(dir)} -maxdepth 1 -type f -name 'agent-*.jsonl'); list_exit=$?; ` +
-    `printf '%s' "$listing" | LC_ALL=C sort; echo "files_exit=$list_exit"`
+    `printf '%s' "$listing" | LC_ALL=C sort; echo "files_exit=$list_exit"; ` +
+    `echo "files_count=$(printf '%s\\n' "$listing" | grep -c .)"`
 
 // The scout's reply, refused unless find exited 0. A failed or partial listing
 // would otherwise reach the Extract phase as a short directory, or as an empty
@@ -610,6 +612,44 @@ function checkListing(mode, listing) {
         throw new Error(`docket-workflow-usage: the ${mode}-mode transcript listing exited ${listing?.files_exit}, not 0 — ` +
             'it may be short, so no transcript is measured from it')
     }
+    return listing
+}
+
+// The scout's relay of find's paths, compared with the counts the command
+// printed beside them. The scout copies paths through a model, and a relay
+// that drops one passes every other check: the Extract phase then measures a
+// short directory and reports nothing for the dropped transcript. Returns ''
+// when each relayed list, rebuilt on `dir` as the Extract phase sees it
+// (agent-*.jsonl paths only, deduplicated), is as long as its printed count,
+// else the message naming both counts. Seats mode checks the seat list the
+// same way.
+function listingCountMismatch(mode, dir, listing) {
+    const checks = mode === 'seats'
+        ? [['files', 'files_count'], ['seats', 'seats_count']]
+        : [['files', 'files_count']]
+    for (const [list, count] of checks) {
+        const got = Array.isArray(listing?.[list])
+            ? rebuildListing(dir, listing[list].filter((f) => AGENT_LOG_RE.test(f))).files.length
+            : undefined
+        if (got !== listing?.[count]) {
+            return `docket-workflow-usage: the ${mode}-mode scout relayed ${got} ${list} path(s) but the command printed ${count}=${listing?.[count]}`
+        }
+    }
+    return ''
+}
+
+// The scout's listing, checked for find's status and for completeness. A relay
+// short of the printed count runs the scout once more; a second short relay
+// throws naming both counts, never a reduced listing. `run(label)` runs one
+// scout and `note(text)` logs.
+async function scoutedListing(mode, dir, run, note) {
+    let listing = checkListing(mode, await run('scout'))
+    let mismatch = listingCountMismatch(mode, dir, listing)
+    if (!mismatch) return listing
+    note(`${mismatch}; running the scout once more`)
+    listing = checkListing(mode, await run('scout-retry'))
+    mismatch = listingCountMismatch(mode, dir, listing)
+    if (mismatch) throw new Error(`${mismatch} again on the second run — no transcript is measured from a short listing`)
     return listing
 }
 
@@ -642,12 +682,16 @@ function filesToExtract(mode, dir, transcripts, listing) {
 
 const FILES_SCHEMA = {
     type: 'object',
-    required: mode === 'seats' ? ['files', 'files_exit', 'seats', 'seats_exit'] : ['files', 'files_exit'],
+    required: mode === 'seats'
+        ? ['files', 'files_exit', 'files_count', 'seats', 'seats_exit', 'seats_count']
+        : ['files', 'files_exit', 'files_count'],
     properties: {
         files: { type: 'array', items: { type: 'string' } },
         files_exit: { type: 'integer' },
+        files_count: { type: 'integer' },
         seats: { type: 'array', items: { type: 'string' } },
         seats_exit: { type: 'integer' },
+        seats_count: { type: 'integer' },
     },
 }
 
@@ -699,17 +743,17 @@ const scoutBrief = mode === 'seats'
 \`\`\`
 ${LIST_COMMAND}
 echo '--- seats ---'
-jq -r -n -R ${sq(SELECT_JQ)} ${shellPath(dir)}/agent-*.jsonl; echo "seats_exit=$?"
+seats=$(jq -r -n -R ${sq(SELECT_JQ)} ${shellPath(dir)}/agent-*.jsonl); seats_exit=$?; [ -z "$seats" ] || printf '%s\\n' "$seats"; echo "seats_exit=$seats_exit"; echo "seats_count=$(printf '%s\\n' "$seats" | grep -c .)"
 \`\`\`
 
-The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], files_exit: N, seats: [...], seats_exit: N}: \`files\` is every path printed before the \`files_exit=\` line, \`files_exit\` is the number printed on the \`files_exit=\` line, \`seats\` every path printed after the \`--- seats ---\` line, one entry per line, verbatim and in order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`seats_exit\` is the number printed on the \`seats_exit=\` line. An empty listing is an empty array. Do not open, read, or count the files by any other means.`
+The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], files_exit: N, files_count: N, seats: [...], seats_exit: N, seats_count: N}: \`files\` is every path printed before the \`files_exit=\` line, \`files_exit\` and \`files_count\` are the numbers printed on the \`files_exit=\` and \`files_count=\` lines, \`seats\` every path printed after the \`--- seats ---\` line, one entry per line, verbatim and in order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`seats_exit\` and \`seats_count\` are the numbers printed on the \`seats_exit=\` and \`seats_count=\` lines. Copy each count exactly as printed, even if it differs from the number of paths you return. An empty listing is an empty array. Do not open, read, or count the files by any other means.`
     : `You are a read-only scout. Do not cd anywhere. Run this command verbatim, sandboxed, and report what it prints — never a paraphrase:
 
 \`\`\`
 ${LIST_COMMAND}
 \`\`\`
 
-The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], files_exit: N}: \`files\` is every path printed before the \`files_exit=\` line, one entry per line, verbatim and in that order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`files_exit\` is the number printed on the \`files_exit=\` line. An empty listing is an empty \`files\` array. Do not open, read, or count the files.`
+The directory is written with one \`*\` where the flattened project name sits; leave that glob exactly as it is and let the shell resolve it. Return {files: [...], files_exit: N, files_count: N}: \`files\` is every path printed before the \`files_exit=\` line, one entry per line, verbatim and in that order — a hyphen where a dot might be expected (\`github-com\`) is correct, not a typo — and \`files_exit\` and \`files_count\` are the numbers printed on the \`files_exit=\` and \`files_count=\` lines. Copy the count exactly as printed, even if it differs from the number of paths you return. An empty listing is an empty \`files\` array. Do not open, read, or count the files.`
 // TEST-END docket-workflow-usage-scout
 
 const extractBrief = (file, retry) => `You are a read-only measurement relay for one transcript file. Do not cd anywhere. Run these commands verbatim, sandboxed. The first writes a jq program with a quoted heredoc so nothing in it is expanded; the second runs it:
@@ -725,8 +769,8 @@ ${retry === 'path' ? '\nThis is a SECOND run: the first run reported that jq cou
 jq prints exactly one JSON object. Return it as the structured output with ok:true and every field copied verbatim — bootstrap, cast, record, probe, exec, claim_agent, step_mention, reseat, tool_uses, models_observed, last_model, efforts_observed, model_observation_complete, usage — including every number exactly as printed. Do not compute, estimate, round, or adjust anything, and do not read the transcript by any other means. Model and effort names come only from the extracted fields; missing observations remain empty, and a null last_model stays null. If jq exits non-zero or prints nothing, return ok:false with the error text in \`error\`.`
 
 phase('Scout')
-const listing = checkListing(mode,
-    await agent(scoutBrief, { label: 'scout', phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout }))
+const listing = await scoutedListing(mode, dir,
+    (label) => agent(scoutBrief, { label, phase: 'Scout', schema: FILES_SCHEMA, ...AGENT_CONFIG.scout }), log)
 const rawFiles = [...new Set(listing?.files || [])]
 const listed = rawFiles.filter((f) => AGENT_LOG_RE.test(f))
 if (listed.length !== rawFiles.length) {

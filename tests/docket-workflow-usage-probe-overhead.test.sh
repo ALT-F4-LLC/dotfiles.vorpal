@@ -449,12 +449,15 @@ awk '/^```$/ { n++; next } n == 1' "${WORK}/scout-brief.txt" > "${WORK}/seats-bl
 bash "${WORK}/seats-block.sh" < /dev/null > "${WORK}/scout-out.txt" 2> "${WORK}/scout-err.txt"
 grep -qx 'seats_exit=0' "${WORK}/scout-out.txt"; ok $? \
     "the seats block's selection exits 0 over the fixture transcripts (stderr: $(head -c 300 "${WORK}/scout-err.txt"))"
-scout_seats=$(sed -n '/^--- seats ---$/,$p' "${WORK}/scout-out.txt" | sed '1d' | grep -v '^seats_exit=')
+scout_seats=$(sed -n '/^--- seats ---$/,$p' "${WORK}/scout-out.txt" | sed '1d' | grep -v -e '^seats_exit=' -e '^seats_count=')
 [ "$scout_seats" = "${SCOUT_DIR}/agent-ajudge.jsonl" ]; ok $? \
     "the paths after --- seats --- are exactly the fixture seat transcripts (got: ${scout_seats:-none})"
 grep -qx 'files_exit=0' "${WORK}/scout-out.txt"; ok $? \
     "the seats block's listing reports find's status 0 on a files_exit= line"
-scout_files=$(sed -n '/^--- seats ---$/q;p' "${WORK}/scout-out.txt" | grep -v '^files_exit=')
+grep -qx "files_count=$(ls "${SCOUT_DIR}"/agent-*.jsonl | wc -l | tr -d ' ')" "${WORK}/scout-out.txt" &&
+    grep -qx 'seats_count=1' "${WORK}/scout-out.txt"; ok $? \
+    "the seats block prints files_count and seats_count beside the paths"
+scout_files=$(sed -n '/^--- seats ---$/q;p' "${WORK}/scout-out.txt" | grep -v -e '^files_exit=' -e '^files_count=')
 want_files=$(for f in "${SCOUT_DIR}"/agent-*.jsonl; do printf '%s\n' "$f"; done | LC_ALL=C sort)
 [ -n "$scout_files" ] && [ "$scout_files" = "$want_files" ]; ok $? \
     'the paths before --- seats --- are every fixture transcript, sorted'
@@ -494,7 +497,10 @@ for sh in "${list_shells[@]}"; do
     present_exit=$(sed -n 's/^files_exit=//p' "${WORK}/list-present.${sh}.out")
     [ "$present_exit" = 0 ]; ok $? \
         "${sh}: a listing of a transcript directory reports files_exit=0 (got ${present_exit}; stderr: $(head -c 200 "${WORK}/list-present.${sh}.err"))"
-    present_files=$(grep -v '^files_exit=' "${WORK}/list-present.${sh}.out")
+    [ "$(sed -n 's/^files_count=//p' "${WORK}/list-missing.${sh}.out")" = 0 ] &&
+        [ "$(sed -n 's/^files_count=//p' "${WORK}/list-present.${sh}.out")" = 2 ]; ok $? \
+        "${sh}: the listing prints files_count=0 for a missing directory and files_count=2 for two transcripts"
+    present_files=$(grep -v -e '^files_exit=' -e '^files_count=' "${WORK}/list-present.${sh}.out")
     [ "$present_files" = "$(printf '%s\n%s' "${LIST_DIR}/agent-a.jsonl" "${LIST_DIR}/agent-b.jsonl")" ]; ok $? \
         "${sh}: the listing prints both transcripts in C-locale sorted order (got: $(printf '%s' "$present_files" | tr '\n' ' '))"
 done
@@ -912,6 +918,45 @@ for (const mode of ['steps', 'seats']) {
         `${mode} mode: a listing whose find exited 0 passes through unchanged`)
 }
 
+// ---- Completeness: the relayed paths against the count the command printed ----
+const four = ['a', 'b', 'c', 'd'].map((x) => `${scoutDir}/agent-${x}.jsonl`)
+const full = (mode) => ({ files: four, files_exit: 0, files_count: 4, ...(mode === 'seats' ? { seats: four.slice(0, 1), seats_exit: 0, seats_count: 1 } : {}) })
+const short = (mode) => ({ ...full(mode), files: four.slice(0, 2) })
+const pending = []
+for (const mode of ["steps", "seats"]) pending.push((async () => {
+    ok(listingCountMismatch(mode, scoutDir, full(mode)) === '', `${mode} mode: a 4-for-4 listing is complete`)
+    const m = listingCountMismatch(mode, scoutDir, short(mode))
+    ok(m.includes('relayed 2 files path(s)') && m.includes('files_count=4'), `${mode} mode: 2 paths against files_count=4 names both counts (got ${m})`)
+    ok(listingCountMismatch(mode, scoutDir, { ...full(mode), files_count: undefined }).includes('files_count=undefined'),
+        `${mode} mode: a reply with no files_count is incomplete`)
+    const scouts = []
+    const note = []
+    const second = await scoutedListing(mode, scoutDir, async (label) => { scouts.push(label); return scouts.length === 1 ? short(mode) : full(mode) }, (t) => note.push(t))
+    ok(scouts.join() === 'scout,scout-retry' && listingCountMismatch(mode, scoutDir, second) === '' && note.length === 1,
+        `${mode} mode: a short relay runs the scout once more and takes the complete second listing`)
+    let thrown = ''
+    const runs = []
+    try { await scoutedListing(mode, scoutDir, async (label) => { runs.push(label); return short(mode) }, () => {}) } catch (e) { thrown = String(e.message) }
+    ok(runs.join() === 'scout,scout-retry' && thrown.includes('relayed 2 files path(s)') && thrown.includes('files_count=4') && thrown.includes('second run'),
+        `${mode} mode: a relay short twice throws naming the count mismatch after exactly one retry (got ${thrown})`)
+    const once = []
+    await scoutedListing(mode, scoutDir, async (label) => { once.push(label); return full(mode) }, () => {})
+    ok(once.join() === 'scout', `${mode} mode: a complete first listing runs the scout once`)
+})())
+// Same length as the printed count, yet a transcript is lost: a duplicate, or a count line copied as a path.
+for (const mode of ['steps', 'seats']) {
+    const dup = listingCountMismatch(mode, scoutDir, { ...full(mode), files: [four[0], four[1], four[2], four[2]] })
+    ok(dup.includes('relayed 3 files path(s)') && dup.includes('files_count=4'),
+        `${mode} mode: 3 distinct paths plus a duplicate against files_count=4 is incomplete (got ${dup})`)
+    const noise = listingCountMismatch(mode, scoutDir, { ...full(mode), files: [four[0], four[1], four[2], 'files_exit=0'] })
+    ok(noise.includes('relayed 3 files path(s)'),
+        `${mode} mode: 3 paths plus a copied files_exit line against files_count=4 is incomplete (got ${noise})`)
+}
+ok(listingCountMismatch('seats', scoutDir, { ...full('seats'), seats: [four[0], 'seats_exit=0', 'seats_count=1'] }).includes('relayed 1 seats path(s)') === false,
+    'seats mode: count lines copied into the seat list do not break an otherwise complete seat list')
+ok(listingCountMismatch('seats', scoutDir, { ...full('seats'), seats: [] }).includes('seats_count=1'),
+    'seats mode: a seat list short of seats_count is incomplete')
+
 const judgeless = [...relay, ...claimPath]
 const judgelessPaths = judgeless.map((r) => `${scoutDir}/${r.file}`).sort()
 const cleanEmpty = filesToExtract('seats', scoutDir, judgelessPaths, { files: judgelessPaths, seats: [], seats_exit: 0 }).files
@@ -997,8 +1042,10 @@ ok(misreportResult.errors.length === 0 && misreportResult.overhead.agents.length
 ok(UNITS.every((u) => misreportResult.overhead.sums[u] === want[u]),
     'and its usage is still counted into the overhead total, not dropped')
 
-console.log(`\n${pass} passed, ${fail} failed`)
-process.exit(fail === 0 ? 0 : 1)
+Promise.all(pending).catch((e) => ok(false, `an async check threw: ${e && e.message}`)).then(() => {
+    console.log(`\n${pass} passed, ${fail} failed`)
+    process.exit(fail === 0 ? 0 : 1)
+})
 JS
 
 node "${WORK}/suite.js" "$WORK"

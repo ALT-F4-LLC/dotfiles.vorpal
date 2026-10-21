@@ -74,6 +74,7 @@ extract docket-postmortem-config       > "${WORK}/config.js" || fatal "bad or mi
 extract docket-postmortem-refute-tally > "${WORK}/tally.js"  || fatal "bad or missing TEST markers for docket-postmortem-refute-tally"
 extract docket-postmortem-plan         > "${WORK}/plan.js"   || fatal "bad or missing TEST markers for docket-postmortem-plan"
 extract docket-postmortem-digest-jq    > "${WORK}/jq.js"     || fatal "bad or missing TEST markers for docket-postmortem-digest-jq"
+extract docket-postmortem-sampling     > "${WORK}/sampling.js"  || fatal "bad or missing TEST markers for docket-postmortem-sampling"
 extract docket-postmortem-inventory    > "${WORK}/inventory.js" || fatal "bad or missing TEST markers for docket-postmortem-inventory"
 extract docket-postmortem-condense-jq  > "${WORK}/condense.js" || fatal "bad or missing TEST markers for docket-postmortem-condense-jq"
 
@@ -163,6 +164,7 @@ jq -c -n -R '[foreach inputs as $r (0; . + 1; . as $n | (try ($r | fromjson) cat
     cat "${WORK}/config.js"
     cat "${WORK}/tally.js"
     cat "${WORK}/plan.js"
+    cat "${WORK}/sampling.js"
     cat "${WORK}/inventory.js"
     cat "${WORK}/condense.js"
     printf 'const CONDENSED = %s\n' "$(jq -s -c . "${WORK}/condensed.jsonl")"
@@ -203,6 +205,52 @@ ok(tallyRefutations([{ reason: 'x' }, { refuted: 'no' }, U]).seated === 1, 'tall
 ok(tallyRefutations([W, W, U]).remedyNeedsRework === true, 'tally: a majority rejecting the remedy marks it for rework')
 ok(tallyRefutations([W, U, U]).remedyNeedsRework === false, 'tally: a minority rejecting the remedy does not')
 ok(tallyRefutations([W, W, U]).disposition === 'upheld', 'tally: a weak remedy never refutes a true observation')
+
+// ---- sampling ------------------------------------------------------------
+// Opt-in stratified mode: sizes follow n = ceil(59 / (1 + 58 / N)), and one seed
+// with one set of strata always chooses the same logs.
+for (const [n, want] of [[31, 21], [100, 38], [3007, 58]]) {
+    ok(sampleSize(n) === want && want === Math.ceil(59 / (1 + 58 / n)), `sampling: a stratum of ${n} is sampled at ${want}`)
+}
+ok(sampleSize(1) === 1 && sampleSize(5) === 5 && sampleSize(0) === 0 && sampleSize(-3) === 0 && sampleSize(2.5) === 0, 'sampling: a small stratum is read whole, and a bad size samples nothing')
+const lineRange = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => from + i)
+const big = [{ name: 'extract/haiku', lines: lineRange(1, 3007) }, { name: 'verify/opus', lines: lineRange(4000, 4099) }, { name: 'rare', lines: lineRange(5000, 5029) }, { name: 'small', lines: lineRange(6000, 6030) }]
+const pickA = selectSample(big, 'seed-1', 30)
+const pickB = selectSample(big, 'seed-1', 30)
+ok(JSON.stringify(pickA) === JSON.stringify(pickB), 'sampling: one seed and one set of strata choose the same logs twice')
+const shuffled = big.map((s) => ({ ...s, lines: [...s.lines].reverse() }))
+ok(JSON.stringify(selectSample(shuffled, 'seed-1', 30)) === JSON.stringify(pickA), 'sampling: the order the lines arrive in does not change the choice')
+ok(JSON.stringify(selectSample(big, 'seed-2', 30)) !== JSON.stringify(pickA), 'sampling: another seed chooses other logs')
+ok(JSON.stringify(selectSample([big[1]], 'seed-1', 30)[0]) === JSON.stringify(pickA[1]), 'sampling: a stratum is chosen alone the same as beside others')
+ok(pickA.map((s) => s.n).join() === '58,38,30,21' && pickA.map((s) => s.census).join() === 'false,false,true,false', 'sampling: sizes 58, 38, a 30-log census, and 21 for 31 logs')
+ok(pickA.every((s) => s.selected.length === s.n && s.selected.length + s.unsampled.length === s.N && !s.selected.some((l) => s.unsampled.includes(l))), 'sampling: selected and unsampled partition each stratum')
+ok(pickA[0].selected.every((l, i, a) => i === 0 || a[i - 1] < l), 'sampling: selected lines are ascending')
+ok(pickA[0].selected.slice(0, 5).join() === '129,181,220,232,281' && pickA[0].selected.at(-1) === 2971, 'sampling: seed-1 chooses the pinned logs (a drifting hash fails here)')
+const spread = pickA[0].selected.reduce((a, l) => a + l, 0) / pickA[0].n
+ok(spread > 1100 && spread < 1900, `sampling: the 58 chosen lines spread over 1-3007 (mean ${Math.round(spread)})`)
+ok(checkStrata(big, Array(6100).fill('subagent')).length === 0, 'sampling: valid strata have no problems')
+ok(checkStrata([], ['subagent']).length === 1 && checkStrata(undefined, ['subagent']).length === 1, 'sampling: missing or empty strata are refused')
+ok(checkStrata([{ name: 'a', lines: [1] }, { name: 'a', lines: [2] }], ['subagent', 'subagent']).some((p) => p.includes('named twice')), 'sampling: a repeated stratum name is refused')
+ok(checkStrata([{ name: 'a', lines: [1, 2] }, { name: 'b', lines: [2] }], ['subagent', 'subagent']).some((p) => p.includes('line 2 is in strata')), 'sampling: a line in two strata is refused')
+ok(checkStrata([{ name: 'a', lines: [1, 3] }], ['subagent', 'subagent']).some((p) => p.includes('not an inventory line')), 'sampling: a line past the inventory is refused')
+ok(checkStrata([{ name: 'a', lines: [1.5] }], ['subagent', 'subagent']).length === 1, 'sampling: a non-integer line is refused')
+ok(checkStrata([{ name: 'a', lines: [1] }], ['main']).some((p) => p.includes('main transcript')), 'sampling: a main transcript is refused')
+ok(checkStrata([{ name: '', lines: [1] }, { name: 'b', lines: [] }], ['subagent']).length === 2, 'sampling: an unnamed or empty stratum is refused')
+const w = (h, n) => wilson95(h, n)
+ok(w(44, 54).lower === 0.6916 && w(44, 54).upper === 0.8962, 'sampling: 44 of 54 reads as a Wilson interval of about 69-90%')
+ok(Math.round(w(12, 38).lower * 100) === 19 && Math.round(w(12, 38).upper * 100) === 47, 'sampling: 12 of 38 reads as about 19-47%')
+ok(w(0, 58).lower === 0 && w(0, 58).upper === 0.0621 && wilson95(0, 0) === null, 'sampling: no hits in 58 bound the rate near 6%, and nothing read has no interval')
+const allRead = [...pickA[0].selected]
+const none = sampleReport([pickA[0]], allRead, [])[0]
+ok(none.hits === 0 && none.complete === true && none.rate === 0 && none.upperExact === 0.0503 && none.unseenMax === 151 && none.unsampled === 2949, 'sampling: no hits in 58 of 3007 leaves a 5.0% bound and up to 151 unseen logs')
+const hit = sampleReport([pickA[1]], pickA[1].selected, [pickA[1].selected[0], pickA[1].selected[0], 99999])[0]
+ok(hit.hits === 1 && hit.hitLines.length === 1 && hit.n === 38 && hit.N === 100 && hit.upperExact === null, 'sampling: a log citing two observations is one hit, and a cited line outside the sample is none')
+const part = sampleReport([pickA[0]], allRead.slice(0, 10), [allRead[0]])[0]
+ok(part.complete === false && part.rate === null && part.interval === null && part.read === 10 && part.hits === 1, 'sampling: an unfinished stratum reports no rate or interval')
+const resc = sampleReport([pickA[0]], allRead, [], new Set([pickA[0].unsampled[0], 99999]))[0]
+ok(resc.unsampled === 2948, 'sampling: a flagged log read anyway is not counted as unsampled')
+const cen = sampleReport([pickA[2]], pickA[2].selected, pickA[2].selected.slice(0, 3))[0]
+ok(cen.census && cen.rate === 0.1 && cen.interval.lower === 0.1 && cen.interval.upper === 0.1 && cen.upperExact === null, 'sampling: a census has no sampling error')
 
 // ---- ranges --------------------------------------------------------------
 function tiles(ranges, n) {
@@ -536,6 +584,34 @@ if [ -f "$POSTMORTEM_SKILL" ] && grep -q 'seatNotes' "$POSTMORTEM_SKILL" && grep
     echo "PASS: the skill persists the returned notes with the Write tool, as data"
 else
     echo "FAIL: the skill persists the returned notes with the Write tool, as data"
+    wiring=1
+fi
+
+# The opt-in is wired through the workflow body and the return, and the skill states
+# when it is allowed. Default full coverage must not change: without args.sampling
+# no log is dropped from the deep-read candidates.
+if grep -qF '.filter((line) => !unsampledSet.has(line))' "$POSTMORTEM" && grep -qF 'const unsampledSet = new Set(sampleSelection ? sampleSelection.flatMap((s) => s.unsampled) : [])' "$POSTMORTEM"; then
+    echo "PASS: only the sample's unsampled lines leave the deep-read candidates"
+else
+    echo "FAIL: only the sample's unsampled lines leave the deep-read candidates"
+    wiring=1
+fi
+if grep -qF 'for (const line of rescuedFlagged) unsampledSet.delete(line)' "$POSTMORTEM" && grep -qF 'flaggedRead: rescuedFlagged.size,' "$POSTMORTEM" && [ -f "$POSTMORTEM_SKILL" ] && grep -qF 'Every digest-flagged log is read whatever' "$POSTMORTEM_SKILL"; then
+    echo "PASS: a flagged log is read even when a stratum would sample it away"
+else
+    echo "FAIL: a flagged log is read even when a stratum would sample it away"
+    wiring=1
+fi
+if grep -q '^    sampling: sampled,$' "$POSTMORTEM" && grep -qF 'input.sampling || null' "$POSTMORTEM"; then
+    echo "PASS: args.sampling is read and the return carries sampling"
+else
+    echo "FAIL: args.sampling is read and the return carries sampling"
+    wiring=1
+fi
+if [ -f "$POSTMORTEM_SKILL" ] && grep -qF 'args.sampling' "$POSTMORTEM_SKILL" && grep -qF 'AskUserQuestion' "$POSTMORTEM_SKILL"; then
+    echo "PASS: the skill names args.sampling and leaves the choice to the operator"
+else
+    echo "FAIL: the skill names args.sampling and leaves the choice to the operator"
     wiring=1
 fi
 

@@ -23,7 +23,8 @@ export const meta = {
 // Docket run. Every inventoried log gets a deterministic digest; every
 // agent log gets a full read by an agent, within the Workflow tool's
 // 1000-agent lifetime cap, and whatever the cap cannot reach comes back as
-// `deferredLines` for a continuation launch. No log is sampled away. It
+// `deferredLines` for a continuation launch. No log is sampled away unless the
+// caller passes args.sampling, the operator's opt-in below. It
 // never edits a file outside args.auditDir, never runs a docket mutation,
 // never files an issue, and never asks the operator anything. Invoke by
 // scriptPath ONLY, at the installed path under ~/.claude/workflows.
@@ -75,12 +76,41 @@ export const meta = {
 //                  from this launch's observations plus the digests, and
 //                  priorUpheld joins the reconcile input so the last launch
 //                  returns one reconciled set.
+//   sampling     — optional {seed, censusMax?, strata}: the operator's opt-in
+//                  to read a stratified sample of the agent logs instead of
+//                  every one. strata is [{name, lines}], disjoint inventory
+//                  line numbers of non-main logs, chosen by the caller (for
+//                  example workflow x step kind x model from the engine join).
+//                  A stratum of at most censusMax logs (default 30) is read
+//                  whole; a larger one is read at n = ceil(59 / (1 + 58 / N)),
+//                  the lines with the lowest seeded hash, so one seed and one
+//                  set of strata always choose the same logs. Lines in no
+//                  stratum are still read, and so is every digest-flagged log,
+//                  whatever the strata say. The caller keeps strata to logs
+//                  no earlier launch has read; the script does not check it. Digests, the conductor, and the
+//                  layer analysts still cover every log; only the deep reads
+//                  are sampled. The default, without this arg, is full coverage.
 //
 // return:
 //   coverage      — {inventoried, digested, digestErrors, flagged,
-//                    deepRead, deferred, shards, layersCovered, agents}
+//                    deepRead, deferred, unsampled, shards, layersCovered,
+//                    agents}
 //   deferredLines — inventory lines no reader reached; relaunch with them.
 //   flaggedLines  — every digest-flagged line, for a continuation.
+//   sampling      — null without args.sampling; else {seed, censusMax,
+//                    continuation, flaggedRead, strata, unsampledLogs,
+//                    readOutsideStrata}; flaggedRead counts flagged logs a
+//                    stratum would have sampled away that were read anyway.
+//                    Each stratum is {name, N, n, census, read, hits, hitLines,
+//                    complete, rate, interval, upperExact, unseenMax,
+//                    unsampled}: N logs, n chosen, hits read logs that drew an
+//                    observation, a Wilson 95% interval (the rate itself for a
+//                    census), and for a zero-hit sample the one-sided 95% upper
+//                    bound on prevalence (exact for an unlimited pool,
+//                    conservative for a finite stratum) and the most logs it
+//                    leaves unseen. rate and interval are null until every chosen log
+//                    is read; a continuation adds the hitLines of its launches.
+//                    unsampledLogs is the denominator never read.
 //   layers        — [{layer, covered, candidateCount, notes, controls}], one
 //                    per conductor shard plus one per layer analyst;
 //                    coverage.layersCovered counts both.
@@ -401,6 +431,132 @@ function sentinelNote(coverage) {
 }
 // TEST-END docket-postmortem-plan
 
+// TEST-BEGIN docket-postmortem-sampling — Pure functions: no workflow
+// globals, no I/O. Opt-in stratified sampling (args.sampling). Full coverage
+// stays the default; these run only when the caller passes strata.
+
+// A stratum this small is read whole: a sample of it saves too little to be worth
+// the interval it costs.
+const SAMPLE_CENSUS_MAX = 30
+
+// Logs a stratum of `population` must have read for about a 90% to 95% chance
+// of seeing at least one carrying a defect with at least 5% prevalence:
+// ceil(59 / (1 + 58 / N)), never more than N. The finite population correction
+// is approximate; the exact chance is about 90% at N=31, 91% at N=100 and 95%
+// at N=3007.
+function sampleSize(population) {
+    if (!Number.isInteger(population) || population < 1) return 0
+    return Math.min(population, Math.ceil(59 / (1 + 58 / population)))
+}
+
+// A 32-bit hash of a string (FNV-1a, then murmur3's finalizer so near-equal
+// strings spread). Fixed arithmetic, so one input hashes the same in every run.
+function hash32(text) {
+    let h = 0x811c9dc5
+    for (let i = 0; i < text.length; i++) {
+        h ^= text.charCodeAt(i)
+        h = Math.imul(h, 0x01000193)
+    }
+    h ^= h >>> 16
+    h = Math.imul(h, 0x85ebca6b)
+    h ^= h >>> 13
+    h = Math.imul(h, 0xc2b2ae35)
+    h ^= h >>> 16
+    return h >>> 0
+}
+
+// Check the caller's strata against the inventory. Returns problem strings,
+// empty when the strata are usable: a unique non-empty name per stratum, every
+// line an inventory line number, no line in two strata, and no main
+// transcript (main transcripts are never deep-read, so they cannot be sampled).
+function checkStrata(strata, kinds) {
+    const problems = []
+    if (!Array.isArray(strata) || strata.length === 0) return ['args.sampling.strata must be a non-empty array of {name, lines}']
+    const names = new Set()
+    const seen = new Map()
+    for (const [i, s] of strata.entries()) {
+        if (!s || typeof s.name !== 'string' || s.name === '') { problems.push(`strata[${i}] needs a non-empty name`); continue }
+        if (names.has(s.name)) problems.push(`stratum "${s.name}" is named twice`)
+        names.add(s.name)
+        if (!Array.isArray(s.lines) || s.lines.length === 0) { problems.push(`stratum "${s.name}" needs a non-empty lines array`); continue }
+        for (const line of s.lines) {
+            if (!Number.isInteger(line) || line < 1 || line > kinds.length) { problems.push(`stratum "${s.name}" names line ${JSON.stringify(line)}, which is not an inventory line 1-${kinds.length}`); continue }
+            if (kinds[line - 1] === 'main') problems.push(`stratum "${s.name}" names line ${line}, a main transcript that is never deep-read`)
+            if (seen.has(line) && seen.get(line) !== s.name) problems.push(`line ${line} is in strata "${seen.get(line)}" and "${s.name}"`)
+            seen.set(line, s.name)
+        }
+    }
+    return problems
+}
+
+// Choose the logs to read. A stratum of at most censusMax logs is read whole.
+// A larger one is read at sampleSize(N): the lines with the lowest
+// hash32(seed|stratum|line), so one seed and one set of strata always choose
+// the same lines, whatever order the lines arrive in. Returns one entry per
+// stratum: {name, N, n, census, selected, unsampled}, line lists ascending.
+function selectSample(strata, seed, censusMax) {
+    return strata.map((s) => {
+        const lines = [...new Set(s.lines)].sort((a, b) => a - b)
+        const N = lines.length
+        const census = N <= censusMax
+        const n = census ? N : sampleSize(N)
+        const chosen = census ? lines : lines
+            .map((line) => ({ line, h: hash32(`${seed}|${s.name}|${line}`) }))
+            .sort((a, b) => a.h - b.h || a.line - b.line)
+            .slice(0, n)
+            .map((e) => e.line)
+            .sort((a, b) => a - b)
+        const picked = new Set(chosen)
+        return { name: s.name, N, n, census, selected: chosen, unsampled: lines.filter((line) => !picked.has(line)) }
+    })
+}
+
+// The Wilson 95% score interval for `hits` of `n`, as fractions rounded to
+// four places. Null when nothing was read.
+function wilson95(hits, n) {
+    if (!(n > 0)) return null
+    const z = 1.96
+    const p = hits / n
+    const d = 1 + (z * z) / n
+    const c = p + (z * z) / (2 * n)
+    const r = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))
+    const round = (x) => Math.round(Math.min(1, Math.max(0, x)) * 10000) / 10000
+    return { lower: round((c - r) / d), upper: round((c + r) / d) }
+}
+
+// Per-stratum evidence from one launch. `readLines` are the lines a reader
+// returned as read; `observationLines` are the lines observations cite. A hit
+// is a read log that drew at least one observation. The interval appears only
+// when every selected log was read in this launch (`complete`); a census has
+// no sampling error, so its interval is the rate itself. A zero-hit sample
+// also carries the one-sided 95% upper bound on prevalence (exact for an
+// unlimited pool, conservative for a finite stratum) and the most logs that
+// bound leaves unseen in the stratum. `rescued` are flagged lines a stratum
+// would have sampled away that were read anyway; they are not unsampled.
+function sampleReport(selection, readLines, observationLines, rescued = new Set()) {
+    const read = new Set(readLines)
+    const cited = new Set(observationLines)
+    return selection.map((s) => {
+        const readHere = s.selected.filter((line) => read.has(line))
+        const hitLines = readHere.filter((line) => cited.has(line))
+        const complete = readHere.length === s.n
+        const rate = complete && s.n > 0 ? hitLines.length / s.n : null
+        let interval = null
+        if (complete && s.n > 0) {
+            interval = s.census ? { lower: Math.round(rate * 10000) / 10000, upper: Math.round(rate * 10000) / 10000 } : wilson95(hitLines.length, s.n)
+        }
+        const zeroHit = complete && !s.census && hitLines.length === 0 && s.n > 0
+        const upperExact = zeroHit ? Math.round((1 - Math.pow(0.05, 1 / s.n)) * 10000) / 10000 : null
+        return {
+            name: s.name, N: s.N, n: s.n, census: s.census,
+            read: readHere.length, hits: hitLines.length, hitLines, complete, rate, interval,
+            upperExact, unseenMax: zeroHit ? Math.floor(upperExact * s.N) : null,
+            unsampled: s.unsampled.filter((line) => !rescued.has(line)).length,
+        }
+    })
+}
+// TEST-END docket-postmortem-sampling
+
 // TEST-BEGIN docket-postmortem-inventory — Pure functions: no workflow
 // globals, no I/O. The script has no filesystem, so a bounded read agent
 // runs inventoryReadCommand over the inventory TSV and returns its output
@@ -663,6 +819,21 @@ for (const [i, k] of resolved.kinds.entries()) {
 }
 const inventory = { file: input.inventory.file, kinds: resolved.kinds, bytes: resolved.bytes }
 const total = resolved.total
+
+// args.sampling is the operator's opt-in to a stratified sample of the deep
+// reads. The strata are the caller's; the selection is code, so a seed and a set
+// of strata always choose the same logs. Absent, every log is read.
+const sampling = input.sampling || null
+let sampleSelection = null
+if (sampling) {
+    need(typeof sampling.seed === 'string' && sampling.seed !== '', 'args.sampling.seed must be a non-empty string; one seed and one set of strata always choose the same logs')
+    need(sampling.censusMax == null || (Number.isInteger(sampling.censusMax) && sampling.censusMax >= 0), 'args.sampling.censusMax, when passed, must be a non-negative integer')
+    const problems = checkStrata(sampling.strata, inventory.kinds)
+    need(problems.length === 0, `args.sampling is unusable: ${problems.slice(0, 5).join('; ')}${problems.length > 5 ? `; and ${problems.length - 5} more` : ''}`)
+    sampleSelection = selectSample(sampling.strata, sampling.seed, sampling.censusMax ?? SAMPLE_CENSUS_MAX)
+    log(`docket-postmortem: args.sampling on (seed ${sampling.seed}): ${sampleSelection.length} stratum(s), ${sampleSelection.reduce((a, s) => a + s.n, 0)} of ${sampleSelection.reduce((a, s) => a + s.N, 0)} stratified log(s) chosen for deep reads`)
+}
+const unsampledSet = new Set(sampleSelection ? sampleSelection.flatMap((s) => s.unsampled) : [])
 
 // ---- Schemas -------------------------------------------------------------
 
@@ -981,7 +1152,7 @@ ${sentinelNote(usageCoverage)}
 Return the schema, with your working notes in notes, listing every line you read to the end and every line you could not. Write no file.`
 }
 
-function patternsBrief(groups, overflow, layerNotes) {
+function patternsBrief(groups, overflow, layerNotes, samplingNote) {
     return `You are the pattern analyst for a retrospective audit of one finished Docket run.
 
 ${BOUNDARY}
@@ -994,7 +1165,7 @@ ${JSON.stringify(groups, null, 1)}
 ${overflow.length === 0 ? 'No groups beyond these.' : `Further groups, one line each (key, count):\n${overflow.map((g) => `  ${g.key} x${g.count}`).join('\n')}`}
 
 Layer analysts already covered: ${layerNotes}
-
+${samplingNote}
 Turn the groups into candidate findings: one per root cause, not one per group. Merge groups that share a cause, split a group whose examples show two causes, and open the example locators and the digests (aggregate over ${digestDir} with jq) to establish recurrence and cost across the whole inventory, not only the examples. Look for what no single reader could see: the same failure across waves, a cost outlier class, a model fallback pattern, a brief gap every executor of one kind hit, and automatable operator touches.
 
 ${FINDING_RULES}
@@ -1149,9 +1320,15 @@ if (!continuation) {
 
 // ---- Stage 2: deep-read every agent log the budget reaches ----------------
 
+// A digest-flagged log is always read: a stratum may not sample away the logs
+// the digests singled out.
+const rescuedFlagged = new Set(flaggedLines.filter((line) => unsampledSet.has(line)))
+for (const line of rescuedFlagged) unsampledSet.delete(line)
+if (rescuedFlagged.size > 0) log(`docket-postmortem: ${rescuedFlagged.size} flagged log(s) sit in a stratum's unsampled lines; they are read anyway`)
+
 const reserved = RESERVED_AGENTS
 const deepBudget = AGENT_CAP - AGENT_CAP_MARGIN - spent - reserved
-const deepCandidates = continuation ? continuation.lines : Array.from({ length: total }, (_, i) => i + 1)
+const deepCandidates = (continuation ? continuation.lines : Array.from({ length: total }, (_, i) => i + 1)).filter((line) => !unsampledSet.has(line))
 const plan = planDeepReads(deepCandidates, inventory.kinds, inventory.bytes, new Set(flaggedLines), deepBudget, DEEP_BATCH_BYTES)
 if (plan.deferred.length > 0) {
     log(`docket-postmortem: agent cap binds; ${plan.batches.length} deep reader(s) seated, ${plan.deferred.length} log(s) deferred to a continuation launch`)
@@ -1180,6 +1357,13 @@ log(`docket-postmortem: ${deepRead.size} log(s) read in full; ${observations.len
 
 // ---- Stage 3: patterns (barrier: needs every observation together) --------
 
+// A sampled read makes a recurrence count what the sample saw, not a prevalence
+// in the run. Say so, so the analyst states counts as seen and the caller
+// rescales from sampling.strata.
+const samplingNote = sampleSelection
+    ? `\nThe deep reads are a stratified sample, chosen by the operator: ${sampleSelection.map((s) => `${s.name} ${s.n} of ${s.N}`).join('; ')}. A recurrence count is what the sample saw, not a prevalence in the run: state it as seen and never extrapolate.\n`
+    : ''
+
 const { kept: groups, suppressed: suppressedGroups } = splitDesignedSentinels(groupObservations(observations), usageCoverage)
 if (suppressedGroups.length > 0) log(`docket-postmortem: ${suppressedGroups.length} group(s) on designed placeholders dropped from the pattern brief (back-fill coverage complete)`)
 const shown = groups.slice(0, PATTERN_GROUP_CAP)
@@ -1187,7 +1371,7 @@ const overflow = groups.slice(PATTERN_GROUP_CAP)
 if (groups.length > 0) {
     phase('Patterns')
     const layerNotes = layerReports.length === 0 ? 'none this launch' : layerReports.map((l) => `${l.layer} (${l.candidateCount})`).join(', ')
-    const r = await seat(patternsBrief(shown, overflow, layerNotes), {
+    const r = await seat(patternsBrief(shown, overflow, layerNotes, samplingNote), {
         label: 'patterns', phase: 'Patterns', agentType: 'executor-read', schema: CANDIDATES_SCHEMA,
         ...AGENT_CONFIG.patterns,
     })
@@ -1251,6 +1435,20 @@ if (toReconcile.length > 0) {
     }
 }
 
+if (unsampledSet.size > 0) {
+    uncovered.push({ what: `${unsampledSet.size} agent log(s) outside the deep-read sample`, why: 'the operator chose stratified sampling (args.sampling); see sampling.strata for each stratum\'s n, N, hits, and interval' })
+}
+const inStrata = new Set(sampling ? sampling.strata.flatMap((s) => s.lines) : [])
+const sampled = sampleSelection ? {
+    seed: sampling.seed,
+    censusMax: sampling.censusMax ?? SAMPLE_CENSUS_MAX,
+    continuation: Boolean(continuation),
+    flaggedRead: rescuedFlagged.size,
+    strata: sampleReport(sampleSelection, [...deepRead], observations.map((o) => o.line), rescuedFlagged),
+    unsampledLogs: unsampledSet.size,
+    readOutsideStrata: [...deepRead].filter((line) => !inStrata.has(line)).length,
+} : null
+
 const coverage = {
     inventoried: total,
     digested,
@@ -1258,17 +1456,19 @@ const coverage = {
     flagged: flaggedLines.length,
     deepRead: deepRead.size,
     deferred: plan.deferred.length,
+    unsampled: unsampledSet.size,
     shards: shardCount,
     layersCovered: layerReports.filter((l) => l.covered).length,
     agents: spent,
 }
-const summary = `${run.id} (${run.status}): ${continuation ? 'continuation, ' : ''}${digested}/${total} digested, ${deepRead.size} read in full, ${plan.deferred.length} deferred, ${judged.length} judged, ${upheld.length} upheld, ${refuted.length} refuted, ${unverified.length} unverified, ${reconciled.length} draft(s), ${uncovered.length} uncovered, ${spent} agents`
+const summary = `${run.id} (${run.status}): ${continuation ? 'continuation, ' : ''}${digested}/${total} digested, ${deepRead.size} read in full, ${plan.deferred.length} deferred, ${sampled ? `${unsampledSet.size} unsampled, ` : ''}${judged.length} judged, ${upheld.length} upheld, ${refuted.length} refuted, ${unverified.length} unverified, ${reconciled.length} draft(s), ${uncovered.length} uncovered, ${spent} agents`
 log(`docket-postmortem: ${summary}`)
 
 return {
     coverage,
     deferredLines: plan.deferred,
     flaggedLines,
+    sampling: sampled,
     layers: layerReports,
     groups,
     suppressedGroups,

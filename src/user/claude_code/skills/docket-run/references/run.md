@@ -586,8 +586,8 @@ and extracts the field without printing it.
 
 The conductor verbs — the nine operator verbs `step
 approve|reject|resolve|reap|hold`, `run pause|resume|abandon` (with or
-without `--issue`), `run fact add`, and the ten ruling verbs `step
-annotate --integrated-sha`, `run note add`, `run refresh-scope`,
+without `--issue`), `run fact add`, and the eleven ruling verbs `step
+integrate`, `step annotate --integrated-sha`, `run note add`, `run refresh-scope`,
 `run refresh-body`, `run refresh-files`, `run repin`, `dispatch
 waive-target`, `dispatch abandon`, `dispatch close
 --skip-integration-check` (a close without the skip stays token-free), and

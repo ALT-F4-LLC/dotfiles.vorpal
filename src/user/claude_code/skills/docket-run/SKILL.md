@@ -115,8 +115,9 @@ engine mutating verb, a trust verb, or a launch; those stay yours.
 The engine binds the CONDUCTOR VERBS to a run-scoped CONDUCTOR CAPABILITY:
 the nine operator verbs, `docket step approve|reject|resolve|reap|hold`,
 `docket run pause|resume|abandon` (with or without `--issue`), and `docket
-run fact add`; and the ten ruling verbs, `docket step annotate
---integrated-sha` (the plain `--metadata` form stays token-free), `docket
+run fact add`; and the eleven ruling verbs, `docket step integrate`,
+`docket step annotate --integrated-sha` (the plain `--metadata` form stays
+token-free), `docket
 run note add`, `docket run refresh-scope`, `docket run refresh-body`,
 `docket run refresh-files`, `docket run repin`, `docket dispatch
 waive-target`, `docket dispatch abandon`, `docket dispatch close
@@ -230,6 +231,7 @@ docket run note add $RUN --authority conductor --text "<the ruling>" < <scratchp
 docket run note add $RUN --authority operator --text "<their words>" < <scratchpad>/conductor.d/$RUN.token
 docket dispatch abandon --run $RUN --reason "<why the manifest is given up>" < <scratchpad>/conductor.d/$RUN.token
 docket run refresh-scope $RUN --issue <ID> --reason "<the authorized scope change>" < <scratchpad>/conductor.d/$RUN.token
+docket step integrate STEP-N [STEP-M ...] < <scratchpad>/conductor.d/$RUN.token
 docket step annotate STEP-N --integrated-sha <new full sha> --metadata '{"writer_sha":"<sha>"}' < <scratchpad>/conductor.d/$RUN.token
 EOF
 ```
@@ -242,7 +244,7 @@ and the verbs file.
 **Supply it per command, by redirecting the file into stdin.** Every
 conductor verb, in every example below and on every path this file names
 (the standing rulings, the operator escalation, a forced reap, a hold, a
-run fact, a run note, a scope refresh, an integration annotate, a target
+run fact, a run note, a scope refresh, an integration, an annotate, a target
 waiver, a dispatch abandon, a skip-integration close, a vote-step commit,
 a pause, a resume, a run abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
 
@@ -1272,8 +1274,9 @@ started by a refill is a launch of this dispatch, and its join precedes
 the close like any other.
 
 **1. Launch the usage join first, before reading or diagnosing the wave's
-result.** In the same turn, while it runs: every cherry-pick, `step
-annotate`, and worktree sweep for rows this notification settled. A row
+result.** In the same turn, while it runs: every
+`step integrate`, `step annotate`, and worktree sweep for rows this
+notification settled. A row
 this notification settled as `unrecorded` or `unsettled` whose step
 still reads claimed by that spawn is reaped and acked at this return,
 before the refill relaunches any `skipped-not-ready` lane (step 3 of
@@ -1621,22 +1624,35 @@ or present the ruling with the fact that the sha is already integrated.
 At each integration point, write steps first, in step-id order:
 
 1. Confirm the step's status is `done` (`docket step show STEP-N`).
-2. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
-3. `git cherry-pick -x <sha>`, a real commit on the shared branch (`-x`
-   preserves the writer-sha trailer). Integration commits land
-   immediately; never a staged-not-committed interim. The commit signs
-   non-interactively with the agent signing key
-   (`~/.ssh/agent-signing.pub`); never pass `--no-gpg-sign`. Publishing
+2. `docket step integrate STEP-N [STEP-M ...] < <scratchpad>/conductor.d/$RUN.token`,
+   the engine verb that replaces the hand-typed pick and annotate. In the
+   order named it cherry-picks each step's recorded writer chain with
+   `git cherry-pick -x` and annotates the step with the resulting HEAD.
+   Before it writes anything it checks every named step: done, an executor
+   step that holds the tree, its recorded commits exist with no merge
+   commit among them, not already integrated, not already carried by HEAD,
+   and the shared checkout on a branch with no tracked change and no
+   operation in progress; a step that fails a check refuses the whole verb
+   with nothing written. It stops at the first failure and reports the
+   steps already integrated. Integration commits land immediately; never a
+   staged-not-committed interim. The commit signs non-interactively with
+   the agent signing key (`~/.ssh/agent-signing.pub`); never pass
+   `--no-gpg-sign`. Repository hooks do not run from the pick. Publishing
    (push, PR, release) remains the operator's alone.
-4. `docket step annotate STEP-N --metadata
-   '{"integrated_sha":"<new sha>","writer_sha":"<sha>"}'`, mandatory,
-   right here. **If the pick conflicted and you resolved it by hand**,
-   annotate with the verified form instead: `docket step annotate
-   STEP-N --integrated-sha <new full sha> --metadata
-   '{"writer_sha":"<sha>"}' < <scratchpad>/conductor.d/$RUN.token`, a
-   conductor verb. The plain `--metadata` form stays token-free. The
-   engine verifies ancestry, re-records
-   `issue.diff` from the patch, and sets `integrated_sha`.
+3. Read its answer and follow the command an error names. A pick that
+   does not apply is aborted with the checkout verified unchanged and
+   nothing annotated: resolve the conflict by hand, picking the whole
+   writer chain (`git cherry-pick -x <base>..<head>`, where `<head>` is the
+   change-summary's writer sha and `<base>` the step's recorded base),
+   then annotate with the verified form, `docket step annotate STEP-N
+   --integrated-sha <new full sha> --metadata '{"writer_sha":"<head>"}' < <scratchpad>/conductor.d/$RUN.token`,
+   a conductor verb. The engine verifies ancestry, re-records
+   `issue.diff` from the patch, and sets `integrated_sha`. The same form
+   finishes a pick that landed but whose annotation was refused (the
+   error names the sha to pass), and a chain the shared HEAD already
+   carries. A chain holding a merge commit, or a step with no recorded
+   base, is not one the verb integrates; integrate it by hand the same
+   way.
 
 A cherry-pick touching `.claude/skills/**` can fail under the sandbox on
 the unlink; verify the sha and paths, then retry with the sandbox lifted.

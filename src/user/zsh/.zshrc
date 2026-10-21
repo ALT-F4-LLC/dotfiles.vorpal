@@ -8,6 +8,21 @@ export SAVEHIST=100000
 # Like INC_APPEND_HISTORY + re-read history whenever accessing it
 setopt SHARE_HISTORY
 
+# Claude Code agent shell. The Bash tool runs commands in this zsh, where an
+# unmatched glob is a hard error: an unquoted `grep -rn X --include=*.go .`
+# fails with "no matches found" and never runs, and agents that do not notice
+# cite a search that did not happen. With NO_NOMATCH the pattern passes through
+# literally, as bash does. Claude Code sets CLAUDECODE in the processes it
+# starts, including the shell it snapshots this file from, so the operator's
+# own terminal keeps the default. A program that expands a glob itself now
+# receives it (`git add *.go` reaches subdirectories), as it does in bash.
+# The markers below are read by tests/zsh-agent-nomatch.test.sh.
+# BEGIN agent-shell-options
+if [[ -n ${CLAUDECODE-} ]]; then
+  setopt NO_NOMATCH
+fi
+# END agent-shell-options
+
 ## Claude Code
 c () {
   emulate -L zsh

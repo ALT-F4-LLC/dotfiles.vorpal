@@ -783,11 +783,17 @@ the affected criterion unresolved and report the missing reference.
 Every criterion §3 or §4b writes into an issue must first pass the citation
 lint, `scripts/ac-lint.sh` in this skill's directory, run with `--base` set
 to the checkout's HEAD sha (`git rev-parse HEAD` in the issue's home
-repository) and the criterion text on stdin. Write the criterion only when
-that invocation exits 0. On a non-zero exit, rewrite each reported citation
-so it holds at that sha: cite `path:N` only with a quoted expression line N
-contains, or cite the path with an expression that occurs on exactly one
-line. The drafting comment that accompanies a written criterion records the
+repository) and the criterion text on stdin. Pass `--shared-base` by
+default: a `Verify:` command that measures from `git merge-base ... main` or a
+bare `main` moves as sibling work lands, and a split creates those siblings
+after this lint has run. Omit the flag only when the issue has no parent with
+other children, no depends_on edge in either direction, and the current
+proposal creates none; a moving-base report means the criterion names the
+literal base sha instead. Write the criterion only when that invocation exits
+0. On a non-zero exit, rewrite each reported problem so it holds at that sha:
+cite `path:N` only with a quoted expression line N contains, or cite the path
+with an expression that occurs on exactly one line. The drafting comment that
+accompanies a written criterion records the
 HEAD sha the lint ran against.
 
 Grooming verifies the definition and verification design, not completion of

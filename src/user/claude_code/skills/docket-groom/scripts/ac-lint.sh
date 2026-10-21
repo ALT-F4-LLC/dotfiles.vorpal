@@ -4,7 +4,7 @@
 # resolves at a named commit, so docket-groom never writes a criterion whose
 # path:line anchor points at the wrong line.
 #
-# Usage: ac-lint.sh --base <sha> [--repo <dir>] [file ...]
+# Usage: ac-lint.sh --base <sha> [--repo <dir>] [--shared-base] [file ...]
 #   Reads the criterion text from each file, or from stdin when none is
 #   named. --base is the commit the citations must hold at (docket-groom
 #   passes the checkout HEAD sha); --repo is the git checkout to read it
@@ -29,6 +29,14 @@
 # ambiguous, and none means the token is not a repository path (a host:port,
 # an abbreviation), so it is ignored.
 #
+# --shared-base is passed when the issue has depends_on edges or siblings under
+# one parent. A sibling's commits land on the moving branch, so a `Verify:`
+# command that measures from `git merge-base ... main` or a bare `main` or
+# `origin/main` (git diff, log, rev-list, show, cherry) changes under the
+# issue and can read unmet whatever the fix does. Such a line is refused as
+# moving-base; the fix is the literal base sha recorded at groom time. Without
+# the flag, no base is checked.
+#
 # Read-only: it runs git cat-file, ls-tree and show against --base and
 # writes nothing. Exit 0 when every citation resolves, 1 with one line per
 # unresolved citation on stdout, 2 on a usage error or an unreadable base.
@@ -36,17 +44,19 @@
 set -euo pipefail
 
 usage() {
-    printf 'usage: ac-lint.sh --base <sha> [--repo <dir>] [file ...]\n' >&2
+    printf 'usage: ac-lint.sh --base <sha> [--repo <dir>] [--shared-base] [file ...]\n' >&2
     exit 2
 }
 
 base=""
 repo="."
+shared_base=0
 files=()
 while [ $# -gt 0 ]; do
     case "$1" in
         --base) [ $# -ge 2 ] || usage; base="$2"; shift 2 ;;
         --repo) [ $# -ge 2 ] || usage; repo="$2"; shift 2 ;;
+        --shared-base) shared_base=1; shift ;;
         -h | --help) usage ;;
         --) shift; files+=("$@"); break ;;
         -*) usage ;;
@@ -147,6 +157,42 @@ while IFS=$'\037' read -r path from to expr; do
         report "ambiguous: ${cite}: \"${expr}\" occurs on ${hits} lines at ${base}; add a line or a longer expression"
     fi
 done <<<"$citations"
+
+# A moving base: on an issue with siblings or dependencies, a Verify command
+# that measures from the merge-base with main, or from bare main, shifts as
+# other work lands. A criterion is a bullet or paragraph, so a command wrapped
+# across lines or fenced is joined first; only the backtick spans after
+# `Verify:` are read, so prose that mentions main is never flagged. A pathspec
+# after ` -- ` is not a base, and `merge-base --is-ancestor` with a literal sha
+# is a stable check.
+if [ "$shared_base" -eq 1 ]; then
+    git_cmd='git([[:space:]]+(-C[[:space:]]+[^[:space:]]+|-[^[:space:]]+))*[[:space:]]+'
+    main_ref='(^|[^A-Za-z0-9_./-]|\.\.)(origin/)?main($|[^A-Za-z0-9_./-]|\.\.)'
+    units=$(printf '%s\n' "$text" | awk '
+        function flush() { if (unit != "") print unit; unit = "" }
+        /^[ \t]*([-*+]|[0-9]+[.)])[ \t]/ { flush() }
+        /^[ \t]*$/ { flush(); next }
+        { unit = unit (unit == "" ? "" : " ") $0 }
+        END { flush() }')
+    while IFS= read -r unit; do
+        printf '%s\n' "$unit" | grep -qiE 'verify:' || continue
+        spans=$(printf '%s\n' "$unit" | sed -E 's/^.*[Vv][Ee][Rr][Ii][Ff][Yy]:[[:space:]]*//; s/```[a-z]*/`/g' | grep -oE '`[^`]+`' || true)
+        while IFS= read -r span; do
+            [ -n "$span" ] || continue
+            cmd="${span#\`}"; cmd="${cmd%\`}"
+            head="${cmd%% -- *}"
+            excerpt=$(printf '%s' "$cmd" | cut -c1-80)
+            if printf '%s\n' "$cmd" | grep -qE "${git_cmd}merge-base"; then
+                if printf '%s\n' "$cmd" | grep -qE -e '--is-ancestor' && ! printf '%s\n' "$head" | grep -qE "$main_ref"; then
+                    continue
+                fi
+                report "moving-base: \`${excerpt}\` uses git merge-base, which moves as sibling work lands; record the literal base sha at groom time"
+            elif printf '%s\n' "$head" | grep -qE "${git_cmd}(diff|log|rev-list|show|cherry)[^|;&]*${main_ref}"; then
+                report "moving-base: \`${excerpt}\` measures from main, which moves as sibling work lands; record the literal base sha at groom time"
+            fi
+        done <<<"$spans"
+    done <<<"$units"
+fi
 
 [ "$problems" -eq 0 ] || exit 1
 exit 0

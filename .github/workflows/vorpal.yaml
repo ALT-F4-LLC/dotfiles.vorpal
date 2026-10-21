@@ -57,6 +57,7 @@ jobs:
       - run: bash tests/docket-run-guard-hook.test.sh
 
       - run: bash tests/docket-groom-turn-guard-hook.test.sh
+      - run: bash tests/docket-park-notice-hook.test.sh
       - run: bash tests/docket-run-lane-units.test.sh
       - run: bash tests/docket-run-refill.test.sh
 

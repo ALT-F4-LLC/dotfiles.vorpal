@@ -83,9 +83,12 @@ offering other issues' rows. Every question still goes through the
 question tool, never plain text. Before asking, check whether this run has
 work the answer does not gate: a launch still in flight, or `next` still
 offering unaffected rows. If so, hold the question, send one
-`PushNotification` naming the run and gate, and continue the loop (close,
-next, open, launch) until nothing unaffected can move; then ask. The
-question tool freezes the conversation until answered, so ask once, at
+`PushNotification` naming the run, the gate and each parked step id, and
+continue the loop (close, next, open, launch) until nothing unaffected can
+move; then ask. A Stop hook and a check after each wave or dispatch call
+enforce the push for every new park on an attended run, including one you
+ask about at once; a push sent before the question is asked satisfies it.
+The question tool freezes the conversation until answered, so ask once, at
 that point. Hold at most one open question: a further park joins the same
 question, and the answer carries a ruling per labelled gate. Ask at once
 when nothing can move until the operator rules (`next` offers nothing but

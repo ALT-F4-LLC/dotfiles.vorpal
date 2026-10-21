@@ -601,6 +601,21 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "bash ~/.claude/hooks/docket-groom-turn-guard-hook.sh",
             "command",
         )
+        // Holds a conductor to the push docket-run requires for each new
+        // waiting-human park: at Stop, and after a wave or dispatch call so
+        // a park routed mid-turn is caught while work keeps moving.
+        .with_hook(
+            "Stop",
+            None,
+            "bash ~/.claude/hooks/docket-park-notice-hook.sh",
+            "command",
+        )
+        .with_hook(
+            "PostToolUse",
+            Some("Workflow|Bash"),
+            "bash ~/.claude/hooks/docket-park-notice-hook.sh",
+            "command",
+        )
         .with_hook(
             "PreToolUse",
             Some("Bash"),

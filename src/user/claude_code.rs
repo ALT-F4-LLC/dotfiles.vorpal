@@ -305,9 +305,12 @@ const SANDBOX_EXCLUDED_COMMANDS: &[&str] = &[
 ];
 
 const SANDBOX_NETWORK_ALLOWED_DOMAINS: &[&str] = &[
+    "agentgateway.bulbasaur.eks.altf4.internal",
+    "api.anthropic.com",
     "api.github.com",
     "api.osv.dev",
     "crates.io",
+    "downloads.claude.ai",
     "files.pythonhosted.org",
     "github.com",
     "proxy.golang.org",

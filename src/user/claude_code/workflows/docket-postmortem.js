@@ -32,7 +32,7 @@ export const meta = {
 // the named vital condition, and the reconciler lifts any remedy it can.
 //
 // args: {checkoutRoot, run, captures, sessions, inventory, memoryRoots,
-//        auditDir, nowIso, continuation?}
+//        auditDir, nowIso, usageCoverage?, continuation?}
 //   checkoutRoot — absolute path of the dotfiles checkout.
 //   run          — {id, project, prefix, root, status, activatedAtMs,
 //                  updatedAtMs}; status must be "done" or "abandoned".
@@ -56,6 +56,15 @@ export const meta = {
 //   memoryRoots  — absolute memory directories for the run's project.
 //   auditDir     — absolute audit directory; the only place agents write.
 //   nowIso       — the audit's UTC timestamp; scripts cannot read the clock.
+//   usageCoverage — optional {casts, reported, modelTotal, modelUnknown},
+//                  non-negative integers from the run report: vote_usage_coverage
+//                  and the count of attempts with a model_resolved, and how many
+//                  of those read `unknown`. With it, deep readers are told the
+//                  designed placeholders are not gaps and groups on a placeholder
+//                  whose back-fill is complete (reported >= casts; modelUnknown
+//                  no more than MODEL_UNKNOWN_TOLERANCE of modelTotal) are dropped from
+//                  the pattern brief and listed in suppressedGroups. Without it
+//                  nothing is dropped.
 //   continuation — optional {lines, flagged, priorUpheld}: a relaunch over
 //                  the previous return's deferredLines. Digest, conductor,
 //                  and layer stages are skipped (their outputs are already
@@ -73,6 +82,13 @@ export const meta = {
 //                    per conductor shard plus one per layer analyst;
 //                    coverage.layersCovered counts both.
 //   groups        — observation groups the pattern analyst received.
+//   suppressedGroups — the full groups, each with a `sentinel`, dropped as a
+//                    designed placeholder (vote-usage, model-resolved,
+//                    claim-metadata) because usageCoverage showed its back-fill
+//                    complete. Only gap-shaped symptoms (missing-evidence,
+//                    recording-failure, brief-gap, contract-violation, other)
+//                    are dropped; a wrong-model or tool-error group on the same
+//                    target is kept.
 //   findings      — upheld candidates with verdicts (`upheld: true`).
 //   refuted       — candidates a majority refuted, with the refutations.
 //   unverified    — candidates fewer than two refuters could judge.
@@ -128,6 +144,10 @@ const SHARD_BYTES = 500000
 // The pattern analyst receives at most this many groups in full; the rest
 // arrive as one-line counts.
 const PATTERN_GROUP_CAP = 150
+// Back-fill leaves a few model_resolved values `unknown` by design (an opus
+// writer attempt served by two or more transcripts, a dropped scout). The
+// model sentinels are complete while no more than this fraction stays unknown.
+const MODEL_UNKNOWN_TOLERANCE = 0.05
 // TEST-END docket-postmortem-config
 
 // TEST-BEGIN docket-postmortem-refute-tally — include docket-postmortem-config. Pure function: no
@@ -237,6 +257,67 @@ function groupObservations(observations) {
         if (g.examples.length < 3) g.examples.push({ line: o.line, claim: o.claim, locator: o.locator })
     }
     return [...groups.values()].sort((a, b) => b.count - a.count || a.key.localeCompare(b.key))
+}
+
+// Designed deferred-accounting placeholders. The wave tells executors to
+// record model_resolved and effort_resolved as `unknown` for the usage pass
+// to back-fill, tribunal seats cast without --usage and the conductor's
+// back-fill supplies it, and claim --metadata carries the executor's
+// requested routing, not the served model. A reader that reports one of
+// these as a gap reports the design, so a group on one is dropped from the
+// pattern brief once the run's own coverage shows the back-fill complete.
+// `coverage` is {casts, reported, modelTotal, modelUnknown} (non-negative
+// integers from report.json), or null when the caller passed none; without
+// it nothing is dropped, because completeness is then unknown.
+const DESIGNED_SENTINELS = [
+    { id: 'vote-usage', match: (t) => /vote cast/.test(t) && /--usage/.test(t), complete: (c) => c.reported >= c.casts },
+    { id: 'model-resolved', match: (t) => /\b(model|effort)_resolved\b/.test(t), complete: modelBackfillComplete },
+    { id: 'claim-metadata', match: (t) => /\bclaim\b/.test(t) && /--metadata/.test(t), complete: modelBackfillComplete },
+]
+
+// A coverage object is usable only whole: four non-negative integers, no more
+// unknown models than known-or-unknown ones.
+function validUsageCoverage(c) {
+    return c != null && typeof c === 'object' && ['casts', 'reported', 'modelTotal', 'modelUnknown'].every((k) => Number.isInteger(c[k]) && c[k] >= 0) && c.modelUnknown <= c.modelTotal
+}
+
+function modelBackfillComplete(c) {
+    return c.modelTotal > 0 && c.modelUnknown / c.modelTotal <= MODEL_UNKNOWN_TOLERANCE
+}
+
+// Only a gap-shaped symptom is the placeholder being reported. A wrong-model,
+// tool-error, denial, refusal, retry-loop or stall on the same target is a real
+// defect and is kept whatever the coverage.
+const SENTINEL_SYMPTOMS = ['missing-evidence', 'recording-failure', 'brief-gap', 'contract-violation', 'other']
+
+function sentinelOf(group) {
+    if (!SENTINEL_SYMPTOMS.includes(group.symptom)) return null
+    const target = String(group.target || '').toLowerCase()
+    return DESIGNED_SENTINELS.find((s) => s.match(target)) || null
+}
+
+// Split groups into those the pattern analyst sees and those dropped as a
+// designed placeholder with complete coverage. Order is kept.
+function splitDesignedSentinels(groups, coverage) {
+    if (!coverage) return { kept: groups, suppressed: [] }
+    const kept = []
+    const suppressed = []
+    for (const g of groups) {
+        const s = sentinelOf(g)
+        if (s && s.complete(coverage)) suppressed.push({ ...g, sentinel: s.id })
+        else kept.push(g)
+    }
+    return { kept, suppressed }
+}
+
+// The deep reader's paragraph on the placeholders, with the run's coverage.
+function sentinelNote(coverage) {
+    const rule = 'Designed placeholders: `model_resolved` and `effort_resolved` recorded as `unknown` (the usage pass back-fills them from the transcript), a tribunal seat\'s `docket vote cast` without `--usage` (the conductor back-fills it), and `docket claim --metadata` carrying the executor\'s requested routing are the design, not gaps.'
+    if (!coverage) return `${rule} The run's back-fill coverage was not passed, so record one when it hides a real gap and name the placeholder in target.`
+    const votes = `vote usage reported ${coverage.reported}/${coverage.casts}`
+    const models = `model_resolved known on ${coverage.modelTotal - coverage.modelUnknown}/${coverage.modelTotal}`
+    const open = DESIGNED_SENTINELS.filter((s) => !s.complete(coverage)).map((s) => s.id)
+    return `${rule} Back-fill coverage for this run: ${votes}; ${models}. Do not record a placeholder as an observation${open.length === 0 ? '.' : `, except ${open.join(', ')}: ${open.length === 1 ? 'its' : 'their'} coverage is short, so record what stayed unfilled.`}`
 }
 // TEST-END docket-postmortem-plan
 
@@ -381,6 +462,12 @@ need(input.inventory.kinds == null || Array.isArray(input.inventory.kinds), 'arg
 need(input.inventory.bytes == null || Array.isArray(input.inventory.bytes), 'args.inventory.bytes, when passed as an override, must be an array with one entry per inventory line')
 need(typeof input.auditDir === 'string' && input.auditDir !== '', 'args.auditDir (absolute path of the audit directory) is required')
 need(typeof input.nowIso === 'string' && input.nowIso !== '', 'args.nowIso is required; scripts cannot read the clock')
+// usageCoverage is optional: a partial or inconsistent object (an older report
+// lacks a field) is treated as absent, so nothing is dropped, and logged.
+const usageCoverage = validUsageCoverage(input.usageCoverage) ? input.usageCoverage : null
+if (input.usageCoverage != null && !usageCoverage) {
+    log(`docket-postmortem: args.usageCoverage ignored (needs non-negative integer casts, reported, modelTotal, modelUnknown with modelUnknown <= modelTotal); got ${JSON.stringify(input.usageCoverage)}`)
+}
 const continuation = input.continuation || null
 if (continuation) {
     need(Array.isArray(continuation.lines), 'args.continuation.lines must be an array of inventory line numbers')
@@ -712,6 +799,8 @@ Your logs are inventory lines ${lines}. For each: take its path, kind, and wfId 
 
 Record one observation per distinct friction point: a wrong or missing input in the brief, a tool error and what the agent did next, a denial or hook block and its cost, a refusal, a retry loop, a stall, work redone, a contract step skipped or done out of order, a recording or integration failure, a model or effort mismatch, a guess made where evidence existed, cost spent on something a script could do, and every touch that waited on a human. Use the surface and symptom vocabularies exactly; keep target short and stable so other readers' reports of the same defect collide. Mark automatable per the automation reference. An agent that did its job cleanly gets no observation; say so in notes.
 
+${sentinelNote(usageCoverage)}
+
 Write working notes to ${auditDir}/deep-${String(index).padStart(4, '0')}.md and return the schema, listing every line you read to the end and every line you could not.`
 }
 
@@ -877,7 +966,8 @@ log(`docket-postmortem: ${deepRead.size} log(s) read in full; ${observations.len
 
 // ---- Stage 3: patterns (barrier: needs every observation together) --------
 
-const groups = groupObservations(observations)
+const { kept: groups, suppressed: suppressedGroups } = splitDesignedSentinels(groupObservations(observations), usageCoverage)
+if (suppressedGroups.length > 0) log(`docket-postmortem: ${suppressedGroups.length} group(s) on designed placeholders dropped from the pattern brief (back-fill coverage complete)`)
 const shown = groups.slice(0, PATTERN_GROUP_CAP)
 const overflow = groups.slice(PATTERN_GROUP_CAP)
 if (groups.length > 0) {
@@ -962,6 +1052,7 @@ return {
     flaggedLines,
     layers: layerReports,
     groups,
+    suppressedGroups,
     findings: upheld,
     refuted,
     unverified,

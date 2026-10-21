@@ -198,9 +198,24 @@ Workflow({scriptPath: "<home>/.claude/workflows/docket-postmortem.js", args: {
   inventory: {file: "<$AUDIT/inventory.tsv>"},
   memoryRoots: ["<memory dir for the run's project>"],
   auditDir: "<$AUDIT>",
-  nowIso: "<UTC timestamp>"
+  nowIso: "<UTC timestamp>",
+  usageCoverage: {casts, reported, modelTotal, modelUnknown}
 }})
 ```
+
+Take `usageCoverage` from the report capture:
+
+```bash
+jq -c '{casts: .data.vote_usage_coverage.casts, reported: .data.vote_usage_coverage.reported, modelTotal: ([.data.attempts[].metadata.model_resolved | select(. != null)] | length), modelUnknown: ([.data.attempts[].metadata.model_resolved | select(. == "unknown")] | length)}' "$AUDIT/report.json"
+```
+
+With it, deep readers are told the designed placeholders (`unknown`
+`model_resolved` and `effort_resolved`, seat casts without `--usage`,
+`claim --metadata` routing) are not gaps, and gap-shaped groups on a
+placeholder whose back-fill is complete are dropped from the pattern brief
+and returned whole as `suppressedGroups`. Omit `usageCoverage` when any
+field is null (an older report); the script also ignores a partial object.
+Without it nothing is dropped.
 
 Pass the inventory file alone. The script reads each line's kind and size
 from it, cross-checked against the file's line count, before any digest
@@ -243,6 +258,7 @@ covers every launch's findings.
 Its return is one JSON object whose fields the script's header comment
 lists. It is evidence for this conversation's ledger, not the ledger
 itself. Read every upheld finding, every refutation, every group, every
+`suppressedGroups` entry (dropped as a designed placeholder; confirm each is one), every
 `reconcile.dropped` entry (a candidate the reconciler set aside, with its
 reason), every `unverified` candidate (fewer than two refuters judged it;
 judge it inline or carry it as uncovered), and every `uncovered` entry. A

@@ -30,7 +30,9 @@
 # first and one per batch, clean packed within the byte ceiling, deferred
 # flagged before deferred clean; shard and digest ranges tile 1..N with no
 # gap or overlap; id numbers mask into one group while prefixes stay
-# distinct; and the digest
+# distinct; designed placeholders (unknown model_resolved, seat casts without
+# --usage, claim --metadata) drop from the pattern brief only when the run's
+# back-fill coverage is complete; and the digest
 # program flags a fixture's bwrap denial, engine refusal, and repeated
 # command, while a clean structured-output fixture carries no flag.
 #
@@ -249,6 +251,45 @@ ok(planShards(0, 0, SHARD_BYTES).length === 0, 'shards: an empty transcript plan
     const c = resolveInventory(INVENTORY_OUT, { file: '/x' }, [3, 528])
     ok(c.total === 528 && JSON.stringify(planDeepReads([3, 528], c.kinds, c.bytes, new Set([528]), 10, DEEP_BATCH_BYTES)) === JSON.stringify(planDeepReads([3, 528], E.kinds, E.bytes, new Set([528]), 10, DEEP_BATCH_BYTES)), 'inventory: a continuation with no arrays plans its deep reads from the derived arrays')
     ok(throwsWith(() => resolveInventory(INVENTORY_OUT, { file: '/x' }, [529]), '529', '528'), 'inventory: a continuation line past the derived count is refused')
+}
+
+// ---- designed placeholders -----------------------------------------------
+{
+    const obs = (target, n = 1) => Array.from({ length: n }, (_, i) => ({ surface: 'executor', symptom: 'missing-evidence', target, severity: 'paper-cut', line: i + 1, claim: 'gap', locator: 'x', automatable: false }))
+    const real = obs('docket step record --artifact', 2)
+    const all = groupObservations([...obs('docket vote cast --usage', 5), ...obs('model_resolved', 4), ...obs('effort_resolved', 1), ...obs('docket claim --metadata', 2), ...real])
+    const keys = (gs) => gs.map((g) => g.target).sort().join('|')
+
+    const full = { casts: 64, reported: 64, modelTotal: 948, modelUnknown: 9 }
+    const a = splitDesignedSentinels(all, full)
+    ok(keys(a.kept) === 'docket step record --artifact', `sentinels: complete coverage keeps only the real group (kept: ${keys(a.kept)})`)
+    ok(a.suppressed.length === 4 && a.suppressed.every((s) => s.count > 0 && s.sentinel && s.key), 'sentinels: every dropped group is listed with its count and sentinel')
+    ok(a.suppressed.find((s) => s.key.includes('vote cast')).sentinel === 'vote-usage' && a.suppressed.find((s) => s.key.includes('claim')).sentinel === 'claim-metadata', 'sentinels: dropped groups name their placeholder')
+
+    const short = splitDesignedSentinels(all, { ...full, reported: 60 })
+    ok(short.kept.some((g) => g.target === 'docket vote cast --usage') && !short.kept.some((g) => g.target === 'model_resolved'), 'sentinels: reported<casts keeps the vote-usage group and still drops the complete model groups')
+    ok(short.suppressed.every((s) => s.sentinel !== 'vote-usage'), 'sentinels: reported<casts suppresses no vote-usage group')
+
+    const unfilled = splitDesignedSentinels(all, { ...full, modelUnknown: 400 })
+    ok(unfilled.kept.some((g) => g.target === 'model_resolved') && unfilled.kept.some((g) => g.target === 'docket claim --metadata') && !unfilled.kept.some((g) => g.target.includes('vote cast')), 'sentinels: a mostly-unknown model_resolved keeps the model and claim groups')
+    ok(keys(splitDesignedSentinels(all, { ...full, modelTotal: 0, modelUnknown: 0 }).kept).includes('model_resolved'), 'sentinels: no known model_resolved at all is not complete')
+    const none = splitDesignedSentinels(all, null)
+    ok(none.kept.length === all.length && none.suppressed.length === 0, 'sentinels: without coverage nothing is dropped')
+    ok(a.kept.every((g, i, arr) => i === 0 || arr[i - 1].count >= g.count), 'sentinels: kept groups stay in count order')
+
+    const defects = groupObservations([
+        ...obs('model_resolved', 2).map((o) => ({ ...o, symptom: 'wrong-model' })),
+        ...obs('docket vote cast --usage', 2).map((o) => ({ ...o, symptom: 'tool-error' })),
+    ])
+    const d = splitDesignedSentinels(defects, full)
+    ok(d.kept.length === 2 && d.suppressed.length === 0, 'sentinels: a wrong-model or tool-error group on a placeholder target survives complete coverage')
+    ok(a.suppressed.every((s) => Array.isArray(s.lines) && s.lines.length > 0 && Array.isArray(s.examples) && s.examples.length > 0), 'sentinels: a dropped group keeps its lines and examples for audit')
+    ok(validUsageCoverage(full) && !validUsageCoverage(null) && !validUsageCoverage({ ...full, casts: null }) && !validUsageCoverage({ ...full, modelUnknown: 949 }) && !validUsageCoverage({ ...full, reported: -1 }), 'sentinels: a partial, negative or inconsistent coverage object is not usable')
+    ok(/except model-resolved, claim-metadata: their coverage/.test(sentinelNote({ ...full, modelUnknown: 400 })) && /except vote-usage: its coverage/.test(sentinelNote({ ...full, reported: 60 })), 'brief note: its/their agrees with the number of open placeholders')
+    ok(/64\/64/.test(sentinelNote(full)) && /939\/948/.test(sentinelNote(full)) && !/except/.test(sentinelNote(full)), 'brief note: complete coverage states the numbers and no exception')
+    ok(/except vote-usage/.test(sentinelNote({ ...full, reported: 60 })), 'brief note: short vote coverage names vote-usage as still reportable')
+    ok(/was not passed/.test(sentinelNote(null)), 'brief note: no coverage says so')
+    ok(MODEL_UNKNOWN_TOLERANCE === 0.05, 'config: model-unknown tolerance is 5%')
 }
 
 // ---- digest program ------------------------------------------------------

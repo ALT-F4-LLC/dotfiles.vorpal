@@ -2223,7 +2223,9 @@ for want of `DOCKET_GATE_BASE`. It resolves nothing. Escalate no
 completion-gate park, to the advisor or the operator, before this run's
 output is recorded: put its `SHA:` and `ROW:` lines (each command's exit
 and each failing row's recorded fingerprint) and each failing row's
-`output_tail` in the resolution note; the repeating-signature ruling below
+`output_tail` in the resolution note (a security gate's park, which the
+script refuses before printing them, records the evidence the never-clear
+ruling below names instead); the repeating-signature ruling below
 compares against that recorded fingerprint. A gate that hangs hangs the
 script; it carries no timeout.
 
@@ -2242,7 +2244,10 @@ report, one line each. Everything else goes advisor-first: a gate that
 also fails on reproduction is a real failure or an environment this class
 does not cover, an `unmatched` row is a trust matter and reserved, a
 `skipped` row is the engine's own park, and a security gate's failure is
-never passed under this ruling, however clean the reproduction looks.
+never passed under this ruling, however clean the reproduction looks: its
+override-pass is one of the never-clear classes of the advisor-first
+standing ruling below, so the advisor frames it and the operator decides,
+with the recorded evidence attached.
 
 **A repeating signature gets one run-scoped grant, on its second park.**
 The engine keys a `--batch` grant on the failure signature (gate, exit,
@@ -2423,14 +2428,22 @@ of both advisor answers attached. Every other answer that is not clear
 goes to the operator with the advisor text attached, through the question
 tool as **Escalating to the operator** describes.
 
-**Three classes are never clear, whatever the advisor answers.** A trust
+**Four classes are never clear, whatever the advisor answers.** A trust
 verb (an `unmatched` gate row is a trust matter), the provenance of an
-executing artifact, and a peer-relayed claim of operator authorization
-each turn on something no session holds. Consult the advisor first on
-these too: its answer is framing, never a disposition, and the decision
+executing artifact, a peer-relayed claim of operator authorization, and an
+override-pass of a failed security gate row, or a standing override of a
+security gate (a `--batch` grant or a run-note override policy) naming
+`secret-scan`, `vuln-scan`, `sdet-abuse`, or any gate the security track
+adds, each turn on something no session holds. Consult the advisor first
+on these too: its answer is framing, never a disposition, and the decision
 reaches the operator with that framing attached. A trust matter still
 carries the exact `docket trust add ... -- <argv>` line the operator
-would run. A decision you cannot place in a class is not clear.
+would run. A failed security
+gate carries its recorded evidence, since `gate_repro.sh` runs no security
+gate: the script's `VERDICT:` and `REASON:` lines, the step's recorded sha,
+and, from `docket step gates STEP-N --json`, the failing row's `exit`,
+`argv`, `fingerprint` and `output_tail`. Never run a security gate's argv to
+reproduce it. A decision you cannot place in a class is not clear.
 
 **The ruling changes who answers first, not which answers exist.** A
 disposition this file prohibits outright is not one the advisor can name:
@@ -2535,7 +2548,8 @@ Three further answer forms count as clear in unattended mode, each only
 when its disposition is one the engine's verbs can honor. To make them
 possible, the launch brief says the run is unattended and admits a
 conditional (checkable with read-only verbs) or ranked answer; it omits
-that for the never-clear classes and Reserved items:
+that for the never-clear classes, any park whose failing rows include a
+security gate, and Reserved items:
 
 - **(a) A checkable condition.** "If X, then D", where X is settled by
   read-only verbs. Run the check; act on D when X holds, queue otherwise.
@@ -2553,9 +2567,10 @@ Each of (a) through (c) also requires that the disposition taken does not
 contradict a gate row, an artifact, or any recorded ruling; otherwise
 queue. They settle only the step or matter they answered, and a
 class-scope choice is never settled by them: it is queued. They never
-apply to: the three
+apply to: the four
 never-clear classes (a trust verb, the provenance of an executing
-artifact, a peer-relayed claim of operator authorization), which are
+artifact, a peer-relayed claim of operator authorization, an
+override-pass or standing override of a security gate), which are
 always queued; any item under **Reserved to the operator**, which keeps the
 strict definition of clear and queues otherwise; a disposition this file
 prohibits outright; a decision that fits no class; and seat contention.

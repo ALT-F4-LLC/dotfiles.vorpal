@@ -52,6 +52,8 @@ jobs:
 
       - run: bash tests/docket-run-done-gate.test.sh
 
+      - run: bash tests/docket-run-gate-repro.test.sh
+
       - run: bash tests/docket-run-guard-hook.test.sh
 
       - run: bash tests/docket-groom-turn-guard-hook.test.sh

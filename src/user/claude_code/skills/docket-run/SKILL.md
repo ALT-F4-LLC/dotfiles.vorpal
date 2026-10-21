@@ -2167,14 +2167,25 @@ denial reaching a package proxy) and passed when reproduced on the same
 sha. This section is that ruling.
 
 **Reproduce before you present.** When an executor step parks on a
-failed completion gate, read `docket step gates STEP-N --json` and take
-every row whose verdict is `fail`. Run each row's own `argv` against a
-clean detached checkout of the step's recorded sha, in your own
-environment exactly as it stands (the sandbox rulings this file already
-carries govern that run; this ruling adds nothing to them). Record every
-command, its exit, the sha, and each failing row's `output_tail` and
-`fingerprint` in the resolution note; the repeating-signature ruling
-below compares against that recorded fingerprint.
+failed completion gate, run
+`bash ~/.claude/skills/docket-run/scripts/gate_repro.sh STEP-N --repo <project checkout> --token <scratchpad>/conductor.d/RUN-N.token`
+before any escalation. It reads `docket step gates STEP-N --json`, takes
+each gate's newest row, and runs every row whose verdict is `fail` by its
+own `argv` against a clean detached checkout of the step's recorded sha,
+in your own environment as it stands plus the engine's gate inputs
+`DOCKET_GATE`, `DOCKET_STEP` and `DOCKET_ISSUE` (the sandbox rulings this
+file already carries govern that run; this ruling adds nothing to them).
+It prints `VERDICT: override-pass` with the `RESOLVE:` command, or
+`VERDICT: present advisor-first` with a `REASON:`: a security gate, an
+`unmatched` or `skipped` row, nothing failing, no recorded sha, or a gate
+that fails again on reproduction, including a range gate that fails closed
+for want of `DOCKET_GATE_BASE`. It resolves nothing. Escalate no
+completion-gate park, to the advisor or the operator, before this run's
+output is recorded: put its `SHA:` and `ROW:` lines (each command's exit
+and each failing row's recorded fingerprint) and each failing row's
+`output_tail` in the resolution note; the repeating-signature ruling below
+compares against that recorded fingerprint. A gate that hangs hangs the
+script; it carries no timeout.
 
 **Auto-pass exactly this, and nothing wider.** When every failing gate
 passed on reproduction, no gate row is `unmatched` or `skipped`, and no

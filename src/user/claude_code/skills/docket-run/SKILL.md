@@ -2259,7 +2259,12 @@ requires, filed or linked. Report every auto-pass in your next status
 report, one line each. Everything else goes advisor-first: a gate that
 also fails on reproduction is a real failure or an environment this class
 does not cover, an `unmatched` row is a trust matter and reserved, a
-`skipped` row is the engine's own park, and a security gate's failure is
+`skipped` row is the engine's own park (a gate whose run's primary repo
+root no longer resolves, while the trust identity still does, records
+`skipped` with an `environment:` reason instead of `unmatched`, so that
+vanished checkout is not a trust matter and is not reserved to the
+operator on that account; a trust identity that does not resolve, and every
+other refusal, still records `unmatched`), and a security gate's failure is
 never passed under this ruling, however clean the reproduction looks: its
 override-pass is one of the never-clear classes of the advisor-first
 standing ruling below, so the advisor frames it and the operator decides,

@@ -105,6 +105,15 @@ export const meta = {
 // refuters, one reconciler; every remaining agent under the cap goes to
 // deep reads. A large run (a thousand agent logs) needs one continuation
 // launch; planDeepReads says so up front and the return names the lines.
+// Before seating any digest, conductor, or layer agent, planBudget checks that
+// the inventory read, the fixed stage-1 seats, and the reserve (pattern
+// analyst, REFUTE_CAP x REFUTERS_PER_FINDING refuter seats, reconciler) fit
+// under AGENT_CAP less AGENT_CAP_MARGIN; when they do not, the launch throws
+// with the counts and seats no agent past the inventory read. The fixed seats
+// are paid once, so a continuation launch cannot rescue a plan whose stage 1
+// alone is too large. Digest retries are not in that count; the refute stage
+// seats only as many candidates as the cap leaves room for (refuteSeatCap) and
+// returns the rest as uncovered.
 // ---------------------------------------------------------------------------
 
 // Pin models so a launch never inherits the caller's quota-limited model.
@@ -135,6 +144,9 @@ const REFUTE_CAP = 80
 // lifetime; the margin absorbs retries nobody planned for.
 const AGENT_CAP = 1000
 const AGENT_CAP_MARGIN = 10
+// Agents held back for the stages after the deep reads: the pattern analyst,
+// every refuter seat of a full REFUTE_CAP, and the reconciler.
+const RESERVED_AGENTS = 1 + REFUTE_CAP * REFUTERS_PER_FINDING + 1
 // Inventory lines per digest agent, and the byte ceiling one clean-log deep
 // reader is packed to. A flagged log is always read alone, whatever its size.
 const DIGEST_BATCH = 40
@@ -224,6 +236,46 @@ function planDeepReads(candidates, kinds, bytes, flaggedSet, agentBudget, batchB
     const deferredFlagged = all.slice(budget).filter((b) => b.flagged).flatMap((b) => b.lines)
     const deferredClean = all.slice(budget).filter((b) => !b.flagged).flatMap((b) => b.lines)
     return { batches, deferred: [...deferredFlagged, ...deferredClean] }
+}
+
+// Preflight for stage 1: the agents already spent (the inventory read), the
+// fixed stage-1 seats (digest batches, conductor shards, layer analysts), and
+// the reserve for the pattern analyst, refuters, and reconciler must fit under
+// the Workflow tool's cap less the margin. Deep reads take whatever is left,
+// and a launch whose fixed cost and reserve alone exceed the cap would seat
+// agents until the tool kills it with the reserve unspent. The digest retries
+// (one per batch at most) are not counted here; the margin absorbs a few and
+// refuteSeatCap bounds the refute stage by what is actually spent.
+// Returns {ok, fixed, reserved, total, limit, cap, margin, deepReaders,
+// launches, message}. `message` is set only when the plan does not fit, and
+// names every count. `deepReaders` is about how many readers a full pass over
+// the non-main logs seats (flagged logs, unknown before the digests, each add
+// one); `launches` is how many continuation-sized launches that takes, as one
+// seats at most limit - 1 (the inventory read) - reserved readers.
+function planBudget(plan, kinds, bytes) {
+    const spentSoFar = plan.spent || 0
+    const fixed = spentSoFar + plan.digestBatches + plan.shards + plan.layers
+    const reserved = plan.reserved
+    const total = fixed + reserved
+    const limit = plan.cap - plan.margin
+    const lines = Array.from({ length: kinds.length }, (_, i) => i + 1)
+    const deepReaders = planDeepReads(lines, kinds, bytes, new Set(), Infinity, DEEP_BATCH_BYTES).batches.length
+    const perLaunch = Math.max(1, limit - 1 - reserved)
+    const launches = Math.ceil(deepReaders / perLaunch)
+    const ok = total <= limit
+    const message = ok ? null
+        : `the agent plan does not fit: spent+planned ${fixed} (inventory read ${spentSoFar} + ${plan.digestBatches} digest batches + ${plan.shards} conductor shards + ${plan.layers} layer analysts) + reserved ${reserved} (pattern analyst, ${plan.reserved - 2} refuter seats, reconciler) = ${total} > cap ${plan.cap} - margin ${plan.margin} = ${limit}, ${total - limit} over, before the about ${deepReaders} deep readers a full pass needs (about ${launches} launch(es) of ${perLaunch} once stage 1 fits). Stage 1 runs whole in the first launch and cannot be split across launches, so this run is more than one launch can audit: report it as uncovered. Fewer conductor shards lower the fixed cost; SHARD_BYTES sets the shard size.`
+    return { ok, fixed, reserved, total, limit, cap: plan.cap, margin: plan.margin, deepReaders, launches, message }
+}
+
+// How many candidates the refute stage may seat given what is already spent:
+// REFUTERS_PER_FINDING seats each, with the reconciler's seat and the margin
+// kept back. At most `refuteCap`, never negative. A launch whose digests
+// retried more than the margin absorbs, or whose deep reads ran long, judges
+// fewer candidates and reports the rest as uncovered instead of overrunning.
+function refuteSeatCap(spentNow, cap, margin, perFinding, refuteCap) {
+    const room = cap - margin - spentNow - 1
+    return Math.max(0, Math.min(refuteCap, Math.floor(room / perFinding)))
 }
 
 // Group deep-read observations by a controlled key so independent readers'
@@ -874,6 +926,9 @@ if (!continuation) {
     const shardPlan = sessions.flatMap((s) => planShards(s.lines, s.bytes, SHARD_BYTES).map((shard) => ({ session: s, shard })))
     shardCount = shardPlan.length
 
+    const budget = planBudget({ spent, digestBatches: digestBatches.length, shards: shardPlan.length, layers: LAYERS.length, reserved: RESERVED_AGENTS, cap: AGENT_CAP, margin: AGENT_CAP_MARGIN }, inventory.kinds, inventory.bytes)
+    need(budget.ok, budget.message)
+
     // Digest, conductor shards, and layers are independent; run them together.
     const [digestResults] = await Promise.all([
         parallel(digestBatches.map((batch, i) => async () => {
@@ -936,7 +991,7 @@ if (!continuation) {
 
 // ---- Stage 2: deep-read every agent log the budget reaches ----------------
 
-const reserved = 1 + REFUTE_CAP * REFUTERS_PER_FINDING + 1
+const reserved = RESERVED_AGENTS
 const deepBudget = AGENT_CAP - AGENT_CAP_MARGIN - spent - reserved
 const deepCandidates = continuation ? continuation.lines : Array.from({ length: total }, (_, i) => i + 1)
 const plan = planDeepReads(deepCandidates, inventory.kinds, inventory.bytes, new Set(flaggedLines), deepBudget, DEEP_BATCH_BYTES)
@@ -988,11 +1043,12 @@ if (groups.length > 0) {
 
 const rank = { 'load-bearing': 0, friction: 1, 'paper-cut': 2 }
 candidates.sort((a, b) => (rank[a.severity] ?? 3) - (rank[b.severity] ?? 3))
-const judged = candidates.slice(0, REFUTE_CAP)
-for (const c of candidates.slice(REFUTE_CAP)) {
-    uncovered.push({ what: `candidate ${c.localId}`, why: `beyond REFUTE_CAP=${REFUTE_CAP}; judge inline` })
+const refuteSeats = refuteSeatCap(spent, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER_FINDING, REFUTE_CAP)
+const judged = candidates.slice(0, refuteSeats)
+for (const c of candidates.slice(refuteSeats)) {
+    uncovered.push({ what: `candidate ${c.localId}`, why: refuteSeats < REFUTE_CAP ? `beyond the ${refuteSeats} candidate(s) the agent cap leaves seats for (${spent} agents spent); judge inline` : `beyond REFUTE_CAP=${REFUTE_CAP}; judge inline` })
 }
-if (candidates.length > REFUTE_CAP) log(`docket-postmortem: ${candidates.length - REFUTE_CAP} candidate(s) beyond the refute bound; returned as uncovered`)
+if (candidates.length > refuteSeats) log(`docket-postmortem: ${candidates.length - refuteSeats} candidate(s) beyond the refute bound (${refuteSeats} of ${REFUTE_CAP} after ${spent} agents spent); returned as uncovered`)
 
 const upheld = []
 const refuted = []

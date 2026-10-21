@@ -205,6 +205,43 @@ ok(planShards(0, 0, SHARD_BYTES).length === 0, 'shards: an empty transcript plan
     ok(planDeepReads(lines, kinds, bytes, flagged, -5, DEEP_BATCH_BYTES).batches.length === 0, 'deep: a negative budget seats nothing and defers everything')
 }
 
+// ---- agent-budget preflight ----------------------------------------------
+{
+    const fixture = (logs, lines, bytes) => {
+        const kinds = ['main', ...Array.from({ length: logs - 1 }, () => 'workflow')]
+        const sizes = [bytes, ...Array.from({ length: logs - 1 }, () => 40_000)]
+        const shards = planShards(lines, bytes, SHARD_BYTES).length
+        const batches = planDigestBatches(logs, DIGEST_BATCH).length
+        const plan = { spent: 1, digestBatches: batches, shards, layers: 6, reserved: RESERVED_AGENTS, cap: AGENT_CAP, margin: AGENT_CAP_MARGIN }
+        return { plan, kinds, sizes, shards, batches }
+    }
+    // The measured run: 6700 logs and a 296 MB, 44000-line driver transcript.
+    const big = fixture(6700, 44_000, 296_000_000)
+    const bigBudget = planBudget(big.plan, big.kinds, big.sizes)
+    ok(RESERVED_AGENTS === 242, `budget: the reserve is the pattern analyst, ${REFUTE_CAP} x ${REFUTERS_PER_FINDING} refuters, and the reconciler (got ${RESERVED_AGENTS})`)
+    ok(bigBudget.ok === false && bigBudget.fixed + bigBudget.reserved > AGENT_CAP, `budget: 6700 logs and a 296 MB transcript do not fit (got fixed ${bigBudget.fixed} + reserved ${bigBudget.reserved})`)
+    ok(big.shards >= 580 && big.batches === 168, `budget: the fixture shards to about 590 readers (got ${big.shards} shards, ${big.batches} digest batches)`)
+    ok(/spent\+planned \d+ .* \+ reserved 242 .* = \d+ > cap 1000 - margin 10 = 990/.test(bigBudget.message || ''), `budget: the refusal names spent + reserved > cap (got ${bigBudget.message})`)
+    ok(bigBudget.message.includes(`${big.shards} conductor shards`) && bigBudget.message.includes('168 digest batches') && bigBudget.message.includes('6 layer analysts'), 'budget: the refusal names every stage-1 count')
+    ok(bigBudget.deepReaders > 0, 'budget: the refusal names the deep readers a full pass needs')
+    // A modest run: 1000 logs and a 20 MB transcript.
+    const small = fixture(1000, 3000, 20_000_000)
+    const smallBudget = planBudget(small.plan, small.kinds, small.sizes)
+    ok(smallBudget.ok === true && smallBudget.message === null, `budget: 1000 logs and a 20 MB transcript fit (got ${smallBudget.message})`)
+    ok(smallBudget.total <= AGENT_CAP - AGENT_CAP_MARGIN, 'budget: a fitting plan stays under cap less margin')
+    // The boundary: exactly at cap less margin fits, one more does not.
+    const edge = { spent: 0, digestBatches: AGENT_CAP - AGENT_CAP_MARGIN - RESERVED_AGENTS, shards: 0, layers: 0, reserved: RESERVED_AGENTS, cap: AGENT_CAP, margin: AGENT_CAP_MARGIN }
+    ok(planBudget(edge, [], []).ok === true, 'budget: a plan exactly at cap less margin fits')
+    ok(planBudget({ ...edge, shards: 1 }, [], []).ok === false, 'budget: one agent over cap less margin is refused')
+    ok(planBudget({ ...edge, digestBatches: 0, shards: 0, layers: 0 }, [], []).ok === true, 'budget: a plan of nothing but the reserve fits')
+    ok(bigBudget.launches === Math.ceil(bigBudget.deepReaders / (AGENT_CAP - AGENT_CAP_MARGIN - 1 - RESERVED_AGENTS)) && /launch\(es\) of 747/.test(bigBudget.message), `budget: the refusal names the deep-read launches needed (got ${bigBudget.launches})`)
+    // The refute stage seats only what the cap leaves room for.
+    ok(refuteSeatCap(0, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER_FINDING, REFUTE_CAP) === REFUTE_CAP, 'refute cap: an unspent budget seats the full REFUTE_CAP')
+    ok(refuteSeatCap(990 - 1 - 3 * 10, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER_FINDING, REFUTE_CAP) === 10, 'refute cap: room for 30 seats and the reconciler judges 10 candidates')
+    ok(refuteSeatCap(990, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER_FINDING, REFUTE_CAP) === 0 && refuteSeatCap(1500, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER_FINDING, REFUTE_CAP) === 0, 'refute cap: an exhausted or overspent budget seats nothing, never a negative count')
+    ok(refuteSeatCap(989 - 3 * REFUTE_CAP, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER_FINDING, REFUTE_CAP) === REFUTE_CAP, 'refute cap: exactly enough room for REFUTE_CAP candidates seats all of them')
+}
+
 // ---- grouping ------------------------------------------------------------
 {
     const obs = [
@@ -309,5 +346,27 @@ console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS
 
+
+# Wiring: the budget preflight must throw before the first digest agent is seated.
+wiring=0
+pre=$(grep -n 'need(budget.ok, budget.message)' "$POSTMORTEM" | head -1 | cut -d: -f1)
+call=$(grep -n 'const budget = planBudget(' "$POSTMORTEM" | head -1 | cut -d: -f1)
+args=$(sed -n "${call}p" "$POSTMORTEM")
+for want in 'spent,' 'digestBatches: digestBatches.length' 'shards: shardPlan.length' 'layers: LAYERS.length' 'reserved: RESERVED_AGENTS' 'cap: AGENT_CAP' 'margin: AGENT_CAP_MARGIN' 'inventory.kinds, inventory.bytes'; do
+    case "$args" in *"$want"*) ;; *) echo "FAIL: the budget preflight call passes '$want'"; wiring=1 ;; esac
+done
+refute=$(grep -c 'refuteSeatCap(spent, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER_FINDING, REFUTE_CAP)' "$POSTMORTEM")
+[ "$refute" -eq 1 ] || { echo "FAIL: the refute stage is bounded by refuteSeatCap(spent, ...)"; wiring=1; }
+dig=$(grep -n 'parallel(digestBatches.map' "$POSTMORTEM" | head -1 | cut -d: -f1)
+
+if [ -n "$pre" ] && [ -n "$dig" ] && [ "$pre" -lt "$dig" ]; then
+    echo "PASS: the budget preflight throws before the first digest agent is seated"
+else
+    echo "FAIL: the budget preflight throws before the first digest agent is seated (preflight line '${pre}', first digest line '${dig}')"
+    wiring=1
+fi
+
 node "${WORK}/suite.mjs"
+suite=$?
+[ "$suite" -eq 0 ] && [ "$wiring" -eq 0 ]
 exit $?

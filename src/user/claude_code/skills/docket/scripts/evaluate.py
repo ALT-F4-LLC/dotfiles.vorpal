@@ -268,7 +268,7 @@ def database_checks(answer, binary):
                         raise ValueError("fixture executor refused non-allowlisted verb")
                     # Forbid flags that could change stores, touch external files or watch forever.
                     names = option_names(["docket", *argv])
-                    approved = {"--json", "--format", "--voter", "--role", "--verdict", "--confidence", "--domain-relevance", "--summary", "--findings", "--metadata"} if allowed[0] == "vote" else {"--json", "--format", "--title", "--description", "--idempotency-key"}
+                    approved = {"--json", "--format", "--voter", "--role", "--verdict", "--confidence", "--domain-relevance", "--summary", "--findings", "--metadata"} if allowed[0] == "vote" else {"--json", "--format", "--title", "--description", "--idempotency-key", "--size"}
                     if names is None or not names <= approved:
                         raise ValueError("fixture executor refused non-allowlisted flag")
                     if allowed[0] == "vote":

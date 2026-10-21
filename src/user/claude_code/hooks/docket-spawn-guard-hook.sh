@@ -12,8 +12,8 @@
 # out of the harness's tool_input and hands it, with the run the engine itself
 # named, back to the engine, which owns the verdict. The usage-join path below
 # only declares that the installed docket-workflow-usage.js claims no step; the engine
-# decides what that admits. The launch-cwd check below
-# is input validation on a hand-typed argument, not run policy. Behavior is pinned by
+# decides what that admits. The launch-cwd and launch-tribunal checks below
+# are input validation on hand-typed arguments, not run policy. Behavior is pinned by
 # tests/docket-spawn-guard-hook.test.sh.
 #
 # Exit 0 allow / exit 2 deny with the engine's reason on stderr (engine-spec §2).
@@ -177,6 +177,37 @@ if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
         fi
         ;;
     esac
+fi
+
+# A LAUNCH WHOSE args.tribunal IS NOT tribunal.js IS REFUSED HERE, BEFORE ANY CLAIM.
+#
+# docket-workflow.js seats every in-wave panel by launching args.tribunal as a
+# nested workflow, and the conductor hand-types the path. One launch carried
+# the installed docket-workflow.js there instead of tribunal.js: the lane
+# claimed three steps before the conductor noticed, and recovery cost forced
+# reaps, three acknowledgment panels, and a relaunch. Workflow scripts cannot
+# stat a path, so the existence check lives in this hook; docket-workflow.js
+# repeats the basename check for a launch that never passed through it. Same
+# class of check as args.cwd above: input validation on one hand-typed
+# argument, reading no run state and asking the engine nothing. A launch with
+# no args.tribunal is not this check's business and falls through unchanged.
+if [ "${SCRIPT:-}" = "docket-workflow.js" ] && [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
+    LAUNCH_TRIBUNAL=$(printf '%s' "$HOOK_INPUT" | jq -r '
+        .tool_input.args
+        | if type == "string" then (try fromjson catch {}) else (. // {}) end
+        | .tribunal // "" | strings' 2>/dev/null)
+    if [ -n "$LAUNCH_TRIBUNAL" ]; then
+        if [ "${LAUNCH_TRIBUNAL##*/}" != "tribunal.js" ]; then
+            printf 'spawn-guard: docket-workflow.js args.tribunal is not a path to tribunal.js: %s\n' \
+                "$LAUNCH_TRIBUNAL" >&2
+            exit 2
+        fi
+        if [ ! -f "$LAUNCH_TRIBUNAL" ]; then
+            printf 'spawn-guard: docket-workflow.js args.tribunal does not exist: %s\n' \
+                "$LAUNCH_TRIBUNAL" >&2
+            exit 2
+        fi
+    fi
 fi
 
 command -v docket >/dev/null 2>&1 || exit 0

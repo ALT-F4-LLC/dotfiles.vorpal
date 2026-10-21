@@ -64,7 +64,7 @@ export const meta = {
 // Workflow({scriptPath}) — never by name, and once per issue, every
 // launch in the same conductor turn. args is lane_units.py's args-<i>.json,
 // passed unedited: {rowsModule, rows_sha256, unit?, harnessCap?, cwd,
-// tribunal, integrated?}. rowsModule is a module under
+// tribunal (required when the rows include a vote row), integrated?}. rowsModule is a module under
 // <cwd>/.claude/docket-packets returning {v: 1, rows_sha256, rows}; the wave
 // loads it and refuses the launch, before any claim, when the module's
 // rows_sha256 differs from the args'. The older inline form, which carries
@@ -682,9 +682,39 @@ async function launchRows(input) {
     log(`wave: ${mod.rows.length} row(s) loaded from ${ref}; rows_sha256 matches the args`)
     return mod.rows
 }
+
+// args.tribunal is the one path this script launches as a nested workflow, and
+// the conductor hand-types it. One launch passed this script's own installed
+// path there; the lane claimed three steps before the first panel failed. The
+// path must name tribunal.js (its own path therefore never passes). This
+// script cannot stat a path; docket-spawn-guard-hook.sh checks that it
+// exists. An absent tribunal is a launch without panels and is not refused.
+function assertTribunalPath(input) {
+    const path = input.tribunal
+    if (path === undefined || path === null) return
+    if (typeof path === 'string' && path.split('/').pop() === 'tribunal.js') return
+    const text = `docket-workflow.js: args.tribunal ${JSON.stringify(path)} is not a path to ` +
+        `tribunal.js; nothing was claimed. Pass lane_units.py's args unedited. Refusing to route.`
+    log(text)
+    throw new Error(text)
+}
+
+// A vote row seats its panel through args.tribunal after the lane's executor
+// steps are claimed, so a launch that holds one and names no tribunal fails the
+// same way late. Refused here, once the rows are loaded and before any claim.
+function assertTribunalForVotes(input, rows) {
+    if (input.tribunal !== undefined && input.tribunal !== null) return
+    if (!Array.isArray(rows) || !rows.some((row) => row && row.kind === 'vote')) return
+    const text = `docket-workflow.js: the launch holds a vote row but args carries no tribunal; ` +
+        `nothing was claimed. Pass lane_units.py's args with --tribunal. Refusing to route.`
+    log(text)
+    throw new Error(text)
+}
 // TEST-END launch-rows
 
+assertTribunalPath(input)
 const rows = await launchRows(input)
+assertTribunalForVotes(input, rows)
 
 // An agent's reply is PROSE. Read only the shapes the brief mandates, never
 // a substring of the body: a judge reviewing park handling quotes the very

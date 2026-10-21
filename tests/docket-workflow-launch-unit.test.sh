@@ -125,7 +125,9 @@ const stepShow = (step) => {
 }
 
 const ladder = async () => {
+assertTribunalPath(input)
 rows = await launchRows(input)
+assertTribunalForVotes(input, rows)
 JS
     cat "${WORK}/park.js"
     cat "${WORK}/envelope.js"
@@ -152,7 +154,7 @@ const finish = async (step) => {
 }
 const start = (theRows, opts) => {
     rows = []
-    input = Object.assign({}, theRows ? { rows: theRows } : {}, opts && opts.unit !== undefined ? { unit: opts.unit } : {}, opts && opts.shard !== undefined ? { shard: opts.shard } : {},
+    input = Object.assign({}, theRows ? { rows: theRows } : {}, opts && opts.unit !== undefined ? { unit: opts.unit } : {}, opts && opts.shard !== undefined ? { shard: opts.shard } : {}, opts && opts.tribunal === null ? {} : { tribunal: opts && opts.tribunal !== undefined ? opts.tribunal : '/op/.claude/workflows/tribunal.js' },
         opts && opts.module ? { rowsModule: opts.module.path, rows_sha256: opts.module.sha, cwd: opts.module.cwd } : {})
     LOADED = []
     SPAWNED = []; GATES = []; PROBED = []; LOG.length = 0
@@ -439,8 +441,50 @@ MODULES = new Map()
 await refusesModule({ module: { path: MOD, sha: SHA, cwd: CWD } }, 'failed to load',
     'module: a module that does not load refuses')
 
+// ---- (9) args.tribunal must name tribunal.js, and is checked before any claim ----
+// One launch passed the installed docket-workflow.js as its tribunal path and
+// the lane claimed three steps before a panel failed. The refusal comes before
+// the rows module loads and before any spawn.
+const INSTALLED = '/Users/op/.claude/workflows'
+const refusesTribunal = async (tribunal, label) => {
+    MODULES = new Map()
+    try {
+        await start(THREE(), { tribunal })
+        ok(false, label)
+    } catch (e) {
+        ok(String(e.message).includes('args.tribunal') && String(e.message).includes('not a path to tribunal.js') &&
+           String(e.message).includes('nothing was claimed') && String(e.message).includes('Refusing to route') &&
+           SPAWNED.length === 0 && LOADED.length === 0, label)
+    }
+}
+await refusesTribunal(`${INSTALLED}/docket-workflow.js`, 'tribunal: this script\'s own installed path refuses before any spawn or module load')
+await refusesTribunal(`${INSTALLED}/tribunal.js.bak`, 'tribunal: a lookalike basename refuses')
+await refusesTribunal(`${INSTALLED}/tribunal.js/`, 'tribunal: a trailing slash refuses')
+await refusesTribunal('', 'tribunal: an empty string refuses')
+await refusesTribunal(42, 'tribunal: a non-string refuses')
+out = await start(THREE(), { tribunal: `${INSTALLED}/tribunal.js` })
+ok(SPAWNED.length > 0 && statusOf(out, 'A-0') === 'returned', 'tribunal: the real tribunal.js path launches the wave')
+// A launch with no panels needs no tribunal; one holding a vote row does, and
+// is refused before any claim rather than at its first panel.
+out = await start(chain('A', 'AGT-602').filter((r) => r.kind !== 'vote'), { tribunal: null })
+ok(SPAWNED.length > 0, 'tribunal: a launch with no vote row and no args.tribunal is not refused')
+try {
+    await start(THREE(), { tribunal: null })
+    ok(false, 'tribunal: a launch holding a vote row and no args.tribunal refuses')
+} catch (e) {
+    ok(String(e.message).includes('vote row') && String(e.message).includes('no tribunal') &&
+       String(e.message).includes('nothing was claimed') && SPAWNED.length === 0,
+        'tribunal: a launch holding a vote row and no args.tribunal refuses before any spawn')
+}
+
+// The production call sites sit outside the TEST region, so the harness above
+// cannot see them removed: pin their order in the source.
+const wave = (await import('node:fs')).readFileSync(process.env.WAVE_SRC, 'utf8')
+ok(/assertTribunalPath\(input\)\nconst rows = await launchRows\(input\)\nassertTribunalForVotes\(input, rows\)\n/.test(wave),
+    'tribunal: docket-workflow.js checks the path, then loads the rows, then checks the vote rows, before any claim')
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS
 
-node "${WORK}/suite.mjs"
+WAVE_SRC="$WAVE" node "${WORK}/suite.mjs"

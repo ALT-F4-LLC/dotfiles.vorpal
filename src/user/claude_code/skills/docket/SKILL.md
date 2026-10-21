@@ -205,19 +205,6 @@ out of argv, comments, artifacts, and logs. Send it via `DOCKET_TOKEN` or
 stdin on the owning worker's commands; see [transport](references/transport.md)
 for surviving the capability across separate Bash invocations.
 
-Record the routing facts the dispatcher already knows in the claim itself, so
-they survive worker failure: `docket step claim STEP-N --owner NAME --metadata
-'{"model_requested":"opus","effort_requested":"high","variant":"opus-high"}'
---json=v2`. Leave `model_resolved` and `effort_resolved` out, or set them to
-`"unknown"`, until the serving model and effective effort are observed, and
-omit `--cost-multiplier` unless the dispatcher resolved a differently priced
-variant.
-
-A gap file for `step complete --gap-file` starts with the issue title alone on
-line one, then `Key: value` lines (`Severity`, `Kind`, `Labels` as a comma
-list), then a blank line and the body. Do not write the title as a `Title:`
-header; `step complete --help` documents the full header set.
-
 - `CONFLICT` on claim means another live claim or a scheduling condition
   may hold the step. Inspect current state instead of spawning duplicate
   work.
@@ -232,6 +219,19 @@ header; `step complete --help` documents the full header set.
 - Resolve operator gates and held clusters using the applicable operating
   policy. Do not create a passing result to clear an infrastructure
   failure.
+
+Record the routing facts the dispatcher already knows in the claim itself, so
+they survive worker failure: `docket step claim STEP-N --owner NAME --metadata
+'{"model_requested":"opus","effort_requested":"high","variant":"opus-high"}'
+--json=v2`. Leave `model_resolved` and `effort_resolved` out, or set them to
+`"unknown"`, until the serving model and effective effort are observed, and
+omit `--cost-multiplier` unless the dispatcher resolved a differently priced
+variant.
+
+A gap file for `step complete --gap-file` starts with the issue title alone on
+line one, then `Key: value` lines (`Severity`, `Kind`, `Labels` as a comma
+list), then a blank line and the body. Do not write the title as a `Title:`
+header; `step complete --help` documents the full header set.
 
 Use [transport](references/transport.md) for issue leases and
 [the step contracts](../docket-run/references/step.md#docket-step--stepgo) and
@@ -298,8 +298,8 @@ show`. Its default list is the active runs only and stops at 50, so a
 complete active-run check is `run status --json=v2 --limit 0`; `--all` widens
 the list to finished runs and is not part of that check. To recover one run
 after compaction, read `run status RUN-N --json=v2` and `step show STEP-N
---json=v2`; they change nothing, unlike `next`, `step claim`, or `step record`. Use `run note add` for a correction that later work packets
-must carry, and `run refresh-scope` after an authorized scope edit when an
+--json=v2`; they change nothing, unlike `next`, `step claim`, or `step record`.
+Use `run note add` for a correction that later work packets must carry, and `run refresh-scope` after an authorized scope edit when an
 active run needs the new declaration; on a run bound to a conductor
 capability both need its token, so they belong to the session driving the
 run under docket-run. Check current preconditions in help

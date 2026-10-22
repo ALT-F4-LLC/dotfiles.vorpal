@@ -689,8 +689,8 @@ exactly three things:**
    `waiting-human`, or every remaining issue is parked (a `human:*` step,
    or a vote step whose tally fell short) and `next` offers only parked
    rows with no launch in flight. Apply every standing ruling under
-   **Gates** first, the twice-classifier-stopped ruling among them, then
-   present whatever remains to the operator through the question tool and wait. In unattended mode, the queue goes through the switch-back procedure instead. A vote step merely ready is work for you, mid-loop, not this.
+   **Gates** first, the twice-classifier-stopped ruling among them, and
+   settle any `.data.retry_eligible` park, then present whatever remains to the operator through the question tool and wait. In unattended mode, the queue goes through the switch-back procedure instead. A vote step merely ready is work for you, mid-loop, not this.
 2. An engine **refusal** you cannot resolve: report it verbatim and stop.
 3. `next` returns **no rows and nothing is running**, and the roster is
    covered. Read `docket run status $RUN --json | jq '.data.unexpanded'`
@@ -851,6 +851,22 @@ quoting the row verbatim. Never dispatch on an assumed rebind; an answer
 about why the branch diverged is not a claim-time answer. A non-empty
 `reap_hold` on the same answer is a second stop-and-verify: convene the
 ack-reap panel from it now, before composing the launch.
+
+**A `retry_eligible` list is settled in the same loop iteration.** It
+names each gap-only park (`park_class` `gap-only`) whose issue has at
+least one `depends_on` prerequisite and every one of them done, on
+`dispatch open` and on `docket run status $RUN --json | jq
+'.data.retry_eligible'`; the open also records one `park-retry-eligible`
+event per park. Only a `depends_on` or `blocks` link counts: a
+`relates_to` link, or none, never lists a park. Do not wait for the
+operator to ask whether a park can move: before termination 1 or a
+quiesced report, read `run status` and take each listed step
+advisor-first (**Standing ruling: the advisor answers first**) with
+`retry` among the dispositions offered, and run the verb the clear
+answer names. Read the list, not the event: the event is written lazily
+on a successful open and a failure to record it is discarded, and the
+open shows no list if its read fails, where `run status` returns the
+error. Other park classes still go through **Gates**.
 
 **Before a dispatch carrying hard gates, derive the roster from `docket
 trust list`**, never the argv a prior step happened to record (a subset

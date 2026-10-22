@@ -22,8 +22,8 @@ since `--help` names no verdicts.
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 91 lines
-- [`docket dispatch`](#dispatch-commands) — 355 lines
-  - [`dispatch open`](#dispatch-open) — 78 lines
+- [`docket dispatch`](#dispatch-commands) — 358 lines
+  - [`dispatch open`](#dispatch-open) — 81 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 42 lines
   - [`dispatch close`](#dispatch-close) — 62 lines
@@ -161,12 +161,15 @@ with a reason.
 | `--ack-reap` | lease-reaped | `[]` | acknowledge a write-class reap by its `lease-reaped` event `seq`; repeatable |
 
 Response is engine-spec §11.4's `dispatch` shape: `{dispatch, run, opened_seq,
-expires_ms, rows: [<next row>…], total, truncated}`, plus five optional
+expires_ms, rows: [<next row>…], total, truncated}`, plus seven optional
 fields: `reaped` (`omitempty`, absent when this open reaped nothing),
 `reap_hold` (`omitempty`, absent when no unacknowledged reap holds the
 run), `stale_targets` (absent when no row's target diverged),
-`pin_drift` (absent when every pin is sound), and `budget_held` (absent
-when nothing was withheld), each described below. `truncated` reflects
+`pin_drift` (absent when every pin is sound), `budget_held` (absent
+when nothing was withheld), `retry_eligible` (gap-only parks whose issue's
+`depends_on` prerequisites are all done; absent when none), and `held`
+(the run's held steps with their reasons; absent when none), each
+described below or in **run.md**. `truncated` reflects
 whether `--limit` sliced the manifest. Each row is stored as its
 canonical JSON bytes plus a sha256, so `verify` compares bytes rather than a
 re-serialization that could differ in key order.

@@ -15,7 +15,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 870 lines
+- [`docket run`](#run-commands) — 872 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 32 lines
@@ -29,7 +29,7 @@ examples reflect the swept commands as of that build.
   - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
-  - [`run status [RUN-N]`](#run-status) — 38 lines
+  - [`run status [RUN-N]`](#run-status) — 40 lines
 
 <a id="run-commands"></a>
 
@@ -898,6 +898,8 @@ block: each bound issue that holds no step, with its `blocked_by` chains,
 lists of `{issue, status}` hops from the direct blocker to the root
 blocker, capped at 16 chains (`blocked_by_truncated` marks a cut). A done
 blocker drops out; any other status counts as unmet. Absent when every
-bound issue holds a step.
+bound issue holds a step. `retry_eligible` (`omitempty`) lists gap-only
+parks whose issue has at least one `depends_on` prerequisite and every
+one done: `step`, `instance`, `issue`, `park_class`, `depends_on`.
 
 None of the `run` verbs are watch-eligible.

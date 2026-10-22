@@ -1093,14 +1093,19 @@ launching its usage join (step 3), before waiting on the rest:
 2. Write the returned launch's `statuses` array, as the wave returned
    it, to `$STATUSES_FILE` under the session's scratchpad with the Write
    tool, then append the steps it settled to `$SETTLED_FILE`, one step id
-   per line:
-   `jq -r '(any(.[]; .status == "skipped-not-ready")) as $refused | .[] | select(.status != "skipped-not-ready" and (($refused and .status == "skipped-chain-dead") | not)) | .step' "$STATUSES_FILE" >> "$SETTLED_FILE"`.
-   That settles every row except a `skipped-not-ready` row and, in a
-   launch holding one, its `skipped-chain-dead` rows: docket-workflow.js settles the
-   later stages of a refused row's issue `skipped-chain-dead`, and they
-   wait on that row, so they stay pending with it. The settled rows
-   finished, or are re-offered next dispatch (the statuses list under
-   **3. Close the dispatch**).
+   per line. First mark which rows wait, reading each step's issue from
+   the manifest of record:
+   `WAITS='(reduce $rows[] as $r ({}; .[$r.step] = ($r.issue // ""))) as $iss | ([.[] | select(.status == "skipped-not-ready") | $iss[.step] // ""] | unique) as $refused | map(. + {waits: (.status == "skipped-not-ready" or (.status == "skipped-chain-dead" and (($iss[.step] // "") as $i | $refused | any(.[]; . == $i))))})'`,
+   then settle the rest:
+   `jq -r --slurpfile rows "$ROWS_FILE" "$WAITS"' | .[] | select(.waits | not) | .step' "$STATUSES_FILE" >> "$SETTLED_FILE"`.
+   That settles every row except a `skipped-not-ready` row and the
+   `skipped-chain-dead` rows of an issue that has one in this launch:
+   docket-workflow.js settles the later stages of a refused row's issue
+   `skipped-chain-dead`, and they wait on that row, so they stay pending
+   with it. A `skipped-chain-dead` row of any other issue (a writer that
+   recorded pending, a failed predecessor) settles beside another lane's
+   refusal. The settled rows finished, or are re-offered next dispatch
+   (the statuses list under **3. Close the dispatch**).
 3. Reap the dead in-dispatch holders this return reports. For each row
    this return settled as `unrecorded` or `unsettled` whose step still
    reads claimed by that spawn, run `docket step reap STEP-N --reason R`
@@ -1117,10 +1122,9 @@ launching its usage join (step 3), before waiting on the rest:
 4. Hold a bounce's refused lanes, release every held lane at any other
    return, then rebuild the pending rows. A return is a *bounce* when its
    launch claimed nothing because every claim was refused: every row
-   settled `skipped-not-ready` or `skipped-chain-dead`, at least one
-   `skipped-not-ready`, so step 2 settled nothing and step 3 reaped
-   nothing. Test it with
-   `jq -e 'any(.[]; .status == "skipped-not-ready") and all(.[]; .status == "skipped-not-ready" or .status == "skipped-chain-dead")' "$STATUSES_FILE"`.
+   waits as step 2 marks it, at least one `skipped-not-ready`, so step 2
+   settled nothing and step 3 reaped nothing. Test it with
+   `jq -e --slurpfile rows "$ROWS_FILE" "$WAITS"' | any(.[]; .status == "skipped-not-ready") and all(.[]; .waits)' "$STATUSES_FILE"`.
    On a bounce (exit 0), append its rows to the hold with
    `jq -r '.[].step' "$STATUSES_FILE" >> "$HELD_FILE"`; lanes held at
    earlier returns stay held. On any other return (exit 1), empty the
@@ -1415,8 +1419,8 @@ stay as they are. One step can appear in several launches' `statuses`:
 docket-workflow.js reads `skipped-not-ready` as chain-dead, marks that row's issue
 dead and settles the issue's later rows `skipped-chain-dead`, and its
 `statuses` carries one entry per row the launch held; step 2 of **Refill
-freed launch slots each time a launch returns** leaves every
-`skipped-chain-dead` row of a launch holding a `skipped-not-ready` row out
+freed launch slots each time a launch returns** leaves the
+`skipped-chain-dead` rows of an issue with a `skipped-not-ready` row out
 of `$SETTLED_FILE`, and step 4 holds a bounce's rows, so the refill
 relaunches those rows and each relaunch reports them again. File each
 step at most once per dispatch: keep `$FILED_FILE` under the session's

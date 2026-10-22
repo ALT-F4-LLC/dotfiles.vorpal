@@ -20,9 +20,11 @@
 #      file is the manifest of record; nothing else is written there.
 #   2. With --statuses (the returned launch's statuses array), appends the
 #      steps it settled to --settled: every row except a skipped-not-ready
-#      row and, in a launch holding one, its skipped-chain-dead rows.
+#      row and the skipped-chain-dead rows of an issue that has one in this
+#      launch (the issue of each step is read from --rows).
 #   3. A return is a bounce when its launch claimed nothing because every
-#      claim was refused. On a bounce it appends the launch's steps to
+#      claim was refused: every row waits as step 2 reads it, and at least
+#      one was refused. On a bounce it appends the launch's steps to
 #      --held; on any other return it empties --held. --reaped says a dead
 #      holder was reaped at this return (the skill's step 3), so the return
 #      is never a bounce. Without --statuses, --held is left as it is.
@@ -123,10 +125,19 @@ jq -r '(.data.reaped // [])[] | "refill: extend reaped an expired lease on \(.)"
 jq -r 'select((.data.reap_hold // "") != "") | "refill: reap hold: \(.data.reap_hold)"' "$extend_file" >&2 || true
 rm -f "$extend_file"
 
-# 2 and 3. Settle the returned launch's steps; hold or release.
+# 2 and 3. Settle the returned launch's steps; hold or release. A row waits
+# when it was refused (skipped-not-ready) or is a skipped-chain-dead row of an
+# issue that has a refused row in this launch: those wait on the refusal. A
+# skipped-chain-dead row of any other issue (a writer that recorded pending, a
+# failed predecessor) is deferred to the next dispatch, so it settles. The
+# issue of a step is read from --rows.
+waits='(reduce $rows[] as $r ({}; .[$r.step] = ($r.issue // ""))) as $iss
+    | ([.[] | select(.status == "skipped-not-ready") | $iss[.step] // ""] | unique) as $refused
+    | map(. + {waits: (.status == "skipped-not-ready"
+        or (.status == "skipped-chain-dead" and (($iss[.step] // "") as $i | $refused | any(.[]; . == $i))))})'
 if [ -n "$statuses" ]; then
-    jq -r '(any(.[]; .status == "skipped-not-ready")) as $refused | .[] | select(.status != "skipped-not-ready" and (($refused and .status == "skipped-chain-dead") | not)) | .step' "$statuses" >> "$settled"
-    if [ "$reaped" -eq 0 ] && jq -e 'any(.[]; .status == "skipped-not-ready") and all(.[]; .status == "skipped-not-ready" or .status == "skipped-chain-dead")' "$statuses" >/dev/null; then
+    jq -r --slurpfile rows "$rows" "$waits"' | .[] | select(.waits | not) | .step' "$statuses" >> "$settled"
+    if [ "$reaped" -eq 0 ] && jq -e --slurpfile rows "$rows" "$waits"' | any(.[]; .status == "skipped-not-ready") and all(.[]; .waits)' "$statuses" >/dev/null; then
         jq -r '.[].step' "$statuses" >> "$held"
     else
         : > "$held"

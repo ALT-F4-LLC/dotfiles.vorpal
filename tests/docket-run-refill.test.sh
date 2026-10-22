@@ -159,6 +159,16 @@ printf '[{"step":"STEP-1","status":"recorded"},{"step":"STEP-2","status":"skippe
 refill --statuses "$WORK/mixed.json"
 ok $([ "$(cat "$SETTLED")" = "STEP-1" ] && [ ! -s "$HELD" ] && [ "$(steps_of "$PENDING")" = "STEP-2 STEP-3 " ] && echo 0 || echo 1) "a refused row and its chain-dead rows stay pending; the recorded row settles (settled '$(cat "$SETTLED")')"
 
+# ---- another lane's refusal does not hold a deferred lane's chain-dead rows --
+# Lane ISS-1's writer recorded pending, so its reviews settle skipped-chain-dead
+# (deferred to the next dispatch); lane ISS-2 was refused. Only ISS-2 waits.
+reset
+{ row STEP-1 ISS-1 executor 1; row STEP-2 ISS-1 vote 2; row STEP-3 ISS-1 vote 2; row STEP-4 ISS-2 executor 1; } > "$ROWS"
+answer 1 ""
+printf '[{"step":"STEP-1","status":"returned"},{"step":"STEP-2","status":"skipped-chain-dead"},{"step":"STEP-3","status":"skipped-chain-dead"},{"step":"STEP-4","status":"skipped-not-ready"}]\n' > "$WORK/twolane.json"
+refill --statuses "$WORK/twolane.json"
+ok $([ "$RC" -eq 0 ] && [ "$(sort "$SETTLED" | tr '\n' ' ')" = "STEP-1 STEP-2 STEP-3 " ] && [ ! -s "$HELD" ] && [ "$(steps_of "$PENDING")" = "STEP-4 " ] && echo 0 || echo 1) "a deferred lane's chain-dead rows settle beside another lane's refusal (settled '$(sort "$SETTLED" | tr '\n' ' ')', pending $(steps_of "$PENDING"))"
+
 # ---- failures leave the rows file alone --------------------------------------
 reset
 { row STEP-1 ISS-1 executor 1; } > "$ROWS"

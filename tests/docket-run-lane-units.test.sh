@@ -393,7 +393,7 @@ printf '%s' "$skill_text" | grep -qF 'Never hold a deferred lane while fewer tha
 # never at a bounce: relaunching at every return spun refused lanes against a
 # live holder. Both the refill step and the paragraph after it must say so.
 printf '%s' "$skill_text" | grep -qF 'Relaunch a `skipped-not-ready` lane only at a return where a holder released its scope (an in-dispatch launch returned having claimed or settled steps, or a dead holder was reaped at that return) or at a non-bounce launch return, never at a bounce return' &&
-    printf '%s' "$skill_text" | grep -qF 'A held lane relaunches only at a return where a holder released its scope or at a non-bounce launch return, and never at a bounce return, a return whose launch claimed nothing because every claim was refused.' &&
+    printf '%s' "$skill_text" | grep -qF 'falls back to the hold'"'"'s own rule: a held lane relaunches only at a return where a holder released its scope or at a non-bounce launch return, and never at a bounce return, a return whose launch claimed nothing because every claim was refused.' &&
     ! printf '%s' "$skill_text" | grep -qF 'relaunches at every return that settles it' &&
     ! printf '%s' "$skill_text" | grep -qF 'even when no other launch is in flight' &&
     ! printf '%s' "$skill_text" | grep -qF 'relaunches at the return that settled it'; ok $? \

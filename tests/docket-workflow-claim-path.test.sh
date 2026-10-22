@@ -303,11 +303,14 @@ node "${WORK}/suite.js" "${WORK}/regions.js" "${WORK}" || exit 1
 # docket-run's refill settle filter, as SKILL.md spells it, must leave a
 # pre-gate-held row and its chain-dead follower pending, so the refill
 # relaunches them in the same dispatch. The `after` hold is the control: the
-# filter settles both of its rows.
-settle=$(sed -n 's/.*`jq -r '"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE" >> "$SETTLED_FILE"`.*/\1/p' "$SKILL")
-[ -n "$settle" ] || fatal "no refill settle filter found in ${SKILL}"
-held=$(jq -r "$settle" "${WORK}/pregate.json" | tr '\n' ' ')
-control=$(jq -r "$settle" "${WORK}/after.json" | tr '\n' ' ')
+# filter settles both of its rows. The filter reads each step's issue from
+# the manifest of record, where the row and its follower share one issue.
+waits=$(sed -n "s/^ *\`WAITS='\\(.*\\)'\`,\$/\\1/p" "$SKILL")
+settle=$(sed -n 's/.*`jq -r --slurpfile rows "$ROWS_FILE" "$WAITS"'"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE" >> "$SETTLED_FILE"`.*/\1/p' "$SKILL")
+[ -n "$waits" ] && [ -n "$settle" ] || fatal "no refill settle filter found in ${SKILL}"
+printf '%s\n' '{"step":"STEP-12","issue":"ISS-1"}' '{"step":"STEP-13","issue":"ISS-1"}' > "${WORK}/rows.jsonl"
+held=$(jq -r --slurpfile rows "${WORK}/rows.jsonl" "$waits$settle" "${WORK}/pregate.json" | tr '\n' ' ')
+control=$(jq -r --slurpfile rows "${WORK}/rows.jsonl" "$waits$settle" "${WORK}/after.json" | tr '\n' ' ')
 if [ "$control" = "STEP-12 STEP-13 " ] && [ "$held" = "" ]; then
     printf 'PASS: the refill settle filter leaves a pre-gate-held row and its chain-dead follower pending\n'
 else

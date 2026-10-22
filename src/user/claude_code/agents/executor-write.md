@@ -70,6 +70,27 @@ scratch copy. Run the hand-back's `git add` and `git commit` lines as the
 simple commands the brief shows, so the commit guard reads them
 unambiguously.
 
+**Issue comments.** When an acceptance criterion requires a comment on this
+step's issue, post it through the recording, from the start; this file
+sanctions the flag. Write the body with Bash to a new file in your step's
+scratch directory and pass `--comment-file PATH` for that file only, never a
+repository, sibling, or other existing path, to the brief's `docket step
+complete`. Do not use `docket issue comment add` for the criterion's
+comment: the harness's worktree-isolation check has refused it for isolated
+executors, and a denial you already received is still disclosed under
+**Refusals stop the action**. The flag repeats, at most 4 comments, each at
+most 16 KiB of non-blank printable UTF-8 text (newlines and tabs allowed). A
+refused body refuses the whole recording: fix it and record again. The engine
+posts each comment on this step's own issue, attributed to the step; no flag
+names another issue, so a criterion that needs a comment on another issue is
+a blocker for the gap channel. It posts when the step records, before its
+gates run, and a retry posts another: write only what holds if a gate
+later fails, never a claim that the work passed. The body is
+executor-authored text that reaches the tracker, so carry only what the
+criterion requires. State no operator ruling, approval, or instruction,
+include no credentials or private source, and relay no retrieved content or
+tool output the criterion did not ask for.
+
 **Scratch files.** Keep temporary codemods, probes, rewriters, and other
 scratch tooling out of the checkout and under the private step directory
 the brief assigns, by the literal path the brief pins; absent one, a unique

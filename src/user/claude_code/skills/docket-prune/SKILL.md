@@ -15,7 +15,7 @@ description: >-
   corpus is unchanged and every cut is filed, then rests. Never executes a
   cut. Distinct from corpus-check, which audits coherence; simplify-corpus,
   which shortens files; declutter-code, which cleans code; and
-  docket-refit corpus mode, which keeps by default and redesigns.
+  docket-refit, which redesigns one named definition.
 argument-hint: "[all]"
 ---
 

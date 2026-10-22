@@ -1145,9 +1145,10 @@ launching its usage join (step 3), before waiting on the rest:
    `skipped-not-ready` lane only at a return where a holder released its
    scope (an in-dispatch launch returned having claimed or settled steps,
    or a dead holder was reaped at that return) or at a non-bounce launch
-   return, never at a bounce return. Add the new launches' transcript
-   directories to the watcher below, restart it, then end the turn
-   again.
+   return, never at a bounce return, and keep a lane held while the
+   holder its refusal named still holds (see below). Add the new launches'
+   transcript directories to the watcher below, restart it, then end the
+   turn again.
 
 Steps 1, 2, 4 and 5 are one installed script, so the bookkeeping is not
 hand-run: write the returned launch's `statuses` array to `$STATUSES_FILE`,
@@ -1184,10 +1185,36 @@ share reflects the pending manifest's headroom. A launch already in
 flight keeps the class share of its own split, so the shares can briefly
 sum past the engine's limit; the engine refuses the extra claim, the row
 settles `skipped-not-ready`, and the refill relaunches it at the next
-return that is not a bounce. A wave reports why a claim was refused, not
-which launch holds the scope, so there is no holder tracking, only the
-hold. A held lane relaunches only at a return where a holder released
-its scope or at a non-bounce launch return, and never at a bounce return,
+return that is not a bounce. A wave's status row carries only why a
+claim was refused, but the engine names the holders in the refusal and in
+its `claim-refused` event (`data.holders`, each `{step, status}`). A scope
+refusal names claimed or running steps (a gated step has released the
+scope); a class-headroom refusal names claimed, running, and gated ones.
+Check the holders before step 6 relaunches a lane the hold released. The
+script empties the hold at a non-bounce return, so copy it first (`cp
+"$HELD_FILE" "$HELD_FILE.prev"`), run the script, then judge each lane by
+its refused rows (its `skipped-not-ready` rows in this return's statuses;
+its `skipped-chain-dead` rows follow the lane, since they have no refusal
+of their own). For each refused step in the copy read its latest refusal
+with `docket events list --run $RUN --kind claim-refused --step STEP-N
+--tail 1 --json=v2 | jq -c '.data.items[] | {step: .data.step, reason:
+.data.reason, holders: .data.holders}'` and `docket step show` each holder.
+A `reason` ending in "its scope conflicts with a claimed or running step"
+(with or without a holder clause) is a scope refusal and keeps the lane
+held while any named holder is still claimed or running; one carrying "no
+concurrency headroom in its class" is a headroom refusal and frees the
+lane once any named holder has left claimed, running, and gated, since one
+free slot admits the claim. For each lane kept held, append its steps to
+`$HELD_FILE` and run the script again with the same other flags
+(`--tribunal`, `--in-flight`, `--write-cap`, `--integrated`) but without
+`--statuses` or `--reaped` (it leaves the hold alone), into a fresh
+`--launch-dir`; it extends again, so keep its rows and verify any `reap
+hold` line as for the first run. Step 6 launches that run's files. A
+refusal that names no holder (a pre-gate hold, an event from an
+older build, or a headroom slot filled by an unacknowledged reap that a
+refusal does not name) falls back to the hold's own rule: a held lane
+relaunches only at a return where a holder released its scope or at a
+non-bounce launch return, and never at a bounce return,
 a return whose launch claimed nothing because every claim was refused.
 A holder releases its scope when an in-dispatch launch returns having
 claimed or settled steps, or when its dead holder is reaped and acked
@@ -1207,8 +1234,9 @@ launchable, and every row of the manifest of record is in
 `$SETTLED_FILE` or `$HELD_FILE`. The loop ends only when no work remains
 in this dispatch. A row still held at the close waits on a holder no
 later return in this dispatch could release: another session's claim, a
-detached pre-gate, or an in-dispatch holder that returned while the held
-lane's own launch was still in flight. The engine offers it again next
+detached pre-gate, an in-dispatch holder that returned while the held
+lane's own launch was still in flight, or a holder the check above found
+still holding at the last return. The engine offers it again next
 dispatch.
 
 **A launch that never notifies is a stall, not a wait.** The completion

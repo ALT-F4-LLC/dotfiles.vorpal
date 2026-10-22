@@ -9,6 +9,9 @@
 #
 #   VERDICT: override-pass            every failing gate passed on reproduction;
 #                                     RESOLVE: is the exact resolve command
+#                                     (with --token; without it a
+#                                     RESOLVE_TEMPLATE: line names the
+#                                     token path to fill in)
 #   VERDICT: present advisor-first    anything else; REASON: says why
 #
 # It resolves nothing and files nothing: the conductor runs the RESOLVE: line,
@@ -135,8 +138,13 @@ EOF
 [ "$ran" -eq "$expected" ] || advisor "ran $ran of $expected failing gate(s); an unreproduced failure is never passed"
 [ -z "$bad" ] || advisor "failed again on reproduction at $sha:$bad (a real failure, or an environment the machine-caused ruling does not cover)"
 
-[ -n "$token" ] || token="<scratchpad>/conductor.d/${run:-RUN-N}.token"
 printf 'VERDICT: override-pass\n'
-printf 'RESOLVE: docket step resolve %s --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < %s\n' "$step" "$token"
+resolve="docket step resolve $step --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure"
+if [ -n "$token" ]; then
+    printf 'RESOLVE: %s < %q\n' "$resolve" "$token"
+else
+    printf 'RESOLVE_TEMPLATE: %s < <scratchpad>/conductor.d/%s.token\n' "$resolve" "${run:-RUN-N}"
+    printf 'NOTE: no --token was given, so the line above is a template, not runnable shell; re-run with --token FILE for the RESOLVE: command.\n'
+fi
 printf 'NOTE: file or link the root-cause issue, cite the ruling and the ROW lines above in the note, and report this auto-pass.\n'
 exit 0

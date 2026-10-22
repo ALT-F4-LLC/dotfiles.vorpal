@@ -120,13 +120,18 @@ standard_artifacts
 run_repro STEP-9
 expect "a failing tests gate whose argv exits 0 on repro" 0 \
     "VERDICT: override-pass" \
-    "RESOLVE: docket step resolve STEP-9 --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/RUN-77.token" \
+    "RESOLVE_TEMPLATE: docket step resolve STEP-9 --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/RUN-77.token" \
+    "is a template, not runnable shell" \
     "SHA: ${SHA}" \
     "ROW: gate=tests recorded_exit=1 recorded_fingerprint=fp-tests repro_exit=0"
 expect_absent "gate=build"
+expect_absent "RESOLVE: docket"
 
 run_repro STEP-9 --token /s/conductor.d/RUN-77.token
-expect "a --token path is used in the resolve command" 0 "< /s/conductor.d/RUN-77.token"
+expect "a --token path is used in the resolve command" 0 "RESOLVE: docket step resolve STEP-9 --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < /s/conductor.d/RUN-77.token"
+expect_absent "RESOLVE_TEMPLATE:"
+run_repro STEP-9 --token "/s p/conductor.d/RUN-77.token"
+expect "a --token path with a space is quoted in the resolve command" 0 "< /s\\ p/conductor.d/RUN-77.token"
 
 # ---- a gate that fails again on repro: advisor-first with the evidence ----
 gates "$(row tests fail "$BAD")"

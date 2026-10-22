@@ -264,5 +264,27 @@ push $((T0 + 100)) "RUN-158: STEP-9020 parked"
 run "two parks, one announced: the other is named" 2 "$(stop_in)" "STEP-9021"
 grep -q 'STEP-9020' "${WORK}/err" && fail "the announced step was named" || pass "the announced step is not named"
 
+
+# 10. A read-only dispatch verb does not make the session the conductor.
+reset; jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"x"}}' > "$TRANSCRIPT"
+jq -cn --arg ts "$(iso $((T0 + 1)))" '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:"docket dispatch verify --run RUN-158 --json"}}]}}' >> "$TRANSCRIPT"
+park STEP-9080 180 $((T0 + 60))
+run "a read-only docket dispatch verify --run does not make the session the conductor" 0 "$(stop_in)"
+reset; park STEP-9081 181 $((T0 + 60))
+jq -cn --arg ts "$(iso $((T0 + 2)))" '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:"docket dispatch open --json --run RUN-158"}}]}}' >> "$TRANSCRIPT"
+run "a run-moving dispatch verb with flags before --run drives the run" 2 "$(stop_in)" "STEP-9081"
+
+# 11. A clearing list past the kernel's per-argument limit still checks the run.
+reset; park STEP-9082 182 $((T0 + 60))
+jq -cn --arg pad "$(head -c 300 /dev/zero | tr '\0' x)" \
+    '{ok:true,data:{events:[range(0; 1500) | {seq: (10000 + .), kind:"step-resolved", run:"RUN-158", issue:"ISS-1", step_id:"STEP-\(20000 + .)", data:{note:$pad}}]}}' \
+    > "$FIX/events-RUN-158-step-resolved.json"
+[ "$(wc -c < "$FIX/events-RUN-158-step-resolved.json")" -gt 131072 ] || fail "fixture: the clearing list is under 128 KiB"
+run "a clearing list over 128 KiB still blocks an unannounced park" 2 "$(stop_in)" "STEP-9082"
+
+# 12. A malformed transcript line is skipped, not fatal.
+reset; printf '{"type":"assistant","message":{"content":[{"type":"tool_use"\n' >> "$TRANSCRIPT"
+park STEP-9083 183 $((T0 + 60))
+run "a malformed transcript line does not disable the check" 2 "$(stop_in)" "STEP-9083"
 printf '%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

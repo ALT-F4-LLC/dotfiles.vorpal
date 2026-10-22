@@ -46,6 +46,7 @@ cat > "${BIN}/docket" <<'EOF'
 [ -f "$FIX/down" ] && exit 1
 if [ "$1 $2" = "run status" ]; then cat "$FIX/runs.json"; exit 0; fi
 if [ "$1 $2" = "run note" ]; then
+    [ -f "$FIX/notes-down" ] && exit 1
     [ -f "$FIX/notes-$4.json" ] && cat "$FIX/notes-$4.json" || printf '{"ok":true,"data":{"notes":[]}}\n'
     exit 0
 fi
@@ -65,7 +66,7 @@ result() { line "$(jq -cn --arg id "$1" --arg t "$2" '{type:"user",message:{cont
 text() { line "$(jq -cn --arg t "$1" '{type:"user",message:{content:$t}}')"; }
 
 reset() {
-    rm -f "$FIX"/notes-*.json "$FIX/down"
+    rm -f "$FIX"/notes-*.json "$FIX/down" "$FIX/notes-down"
     printf '{"ok":true,"data":{"runs":[{"run":"RUN-158","status":"active"}],"total":1}}\n' > "$FIX/runs.json"
     : > "$TRANSCRIPT"
     echo 0 > "$WORK/seq"
@@ -229,5 +230,24 @@ run "a run note about STEP-123 does not cover a question about STEP-12" 2 "$(ask
 reset; answered; advisor d2 "Review the restart of STEP-12."
 run "a brief naming STEP-12 covers a question about STEP-12" 0 "$(ask_in 'Hold' 'Hold STEP-12?')"
 
+
+# 10. A header word elsewhere in an unrelated brief covers nothing; a header
+# introduced as one does.
+reset; answered; advisor e1 "Review the scope of the migration plan."
+run "a bare header word in an unrelated brief does not cover the question" 2 "$(ask_in 'Scope' 'Narrow the change to one file?')" "Scope"
+reset; answered; advisor e2 "Review the drafted question, header \"Scope\": narrow it?"
+run "a quoted header introduced as one covers the question" 0 "$(ask_in 'Scope' 'Narrow the change to one file?')"
+
+# 11. A read-only dispatch verb does not make the session the conductor.
+reset; : > "$TRANSCRIPT"; id=$(nextid); use "$id" Bash '{"command":"docket dispatch verify --run RUN-158"}'; result "$id" ok
+run "a read-only docket dispatch verify --run does not make the session the conductor" 0 "$(ask_in 'CI row' 'May I add the row?')"
+
+# 12. A note list the engine cannot answer allows.
+reset; answered; : > "$FIX/notes-down"
+run "an unreadable run note list allows" 0 "$(ask_in 'Retry' 'Retry STEP-9001?')"
+
+# 13. A malformed transcript line is skipped, not fatal.
+reset; answered; printf '{"type":"assistant","message":{"content":[{"type":"tool_use"\n' >> "$TRANSCRIPT"
+run "a malformed transcript line does not disable the check" 2 "$(ask_in 'CI row' 'May I add the row?')" "CI row"
 printf '%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

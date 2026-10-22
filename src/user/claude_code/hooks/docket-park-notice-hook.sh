@@ -12,8 +12,9 @@
 # transcript holds a PushNotification, sent after the park was routed, that
 # names the step id.
 #
-# Only runs this session's own tool calls drive are checked (`docket next` or
-# `docket dispatch` with `--run RUN-N`, or the conductor token path; a read-only
+# Only runs this session's own tool calls drive are checked (`docket next` or a
+# run-moving `docket dispatch` verb with `--run RUN-N`, or the conductor token
+# path, as docket-driven-runs.jq beside this hook tests it; a read-only
 # `--run` call does not count), and only parks routed after the transcript
 # began, so another session's runs and earlier sessions' parks never block this
 # one. An unattended run (its latest operator-authority mode note) is skipped,
@@ -21,12 +22,12 @@
 # appears only in the session-start listing or in prose names nothing. A
 # subagent is never held to it.
 #
-# Missing jq or docket, an unreadable transcript, or any unreadable or
-# truncated engine answer allows. A step-routed list cut at the newest 5000
-# loses only the oldest parks, which leans toward allow. A conductor that holds
-# its run id in a shell variable is not recognized, and a switch to attended
-# whose mode note failed to write still reads as unattended. The Stop path
-# honors stop_hook_active so one block cannot trap a session; the tool-call
+# Missing jq, docket or docket-driven-runs.jq, an unreadable transcript, or any
+# unreadable or truncated engine answer allows. A step-routed list cut at the
+# newest 5000 loses only the oldest parks, which leans toward allow. A conductor
+# that holds its run id in a shell variable is not recognized, and a switch to
+# attended whose mode note failed to write still reads as unattended. The Stop
+# path honors stop_hook_active so one block cannot trap a session; the tool-call
 # path blocks until the push is sent, which is the point of it.
 
 set -uo pipefail
@@ -68,6 +69,12 @@ RUNS=$(docket run status --limit 0 --json 2>/dev/null \
     | jq -r '.data.runs // [] | .[].run | select(type == "string" and test("^RUN-[0-9]+$"))' 2>/dev/null) || allow
 [ -n "$RUNS" ] || allow
 
+# The test of whether a call drives a run lives beside this hook, shared with
+# the advisor-first hook; without it nothing can be judged, so allow.
+HOOK_DIR="${0%/*}"
+[ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
+DRIVES_DEF=$(cat "${HOOK_DIR}/docket-driven-runs.jq" 2>/dev/null) && [ -n "$DRIVES_DEF" ] || allow
+
 # Milliseconds since the epoch for a transcript line's ISO timestamp.
 MS_DEF='def ms: (sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601 * 1000)
     + ((capture("\\.(?<f>[0-9]+)Z$")? // {f: "0"}).f + "00" | .[0:3] | tonumber);'
@@ -81,39 +88,49 @@ events_of() {
         | jq -ce --arg k "$2" 'select(.ok == true and ($k == "step-routed" or (.data.total // 0) <= (.data.events | length))) | .data.events' 2>/dev/null
 }
 
-# The transcript is read once, and only when some run holds an open park.
+# The transcript is read once, and only when some run names this session's
+# calls. A malformed or partly written line is skipped, never fatal.
 LOADED=""
 load_transcript() {
     [ -n "$LOADED" ] && return
     LOADED=1
-    START_MS=$(head -n 40 "$TRANSCRIPT" 2>/dev/null | jq -rs "$MS_DEF"'
-        [ .[] | .timestamp? | select(type == "string") | try ms catch empty ] | min // empty' 2>/dev/null)
+    START_MS=$(head -n 40 "$TRANSCRIPT" 2>/dev/null | jq -Rrn "$MS_DEF"'
+        [ inputs | (try fromjson catch null) | objects | .timestamp? | select(type == "string") | try ms catch empty ] | min // empty' 2>/dev/null)
     # Every tool call the session made: {ms, name, text}. The timestamp lives on
     # the transcript line, not the content block.
-    CALLS=$(jq -c "$MS_DEF"'select(.type == "assistant") | . as $l | $l.message.content? | arrays | .[]
-        | select(.type == "tool_use")
+    CALLS=$(jq -Rc "$MS_DEF"'(try fromjson catch null) | objects | select(.type == "assistant") | . as $l | $l.message.content? | arrays | .[]
+        | select(type == "object" and .type == "tool_use")
         | {ms: (try ($l.timestamp | ms) catch 0), name: (.name // ""), text: (.input.command? // (.input | tostring))}' \
         "$TRANSCRIPT" 2>/dev/null)
 }
 
 MISSING=""
 for R in $RUNS; do
+    # A cheap necessary condition first: a run the transcript never names
+    # with --run or the token path cannot be driven here, so it costs no
+    # engine query.
+    grep -qE "(conductor\\.d/|--run[ =])${R}([^0-9]|\$)" "$TRANSCRIPT" 2>/dev/null || continue
+    load_transcript
+    # This session conducts the run only when its own tool calls drive it:
+    # a run id in the session-start listing or in prose names nothing.
+    printf '%s\n' "$CALLS" | jq -e --arg r "$R" "$DRIVES_DEF"' select(.text | drives($r))' >/dev/null 2>&1 || continue
+
     ROUTED=$(events_of "$R" step-routed) || continue
     [ -n "$ROUTED" ] || continue
-    CLEARED="[]"
-    for K in step-resolved step-skipped step-superseded issue-abandoned; do
-        C=$(events_of "$R" "$K") || continue 2
-        CLEARED=$(jq -cn --argjson a "$CLEARED" --argjson b "$C" '$a + $b' 2>/dev/null) || continue 2
-    done
-    OPEN=$(printf '%s' "$ROUTED" | jq -c --argjson cleared "$CLEARED" '
-        .[] | select((.data.detail // "") | startswith("waiting-human"))
+    # The lists travel on stdin: thousands of events overrun the kernel's
+    # per-argument limit as a --argjson value.
+    CLEARED=$(for K in step-resolved step-skipped step-superseded issue-abandoned; do
+                  events_of "$R" "$K" || exit 1
+              done | jq -cs 'add // []' 2>/dev/null) || continue
+    OPEN=$(printf '%s\n%s\n' "$ROUTED" "$CLEARED" | jq -cs '
+        .[1] as $cleared
+        | .[0][] | select((.data.detail // "") | startswith("waiting-human"))
         | select(.step_id != null)
         | . as $p
         | select(($cleared | map(select(.seq > $p.seq and (if .kind == "issue-abandoned" then .issue == $p.issue else .step_id == $p.step_id end))) | length) == 0)
         | {step_id, at_ms}' 2>/dev/null) || continue
     [ -n "$OPEN" ] || continue
 
-    load_transcript
     # An unattended run replaces ask-and-notify with a queue (docket-run's
     # unattended ruling), so it is not held to the push. The mode is the latest
     # operator-authority note with the fixed text, written since this session
@@ -125,10 +142,6 @@ for R in $RUNS; do
                   and ((.data.text // "") | startswith("conductor escalation mode: ")))]
                  | last | .data.text // ""' 2>/dev/null)
     [[ "$MODE" == "conductor escalation mode: unattended;"* ]] && continue
-    # This session conducts the run only when its own tool calls drive it:
-    # a run id in the session-start listing or in prose names nothing.
-    printf '%s\n' "$CALLS" | jq -e --arg r "$R" \
-        'select(.text | test("conductor\\.d/" + $r + "([^0-9]|$)") or test("docket(\\s+-\\S+)*\\s+(next|dispatch)\\b[^\\n|;&]*--run[ =]" + $r + "([^0-9]|$)"))' >/dev/null 2>&1 || continue
     while IFS= read -r P; do
         [ -n "$P" ] || continue
         STEP=$(printf '%s' "$P" | jq -r '.step_id')

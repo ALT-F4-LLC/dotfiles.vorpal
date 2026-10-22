@@ -35,9 +35,10 @@
 # another. The harness-text filter reads string content only: an array-content
 # user line counts as typed.
 #
-# Cost: each call reads the whole transcript with jq, about 2 s on a 296 MB
-# transcript and 0.14 s on a 21 MB one, growing with the session. A hook that
-# times out fails open.
+# Cost: a transcript with no denial text costs one grep. Otherwise each call
+# reads the whole transcript with jq, about 2 s on a 296 MB transcript and
+# 0.14 s on a 21 MB one, growing with the session. A hook that times out fails
+# open.
 #
 # Subagents, any unreadable transcript and any payload that does not parse are
 # allowed: a subagent's payload carries the parent's transcript, and the rule
@@ -58,6 +59,10 @@ TRANSCRIPT=$(printf '%s' "$DATA" | jq -r '.transcript_path // empty' 2>/dev/null
 CMD=$(printf '%s' "$DATA" | jq -r '.tool_input.command // empty' 2>/dev/null)
 [ -n "$CMD" ] || allow
 CWD=$(printf '%s' "$DATA" | jq -r '.cwd // empty' 2>/dev/null)
+
+# Most transcripts hold no denial at all; a grep for its opening words skips
+# the jq pass for them.
+grep -qE 'Permission (to use Bash|for this (command|action))' "$TRANSCRIPT" 2>/dev/null || allow
 
 # shellcheck disable=SC2016
 PROGRAM='

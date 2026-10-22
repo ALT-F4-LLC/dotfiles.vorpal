@@ -29,8 +29,8 @@ it drives every inventoried command against a scratch store and keeps each
 exit code, message and both JSON dialects. The JSON envelope table and
 behavioral notes below were checked against that same build's fixtures; a
 flag path the swept scenario did not exercise remains a previously-observed
-claim, not a re-checked one. Run `/docket-cli-audit` after a CLI upgrade to
-refresh both and audit the prose against them.
+claim, not a re-checked one. Run `/docket-cli-audit` after a CLI upgrade: it audits the
+prose against both and files an issue to refresh them.
 
 <a id="contents"></a>
 

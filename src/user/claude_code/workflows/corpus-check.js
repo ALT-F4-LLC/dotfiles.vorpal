@@ -87,7 +87,7 @@ const CROSS_PAIRS = [
   },
 ]
 
-// Called by skills/corpus-check/SKILL.md, which defines scope and handles fixes.
+// Called by skills/corpus-check/SKILL.md, which defines scope and files the findings as Docket issues.
 // args: { sinceRef: string | null } supplies context without narrowing the audit.
 // Returns {findings, unverified, filesAudited, readPlanSize, coverage,
 // rawFindingCount, verifiedCount, survivedCount, unverifiedCount,

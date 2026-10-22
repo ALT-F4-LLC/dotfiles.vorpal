@@ -3,16 +3,20 @@ name: docket-retro
 description: >-
   Use on the operator's request only, after about five completed runs:
   "retro", "what did the runs cost", "evolve the corpus from the runs". Reads
-  run reports and the event log, finds what recent runs cost and caught, and
+  run reports and the event log, finds what recent runs cost and caught,
   proposes versioned edits to the shared docket corpus and a repo's optional
-  .docket/config additions for approval.
+  .docket/config additions, and files each approved proposal as a Docket
+  issue; approved trust is handed over as a command. Edits nothing itself.
 ---
 
 # docket-retro
 
-You turn what runs actually did into config changes. Evidence first,
-proposal second, write only after the panel says yes, or, where the panel
-splits and where trust is involved, after the operator does (§3).
+You turn what runs actually did into filed config proposals. Evidence first,
+proposal second, file only after the panel says yes, or, where the panel
+splits, after the operator does (§3). You never
+edit the config: a filed issue carries the approved diff, or for store state
+the approved command, to the worker who lands it. Approved trust is the one
+item not filed: the operator runs its command.
 
 **Automation first is the primary goal of every proposal.** Each one sits
 on the highest rung of the docket skill's
@@ -21,7 +25,7 @@ that can carry it, and keeps or adds a human touch only under a named
 [vital condition](../docket/references/automation.md#when-a-human-is-vital).
 Operator touches the runs needed are evidence: an automatable one that
 recurs is a proposal in its own right. This governs what you propose; the
-panel and operator approvals below still authorize applying it.
+panel and operator approvals below gate what you file, and authorize no edit.
 
 Run in the invoking conversation: §1 seats its analysts through `Workflow`,
 and §3's approval conversation runs through `AskUserQuestion`, and a forked
@@ -38,10 +42,12 @@ proposal and its outcome.
 completed runs a session may say "five runs since the last docket-retro,
 worth one?" and stop there. A nudge is a sentence, not an execution.
 
-**Never edit a registered file in place.** Changed bytes at an unchanged
-`name@version` refuse the whole next activation. Every workflow edit bumps
-`[pipeline].version`; every schema edit is a new `name@N+1.json`. Not a style
-preference — the only way the edit activates.
+**Never propose editing a registered file in place.** Changed bytes at an
+unchanged `name@version` refuse the whole next activation. Every workflow
+edit bumps `[pipeline].version`; every schema edit is a new
+`name@N+1.json`. Not a style preference — the only way the edit activates.
+Every file-edit proposal and its issue carries its bump; store state has no
+file and carries none.
 
 ## 1. Gather
 
@@ -52,7 +58,7 @@ checkout: `src/user/docket/config/contracts/retro-analyst.md`), the node
 the corpus already defines for exactly this, plus §2's table verbatim.
 `retro-analyst` carries no `policy.toml` row and no workflow dispatches it
 through the wave: no issue carries the retro label, and this skill runs the
-analyze/vote/apply loop itself. The skill-side spawn below is the only path
+analyze/vote/file loop itself. The skill-side spawn below is the only path
 this node has, so seat each analyst through
 `Workflow({scriptPath: "<home>/.claude/workflows/retro-seat.js", args: {
 analysts: [{brief, model, effort}, ...]}})` (source in the dotfiles
@@ -117,11 +123,11 @@ pattern across five runs is inferred. Say which one you have.
 ### Further surfaces you may propose edits to
 
 These surfaces are also yours to propose edits against, through the same
-mechanism as everything else: evidence, proposal, approval.
+mechanism as everything else: evidence, proposal, approval, filing.
 
 **`policy.toml`'s tables.** Pinned, not registered, so an edit needs no
-version bump, but note it, because the next docket-retro attributes what
-followed to it.
+version bump, but the filed issue says to note it, because the next
+docket-retro attributes what followed to it.
 
 | Table | A finding that touches it |
 |---|---|
@@ -153,7 +159,10 @@ with `vote_rule "<name>" is not registered` until the `config set` above
 runs. Read `docket config get vote.rule.<name>.threshold` before assuming a
 rule exists; empty means the job is creating it, not calibrating it. A rule
 whose outcome never differs from a plain human gate is a rule to question,
-not tune.
+not tune. A threshold lives in the store, not in a file, so the issue names
+the workflow file that declares the rule as its `-f` path and carries the
+approved `config set` command, the evidence, and the `config get` result in
+its body (§4); a worker or the operator runs the command.
 
 **The four metadata keys.** Every completed step carries
 `model_requested` / `effort_requested`, set at routing, and
@@ -187,22 +196,33 @@ class no registered workflow declares, so check the warning rather than
 assuming the write took. A `data.forced` reap is a dead spawn, a relay
 finding rather than a config one. Heartbeating cannot carry a step past its
 class's `max_step_duration`, measured from the claim: a healthy holder
-reaped there wants a smaller charter or a bigger ceiling, not a TTL.
+reaped there wants a smaller charter or a bigger ceiling, not a TTL. A
+`lease.ttl.<class>` change is store state like a threshold, so it is filed
+with the approved `config set` command in the body and the workflow file
+that declares the class as `-f` (§4); for `lease.ttl.default`, which no
+workflow declares, `-f` is a workflow whose steps fall to it, and the body
+says so. A rule or class declared in a repo's `.docket/config` files in that
+repo instead. A `[limits]` edit in a workflow file is filed like any other
+workflow edit.
 
 ## 3. Propose
 
 Proposals go to a three-judge panel of agents. Compose the batch first — one
 proposal per finding, ranked by evidence strength; stop at the ones you can
-defend — and give every one of them, before anything is written:
+defend — and give every one of them, before anything is filed:
 
 - what the evidence says, with the numbers and the run IDs it came from
-- the edit, as a diff against the current file
+- the edit, as a diff against the current file, drafted in a scratch copy of
+  the target tree under `$TMPDIR`; the checkout is never edited. A
+  store-state item (threshold, lease TTL, deprecation) gives the exact
+  command and its before-state (`docket config get`, or `docket workflow
+  list --deprecated` for a deprecation) instead
 - at least one alternative edit that answers the same evidence, including
   one that is not the corpus's habitual shape, and the reason the proposed
   edit won on correctness, locality of reasoning, deletability, and upkeep
-- the version bump it carries
+- the version bump it carries (none for store state)
 - for a workflow edit, the clean `docket workflow lint <file.toml>` result on
-  the edited checkout bytes (§4 explains what it proves)
+  the scratch bytes (§4 explains what it proves)
 - what it costs if you are wrong
 
 When the session can launch agents, launch the `advisor` agent on the packet before opening
@@ -251,14 +271,14 @@ activated here: stop and report it rather than hunting for another copy. The
 workflow returns `{voteId, outcome, seatsSpawned, respawns, respawned, replies}`, the
 same shape docket-run reads: `replies` lists `{seat, castError}` for each
 seat whose cast failed after its retry. Then `docket
-vote result <id>`: approved is the authority to apply, and §4 runs
-immediately, with no follow-up question about whether to apply now or
+vote result <id>`: approved clears the item for filing, and §4 runs
+immediately, with no follow-up question about whether to file now or
 later. A rejection or a split goes to the operator through the built-in
 question tool after the advisor's [question
 review](../../references/working-agreement.md#question-review), the
 advisor's pick first, labelled "(Recommended)", carrying
 every judge's verdict, confidence, and summary verbatim. Only what they
-approve is applied.
+approve is filed.
 
 A docket-retro that proposes nothing because five runs went cleanly is a
 correct docket-retro: say so rather than manufacturing work, and convene no
@@ -271,84 +291,220 @@ that fits, not a step in someone's routine.
 
 **A trust proposal is the operator's alone, and rides no batch.** Follow
 docket-bootstrap's rule — argue `re-runnable`, `tree`, `flaky`, and `stub`
-per command, default off, never add before approval — and ask it in its own question,
+per command, default off, nothing run before approval — and ask it in its own question,
 never bundled with config edits the panel already cleared. Trust authorizes
 execution; a panel of agents cannot grant that, and a trust row inside a
 four-item bundle is approved in one click without being read.
 
-## 4. Apply what was approved
+## 4. File what was approved
 
-Apply only the approved items, whether the panel approved them or the
-operator did on escalation, applied by an `executor-write` agent carrying
-the approved diffs,
-with the dry-run verification below performed by an `executor-read` agent;
-you relay approvals and read their reports. Same variant caveat as §1:
-spawned from here, neither agent carries a `policy.toml` variant.
+File only the approved items, whether the panel approved them or the
+operator did on escalation. Each approved item, or each coherent batch the
+panel cleared together, becomes one Docket issue, created from this
+conversation. This skill edits nothing: no write under
+`src/user/docket/config` or `.docket/config`, no `just activate`, no commit,
+no `docket trust add`, no `docket config set`, no `docket workflow
+deprecate`. The worker who lands the issue makes the edit, and the operator
+installs it with `just activate`, between runs.
 
-**Approved corpus edits land in the dotfiles checkout, not in the repo.**
-The engine reads the corpus from `~/.docket/config`, a content-addressed
-store path replaced wholesale by `just activate`. Never edit there even
-when the filesystem lets you, because the next install silently reverts it.
-Edit `src/user/docket/config/` instead (`contracts/`, `fragments/`,
-`schemas/`, `workflows/`, `policy.toml`); the operator installs it with
-`just activate`, between runs. Every repo sharing the corpus reads the same
-bytes, so an unbumped edit refuses the next activation everywhere, not just
-here. Say that blast radius when you propose.
+**The corpus lives in the dotfiles checkout, not in the repo.** The engine
+reads it from `~/.docket/config`, a content-addressed store path replaced
+wholesale by `just activate`, so an edit there is silently reverted by the
+next install. The issue's remedy path is under `src/user/docket/config/`
+(`contracts/`, `fragments/`, `schemas/`, `workflows/`, `policy.toml`). Every
+repo sharing the corpus reads the same bytes, so an unbumped edit refuses the
+next activation everywhere, not just here. Say that blast radius in the
+issue.
 
 A repo may also carry an optional second layer of its own in
 `.docket/config/`; repos have none by default, and only that repo reads
 it. An addition there that collides with a shared `name@version`, or a
 pinned ref, refuses every activation in its own repo until one side moves:
-bump the shared version, or rename the addition, and say which you chose
+the issue says whether to bump the shared version or rename the addition,
 and why.
 
-A workflow edit stays in the same file with `[pipeline].version = N+1` and
-a new entry at the top of `changelogs/<name>.md` under
-`src/user/docket/config`, where the mined facts live. A schema edit is a new
-`schemas/<name>@N+1.json`, plus a bump to every workflow naming it.
-`policy.toml`, contracts, and fragments are pinned rather than registered.
-A contract or fragment body edit bumps its front-matter `version` in the
-same commit (frozen-drift-check enforces the lockstep); `policy.toml`
-carries an informational `[policy].version` the engine never freezes or
-enforces, so bump it and add the entry to `changelogs/policy.md` as a
-courtesy, not because anything checks it. Note every change in those files
-so the next docket-retro can attribute what followed. Trust the operator
-approved goes in only when the operator runs `! docket trust add
-<name> --yes -- <argv>` themselves: the sandbox refuses any session write to
-the trust store, so hand them the exact command rather than running it.
+**Route by owner.** Shared-corpus edits belong to the dotfiles project,
+`.docket/config` additions to the repo that carries them, and engine
+findings to the engine project (§5). Create from the owning checkout, since
+cwd picks the project; never create in the launch repo intending to move the
+issue afterward. Resolve the checkout and its store the way docket-postmortem's
+[route by owner and store](../docket-postmortem/references/filing.md#route-by-owner-and-store)
+requires. A store-state item files in the dotfiles project, which
+owns the workflow file that declares the rule or class and so supplies a
+valid `-f` path (for `lease.ttl.default`, a workflow whose steps fall to
+it); a rule, class or workflow declared in a repo's `.docket/config` files in that
+repo instead. Its body names the target project and the directory to run
+the command from, or says `--global` when the setting is meant for every
+project. If the owning project is
+unavailable, hold the item and name the prerequisite in the report.
 
-Verify twice, and the order is load-bearing. First, `docket workflow lint
-<file.toml>` on the edited checkout bytes *before* the proposal reaches the
-panel — it runs the exact validation `register` runs, writes nothing, and
-returns `CONFLICT` when the edit sits on a frozen `name@version` with the bump
-missing. Second, only after the operator has run `just activate`: activation
-reads the config roots (`~/.docket/config`, then a repo's `.docket/config` if
-it has one) and never the dotfiles checkout, so a dry-run before the install
-proves nothing about bytes that are not installed yet. Then `docket run
-activate RUN-M --dry-run` must show the new version registering and every
-fence still `matched` — against a run still in `planning`. Re-activating an
-already-active run expands newly-unblocked phases only and inherits its
-original pin set, so a re-registered workflow never reaches it and the dry-run
-shows the old version; make a throwaway planning run if none is available.
+**Deduplicate first**, per docket-postmortem's
+[deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating)
+section as written. The dedupe set is every issue carrying the
+`retro-proposal` label in any status, open and done, so a closed match is
+visible. Listing is cwd-scoped, so run it from each owning checkout the
+items route to and take the union, one output file per owner:
+
+```bash
+docket issue list --all --json=v2 --limit 1000 -l retro-proposal > "$TMPDIR/retro-proposals-<owner>.json"
+jq '.data.truncated' "$TMPDIR/retro-proposals-<owner>.json"   # must print false for every owner
+```
+
+Hold filing if `truncated` prints anything but `false`: a partial set would
+re-file a settled proposal. Match each item to the set by its `Retro
+fingerprint:` line, then by semantic comparison of the change. By match
+state:
+
+- **Open** (any status short of `done`): the new evidence window goes to it
+  as a comment instead of a second issue.
+- **Closed with the `wont-do` label** (the operator declined it): file
+  nothing, record that issue's id, and name it in the report.
+- **Closed without `wont-do`** (landed): file a new issue only when the new
+  runs confirm the change is still needed, which is a regression. Link the
+  prior issue id in the description and follow the project's reopen or
+  new-regression convention. Otherwise file nothing.
+
+**The filing contract** is docket-postmortem's
+[worker-ready issue contract](../docket-postmortem/references/filing.md#worker-ready-issue-contract)
+with these substitutions:
+
+- Label `retro-proposal`. It is not `retro`, which the workflows' `unless_labels`
+  lists already use to mean something else. No routing label, no size label,
+  no assignee, no parent, no status beyond the default; `docket-groom` routes
+  it.
+- Type `task`, or `bug` when the evidence shows a shipped definition
+  breaching its own contract. Priority: a measured breach or a recurring
+  operator touch that is automatable `high`, a calibration `medium`, a tidy
+  `low`; `critical` never, since a retro finds patterns, not live harm.
+- `--size` from the docket skill's [sizing reference](../docket/references/sizing.md),
+  measured on the issue as stored. A batch whose acceptance describes two or
+  more independent outcomes is filed as one issue per outcome, even when the
+  panel cleared it as one batch. A redesign of a workflow, contract, or
+  schema is `needs-design` and names `docket-refit` as the route; a
+  well-scoped bump or threshold-in-file edit is `small` or `bounded`.
+- `-f` names each remedy path, `--scope` bounds the work, both never
+  omitted. A store-state item names the file that declares the rule
+  or class, per Route by owner above (see store state below); trust is the one item never filed.
+- `--idempotency-key` is `<owning project>/<surface>/<change>/<window end>`,
+  so a retried create cannot duplicate the issue. The description's
+  `Retro fingerprint:` line carries the same identity without the window end,
+  for lookup across retros. A create that repeats a key returns the original
+  issue, closed or not, so a regression filing never reuses the prior key:
+  append `/after-<prior issue id>` to it, which differs from the
+  landed issue's key even when the window end repeats.
+
+```bash
+docket issue create --json=v2 -t "<behavior and consequence, one line>" \
+  -T <task|bug> -p <high|medium|low> -l retro-proposal \
+  --size <trivial|small|bounded|needs-design> \
+  -f <remedy path> [-f <remedy path>] --scope '<glob bounding the work>' \
+  --idempotency-key '<key>' -d - <<'RETRO_PROPOSAL'
+<description as below>
+RETRO_PROPOSAL
+```
+
+The description follows this structure:
+
+```text
+[Only when the remedy touches authn/authz, secrets, crypto,
+sandbox/permissions, a trust boundary, supply chain, or untrusted input at
+a privilege boundary, as the first line:] Security gate required: this
+remedy touches <the relevant categories>.
+
+Observed: what the runs showed, with the numbers and run IDs, each labelled
+  observed or inferred; the evidence window.
+Proposal: the approved diff, verbatim, with the comment text the file will
+  carry (plain words, no date, sha, or issue id).
+Alternative considered: the alternative edit and why this one won.
+Panel: the vote proposal id, the outcome, and each judge's verdict; or the
+  operator's decision on an escalation.
+Versioning: the bump the worker must make: a workflow edit bumps
+  [pipeline].version and adds the top entry of changelogs/<name>.md; a schema
+  edit is a new schemas/<name>@N+1.json plus a bump to every workflow naming
+  it; a contract or fragment body edit bumps its front-matter version in the
+  same commit; a policy.toml edit adds the changelogs/policy.md entry.
+  Registered bytes at an unchanged name@version refuse the next activation
+  in every repo sharing the corpus.
+Lint: the clean `docket workflow lint` result on the scratch bytes, for a
+  workflow edit.
+Automation: the ladder rung, and why no higher rung can carry it; for a
+  human touch, the vital condition it rests on.
+Cost if wrong: the blast radius and the rollback (a version bump rolls back
+  by retiring the bad version, which the operator or docket-reconcile does).
+Acceptance: `docket workflow lint` on every edited workflow, `just
+  frozen-drift-check`, `just crossref-check`, and the named tests, each with
+  the failing variant it rejects; or read-verified with what to inspect.
+  Store state: `docket config get <key>` (or `docket workflow list
+  --deprecated`) shows the new value, with the old value as the failing
+  variant; for a newly created rule, `docket workflow lint` of the declaring
+  workflow also passes where it failed before.
+Command (store state only, replacing Proposal, Versioning and Lint): the
+  exact `docket config set` or `docket workflow deprecate` command, the
+  project and directory it runs from, and `--global` where intended.
+After activation (operator): once `just activate` has run, `docket run
+  activate RUN-M --dry-run` against a run still in planning shows the new
+  version registering and every fence still matched. Re-activating an
+  already-active run inherits its original pin set, so use a throwaway
+  planning run.
+Retro fingerprint: <owning project>/<surface>/<change>.
+```
+
+Read each receipt back through `docket issue show` and verify the id, title,
+files, labels, and empty assignee, per the contract. Keep the filing ledger
+in scratch so partial progress survives interruption.
+
+**What lint proves.** `docket workflow lint <file.toml>` on the scratch bytes,
+run before the proposal reaches the panel, runs the exact validation
+`register` runs and writes nothing. It returns `CONFLICT` when the edit sits
+on a frozen `name@version` with the bump missing. It proves nothing about
+installed bytes: activation reads the config roots (`~/.docket/config`, then a
+repo's `.docket/config` if it has one) and never the dotfiles checkout, so
+only the post-activation dry-run above proves registration, and the operator
+runs it.
+
+**Trust is handed over; store state is filed, never run here.** Trust the
+operator approved goes in only when the operator runs `! docket trust add
+<name> --yes -- <argv>` themselves: the sandbox refuses any session write to
+the trust store, so hand them the exact command and file nothing. A
+vote-rule threshold or a `lease.ttl.<class>` limit is store state with no
+source file of its own, so the issue's `-f` path is the file that declares
+the rule or class, as in Route by owner (related to the change, never an unrelated path
+supplied to satisfy `-f`), and its body carries the exact `docket config set` command, the
+evidence, and the `docket config get` result before it. This session runs
+none of them. The §5 report lists trust as handed over and store state as
+filed.
 
 **Retiring a version.** Binding reduces each name to its highest
 *non-retired* version before `[match]` runs, so a bump rolls out on its
 own. To fall back beneath a bad version, or take a mistakenly registered
-name out of routing altogether, retire it — `docket workflow deprecate
-<name>@<version>`, reversed by `--restore` (retirement semantics: see
-docket-reconcile's Step 2, DEPRECATE/RESTORE). No delete verb exists, and
-renaming a pipeline still loses the version lineage pinning preserves.
+name out of routing altogether, the version is retired with `docket workflow
+deprecate <name>@<version>`, reversed by `--restore` (retirement semantics:
+see docket-reconcile's Step 2, DEPRECATE/RESTORE). That is a registry write
+docket-reconcile plans, so a proposal that needs it is filed like any other
+store state: the exact command in the body, the workflow's file as `-f`, and
+docket-reconcile named as the route. No delete verb
+exists, and renaming a pipeline still loses the version lineage pinning
+preserves.
 
 ## 5. Close
 
-Report which proposals were approved and by which authority (the panel, or
-the operator on an escalation), which were declined, and what the next
-docket-retro should watch. A declined proposal with accumulating evidence
-is the first thing to re-raise, and a panel that split is worth naming as
-such: the disagreement is evidence about the proposal. A finding that
-belongs upstream (an engine limitation, a design deviation) gets filed as
-an issue, not bent into config, and filed in its owning project: engine
-findings from the docket repo's checkout, definition findings from the
-dotfiles checkout (cwd picks the project), never into whichever project
-this docket-retro read its runs from. `docket issue move <id> --project
-<target>` re-homes one that already landed wrong.
+Say that nothing was applied. Report which proposals were approved and by
+which authority (the panel, or the operator on an escalation), the issue id
+each was filed under or the existing issue that received its evidence, which
+were held and why, which trust commands were handed to the operator, and which
+were declined. Name what the next docket-retro should
+watch: a filed proposal that has not landed yet, since the next retro
+attributes what followed a change only after the change is in the corpus, so
+check each filed issue's status before reading later runs against it. A
+declined proposal with accumulating evidence is the first thing to re-raise,
+and a panel that split is worth naming as such: the disagreement is evidence
+about the proposal. Filed issues drain through `docket-groom` routing into a
+`docket-plan` and `docket-run` execution, or through `docket-refit` for a
+redesign; do not start that work.
+
+A finding that belongs upstream (an engine limitation, a design deviation)
+gets filed as an issue, not bent into config, and filed in its owning project:
+engine findings from the docket repo's checkout, definition findings from the
+dotfiles checkout (cwd picks the project), never into whichever project this
+docket-retro read its runs from. `docket issue move <id> --project <target>`
+re-homes one that already landed wrong.

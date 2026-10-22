@@ -376,10 +376,10 @@ decides a number against evidence of spend; an ack-reap gate decides whether a
 holder is gone; a fix-batch gate decides whether the conductor's batch of fixes
 may land as one unit, judged on the files the batch changed; a retro-batch
 gate decides whether a docket-retro batch of shared-corpus config edits may
-land as one unit, judged on the mined evidence cited for each proposal and
+be filed as issues, judged on the mined evidence cited for each proposal and
 the diff against the current file — a different decision from fix-batch's,
-though both land a batch of edits; a loop-extension gate decides whether ONE
-more fix round is
+though fix-batch judges edits that land and retro-batch edits that are
+filed; a loop-extension gate decides whether ONE more fix round is
 likely to converge, read from the loop history in the rationale — rounds
 against the cap, consecutive rejections, the tiers served, spend, and the
 finding-volume trend — not from re-reviewing the work, which the loop's own

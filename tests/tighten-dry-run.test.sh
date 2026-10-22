@@ -13,7 +13,7 @@
 # scripts suite pins the scripts; neither shows that the workflow wires them
 # together: that a runner prompt carries a command that runs, that a chunk
 # which breaks a protected span or loses its vote stays out of the joined
-# candidate, that the accepted chunks land and nothing else changes, and
+# candidate, that the accepted chunks reach the candidate and nothing else changes, and
 # that every file comes back in exactly one of accepted, rejected, or
 # unchanged. One file here has five chunks, scripted as accepted, broken
 # quotation, already tight, voted down, and accepted; another has a chunk
@@ -170,7 +170,7 @@ get 'o.result.rejected[1].reason' | grep -q '^joined candidate failed the whole-
 
 CAND="${WORK}/scratch/docs/big.md"
 CHUNKDIR="${WORK}/scratch/.chunks/docs/big.md/orig"
-[ -f "$CAND" ]; ok $? 'the candidate lands at scratchDir/<file>'
+[ -f "$CAND" ]; ok $? 'the candidate is written at scratchDir/<file>'
 for c in "$CHUNKDIR"/*.md; do
     case "$(basename "$c")" in
         001.md | 005.md) sed 's/ actually//g' "$c" ;;

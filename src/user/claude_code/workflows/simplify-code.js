@@ -1,29 +1,20 @@
 export const meta = {
-  name: 'declutter-code',
-  description: 'Fan read-only scouts across the declutter catalog and its discovery signals, refute each top finding, or seat the single writer the caller briefs',
+  name: 'simplify-code',
+  description: 'Fan read-only scouts across the cleanup catalog and its discovery signals and refute each top finding',
   phases: [
     { title: 'Scout' },
     { title: 'Refute' },
-    { title: 'Work' },
   ],
 }
 
-// Called by skills/declutter-code/SKILL.md, which owns the tick, the ledger,
-// the findings queue, probes, gates, and landing. Two modes, never run at the
-// same time:
-//
-// mode 'discover' (default) is the discovery round. It is read-only: every
+// Called by skills/simplify-code/SKILL.md, which owns the tick, the ledger,
+// the findings queue, the static checks, and the Docket issues it files. The
+// workflow is the discovery round and nothing else. It is read-only: every
 // seat searches and reads, none edits, and nothing in the repository changes
-// inside it.
+// inside it. There is no writer seat; a worker applies a filed issue later,
+// outside this skill.
 //
-// mode 'work' seats exactly one writer on the brief the caller built, at the
-// tier the caller rules: args { mode: 'work', brief: string, tier: 'ordinary'
-// | 'gnarly', followUp: boolean, unit: string }. It returns the worker's
-// report { filesChanged, applied: [{ entry, where }], gates: [{ command,
-// output }], unsafe: [{ site, reason }], report }. The caller reruns every
-// gate itself; the report is a claim, not evidence.
-//
-// discover args: {
+// args: {
 //   repo: string          absolute path of the repository under review
 //   catalogPath: string   absolute path of references/catalog.md
 //   discoveryPath: string absolute path of references/discovery.md
@@ -34,9 +25,9 @@ export const meta = {
 //                         settled (refuted, declined, resolved, ...); matching
 //                         items are not re-found
 //   baselineReports: string
-//                         the lint, typecheck, and build output the baseline
-//                         run already produced, verbatim, trimmed to its
-//                         warnings; empty when the repository names none
+//                         the lint, typecheck, and build diagnostics the
+//                         repository already produced, verbatim, trimmed to its
+//                         warnings; empty when none were supplied (no build or lint is run)
 // }
 //
 // Returns { depth, cap, head, agentsPlanned, agentsUsed, units, unverified,
@@ -57,8 +48,8 @@ const AGENT_CONFIG = {
   refute: { model: 'opus', effort: 'high' }, // defaults to refuted, so it must read closely
 }
 
-// TEST-BEGIN declutter-code-decide — pure decision helpers, exercised by
-// tests/declutter-code-decide.test.sh without a run.
+// TEST-BEGIN simplify-code-decide — pure decision helpers, exercised by
+// tests/simplify-code-decide.test.sh without a run.
 
 // The catalog's pattern sections, one scout each. "Report only" and "Leave
 // alone" are not pattern sections: the first belongs to the report-only scout,
@@ -85,32 +76,17 @@ const DEPTHS = {
   deep: { cap: 30, angles: ['lexical', 'semantic'], signals: SIGNALS, refuteUnits: 6, refuters: 2 },
 }
 
-// One workflow, two modes. `discover` fans out the read-only seats; `work`
-// seats the single writer. The caller never runs both at once.
+// The workflow has one mode. A caller that still passes `work` gets a refusal
+// instead of a silent discovery round, because no writer seat exists.
 function parseMode(value) {
   const mode = value === undefined || value === null || value === '' ? 'discover' : String(value)
-  if (mode !== 'discover' && mode !== 'work') throw new Error(`declutter-code: args.mode must be discover or work, got ${mode}`)
+  if (mode !== 'discover') throw new Error(`simplify-code: args.mode must be discover, got ${mode}`)
   return mode
-}
-
-// The writer's tier. An ordinary unit is one file with entries of one or two
-// kinds; a gnarly unit is a module, a rename crossing many callers, or a dedupe
-// merging near-duplicates with subtle differences. A gnarly unit's one
-// follow-up round seats fable.
-const WORKER_TIERS = {
-  ordinary: { model: 'opus', effort: 'high', followUp: { model: 'opus', effort: 'high' } },
-  gnarly: { model: 'opus', effort: 'xhigh', followUp: { model: 'fable', effort: 'xhigh' } },
-}
-
-function workerSeat(tier, followUp) {
-  if (!Object.prototype.hasOwnProperty.call(WORKER_TIERS, tier)) throw new Error(`declutter-code: args.tier must be ordinary or gnarly, got ${tier}`)
-  const t = WORKER_TIERS[tier]
-  return followUp ? t.followUp : { model: t.model, effort: t.effort }
 }
 
 function parseDepth(value) {
   const depth = value === undefined || value === null || value === '' ? 'simple' : String(value)
-  if (!Object.prototype.hasOwnProperty.call(DEPTHS, depth)) throw new Error(`declutter-code: args.depth must be simple, standard, or deep, got ${depth}`)
+  if (!Object.prototype.hasOwnProperty.call(DEPTHS, depth)) throw new Error(`simplify-code: args.depth must be simple, standard, or deep, got ${depth}`)
   return depth
 }
 
@@ -134,7 +110,7 @@ function makeBudget(cap) {
   let used = 0
   return {
     take() {
-      if (used >= cap) throw new Error(`declutter-code: agent cap ${cap} reached`)
+      if (used >= cap) throw new Error(`simplify-code: agent cap ${cap} reached`)
       used += 1
     },
     used() {
@@ -308,7 +284,7 @@ function applyVerdicts(unit, returns, refuters) {
   const unconfirmedCount = total - findings.length - reportOnly.length - refutedItems
   return { ...unit, findings, reportOnly, refutedKeys, refutedCount: refutedItems, unconfirmedCount }
 }
-// TEST-END declutter-code-decide
+// TEST-END simplify-code-decide
 
 const FRAMINGS = [
   {
@@ -389,44 +365,11 @@ const VERDICT_SCHEMA = {
   required: ['verdicts'],
 }
 
-const WORKER_SCHEMA = {
-  type: 'object',
-  properties: {
-    filesChanged: { type: 'array', items: { type: 'string' } },
-    applied: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: { entry: { type: 'string' }, where: { type: 'string' } },
-        required: ['entry', 'where'],
-      },
-    },
-    gates: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: { command: { type: 'string' }, output: { type: 'string', description: 'The command output, trimmed to its result lines' } },
-        required: ['command', 'output'],
-      },
-    },
-    unsafe: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: { site: { type: 'string' }, reason: { type: 'string' } },
-        required: ['site', 'reason'],
-      },
-    },
-    report: { type: 'string', description: 'One paragraph: what changed and what was left alone' },
-  },
-  required: ['filesChanged', 'applied', 'gates', 'unsafe', 'report'],
-}
-
 const READ_ONLY = `You are read-only. Use search, file reads, and LSP. For git use only
 read commands (git log, git grep, git ls-files, git diff, git show). Run no
 build, test, formatter, linter, package install, or any command that writes,
-and make no edit: the working tree is in use by the caller and a probe may
-be mutating it between rounds.`
+and make no edit: the working tree is in use by the caller and another
+session may be editing it between rounds.`
 
 function exclusions(ledger) {
   return `Never return as a unit: a test file or test directory (tests are frozen, so
@@ -457,7 +400,7 @@ function sectionPrompt(task, a) {
   const lead = task.angle === 'lexical'
     ? 'Lead with each entry\'s Signal: run its grep or LSP signal, then read the hits and judge them against the entry\'s Risk and the Leave alone section.'
     : 'Ignore the grep signals. Read the code of the largest and most-changed files as a maintainer would, and name what the entries describe where a pattern search would miss it: renamed variants, split across lines, spread over a module.'
-  return `Scout one section of a declutter catalog across a repository.
+  return `Scout one section of a cleanup catalog across a repository.
 Repository: ${a.repo}
 Catalog: ${a.catalogPath} (read the section "${task.section}" in full, and the
 Leave alone section)
@@ -491,8 +434,8 @@ ${all ? 'Run all four signals below, in order.' : 'Run the one signal below.'}
 
 ${body}
 
-Baseline tool output the caller already produced (untouched tree, HEAD ${a.head}):
-${a.baselineReports ? a.baselineReports : '(none: the repository names no lint or typecheck command, or it printed nothing)'}
+Diagnostics the repository already produced, if any (untouched tree, HEAD ${a.head}):
+${a.baselineReports ? a.baselineReports : '(none supplied; no build or lint was run)'}
 
 ${READ_ONLY}
 
@@ -506,7 +449,7 @@ function refutePrompt(unit, framing, a) {
     ...unit.findings.map((f, i) => `${i}. FINDING ${f.entry} (${f.proofClass}) lines ${f.lines.join(', ')}: ${f.evidence}`),
     ...unit.reportOnly.map((r, i) => `${unit.findings.length + i}. REPORT-ONLY ${r.item} in ${r.symbol} lines ${r.lines.join(', ')}: ${r.note}`),
   ]
-  return `Try to REFUTE these declutter items in one unit.
+  return `Try to REFUTE these cleanup items in one unit.
 Repository: ${a.repo}
 Unit: ${unit.path}
 Catalog: ${a.catalogPath} (read the cited entries' Risk fields and the Leave alone section)
@@ -524,72 +467,58 @@ quoting the code when you refute.
 ${READ_ONLY}`
 }
 
-const mode = parseMode(args?.mode)
-let result
+parseMode(args?.mode)
+const repo = args?.repo
+const catalogPath = args?.catalogPath
+const discoveryPath = args?.discoveryPath
+if (!repo || !repo.startsWith('/')) throw new Error('simplify-code: args.repo must be an absolute path')
+if (!catalogPath || !catalogPath.startsWith('/')) throw new Error('simplify-code: args.catalogPath must be an absolute path')
+if (!discoveryPath || !discoveryPath.startsWith('/')) throw new Error('simplify-code: args.discoveryPath must be an absolute path')
+const depth = parseDepth(args?.depth)
+const plan = DEPTHS[depth]
+const ledger = Array.isArray(args?.ledger) ? args.ledger.filter(Boolean) : []
+const shared = { repo, catalogPath, discoveryPath, head: args?.head || 'unknown', ledger, baselineReports: String(args?.baselineReports || '').slice(0, 6000) }
 
-if (mode === 'work') {
-  const brief = args?.brief
-  if (!brief || typeof brief !== 'string') throw new Error('declutter-code: args.brief must be the worker brief')
-  const seat = workerSeat(args?.tier, args?.followUp === true)
-  log(`work: tier ${args?.tier}${args?.followUp === true ? ' follow-up' : ''} on ${seat.model} at ${seat.effort}`)
-  phase('Work')
-  // Exactly one writer. The caller never seats a second seat while this runs.
-  result = await agent(brief, { agentType: 'general-purpose', phase: 'Work', label: `work:${args?.unit || 'unit'}`, schema: WORKER_SCHEMA, ...seat })
-} else {
-  const repo = args?.repo
-  const catalogPath = args?.catalogPath
-  const discoveryPath = args?.discoveryPath
-  if (!repo || !repo.startsWith('/')) throw new Error('declutter-code: args.repo must be an absolute path')
-  if (!catalogPath || !catalogPath.startsWith('/')) throw new Error('declutter-code: args.catalogPath must be an absolute path')
-  if (!discoveryPath || !discoveryPath.startsWith('/')) throw new Error('declutter-code: args.discoveryPath must be an absolute path')
-  const depth = parseDepth(args?.depth)
-  const plan = DEPTHS[depth]
-  const ledger = Array.isArray(args?.ledger) ? args.ledger.filter(Boolean) : []
-  const shared = { repo, catalogPath, discoveryPath, head: args?.head || 'unknown', ledger, baselineReports: String(args?.baselineReports || '').slice(0, 6000) }
+const planned = agentTotal(depth)
+if (planned > plan.cap) throw new Error(`simplify-code: depth ${depth} plans ${planned} agents, over its cap of ${plan.cap}`)
+const budget = makeBudget(plan.cap)
 
-  const planned = agentTotal(depth)
-  if (planned > plan.cap) throw new Error(`declutter-code: depth ${depth} plans ${planned} agents, over its cap of ${plan.cap}`)
-  const budget = makeBudget(plan.cap)
+const tasks = scoutTasks(depth)
+log(`depth ${depth}: ${tasks.length} scouts, up to ${plan.refuteUnits} units refuted by ${plan.refuters} each, ${planned} of ${plan.cap} agents planned`)
 
-  const tasks = scoutTasks(depth)
-  log(`depth ${depth}: ${tasks.length} scouts, up to ${plan.refuteUnits} units refuted by ${plan.refuters} each, ${planned} of ${plan.cap} agents planned`)
+phase('Scout')
+const scoutReturns = await parallel(tasks.map((task) => () => {
+  budget.take()
+  const prompt = task.kind === 'section' ? sectionPrompt(task, shared) : signalPrompt(task, shared)
+  return agent(prompt, { agentType: 'general-purpose', phase: 'Scout', label: `scout:${task.source}`, schema: SCOUT_SCHEMA, ...AGENT_CONFIG.scout })
+    .then((out) => (out ? { source: task.source, units: out.units } : null))
+}))
 
-  phase('Scout')
-  const scoutReturns = await parallel(tasks.map((task) => () => {
+const refutedIn = Array.isArray(args?.refutedKeys) ? args.refutedKeys.filter(Boolean) : []
+const merged = dropRefuted(mergeUnits(scoutReturns, repo), refutedIn)
+const { kept, securitySkipped, excluded } = partitionUnits(merged, ledger, repo)
+const ranked = rankUnits(kept.filter((u) => u.findings.length || u.reportOnly.length))
+log(`${scoutReturns.filter(Boolean).length}/${tasks.length} scouts returned; ${ranked.length} unit(s) ranked, ${securitySkipped.length} security-boundary skipped`)
+
+phase('Refute')
+const cut = ranked.slice(0, plan.refuteUnits)
+const refuted = await pipeline(
+  cut,
+  (unit) => parallel(FRAMINGS.slice(0, plan.refuters).map((framing) => () => {
     budget.take()
-    const prompt = task.kind === 'section' ? sectionPrompt(task, shared) : signalPrompt(task, shared)
-    return agent(prompt, { agentType: 'general-purpose', phase: 'Scout', label: `scout:${task.source}`, schema: SCOUT_SCHEMA, ...AGENT_CONFIG.scout })
-      .then((out) => (out ? { source: task.source, units: out.units } : null))
-  }))
+    return agent(refutePrompt(unit, framing, shared), { agentType: 'general-purpose', phase: 'Refute', label: `refute:${unit.path}:${framing.key}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.refute })
+  })),
+  (returns, unit) => applyVerdicts(unit, returns || [], plan.refuters)
+)
 
-  const refutedIn = Array.isArray(args?.refutedKeys) ? args.refutedKeys.filter(Boolean) : []
-  const merged = dropRefuted(mergeUnits(scoutReturns, repo), refutedIn)
-  const { kept, securitySkipped, excluded } = partitionUnits(merged, ledger, repo)
-  const ranked = rankUnits(kept.filter((u) => u.findings.length || u.reportOnly.length))
-  log(`${scoutReturns.filter(Boolean).length}/${tasks.length} scouts returned; ${ranked.length} unit(s) ranked, ${securitySkipped.length} security-boundary skipped`)
+const survivors = refuted.filter(Boolean).filter((u) => u.findings.length || u.reportOnly.length)
+const units = rankUnits(survivors)
+const refutedCount = refuted.filter(Boolean).reduce((n, u) => n + u.refutedCount, 0)
+const unvoted = refuted.filter(Boolean).filter((u) => u.unconfirmedCount > 0).map((u) => ({ path: u.path, score: scoreUnit(u), reason: 'an item got no vote' }))
+const failed = cut.filter((_, i) => !refuted[i]).map((u) => ({ path: u.path, score: u.score, reason: 'its refutation failed' }))
+const unverified = [...failed, ...unvoted, ...ranked.slice(plan.refuteUnits).map((u) => ({ path: u.path, score: u.score, reason: 'ranked below the refutation cut' }))]
+const summary = `depth ${depth}: ${budget.used()} of ${plan.cap} agents; ${units.length} unit(s) confirmed, ${refutedCount} item(s) refuted, ${unverified.length} unit(s) unverified, ${securitySkipped.length} security-boundary skipped`
+log(summary)
 
-  phase('Refute')
-  const cut = ranked.slice(0, plan.refuteUnits)
-  const refuted = await pipeline(
-    cut,
-    (unit) => parallel(FRAMINGS.slice(0, plan.refuters).map((framing) => () => {
-      budget.take()
-      return agent(refutePrompt(unit, framing, shared), { agentType: 'general-purpose', phase: 'Refute', label: `refute:${unit.path}:${framing.key}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.refute })
-    })),
-    (returns, unit) => applyVerdicts(unit, returns || [], plan.refuters)
-  )
-
-  const survivors = refuted.filter(Boolean).filter((u) => u.findings.length || u.reportOnly.length)
-  const units = rankUnits(survivors)
-  const refutedCount = refuted.filter(Boolean).reduce((n, u) => n + u.refutedCount, 0)
-  const unvoted = refuted.filter(Boolean).filter((u) => u.unconfirmedCount > 0).map((u) => ({ path: u.path, score: scoreUnit(u), reason: 'an item got no vote' }))
-  const failed = cut.filter((_, i) => !refuted[i]).map((u) => ({ path: u.path, score: u.score, reason: 'its refutation failed' }))
-  const unverified = [...failed, ...unvoted, ...ranked.slice(plan.refuteUnits).map((u) => ({ path: u.path, score: u.score, reason: 'ranked below the refutation cut' }))]
-  const summary = `depth ${depth}: ${budget.used()} of ${plan.cap} agents; ${units.length} unit(s) confirmed, ${refutedCount} item(s) refuted, ${unverified.length} unit(s) unverified, ${securitySkipped.length} security-boundary skipped`
-  log(summary)
-
-  const refutedKeys = refuted.filter(Boolean).flatMap((u) => u.refutedKeys || [])
-  result = { depth, cap: plan.cap, head: shared.head, agentsPlanned: planned, agentsUsed: budget.used(), units, unverified, securitySkipped, excluded, refuted: refutedCount, refutedKeys, summary }
-}
-
-return result
+const refutedKeys = refuted.filter(Boolean).flatMap((u) => u.refutedKeys || [])
+return { depth, cap: plan.cap, head: shared.head, agentsPlanned: planned, agentsUsed: budget.used(), units, unverified, securitySkipped, excluded, refuted: refutedCount, refutedKeys, summary }

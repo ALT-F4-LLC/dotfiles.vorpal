@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Behavior suite for declutter-code.js's pure decisions: the per-depth agent
+# Behavior suite for simplify-code.js's pure decisions: the per-depth agent
 # caps, argument parsing, which paths can be units, how scout returns merge and
 # rank, which refuted items survive, and which model and effort each seat gets.
+# It also pins the skill's contract: read-only on the checkout, with Docket
+# issues as its only output.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -11,31 +13,34 @@
 # WHY THIS EXISTS. The skill hands a discovery round a named depth and trusts
 # the workflow to hold the agent count under that depth's cap, because the
 # round runs unattended under /loop and a drain and nothing else bounds its
-# cost. The exclusion and merge helpers decide which units reach a worker, so
-# a regression there lands cruft removal in a test file or a security
-# boundary. The tier table decides which model writes the code. Each is
-# exercised here without a run.
+# cost. The exclusion and merge helpers decide which units become issues, so
+# a regression there files cruft removal against a test file or a security
+# boundary. The workflow must stay read-only: a writer seat would let a
+# discovery round edit the checkout. Each is exercised here without a run.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WORKFLOW="${DECLUTTER_CODE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/declutter-code.js}"
-SKILL="${DECLUTTER_CODE_SKILL:-${SCRIPT_DIR}/../src/user/claude_code/skills/declutter-code/SKILL.md}"
+WORKFLOW="${SIMPLIFY_CODE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/simplify-code.js}"
+SKILL="${SIMPLIFY_CODE_SKILL:-${SCRIPT_DIR}/../src/user/claude_code/skills/simplify-code/SKILL.md}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WORKFLOW" ] || fatal "declutter-code.js not found at ${WORKFLOW}"
-DISCOVERY="${DECLUTTER_CODE_DISCOVERY:-${SCRIPT_DIR}/../src/user/claude_code/skills/declutter-code/references/discovery.md}"
+[ -f "$WORKFLOW" ] || fatal "simplify-code.js not found at ${WORKFLOW}"
+DISCOVERY="${SIMPLIFY_CODE_DISCOVERY:-${SCRIPT_DIR}/../src/user/claude_code/skills/simplify-code/references/discovery.md}"
 [ -f "$SKILL" ] || fatal "SKILL.md not found at ${SKILL}"
 [ -f "$DISCOVERY" ] || fatal "discovery.md not found at ${DISCOVERY}"
+for sibling in catalog.md gates.md; do
+    [ -f "$(dirname "$DISCOVERY")/${sibling}" ] || fatal "${sibling} not found beside ${DISCOVERY}"
+done
 for tool in node awk; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
 done
 
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/declutter-code-decide.XXXXXX") || fatal "mktemp failed"
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/simplify-code-decide.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
 extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
@@ -52,7 +57,7 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WORKFLOW"
 }
 
-extract declutter-code-decide > "${WORK}/region.js" || fatal "bad or missing TEST markers for declutter-code-decide"
+extract simplify-code-decide > "${WORK}/region.js" || fatal "bad or missing TEST markers for simplify-code-decide"
 
 cat > "${WORK}/cases.js" <<'JS'
 const fs = require('fs')
@@ -87,17 +92,10 @@ budget.take(); budget.take(); budget.take()
 ok(budget.used() === 3, 'the budget counts seats')
 ok(throws(() => budget.take()), 'the budget refuses a seat past the cap')
 
-// Mode and worker tiers.
-ok(parseMode(undefined) === 'discover' && parseMode('work') === 'work', 'mode defaults to discover and accepts work')
+// Mode: discovery only. There is no writer seat to ask for.
+ok(parseMode(undefined) === 'discover' && parseMode('') === 'discover' && parseMode('discover') === 'discover', 'mode defaults to discover')
+ok(throws(() => parseMode('work')), 'the removed work mode is refused, not run as a discovery round')
 ok(throws(() => parseMode('both')), 'an unknown mode is refused')
-ok(workerSeat('ordinary', false).model === 'opus' && workerSeat('ordinary', false).effort === 'high', 'an ordinary worker is opus at high')
-ok(workerSeat('gnarly', false).model === 'opus' && workerSeat('gnarly', false).effort === 'xhigh', 'a gnarly worker is opus at xhigh')
-ok(workerSeat('gnarly', true).model === 'fable' && workerSeat('gnarly', true).effort === 'xhigh', 'a gnarly follow-up is fable at xhigh')
-ok(workerSeat('ordinary', true).model === 'opus' && workerSeat('ordinary', true).effort === 'high', 'an ordinary follow-up is opus at high')
-ok(throws(() => workerSeat('huge', false)), 'an unknown tier is refused')
-for (const [name, t] of Object.entries(WORKER_TIERS)) {
-  ok(t.model && t.effort && t.followUp.model && t.followUp.effort, `tier ${name} pins model and effort for both seats`)
-}
 
 // Exclusion.
 ok(exclusionReason('src/a.test.ts', []) === 'test', 'a .test file is a test')
@@ -201,18 +199,43 @@ for (const d of ['simple', 'standard', 'deep']) {
   ok(row && row.split('|')[2].trim() === String(DEPTHS[d].cap) && row.split('|')[4].trim() === String(DEPTHS[d].refuteUnits), `discovery.md table matches the ${d} cap and refuted units`)
 }
 
+// The catalog's sections and entries match what the workflow fans out over.
+const catalog = fs.readFileSync(process.env.DC_DISCOVERY.replace('discovery.md', 'catalog.md'), 'utf8')
+const headings = catalog.split('\n').filter((l) => l.startsWith('## ')).map((l) => l.slice(3).trim())
+const NOT_PATTERN = ['Evidence that generated code is where to look', 'Report only', 'Leave alone']
+ok(headings.filter((h) => !NOT_PATTERN.includes(h)).join('|') === SECTIONS.join('|'), 'the catalog pattern sections match the workflow SECTIONS, in order')
+ok(NOT_PATTERN.slice(1).every((h) => headings.includes(h)), 'the catalog keeps its Report only and Leave alone sections')
+const patternBody = catalog.slice(catalog.indexOf(`## ${SECTIONS[0]}`), catalog.indexOf('## Report only'))
+const entries = patternBody.split(/^### /m).slice(1)
+ok(entries.length > 0 && entries.every((e) => /^- Proof: `(inert|reachability|probe)`/m.test(e)), 'every catalog pattern entry names a valid proof class')
+
 // The workflow text and the skill that launches it.
 const src = fs.readFileSync(process.env.DC_WORKFLOW, 'utf8')
 const skill = fs.readFileSync(process.env.DC_SKILL, 'utf8')
-ok(/refuted, skipped, declined/.test(skill) && /queued `skipped`|queue the finding `skipped`/.test(skill + fs.readFileSync(process.env.DC_DISCOVERY.replace('discovery.md', 'gates.md'), 'utf8')), 'skipped findings are queued and passed back as keys')
+const gates = fs.readFileSync(process.env.DC_DISCOVERY.replace('discovery.md', 'gates.md'), 'utf8')
+ok(/refuted, skipped, declined, or filed/.test(skill) && /queued `skipped`|queue the finding `skipped`/.test(skill + gates), 'skipped and filed findings are queued and passed back as keys')
 const agentCalls = src.match(/\bagent\(/g) || []
-ok(agentCalls.length >= 3, 'the workflow seats scouts, refuters, and a worker')
+ok(agentCalls.length === 2, 'the workflow seats scouts and refuters and nothing else')
 ok((src.match(/agentType: 'general-purpose'/g) || []).length === agentCalls.length, 'every agent call names the general-purpose type')
-ok((src.match(/\.\.\.(AGENT_CONFIG\.(scout|refute)|seat)\b/g) || []).length === agentCalls.length, 'every agent call spreads a model and effort pin')
+ok((src.match(/\.\.\.AGENT_CONFIG\.(scout|refute)\b/g) || []).length === agentCalls.length, 'every agent call spreads a model and effort pin')
 ok(Object.values(AGENT_CONFIG_FOR_TEST).every((c) => c.model && c.effort), 'every pinned config sets both model and effort')
-ok(/scriptPath/.test(skill) && /declutter-code\.js/.test(skill), 'the skill launches the workflow by scriptPath')
-ok(!/One seat at a time, ever/.test(skill), 'the one-seat rule is amended')
+ok(!/\bWorkflow\b[^\n]*mode: *'work'|WORKER_|workerSeat|phase\('Work'\)/.test(src), 'the workflow carries no writer seat')
+ok(/scriptPath/.test(skill) && /simplify-code\.js/.test(skill), 'the skill launches the workflow by scriptPath')
+ok(!/mode: "work"/.test(skill) && !/Worker seat/.test(skill), 'the skill seats no worker')
+
+// The skill is read-only on the checkout and files Docket issues.
+ok(/The checkout is read-only/.test(skill) && /Docket issues and scratch/.test(skill), 'the skill states it is read-only and writes only issues and scratch')
+ok(!/never create issues/i.test(skill + gates) && !/not filed elsewhere/.test(skill), 'the old no-issues rule is gone')
+const gatesText = fs.readFileSync(process.env.DC_DISCOVERY.replace('discovery.md', 'gates.md'), 'utf8')
+ok(/after-<prior issue id>/.test(skill) && /after-<that issue's id>/.test(gatesText), 'a regression files under a distinct idempotency key that names the prior issue')
+ok(/docket issue create/.test(skill) && /--size/.test(skill) && /--idempotency-key/.test(skill) && /-l simplify-code/.test(skill), 'the skill files labelled, sized, idempotent issues')
+ok(/-f <path>/.test(skill) && /--scope/.test(skill), 'every issue names files and a scope')
+ok(!/Skill\(\{skill: "commit"/.test(skill) && !/commit` skill/.test(skill), 'the skill does not commit')
+ok(/Decide:/.test(skill) && /Decision issues/.test(gates), 'report-only findings become decision issues')
+ok(/Deduplicate before filing/.test(gates) && /wont-do/.test(gates), 'filing deduplicates against open and declined issues')
+ok(/Issue contract/.test(gates) && /frozen/i.test(gates) && /mutation probe/i.test(gates), 'the issue contract carries the frozen contracts and the probe')
 ok(/simple/.test(skill) && /standard/.test(skill) && /deep/.test(skill), 'the skill names all three depths')
+ok(new RegExp(`simple\`\\s+\\(about ${DEPTHS.simple.cap}\\)`).test(skill) && new RegExp(`standard\`\\s+\\(about ${DEPTHS.standard.cap}\\)`).test(skill) && new RegExp(`deep\`\\s+\\(up to ${DEPTHS.deep.cap}`).test(skill), 'the skill states each depth cap as the workflow enforces it')
 
 console.log(`${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

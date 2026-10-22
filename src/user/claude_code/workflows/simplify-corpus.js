@@ -1,6 +1,6 @@
 export const meta = {
   name: 'simplify-corpus',
-  description: 'Apply the simplify review to whole corpus files, then verify each candidate mechanically and adversarially before the caller lands it',
+  description: 'Apply the simplify review to whole corpus files, then verify each candidate mechanically and adversarially before the caller files it as a Docket issue',
   phases: [
     { title: 'Simplify' },
     { title: 'Check' },
@@ -8,24 +8,24 @@ export const meta = {
   ],
 }
 
-// Called by skills/simplify-corpus/SKILL.md, which resolves targets, lands
-// accepted candidates serially in the main session, and owns the /loop
+// Called by skills/simplify-corpus/SKILL.md, which resolves targets, files
+// accepted candidates as Docket issues from the main session, and owns the /loop
 // contract.
 //
 // args: {
 //   files: string[]      repo-relative paths to simplify, one simplifier each;
 //                        any file type the skill admits (Markdown, JS, Python,
 //                        shell, Rust, TOML, extensionless scripts)
-//   scratchDir: string   absolute, writable, empty per pass; candidates land at
+//   scratchDir: string   absolute, writable, empty per pass; candidates are written at
 //                        `${scratchDir}/${file}`; the repo file is never written here
 //   pass: number         1-based pass counter, informational for labels and prompts
 // }
 //
 // Returns { pass, accepted, rejected, unchanged, summary }. `accepted` carries one
 // entry per candidate that shrank the file, passed its kind's mechanical
-// check, and survived a majority of three refuters; the caller copies its
-// `candidate` over `file`. An entry with `confirm: true` (settings.rs) is
-// landed only after the operator confirms it; an entry with `versioned: true`
+// check, and survived a majority of three refuters; the caller diffs its
+// `candidate` against `file` and files the diff. An entry with `confirm: true`
+// (settings.rs) is filed with the security gate line; an entry with `versioned: true`
 // (docket contracts, fragments, workflow TOML) carries the version bump the
 // frozen-drift-check gate demands. Nothing in the repository changes inside
 // this workflow.
@@ -42,7 +42,7 @@ export const meta = {
 // written.
 //
 // Verification. Every candidate must be strictly smaller (the convergence
-// rule: a pass over already-simple files lands nothing) and pass a
+// rule: a pass over already-simple files yields nothing to file) and pass a
 // kind-specific mechanical check: a syntax parse for code, a protected-span
 // subset diff for Markdown (a simplifier may delete protected content but
 // never invent or alter it), and a strictly-greater version for versioned
@@ -52,8 +52,8 @@ export const meta = {
 // strictly-greater-version rules from it; a missing or unparsable report
 // rejects. Survivors face three refuters leading from different
 // angles (behavior or meaning, the reader or caller, churn); two upholds
-// accept. Behavior preservation is judged, not proven: the skill's landing
-// gates (test suites naming the file, self-hygiene for Rust, the module parse
+// accept. Behavior preservation is judged, not proven: the gates a filed issue
+// names (test suites naming the file, self-hygiene for Rust, the module parse
 // gate for workflow scripts) are the mechanical backstop.
 
 // Installed by `just activate` from skills/simplify-corpus/scripts. Unquoted
@@ -72,7 +72,7 @@ const AGENT_CONFIG = {
 const UPHOLD_MIN = 2
 
 // One kind per file decides which prompt, which mechanical check, and which
-// landing rule apply. `data` files (JSON fixtures, signing keys) are never
+// filing rule apply. `data` files (JSON fixtures, signing keys) are never
 // targets; the skill drops them before launching, and the script rejects any
 // that arrive.
 function classify(file) {
@@ -97,7 +97,7 @@ function shrank(check) {
   return check.bytesAfter < check.bytesBefore
 }
 
-// A versioned file must carry a strictly greater version, or the landing
+// A versioned file must carry a strictly greater version, or the filed change
 // would be drift under frozen-drift-check.
 function versionBumped(check) {
   return Number.isInteger(check.versionBefore) && Number.isInteger(check.versionAfter) && check.versionAfter > check.versionBefore
@@ -262,7 +262,7 @@ it is allowed:
 - relative links and their targets
 - every HTML comment, from <!-- to -->
 Headings may go only when the section is removed whole; other files link
-to them, and the caller's cross-reference gate reverts a candidate that
+to them, and the crossref-check gate fails a candidate that
 breaks a link.`
     case 'contract':
       return `This is a versioned docket contract or fragment: Markdown with a
@@ -274,7 +274,7 @@ HTML comment.
 
 The frontmatter is protected except for one line: when you change the
 body at all, increment \`version\` by exactly one. A body change without
-the bump, or a bump without a body change, is drift the landing gate
+the bump, or a bump without a body change, is drift the frozen-drift-check gate
 rejects. Every other frontmatter line stays byte-identical.`
     case 'workflow-toml':
       return `This is a versioned docket workflow definition in TOML. Apply the
@@ -471,7 +471,7 @@ if (dropped.length) log(`${dropped.length} file(s) dropped by a thrown stage: ${
 const savedBytes = accepted.reduce((n, o) => n + (o.bytesBefore - o.bytesAfter), 0)
 const viaSkill = accepted.filter((o) => o.usedSkill).length
 const awaiting = accepted.filter((o) => o.confirm).length
-const summary = `Pass ${pass}: ${work.length} file(s); ${accepted.length} accepted (${savedBytes} bytes removed, ${viaSkill} via the simplify skill, ${awaiting} awaiting operator confirmation), ${rejected.length} rejected, ${unchanged.length} unchanged; 3 refuters per candidate, ${UPHOLD_MIN} upholds to accept.`
+const summary = `Pass ${pass}: ${work.length} file(s); ${accepted.length} accepted (${savedBytes} bytes removed, ${viaSkill} via the simplify skill, ${awaiting} carrying the security gate), ${rejected.length} rejected, ${unchanged.length} unchanged; 3 refuters per candidate, ${UPHOLD_MIN} upholds to accept.`
 log(summary)
 
 return { pass, accepted, rejected, unchanged, summary }

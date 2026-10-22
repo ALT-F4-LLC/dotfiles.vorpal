@@ -1,8 +1,8 @@
 # Discovery
 
-How a declutter tick finds its units: which dimensions it searches, how many
+How a simplify-code tick finds its units: which dimensions it searches, how many
 read-only agents it spends, and what each returns. The workflow
-`declutter-code.js` implements it; the skill's §1 launches it. A change to a
+`simplify-code.js` implements it; the skill's §1 launches it. A change to a
 dimension or a cap lands in the workflow and here together.
 
 ## Dimensions
@@ -23,7 +23,8 @@ scout's blind spot is another's find.
    catch variants a pattern search misses.
 3. **Signals.** Four scouts that find units by evidence other than a pattern:
    - `unused`: the repository's own lint, typecheck, and build output (the
-     baseline run's warnings, passed in by the skill) as ground truth for
+     diagnostics the repository already produced, passed in by the skill when
+     any exist; the skill runs no build or lint) as ground truth for
      unused imports, parameters, locals, functions, and exports, confirmed
      by search across the tree.
    - `churn`: files ranked by git touches over six months; the top twenty
@@ -36,7 +37,7 @@ scout's blind spot is another's find.
    At `simple`, one `combined` scout runs all four signals.
 
 All scouts are read-only: search, read, LSP, and read-only git. None builds,
-tests, or writes, so they cannot disturb a probe.
+tests, or writes, so they leave the checkout exactly as they found it.
 
 ## Refutation
 
@@ -50,7 +51,8 @@ evidence) and both must uphold an item. A refuter that returned nothing
 refutes nothing. An item a refuter explicitly rejected is remembered by its
 key and passed back as `refutedKeys`, so later rounds do not re-find it
 until its path changes. A key a kept or unvoted item shares is not
-remembered. The skill passes the keys of skipped findings the same way.
+remembered. The skill passes the keys of skipped, declined, and filed
+findings the same way.
 
 Units ranked below the cut, units whose refutation failed, and units with an
 item that got no vote come back as `unverified`, each with a reason. Those
@@ -69,5 +71,5 @@ seat an agent past it.
 | `deep` | 30 | 12 section (2 angles) + 4 signal | 6 | 2 |
 
 A depth passed with the invocation wins; otherwise the recorded depth in
-`declutter-state.md` wins; otherwise an attended invocation asks, once, a
+`simplify-state.md` wins; otherwise an attended invocation asks, once, a
 named-level question, and an unattended one uses `simple`.

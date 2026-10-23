@@ -143,7 +143,9 @@ Rules:
   Read-only `docket issue list`, `docket issue show`, `docket project list`,
   `docket run status`, `docket workflow list`, `docket workflow show`, and CLI
   help are also permitted. Confirm exact command syntax through the relevant
-  `--help`.
+  `--help`. [Groom mechanics](references/mechanics.md) records the envelopes,
+  flags, and shell limits earlier passes confirmed; read it at the survey
+  instead of rediscovering them.
 - **Safe edits are yours; approval-gated edits are not.** Apply §3's safe
   edits directly; everything else, including any edit §3 reroutes, goes
   through §4. Only run `docket issue close` for a proposal the operator
@@ -315,15 +317,22 @@ per project, plus `uncovered` for every issue or project an agent could
 not cover. The script's header comment is its argument and return
 contract; read it before composing the launch.
 
-The script runs again with `recheck: true` after §4b applies a split, rescope, or a
-criteria repair, and again in §5, over exactly the rows the pass created or
-rewrote (plus the open epics): same survey fields, same return, no
-clustering analyst, so you settle each `duplicateCandidates` entry inline. This is how the post-edit judgments run (per-piece
-routing and size, the cap on a repaired issue, §2c on a piece's carried
-criteria). Anything it cannot cover is judged inline in the same turn.
+The script runs again with `recheck: true` once, after §4b's last apply
+round, over exactly the rows the pass created or rewrote (plus the open
+epics): same survey fields, same return, no clustering analyst, so you
+settle each `duplicateCandidates` entry inline. This is how the post-edit
+judgments run (per-piece routing and size, the cap on a repaired issue, §2c
+on a piece's carried criteria), and it is §5's recheck of those rows. Pass
+`rulings` with every operator decision recorded so far. A defect it finds
+in text this pass drafted is repaired, re-linted, and re-judged against §2c
+inline; rows a round after the recheck creates or rewrites take one further
+recheck launch over those rows only. Anything it cannot cover is judged
+inline in the same turn.
 
 Its return is evidence for this session's ledger, not the ledger itself.
-Read every entry. A judge's decision, defense, repair draft, or split draft
+Read every entry. A judge's `readiness.scopeLint` and `criteria[].lint`
+stand as those lints' runs for text not edited since, at the sha they name;
+rerun after an edit or a HEAD move. A judge's decision, defense, repair draft, or split draft
 stands only when its cited evidence supports it; re-read the issue and the
 cited files yourself for any entry you would not defend in one sentence,
 for every closure, merge, rescope, or split candidate, and for every issue
@@ -872,8 +881,12 @@ affected issues, the exact unresolved choice, relevant evidence, viable
 options and tradeoffs, and a recommendation when supported. Run the
 drafted batch through the advisor's [question
 review](../../references/working-agreement.md#question-review) before
-asking it; the advisor's pick takes `(Recommended)` and your recommendation
-is its input. Explain what
+asking it, in the same launch as §4b's proposal review; the advisor's pick
+takes `(Recommended)` and your recommendation is its input. A question the
+evidence decides, outside the working agreement's reserved classes, is not
+asked: a clear advisor pick on it is applied and
+reported as advisor-settled under the working agreement's evidence-decided
+ruling, while §4b's approval questions are always asked. Explain what
 each answer would change or unblock. Group issues sharing one decision, and
 ask prerequisite questions before questions that depend on them. Present a
 concrete choice the operator can answer without rereading the backlog. Do
@@ -1062,18 +1075,31 @@ another proposal would split.
 
 **Author every independent proposal before the first approval gate.** Draft
 all splits, repairs, rescopes, re-parents, closures, merges, relation
-corrections, and epic creations the survey supports, run the advisor once
-over the whole set, and put each independent round to the operator in consecutive
-`AskUserQuestion` calls with no turn end between them, applying each round's approvals before asking the next. Only proposals that
-depend on an applied edit wait for it, and they follow in the same turn
-chain; nothing waits merely because an earlier batch was unfinished.
+corrections, and epic creations the survey supports. For each proposal that
+writes criteria, files, or scope, build the stored shape it would leave in
+scratchpad files and run `scripts/scope-lint.sh` and `scripts/ac-lint.sh`
+on that shape, so the apply needs no second drafting round. When the
+session can launch agents, brief the advisor on the whole set as
+soon as it is drafted, with §4a's questions in the same brief, and apply
+§3's safe edits while it runs. That launch is the pass's one advisor
+review; a later one covers only proposals the recheck exposes or proposals
+that depend on an operator answer that differed from the advisor's pick.
+The brief carries the per-criterion evidence (sha, command output, lint
+results) so its checks are spot-checks, not a second investigation. Put
+each independent round to the operator in consecutive `AskUserQuestion`
+calls with no turn end between them, applying each round's approvals before
+asking the next. Only proposals that depend on an applied edit wait for it,
+and they follow in the same turn chain; nothing waits merely because an
+earlier batch was unfinished.
 
-**After each split, rescope, or criteria repair, in the same turn:** run the `recheck` script over the
-created and rewritten issues; re-judge routing and size labels per piece
-(the split rules above); recheck the cap on every repaired issue; fill any piece
-left with empty criteria, files, or scope under §3; and draft what the
-recheck exposes (a repaired issue now over the cap, a footprint that grew,
-a stale relation) as the next proposals. Ask them without ending the turn.
+**After each apply round, in the same turn:** run both lints over every
+issue the round created or rewrote, fill any piece left with empty
+criteria, files, or scope under §3, and present the next round. After the
+last round, launch the `recheck` script once over everything the pass
+created or rewrote (§2): it re-judges routing and size labels per piece
+(the split rules above) and the cap on every repaired issue. Draft what it
+exposes (a repaired issue now over the cap, a footprint that grew, a stale
+relation) as the next proposals and ask them without ending the turn.
 
 Every candidate the ledger holds becomes a proposal or a recorded reason it
 cannot: each criteria repair, split, rescope, re-parent, closure, and merge.
@@ -1082,17 +1108,16 @@ sets go to the operator in rounds, not by omission: one proposal per
 independent change, dependent changes combined as above, grouped by epic
 and several to a round; present a
 round, apply what is approved, and present the next in the same turn, until
-none remain. The advisor review runs once per batch of independent
-proposals, not once per round of an already-reviewed set. A round does not restart the survey, and
-a declined proposal is not asked again.
+none remain. A round does not restart the survey, and a declined proposal
+is not asked again.
 
 If there is nothing to propose, finish any remaining §4a triage; proceed to
 §5 only when no further decisions or authorized edits can be completed.
-When the session can launch agents, launch the `advisor` agent on the proposal batch before
-showing it, and fold its input in with the rest of the batch. Its brief
-carries the drafted approval questions, so this launch is their question
-review: the advisor names which proposals it recommends applying, and those
-options carry `(Recommended)` (for `Apply all` / `Apply none`, its pick).
+The advisor's brief carries the drafted approval questions, so its launch
+is their question review: the advisor names which proposals it recommends
+applying, and those options carry `(Recommended)` (for `Apply all` /
+`Apply none`, its pick). The approval questions are asked whatever its
+pick, under `/goal` too.
 When proposals are ready, show the numbered proposals in chat, including
 their proposed content and `Commands:`, then make an initial
 `AskUserQuestion` call for that batch in the main session:
@@ -1162,9 +1187,12 @@ any remaining resolvable gap through §3 or §4 within this pass. Re-apply
 §2c to each retained issue's entire final acceptance-criteria set,
 including unchanged criteria; grooming stays incomplete for an issue until
 every criterion passes and all required outcomes are covered in the stored
-issue. That recheck applies to non-epic issues. An epic's recheck is that
-it carries `blocked`, that every open child is retained or has a recorded
-gap, and that each membership has its one-sentence defense in the ledger.
+issue. A recheck entry judged on the final stored text is this check for
+its row. That recheck applies to non-epic issues. An epic's recheck is that
+it carries `blocked`, that every open child in the judged scope is retained
+or has a recorded gap, and that each such membership has its one-sentence
+defense in the ledger; children a named-id or filter scope left unjudged
+count in the report as outside scope, not as gaps.
 
 Before reporting, run the completion gate against the ledger file. Every
 judged issue must be in one of these states, and any other state sends the
@@ -1173,7 +1201,11 @@ pass back to §3 or §4:
 - **Run-ready:** passes §2b and §2c, `scripts/scope-lint.sh` exits 0, and
   carries exactly one routing label. A `route-run` issue also matches
   exactly one workflow; `route-direct` and `route-loop` match none by
-  design and need only §2b's criteria for that route.
+  design and need only §2b's criteria for that route. Run-ready is a
+  contract state: §3's rule that grooming verifies the definition, not
+  completion, holds here, so a criterion HEAD does not yet satisfy is the
+  run's work, while one that cites a path, line, or current behavior HEAD
+  does not have is a §2c defect.
 - **Waiting on a named prerequisite:** complete contract, real `depends_on`.
 - **Blocked on the operator:** a decision asked this pass and deferred,
   declined, or unanswered, with the exact input needed recorded.
@@ -1234,7 +1266,10 @@ ID, title, and its retained members with their readiness, followed by the
 retained issues that have no epic and the reason each stayed ungrouped.
 Include a compact ledger of owning projects, issue IDs, decisions,
 reasons, and evidence references so every retention and proposed
-retirement is reviewable. Report automatic edits, proposals, operator
+retirement is reviewable, and close the ledger with one line per judged issue naming
+its gate state and the detail that state requires (the prerequisite, the
+question, the proposal number, or the blocker), with the surveyed issues
+left outside scope counted separately. Report automatic edits, proposals, operator
 decisions, and confirmed applications separately, by kind and issue ID;
 list parent edits and epic creations under their own kinds. State whether
 grooming is complete, which gaps were closed, and which remain with the

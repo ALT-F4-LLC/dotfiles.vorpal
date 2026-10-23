@@ -324,8 +324,9 @@ settle each `duplicateCandidates` entry inline. This is how the post-edit
 judgments run (per-piece routing and size, the cap on a repaired issue, §2c
 on a piece's carried criteria), and it is §5's recheck of those rows. Pass
 `rulings` with every operator decision recorded so far. A defect it finds
-in text this pass drafted is repaired, re-linted, and re-judged against §2c
-inline; rows a round after the recheck creates or rewrites take one further
+in text this pass drafted is repaired under §3's own-draft rule or §4b,
+re-linted, and re-judged against §2c inline; rows a round after the recheck
+creates or rewrites take one further
 recheck launch over those rows only. Anything it cannot cover is judged
 inline in the same turn.
 
@@ -861,6 +862,17 @@ resolving what made a label accurate can leave it stale. Record every
 applied edit for the report. Avoid duplicate labels, repeated drafting
 comments, or commands that would make no change.
 
+Text this pass itself wrote and stored (a criterion it drafted, files,
+scope, or the title of a piece it created), excluding text carried verbatim
+from an existing issue or supplied in an operator answer, stays repairable
+here until the report, within one bound: a lint-driven rewording that keeps
+every condition, a title fix that keeps the stated outcome, or adding a
+file the issue's stored scope already covers. Dropping, narrowing, or
+adding a condition, removing a file, changing scope, or a size change that
+alters workflow eligibility goes back through §4b, and no own-draft repair
+lands on a run-included or claimed issue. The report lists every own-draft
+repair with its issue and its before and after text.
+
 Before editing an issue, refresh its content, assignee, and run membership
 as needed to confirm the edit still qualifies for direct application. If it
 has become protected, route the edit to §4. Refreshing affected records
@@ -990,6 +1002,8 @@ even for an unclaimed issue: changing intended work is not a field fill. A
 criterion, its exact replacement or addition, and how it expresses the
 established requirement and verification method. Include any necessary
 file or scope corrections. Preserve valid criteria and operator intent. A
+rewording of text this pass itself wrote follows §3's own-draft rule
+instead, within its bound. A
 **relation correction** likewise shows the exact before/after relation and
 its evidence. Neither action implements or activates the issue.
 

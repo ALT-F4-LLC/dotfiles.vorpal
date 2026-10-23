@@ -183,7 +183,7 @@ carries `code: "NOT_FOUND"` only because the engine reuses that code to exit
 | `NOT_FOUND` | 2 | Referenced issue/doc/proposal/label/relation does not exist |
 | `VALIDATION_ERROR` | 3 | Bad input: invalid enum value, missing required flag, mutually exclusive flags, non-interactive environment without required flags, invalid `--json` value, negative `--limit` under v2, `--if-version < 1`, no capability token supplied to a verb that requires one (a lease verb, or a conductor-gated verb on a conductor-bound run) |
 | `CONFLICT` | 4 | State conflict: duplicate relation, cycle detected, already-voted, non-empty project on import without `--merge`/`--replace`, `--if-version` mismatch, a dispatch already open for the run, `next --run` while a dispatch is open or discrepancies exist, `dispatch verify` byte mismatch, `dispatch close` over an unreconciled discrepancy, `dispatch backfill-usage` repeating a `(step, attempt, unit)` already recorded, any dispatch verb finding no manifest open, `step annotate` on a step that has not finished, or `issue move --project` on an issue a run holds |
-| `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed), or is not the run's current conductor capability on a conductor-gated verb: `step approve`, `step reject`, `step resolve`, `step reap`, `step hold`, `run pause`, `run resume`, `run abandon`, `run fact add`, or a ruling (`step annotate --integrated-sha`, `run note add`, `run refresh-scope`, `run refresh-body`, `run refresh-files`, `run repin`, `dispatch waive-target`, `dispatch abandon`, `dispatch close --skip-integration-check`, `vote commit` on a vote-step proposal) |
+| `AUTH_ERROR` | 5 | The supplied capability token does not hold this lease (or the entity is unclaimed), or is not the run's current conductor capability on a conductor-gated verb: `step approve`, `step reject`, `step resolve`, `step reap`, `step hold`, `run pause`, `run resume`, `run abandon`, `run hold-issue`, `run fact add`, or a ruling (`step annotate --integrated-sha`, `step integrate`, `run note add`, `run refresh-scope`, `run refresh-body`, `run refresh-files`, `run repin`, `dispatch waive-target`, `dispatch abandon`, `dispatch close --skip-integration-check`, `dispatch close --no-conditions`, `vote commit` on a vote-step proposal) |
 | `STALE_LEASE` | 6 | The token is correct but the lease has expired — claim again |
 | `TIMEOUT` | 7 | Reserved — no verb emits this yet |
 | `UNTRUSTED` | 8 | Reserved — no verb emits this yet |
@@ -332,14 +332,17 @@ written:
 
 - `step approve`, `step reject`, `step resolve`, `step reap`, `step hold`
 - `run pause`, `run resume`, `run abandon` (with or without `--issue`)
+- `run hold-issue`
 - `run fact add`
-- the rulings: `step annotate --integrated-sha`, `run note add`,
-  `run refresh-scope`, `run refresh-body`, `run refresh-files`,
-  `run repin`, `dispatch waive-target`, `dispatch abandon`,
-  `dispatch close --skip-integration-check`, and `vote commit` on a
-  vote-step proposal
+- the rulings: `step annotate --integrated-sha`, `step integrate`,
+  `run note add`, `run refresh-scope`, `run refresh-body`,
+  `run refresh-files`, `run repin`, `dispatch waive-target`,
+  `dispatch abandon`, `dispatch close --skip-integration-check`,
+  `dispatch close --no-conditions`, and `vote commit` on a vote-step
+  proposal
 
-`dispatch close` without `--skip-integration-check` and `vote commit` on a
+`dispatch close` with neither `--skip-integration-check` nor
+`--no-conditions` and `vote commit` on a
 conversational `vote create` proposal stay token-free. A run activated
 before the capability existed asks for nothing until it is conducted.
 
@@ -352,8 +355,8 @@ Three `--authority` rules apply:
 - `run note add` requires `--authority operator` when the note records the
   operator's words, or `--authority conductor` for the conductor's own
   ruling. It has no default, and `standing-grant` is refused.
-- `step reap`, `step hold`, `run resume` and `run fact add` take no
-  `--authority`.
+- `step reap`, `step hold`, `step integrate`, `run resume`,
+  `run hold-issue` and `run fact add` take no `--authority`.
 
 Executor verbs (`step claim|heartbeat|record|fail`) are untouched, and an
 executor is never handed this token.

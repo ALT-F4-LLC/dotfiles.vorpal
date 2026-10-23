@@ -121,7 +121,8 @@ plain `--metadata` form stays token-free), `docket
 run note add`, `docket run refresh-scope`, `docket run refresh-body`,
 `docket run refresh-files`, `docket run repin`, `docket dispatch
 waive-target`, `docket dispatch abandon`, `docket dispatch close
---skip-integration-check` (a close without the skip stays token-free),
+--skip-integration-check` or `--no-conditions` (a close with neither stays
+token-free),
 and `docket vote commit` on a vote-step proposal (a conversational `vote
 create` proposal stays token-free). `run note add` also requires
 `--authority operator|conductor`, with no default: `operator` when the

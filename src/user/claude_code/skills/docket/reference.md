@@ -6,7 +6,7 @@ command's flags. The focused guides linked from [SKILL.md](SKILL.md) cover
 transport, issue work, workflow authoring, schemas, and voting.
 
 The engine-conductor families (run, step, dispatch, events, guard, trust,
-gate, policy, registry, report, doctor) are documented for the docket-run
+gate, policy, pin, registry, report, doctor) are documented for the docket-run
 skill under [docket-run/references](../docket-run/references/run.md) and
 are not repeated here.
 

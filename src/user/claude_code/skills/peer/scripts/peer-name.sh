@@ -2,7 +2,8 @@
 #
 # peer-name — print the session name the peer convention expects for the
 # current directory, so a session can compare it with the first line of
-# `ListAgents` and ask the operator through AskUserQuestion to `/rename` when they differ.
+# `ListAgents` and tell the operator the exact `/rename <name>` command when
+# they differ.
 #
 # The convention, in order:
 #   1. Inside a git checkout, the repository's name: the basename of the

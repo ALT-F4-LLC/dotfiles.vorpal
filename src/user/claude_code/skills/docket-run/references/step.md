@@ -362,7 +362,7 @@ call: for each step, in the order named, it cherry-picks the step's recorded
 writer chain onto the shared checkout's branch with `git cherry-pick -x` and
 annotates the step with the resulting HEAD. It is the one engine verb that
 writes git, and on a bound run it requires the conductor token through
-`DOCKET_TOKEN` or stdin, never argv, for steps of that run. Before anything
+`DOCKET_TOKEN` or stdin, never argv, when every named step belongs to a run that token governs. Before anything
 is written every named step must pass read-only checks: it is done, it is an
 executor step that holds the tree, its recorded commits exist with no merge
 commit among them, it is not already annotated as integrated, and the shared

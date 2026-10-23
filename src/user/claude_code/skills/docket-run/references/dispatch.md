@@ -319,7 +319,7 @@ unintegrated. Integrate, then close again. The close event records
 `integration: verified|skipped` and the shas checked, which `run report`
 shows.
 
-**Close verifies conditions.** A sealed vote whose approve-with-concerns
+**Close verifies conditions.** A vote sealed during the dispatch whose approve-with-concerns
 conditions have no linked tribunal issue (`docket issue create -l tribunal`
 and `docket vote link` link one) refuses `CONFLICT` naming each vote and its
 seats. `--no-conditions REASON` closes anyway: the votes and REASON ride on

@@ -543,7 +543,7 @@ below is a separate check.
 **The security-routing lint.** Distinct from the exec-root routing lint
 above, `run activate --dry-run` also reports a security-routing lint in a
 top-level `routing_lint` object of its `--json` envelope; a real activation's
-envelope carries no such key, so the field is a dry-run read. Its keys, as
+envelope carried no such key in the two activations observed (neither had a lint finding), so treat the field as a dry-run read. Its keys, as
 observed: `label` is the configured `routing.security_label` (default
 `security`); `lexicon_terms` counts the terms in `routing.security_lexicon`,
 a comma-separated list that `config set` refuses with `VALIDATION_ERROR`
@@ -554,8 +554,8 @@ that has a literal prefix; `labelled_issues` stayed 0 while the one labelled
 issue had no comparable scope. When the lint compared nothing the text mode
 prints a warning beginning `the security-routing lint checked nothing` for
 an empty `routing.security_lexicon`, or `compared no scopes ... only the
-lexicon was checked` once a lexicon is set. The matches themselves appear in
-the envelope's `routing_warnings` array, described in the docket-plan skill.
+lexicon was checked` once a lexicon is set. The matches themselves are documented to appear in
+the envelope's `routing_warnings` array (per the docket-plan skill; not observed in this build).
 
 Re-activating an `active` run expands newly-unblocked phases only and
 **inherits** the original pin set — a workflow re-registered or a pinned

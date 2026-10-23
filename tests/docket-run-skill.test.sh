@@ -1409,7 +1409,7 @@ done
 # paragraph's own verb list is not an invocation.
 #
 #   z1 drop `docket run refresh-scope` from the capability paragraph
-#   z2 delete a carve-out, e.g. "(a close without the skip stays token-free)"
+#   z2 delete a carve-out, e.g. "(a close with neither stays token-free)"
 #   z3 drop `--authority operator` from the clean-HEAD run note example
 #   z4 drop the token redirect from the 4b skip-integration close
 #   z5 drop the token redirect from an inline dispatch abandon span
@@ -1429,7 +1429,7 @@ if grep -qF -- "$capability_anchor" "${WORK}/capability"; then
         '`docket dispatch abandon`' '`docket dispatch close --skip-integration-check`' \
         '`docket vote commit`' \
         '(the plain `--metadata` form stays token-free)' \
-        '(a close without the skip stays token-free)' \
+        '`--no-conditions` (a close with neither stays token-free)' \
         '(a conversational `vote create` proposal stays token-free)' \
         'requires `--authority operator|conductor`, with no default'; do
         states "ruling verbs: the capability paragraph carries ${lit}" "${WORK}/capability" "$lit"

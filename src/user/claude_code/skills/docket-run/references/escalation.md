@@ -230,10 +230,10 @@ ruling in place of the operator's word.
 that declares no `max_attempts` is re-offered after every failure, so the
 engine never parks it on its own. When one step fails the same way again,
 the hold goes advisor-first; when that answer is not clear,
-offer the operator `docket step hold` (above) for that step: it parks the
-one READY step `waiting-human` (park class `held`), the next dispatch stops
-offering it, and the rest of its issue runs on. A claimed step is
-force-reaped first, which spends no attempt. The held step resolves like
+offer the operator `docket step hold` (above) for that step: it
+parks the one PENDING step `waiting-human` (park class `held`), the next
+dispatch stops offering it, and the rest of its issue runs on. A claimed
+step is force-reaped first, which spends no attempt. The held step resolves like
 any park: `--as retry` returns it to the pool, `--as skip` skips it. Never
 offer `docket run abandon $RUN --issue` to stop one step: it fails every
 step of the issue.

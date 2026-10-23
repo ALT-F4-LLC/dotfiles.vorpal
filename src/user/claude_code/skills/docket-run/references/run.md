@@ -5,8 +5,8 @@ family and `docket pin show` (consumer: the docket-run skill), except two
 verbs: `run verify-pins` is documented in [pins.md](pins.md), and `run fact
 add` in the docket-run [SKILL.md](../SKILL.md). Response shapes and parsing
 traps live in docket's
-[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-18 against `docket
-nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`) by
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-23 against `docket
+nightly-37-gce50f60` (commit `ce50f60`, built `2026-10-23T00:58:29Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -15,7 +15,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 872 lines
+- [`docket run`](#run-commands) — 890 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 32 lines
@@ -23,7 +23,7 @@ examples reflect the swept commands as of that build.
   - [`run refresh-body RUN-N --issue <ID> --reason R`](#run-refresh-body) — 27 lines
   - [`run refresh-files RUN-N --issue <ID> --reason R`](#run-refresh-files) — 28 lines
   - [`run report RUN-N`](#run-report) — 105 lines
-  - [`run activate RUN-N`](#run-activate) — 218 lines
+  - [`run activate RUN-N`](#run-activate) — 236 lines
   - [`run conduct RUN-N`](#run-conduct) — 47 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 92 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
@@ -537,7 +537,25 @@ anchored entry clears the issue. A scope may name files the work will
 CREATE, so the lint deliberately under-reports rather than flagging
 greenfield new-file scopes. A run with no recorded exec root skips it
 entirely. The message names the root it resolved against and the way out —
-`docket issue move --project`, or fix the scope.
+`docket issue move --project`, or fix the scope. The security-routing lint
+below is a separate check.
+
+**The security-routing lint.** Distinct from the exec-root routing lint
+above, `run activate --dry-run` also reports a security-routing lint in a
+top-level `routing_lint` object of its `--json` envelope; a real activation's
+envelope carries no such key, so the field is a dry-run read. Its keys, as
+observed: `label` is the configured `routing.security_label` (default
+`security`); `lexicon_terms` counts the terms in `routing.security_lexicon`,
+a comma-separated list that `config set` refuses with `VALIDATION_ERROR`
+(exit 3) if it holds whitespace or non-ASCII, so `password,secret` counts 2;
+`linted` counts the bound issues compared, which excludes an issue already
+carrying the label; `unscoped` counts the linted issues with no scope glob
+that has a literal prefix; `labelled_issues` stayed 0 while the one labelled
+issue had no comparable scope. When the lint compared nothing the text mode
+prints a warning beginning `the security-routing lint checked nothing` for
+an empty `routing.security_lexicon`, or `compared no scopes ... only the
+lexicon was checked` once a lexicon is set. The matches themselves appear in
+the envelope's `routing_warnings` array, described in the docket-plan skill.
 
 Re-activating an `active` run expands newly-unblocked phases only and
 **inherits** the original pin set — a workflow re-registered or a pinned

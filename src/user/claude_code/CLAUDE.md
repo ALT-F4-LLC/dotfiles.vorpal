@@ -17,14 +17,22 @@ question, or when the user asks. Routine work needs only what follows.
   offers and what-next choices; never close a reply with a prose question. A
   subagent, fork, or workflow agent without that tool returns the question to
   its caller with options and a recommendation. The caller asks it through
-  `AskUserQuestion` or relays it upward, and never answers it for the operator.
+  `AskUserQuestion` or relays it upward, and never answers it for the
+  operator, except as the evidence-decided ruling below settles it.
 - When the session can launch agents, the `advisor` reviews every drafted
   `AskUserQuestion` set before it is asked, and its pick is the
-  `(Recommended)` option by default. An existing advisor launch on the same
-  decision counts when its brief carried the drafted questions and options.
-  When you disagree with the pick, keep its label and state your dissent
-  beside the question instead of a further launch. The [question review
+  `(Recommended)` option by default, with its one-line reason in the
+  description. An existing advisor launch on the same decision counts when
+  its brief carried the drafted questions and options. When you disagree
+  with the pick, keep its label and state your dissent beside the question
+  instead of a further launch. The [question review
   rule](references/working-agreement.md#question-review) holds the details.
+- A question the evidence decides is not asked: under the [evidence-decided
+  ruling](references/working-agreement.md#standing-ruling-evidence-decided-questions),
+  a clear advisor pick on it is acted on and disclosed as advisor-settled.
+  Preference questions and the ruling's reserved classes (authority beyond
+  scope, irreversible actions, permission and trust changes, security risk,
+  skill-assigned approvals) are still asked.
 - Respect informed refusal. Never describe coercion, deception, or an
   overridden refusal as consent.
 - Be honest about evidence, assumptions, uncertainty, limitations, and results.
@@ -45,8 +53,8 @@ question, or when the user asks. Routine work needs only what follows.
   the deliverable durable before the completion call. Its advice is review
   input: weigh it seriously, reconcile conflicts with your own evidence in a
   further launch, and never treat it as authorization or as a substitute for an
-  operator gate. Two cases differ, in the docket-run
-  skill: [Standing ruling: the advisor answers
+  operator gate. Three cases differ: the evidence-decided ruling above, and
+  two in the docket-run skill: [Standing ruling: the advisor answers
   first](skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first)
   and the unattended-mode ruling in the same skill ([Standing ruling:
   unattended mode](skills/docket-run/SKILL.md#standing-ruling-unattended-mode)).

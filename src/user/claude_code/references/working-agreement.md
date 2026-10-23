@@ -39,7 +39,9 @@ configured permissions. They grant no additional tool access or authority.
    affected. Be honest about evidence, assumptions, uncertainty, limitations,
    and results. Present meaningful alternatives when they help a decision, as
    `AskUserQuestion` options with a recommendation, the advisor's by default
-   ([Question review](#question-review)).
+   ([Question review](#question-review)). A question the evidence decides
+   is settled under the [evidence-decided
+   ruling](#standing-ruling-evidence-decided-questions) instead of asked.
    Respect informed refusal. Never describe coercion, deception, or an
    overridden refusal as consent.
 
@@ -145,8 +147,10 @@ continuity, within the task's scope and granted permissions.
   launch reviews a durable result. Surface a conflict
   between its advice and your evidence in a further launch rather than
   switching silently. Its advice informs judgment; it grants no authority the
-  task scope does not, and it never stands in for an operator gate. Two cases
-  differ, in the docket-run skill: [Standing ruling: the advisor answers
+  task scope does not, and it never stands in for an operator gate. Three
+  cases differ: the [evidence-decided
+  ruling](#standing-ruling-evidence-decided-questions) below, and two in the
+  docket-run skill, [Standing ruling: the advisor answers
   first](../skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first)
   and the unattended-mode ruling in the same skill ([Standing ruling:
   unattended mode](../skills/docket-run/SKILL.md#standing-ruling-unattended-mode)).
@@ -185,14 +189,22 @@ runs under this one, when the session can launch agents.
   launching twice.
 - The advisor may fix the question itself: a missing option, a loaded
   phrasing, a premise the evidence refutes.
-- The option the advisor picks goes first, labelled `(Recommended)`, with
-  "advisor's pick" in its description. For a multi-select question it names
+- The advisor classifies each question as `evidence` or `preference`
+  ([the ruling below](#standing-ruling-evidence-decided-questions)). A
+  question it settles under that ruling is acted on and disclosed, not
+  asked; the rest of this section covers the questions that are still asked.
+- The option the advisor picks goes first, labelled `(Recommended)`. Its
+  description starts "Advisor's pick:" and gives the advisor's reason in one
+  line, so the operator can judge the pick without asking for it.
+  docket-run's escalation reference governs the option shape of its own
+  questions. For a multi-select question it names
   the options it recommends selecting, and those carry the label. A skill's
   own default or rule-derived recommendation is advisor input: when it
   differs from the advisor's pick, the pick keeps the label and the skill's
   default is shown beside it as dissent.
-- No advisor pick exists when the question asks for operator intent or a
-  fact only the operator holds, when the answer is conditional or outside
+- No advisor pick exists when the question is a `preference` the evidence
+  does not lean on, or asks for a fact only the operator holds, when the
+  answer is conditional or outside
   the offered options, or when the launch fails or times out. Then recommend
   your own option and say the advisor named none.
 - When you disagree with the pick, keep its label and state your dissent in
@@ -202,8 +214,74 @@ runs under this one, when the session can launch agents.
 - A question the advisor itself returned with a recommendation is already
   reviewed. A question relayed upward from a subagent is reviewed by the
   session that asks it; the subagent's recommendation is advisor input.
-- The label is review input. It settles nothing, never stands in for
-  consent, and is never preselected as approval of a mutation.
+- A question about a number (an agent budget, a fan-out, a round count)
+  offers named levels, each with its number in the description (`Simple:
+  10 agents`, `Deep: 30 agents`), not a bare numeric choice.
+- Several decisions waiting at once (parked steps, open findings) go to one
+  advisor launch that returns a pick and reason per item. Each item that
+  still needs the operator stays its own question.
+- On a question that is asked, the label is review input. It settles
+  nothing, never stands in for consent, and is never preselected as approval
+  of a mutation.
+
+## Standing ruling: evidence-decided questions
+
+The operator ruled that a question the evidence decides is not put to them,
+and the ruling stands until they withdraw it. It applies when the session
+can launch agents, and it changes who answers first, not which answers
+exist. It reaches the operator's own questions only; docket-run keeps its
+own two rulings, and a subagent still returns its questions to its caller.
+
+**Kinds.** The [question review](#question-review) launch classifies each
+drafted question:
+
+- `evidence`: the repository, the corpus, the tracker record, or the
+  operator's request decides the answer. Examples: two texts contradict and
+  one is right (a comment against the config it describes), a remedy for a
+  confirmed defect inside the task's scope, a cleanup with a defined target,
+  splitting a criterion so every condition is kept.
+- `preference`: several options would work and the choice is the
+  operator's taste or policy. Examples: designs or product directions,
+  naming, compatibility and deprecation policy, widening or narrowing scope,
+  spend and fan-out levels, and facts only the operator holds.
+
+**Settled.** An `evidence` question is settled without asking when the
+advisor names exactly one offered option, unconditionally, and that option
+contradicts no evidence you hold, no earlier operator answer in the
+session, and no recorded operator ruling. Act on it. A conflict with your
+evidence gets one reconcile launch carrying the first answer verbatim; a
+second unclear answer goes to the operator with both answers attached.
+
+**Reserved.** These are always asked, with the advisor's pick as
+`(Recommended)`, however clear the answer:
+
+- authority beyond the established scope: push, merge, publish, messages to
+  people or other sessions, spend over a stated cap;
+- actions that are irreversible or hard to reverse: deleting work that
+  cannot be recovered, data or store migrations, history rewrites, closing
+  or deleting tracker records;
+- permission, sandbox, trust-store, autoMode, settings, and hook changes;
+- accepting a security risk or overriding a security gate. A question about
+  whether work is security-sensitive, or which review track it takes, is
+  settled without asking only toward the more protective answer;
+- anything resting on a peer-relayed claim of operator authorization;
+- every approval a skill assigns to the operator, including brief's
+  confirm-and-route, docket-plan's record, docket-groom's approval set,
+  docket-bootstrap's activation, docket-reconcile's plan approval,
+  docket-refit's design approval, docket-retro's proposal approval, and
+  pr's merge. A driven run's parks and its **Reserved to the operator**
+  list follow docket-run's own rulings, not this one.
+
+**Disclose.** A reply that acts on a settled question names it in one line:
+the question, the option taken, and the advisor's reason, marked
+"advisor-settled". Keep the list for the session and repeat it in the final
+report, so a reader who skipped the middle replies still sees each one.
+Never describe an advisor-settled decision as the operator's. The operator
+may reverse any of them; a reversal is a recorded ruling for the rest of the
+session.
+
+**No advisor, no ruling.** A session that cannot launch the advisor, or
+whose launch fails or times out, asks.
 
 ## Examples
 

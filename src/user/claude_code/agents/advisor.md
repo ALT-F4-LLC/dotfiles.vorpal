@@ -43,11 +43,19 @@ ask the operator; return open questions to the caller with a recommendation.
 
 **Reviewing a pending operator question.** When the brief carries drafted
 `AskUserQuestion` questions and options, check each question for a missing
-option, loaded wording, or a premise the evidence refutes, and name exactly
-one option per question as your pick (for a multi-select question, the
-options to select). Name none, and say why, when a question asks for
-operator intent or a fact only the operator holds, or when no offered option
-is supported. Your pick becomes the question's `(Recommended)` option.
+option, loaded wording, or a premise the evidence refutes. Classify each as
+`evidence` (the repository, corpus, tracker record, or request decides it)
+or `preference` (several options work and the choice is the operator's
+taste or policy: designs, naming, compatibility, scope, spend), as the
+working agreement's evidence-decided ruling defines them. Name exactly one
+option per question as your pick (for a multi-select question, the options
+to select), with a one-line reason the caller shows the operator. Name none,
+and say why, when a `preference` question has no evidence leaning on it, it
+asks a fact only the operator holds, or no offered option is supported.
+On an `evidence` question outside the ruling's reserved classes, your pick
+can settle it when it is unconditional and the caller's checks against its
+own evidence and the operator's recorded rulings pass; on every other
+question it becomes the `(Recommended)` option.
 
 **Your advice is review input.** It grants no authority and does not replace an
 operator gate. Do not launch other agents.

@@ -6,7 +6,7 @@ command's flags. The focused guides linked from [SKILL.md](SKILL.md) cover
 transport, issue work, workflow authoring, schemas, and voting.
 
 The engine-conductor families (run, step, dispatch, events, guard, trust,
-gate, policy, registry, report, doctor) are documented for the docket-run
+gate, policy, pin, registry, report, doctor) are documented for the docket-run
 skill under [docket-run/references](../docket-run/references/run.md) and
 are not repeated here.
 
@@ -15,9 +15,9 @@ before parsing it. A nearby source checkout is not proof of an installed
 binary's behavior unless their commits match.
 
 [references/cli-inventory.json](references/cli-inventory.json) records command
-paths, aliases, usage, and local/inherited flags. Refreshed **2026-10-18 UTC**
-against `nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`);
-covers 160 public commands. From this skill directory,
+paths, aliases, usage, and local/inherited flags. Refreshed **2026-10-23 UTC**
+against `nightly-37-gce50f60` (commit `ce50f60`, built `2026-10-23T00:58:29Z`);
+covers 162 public commands. From this skill directory,
 `python3 scripts/cli_inventory.py --check` checks the inventory; `--write`
 refreshes it after a CLI upgrade. The helper invokes only `--help` and
 `--version` and does not read or mutate a Docket store. It detects command/flag
@@ -26,11 +26,12 @@ drift only, not changes to runtime semantics or JSON response shapes.
 The docket-cli-audit skill's sweep records those in
 [../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json):
 it drives every inventoried command against a scratch store and keeps each
-exit code, message and both JSON dialects. The JSON envelope table and
-behavioral notes below were checked against that same build's fixtures; a
+exit code, message and both JSON dialects. The JSON envelope table below
+was checked against the `nightly-37-gce50f60` fixtures, the behavioral notes
+against an earlier build's; a
 flag path the swept scenario did not exercise remains a previously-observed
-claim, not a re-checked one. Run `/docket-cli-audit` after a CLI upgrade to
-refresh both and audit the prose against them.
+claim, not a re-checked one. Run `/docket-cli-audit` after a CLI upgrade: it audits the
+prose against both and files an issue to refresh them.
 
 <a id="contents"></a>
 
@@ -132,7 +133,7 @@ core shapes, not exhaustive field lists; additive fields can appear.
 | `issue list` | `{issues: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `step list --run RUN-N` | `{steps: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `run status` (no id) | `{runs: [...], total: <int>}` | `{items: [...], total, truncated}` |
-| `run status RUN-N` | `{run: {...}, issues: <int>, steps: [...], pins: [...]}` | identical |
+| `run status RUN-N` | `{run: {...}, issues: <int>, steps: [...], pins: [...], activation_head: {branch, commit}}`; a run in `planning` returns `{run, issues: <int>, unexpanded: [{issue, status, blocked_by: [[{issue, status}]]}]}` instead (`blocked_by` is a nested array), and `steps`, `pins` and `activation_head` appear once the run is activated | identical |
 | `run budget RUN-N` | `{run, budget, source, floor, reported, spend, row_version}` | identical |
 | `step artifact ARTIFACT-N --payload` | the payload itself — array or object; `NOT_FOUND` (not `data: null`) when the artifact has no structured payload | identical |
 | `step artifact ARTIFACT-N` (no `--payload`) | `{artifact, kind, producer, body, bytes, sha256, created_at_ms}`, plus `payload` and `payload_bytes` only when the artifact has a structured payload | identical |

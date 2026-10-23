@@ -1,6 +1,6 @@
 export const meta = {
   name: 'tighten',
-  description: 'Rewrite prose files for concision chunk by chunk, then verify each chunk mechanically and adversarially before the caller lands it',
+  description: 'Rewrite prose files for concision chunk by chunk, then verify each chunk mechanically and adversarially before the caller files it as a Docket issue',
   phases: [
     { title: 'Split' },
     { title: 'Rewrite' },
@@ -11,12 +11,12 @@ export const meta = {
 }
 
 // Called by skills/simplify-corpus/SKILL.md in tighten mode, which resolves
-// targets, lands accepted candidates serially in the main session, and owns
+// targets, files accepted candidates as Docket issues from the main session, and owns
 // the /loop contract.
 //
 // args: {
 //   files: string[]      repo-relative Markdown paths to tighten
-//   scratchDir: string   absolute, writable, empty per pass; candidates land at
+//   scratchDir: string   absolute, writable, empty per pass; candidates are written at
 //                        `${scratchDir}/${file}` and chunk work under
 //                        `${scratchDir}/.chunks/${file}`; the repo file is never written here
 //   pass: number         1-based pass counter, informational for labels and prompts
@@ -35,8 +35,8 @@ export const meta = {
 //
 // Returns { pass, accepted, rejected, unchanged, summary }. `accepted` carries
 // one entry per file whose joined candidate shrank and kept every protected
-// span, with per-chunk votes and the chunks that did not land; the caller
-// copies its `candidate` over `file`. Nothing in the repository changes inside
+// span, with per-chunk votes and the chunks that did not make it into the candidate; the caller
+// diffs its `candidate` against `file` and files the diff. Nothing in the repository changes inside
 // this workflow.
 
 // Installed by `just activate` from skills/simplify-corpus/scripts. Unquoted

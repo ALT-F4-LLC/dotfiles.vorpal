@@ -1,12 +1,13 @@
 # Catalog
 
-The patterns a declutter pass looks for, what removes each one without
+The patterns a simplify-code pass looks for, what removes each one without
 changing behavior, and how the removal is proven safe. Human-written and
 generated code produce the same cruft; the entries note where a pattern is
 measured to be more common in generated code, because that is where the
 scout should look first.
 
-Every entry carries a proof class the skill's §2 applies:
+Every entry carries a proof class. The skill's §2 states the matching guard in
+each issue it files, for the worker who applies it:
 
 - `inert`: the edit cannot change runtime behavior. Comments, dividers, a
   suppression the linter no longer needs, a cast the type checker no longer
@@ -14,15 +15,15 @@ Every entry carries a proof class the skill's §2 applies:
   required.
 - `reachability`: removal of code nothing can execute. Proven statically as
   the [gates reference](gates.md#reachability-proof) describes; no probe.
-- `probe`: a transformation of live code. The site must fail a mutation
-  probe first, then build, typecheck, and the full suite must pass after.
+- `probe`: a transformation of live code. The worker must see the site fail
+  a mutation probe first, then build, typecheck, and the full suite must pass
+  after.
 
-Each entry: Signal, Why, Simplification, Risk, Proof, Source. An entry with
-no Proof class is report-only: the scout names it and the worker never
-applies it. A source
+Each entry: Signal, Why, Simplification, Risk, Proof, Source. A source
 marked `unsourced` is practitioner consensus the research found no primary
 source for. The last two sections list what the scout reports but the
-worker never touches, and what looks like cruft and is not.
+worker never touches (Report only, which carries no proof class), and what
+looks like cruft and is not (Leave alone).
 
 ## Evidence that generated code is where to look
 
@@ -103,8 +104,8 @@ worker never touches, and what looks like cruft and is not.
   alerting and dashboard config for the literal before the probe; a match
   leaves the line alone.
 - Proof: `probe`; a test must capture the log output. A site whose tests
-  do not capture the output is ledgered `no coverage`; a unit with no tests
-  is `no tests`.
+  do not capture the output is left alone by the worker; a unit with no tests
+  is ledgered `no tests`.
 - Source: unsourced.
 
 ### Unjustified lint suppression
@@ -693,10 +694,10 @@ worker never touches, and what looks like cruft and is not.
 
 ## Report only
 
-The scout names these; the worker never applies them on its own, because
+The scout names these; the pass never files them as ready work, because
 the fix changes behavior or needs a decision this loop cannot make. A
 refuter-confirmed item enters the [findings queue](gates.md#findings-queue)
-and is resolved only by a recorded decision, as the skill's §3 describes.
+and becomes a decision issue, as the skill's §3 describes.
 
 - **Swallowed exception.** An empty catch, or one that only logs on a path
   where the error matters. Removing it changes behavior, and a re-test of
@@ -729,7 +730,7 @@ and is resolved only by a recorded decision, as the skill's §3 describes.
   copies mean the same thing needs the operator's judgment.
 - **Complexity outlier** (cyclomatic or cognitive) whose only fix is a
   redesign. Extracting guard clauses or a named condition is a catalog
-  entry; re-architecting a function is a rewrite, and the diff review
+  entry; re-architecting a function is a rewrite, and each issue's review bar
   refuses rewrites.
 - **Structural smells that need design**: Large Class, Divergent Change,
   Shotgun Surgery, Feature Envy, Inappropriate Intimacy, Parallel

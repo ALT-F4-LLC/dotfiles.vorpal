@@ -254,6 +254,23 @@ for (const isolated of [true, false]) {
                 `${label}: obligation 3 sets no long Bash timeout on the record call`)
             ok(/GATES RUN DETACHED/.test(block) && /docket step show STEP-\d+ --json/.test(block),
                 `${label}: obligation 3 says gates run detached and reads the terminal state with step show`)
+            // The terminal-state read names its field path: agents otherwise guess
+            // .data.step.status, which is the step id string, not an object.
+            const read = /`docket step show STEP-\d+ --json \| jq -r '([^']+)'`/.exec(block)
+            ok(read && read[1] === '.data.status',
+                `${label}: the TERMINAL STATE read pins jq -r '.data.status' (got ${read ? read[1] : 'no pinned filter'})`)
+            // The envelope `docket step show STEP-N --json` prints for a recorded step.
+            const payload = JSON.stringify({ ok: true, data: {
+                step: 'STEP-4381', instance: 'verify@0', issue: 'ORG-1', run: 'RUN-3', kind: 'executor', executor: 'verify-ac',
+                class: 'verify-ac', attempt: 2, reaped_claims: 1, prior_attempt_end: 'reaped', expected_cost: 0.5, lease_ttl_s: 1800,
+                status: 'done',
+                metadata: { effort_requested: 'xhigh', model_requested: 'opus', variant: 'opus-xhigh' },
+                target_sha: '230b8e3189bfa92144d63ff5269cb90e1993cbca', target_worktree: '/work/tree',
+            } })
+            let printed = ''
+            try { printed = read ? execFileSync('jq', ['-r', read[1]], { input: payload, encoding: 'utf8' }).trim() : '' } catch (e) { printed = `jq failed: ${e.message}` }
+            ok(printed === 'done',
+                `${label}: the pinned filter prints done on a captured step show payload (got ${JSON.stringify(printed)})`)
         }
 
         // ---- refused-write rule: the refusal's own recovery, once, disclosed ----

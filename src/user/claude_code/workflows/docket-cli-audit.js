@@ -9,19 +9,19 @@ export const meta = {
 }
 
 // Called by skills/docket-cli-audit/SKILL.md, which refreshes the evidence,
-// discovers the files, and lands the fixes. The workflow reads nothing itself.
+// discovers the files, and files the findings as Docket issues. The workflow reads nothing itself.
 // args: {
 //   files: string[]            repo-relative files that name a docket command
 //   evidence: {
 //     digest: string           path to the Markdown digest of the fixtures
 //     inventoryDiff: string    path to the unified diff of cli-inventory.json (old -> installed), or ''
 //     fixturesDiff: string     path to the unified diff of cli-fixtures.json (old -> installed), or ''
-//     inventory: string        repo-relative path of cli-inventory.json
-//     fixtures: string         repo-relative path of cli-fixtures.json
+//     inventory: string        path of the freshly written cli-inventory.json (scratch)
+//     fixtures: string         path of the freshly written cli-fixtures.json (scratch)
 //     binaryVersion: string    the installed binary's --version line
 //     previousVersion: string  the version the inventory recorded before the refresh
 //   }
-//   protectedFiles: string[]   files whose findings are report-only (still read, never fixed)
+//   protectedFiles: string[]   files whose findings are report-only (still read, never filed as a remedy)
 // }
 // Returns {findings, unverified, cleanNotes, filesAudited, readPlanSize,
 // coverage, rawFindingCount, verifiedCount, survivedCount, unverifiedCount,

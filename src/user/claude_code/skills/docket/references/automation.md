@@ -11,8 +11,8 @@ docket-groom, docket-cli-audit, corpus-check, and docket-prune.
 The rule governs what these skills produce: a remedy docket-postmortem files, a
 proposal docket-retro makes, a workflow or contract docket-refit designs,
 a registry plan docket-reconcile applies, the routing and acceptance
-criteria docket-groom writes, and a fix docket-cli-audit or corpus-check
-lands.
+criteria docket-groom writes, and a remedy docket-cli-audit or corpus-check
+files.
 
 It does not remove the skills' own confirmation gates. A gate that
 authorizes a consuming skill's edit, filing, registration, or commit stays: the

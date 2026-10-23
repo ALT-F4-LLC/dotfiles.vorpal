@@ -54,13 +54,14 @@ pass=0
 ok() { echo "ok   $1"; pass=$((pass + 1)); }
 bad() { echo "FAIL $1"; fail=1; }
 
-# The interpreter code-argument rows of the deny list: `<name> -*<flag> *`
+# The interpreter code-argument rows of the deny list: `<name> -*<flag> *`,
+# the python rows `python* -<flags>c*`,
 # and `node --eval/--print *`. Rows such as `env *` or `find * -exec*` wrap a
 # command rather than take code, and a brief may name those verbs in prose.
 deny_globs() { # <claude_code.rs>
     awk '/^const SHELL_INDIRECTION_DENY_PATTERNS/{on=1; next} on && /^\];/{exit} on' "$1" \
         | sed -n 's/^[[:space:]]*"Bash(\(.*\))",$/\1/p' \
-        | grep -E ' -\*?[a-z] \*$| --(eval|print) \*$'
+        | grep -E ' -\*?[a-z] \*$| -[A-Za-z]?c\*$| --(eval|print) \*$'
 }
 
 # Glob to ERE: `*` is any run of non-space characters (a glob star in a
@@ -141,7 +142,7 @@ check_tree() { # <workflows> <corpus> <settings>
 # ---- the real tree ----------------------------------------------------------
 
 globs=$(deny_globs "$SETTINGS")
-if [ "$(printf '%s\n' "$globs" | grep -c .)" -ge 5 ] && printf '%s\n' "$globs" | grep -qx 'python\* -\*c \*'; then
+if [ "$(printf '%s\n' "$globs" | grep -c .)" -ge 5 ] && printf '%s\n' "$globs" | grep -qx 'python\* -c\*'; then
     ok "deny list yields the interpreter code-argument rows, python among them"
 else
     bad "deny list extraction: got: $(printf '%s' "$globs" | tr '\n' '|')"
@@ -200,7 +201,7 @@ mutant m7 m7
 # m6: the deny-list source loses its interpreter rows, so (a) must go red
 # rather than silently checking nothing.
 mkdir -p "$TMP/m6"
-sed '/^const SHELL_INDIRECTION_DENY_PATTERNS/,/^\];/{/ -\*[a-z] \*)"/d;/ --\(eval\|print\) \*)"/d}' "$SETTINGS" > "$TMP/m6/claude_code.rs"
+sed -e '/^const SHELL_INDIRECTION_DENY_PATTERNS/,/^\];/{' -e '/ -\*[a-z] \*)"/d' -e '/ -[A-Za-z]\{0,1\}c\*)"/d' -e '/ --eval \*)"/d' -e '/ --print \*)"/d' -e '}' "$SETTINGS" > "$TMP/m6/claude_code.rs"
 check_tree "$WORKFLOWS" "$CORPUS" "$TMP/m6/claude_code.rs" > "$TMP/m6.out" 2>&1
 case $? in
     1) ok "mutant m6 is red" ;;

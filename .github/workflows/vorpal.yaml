@@ -48,18 +48,29 @@ jobs:
 
       - run: bash tests/docket-commit-guard-hook.test.sh
 
+      - run: bash tests/docket-denied-reissue-guard-hook.test.sh
+
       - run: bash tests/docket-reconcile-plan.test.sh
 
       - run: bash tests/docket-run-done-gate.test.sh
 
+      - run: bash tests/docket-run-gate-repro.test.sh
+
       - run: bash tests/docket-run-guard-hook.test.sh
 
       - run: bash tests/docket-groom-turn-guard-hook.test.sh
+      - run: bash tests/docket-park-notice-hook.test.sh
+      - run: bash tests/docket-advisor-first-hook.test.sh
       - run: bash tests/docket-run-lane-units.test.sh
+      - run: bash tests/docket-run-refill.test.sh
 
       - run: sudo apt-get update && sudo apt-get install -y zsh
 
       - run: bash tests/docket-run-skill.test.sh
+      - run: bash tests/docket-run-usage-join.test.sh
+
+      # Needs the zsh installed above.
+      - run: bash tests/zsh-agent-nomatch.test.sh
 
       - run: bash tests/docket-sibling-guard-hook.test.sh
 
@@ -87,6 +98,8 @@ jobs:
 
       - run: bash tests/pr-skill.test.sh
 
+      - run: bash tests/python-code-flag-deny.test.sh
+
       - run: bash tests/reserved-name-check.test.sh
 
       - run: bash tests/sandbox-bypass-guard-hook.test.sh
@@ -111,9 +124,11 @@ jobs:
 
       - run: bash tests/docket-postmortem-workflow.test.sh
 
-      - run: bash tests/declutter-code-decide.test.sh
+      - run: bash tests/simplify-code-decide.test.sh
 
       - run: bash tests/simplify-corpus-decide.test.sh
+
+      - run: bash tests/filing-skills-contract.test.sh
 
       - run: yq --version | grep -Eq 'mikefarah/yq.* version v4\.'
 

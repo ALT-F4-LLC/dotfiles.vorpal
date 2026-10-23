@@ -4,8 +4,8 @@ Covers the `docket events` family, the single copy of this engine CLI
 contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-18 against `docket
-nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`) by
+contract and parsing traps. Verified 2026-10-23 against `docket
+nightly-37-gce50f60` (commit `ce50f60`, built `2026-10-23T00:58:29Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build. The cross-project
@@ -16,10 +16,10 @@ commit `fefc91d`'s `--help`, not by the sweep.
 
 ## Contents
 
-- [`docket events`](#events-commands) — 207 lines
+- [`docket events`](#events-commands) — 208 lines
   - [`events list`](#events-list) — 107 lines
   - [`events prune`](#events-prune) — 49 lines
-  - [Attribution](#events-attribution) — 43 lines
+  - [Attribution](#events-attribution) — 44 lines
 
 <a id="events-commands"></a>
 
@@ -204,8 +204,9 @@ reason}`, written in the same transaction as the status they record. A
 `run-paused` or `run-abandoned` written by `run pause` or `run abandon` also
 carries `authority`, plus `authority_ref` when `--authority-ref` was given;
 `run-resumed` carries neither. A budget breach writes its own `run-paused`
-with `data.reason = "budget"`, and the rollup's automatic pause and resume
-carry no `data`.
+with `data.reason = "budget"`, and the rollup's automatic pause carries
+`{from, to, reason: "rollup"}`, so `data.reason` separates a budget breach,
+an operator `run pause` and a rollup pause.
 
 `lease-reaped` is attributed to `next` whether the lease expired or
 `docket step reap` forced it; `data.forced` plus the operator's `reason`

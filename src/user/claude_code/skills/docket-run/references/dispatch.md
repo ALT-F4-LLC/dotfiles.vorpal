@@ -4,8 +4,8 @@ Covers the `docket dispatch` family and `docket next` in step mode (`--run`),
 the single copy of this engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-18 against `docket
-nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`) by
+contract and parsing traps. Verified 2026-10-23 against `docket
+nightly-37-gce50f60` (commit `ce50f60`, built `2026-10-23T00:58:29Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build. The `dispatch-close`
@@ -22,11 +22,11 @@ since `--help` names no verdicts.
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 91 lines
-- [`docket dispatch`](#dispatch-commands) — 355 lines
-  - [`dispatch open`](#dispatch-open) — 78 lines
+- [`docket dispatch`](#dispatch-commands) — 366 lines
+  - [`dispatch open`](#dispatch-open) — 81 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 42 lines
-  - [`dispatch close`](#dispatch-close) — 62 lines
+  - [`dispatch close`](#dispatch-close) — 70 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
   - [`dispatch abandon`](#dispatch-abandon) — 22 lines
   - [`dispatch waive-target`](#dispatch-waive-target) — 23 lines
@@ -161,12 +161,15 @@ with a reason.
 | `--ack-reap` | lease-reaped | `[]` | acknowledge a write-class reap by its `lease-reaped` event `seq`; repeatable |
 
 Response is engine-spec §11.4's `dispatch` shape: `{dispatch, run, opened_seq,
-expires_ms, rows: [<next row>…], total, truncated}`, plus five optional
+expires_ms, rows: [<next row>…], total, truncated}`, plus seven optional
 fields: `reaped` (`omitempty`, absent when this open reaped nothing),
 `reap_hold` (`omitempty`, absent when no unacknowledged reap holds the
 run), `stale_targets` (absent when no row's target diverged),
-`pin_drift` (absent when every pin is sound), and `budget_held` (absent
-when nothing was withheld), each described below. `truncated` reflects
+`pin_drift` (absent when every pin is sound), `budget_held` (absent
+when nothing was withheld), `retry_eligible` (gap-only parks whose issue's
+`depends_on` prerequisites are all done; absent when none), and `held`
+(the run's held steps with their reasons; absent when none), each
+described below or in **run.md**. `truncated` reflects
 whether `--limit` sliced the manifest. Each row is stored as its
 canonical JSON bytes plus a sha256, so `verify` compares bytes rather than a
 re-serialization that could differ in key order.
@@ -305,6 +308,7 @@ drifting.
 | `--source` | string | `backfilled` | with `--backfill-from`: who measured it, recorded on every row |
 | `--on-duplicate` | string | `refuse` | with `--backfill-from`: `refuse` the batch or `skip` a row whose (step, attempt, unit) is already recorded, reporting it |
 | `--skip-integration-check` | string | — | close without verifying integration, recording this REASON on the close event; the operator's override, reached advisor-first, or the advisor-first standing ruling's with the REASON naming it; never a relay's |
+| `--no-conditions` | string | — | close despite sealed approve-with-concerns votes whose conditions have no linked tribunal issue; the votes and this REASON ride on the close event and REASON is recorded as a run note |
 
 **Close verifies integration.** Every write-class step recorded in the
 dispatch must have its commit on the shared branch — an ancestor of HEAD,
@@ -315,12 +319,19 @@ unintegrated. Integrate, then close again. The close event records
 `integration: verified|skipped` and the shas checked, which `run report`
 shows.
 
-With `--skip-integration-check`, close is a conductor verb on a bound run:
-redirect `< <scratchpad>/conductor.d/RUN-N.token` into it. With
-`--backfill-from -`, stdin carries the usage rows, so the token comes from
-`DOCKET_TOKEN` only. A missing token refuses `VALIDATION_ERROR` and a wrong
-one `AUTH_ERROR`, before anything is written. A close without that flag
-stays token-free.
+**Close verifies conditions.** A vote sealed during the dispatch whose approve-with-concerns
+conditions have no linked tribunal issue (`docket issue create -l tribunal`
+and `docket vote link` link one) refuses `CONFLICT` naming each vote and its
+seats. `--no-conditions REASON` closes anyway: the votes and REASON ride on
+the close event and REASON is recorded as a run note. The sweep does not
+exercise the flag; this paragraph rests on `--help`.
+
+With `--skip-integration-check` or `--no-conditions`, close is a conductor
+verb on a bound run: redirect `< <scratchpad>/conductor.d/RUN-N.token` into
+it. With `--backfill-from -`, stdin carries the usage rows, so the token
+comes from `DOCKET_TOKEN` only. A missing token refuses `VALIDATION_ERROR`
+and a wrong one `AUTH_ERROR`, before anything is written. A close with
+neither flag stays token-free.
 
 **`--backfill-from` requires an open dispatch**, since its verify stage
 needs a manifest to compare. It runs back-fill, verify, and close in that

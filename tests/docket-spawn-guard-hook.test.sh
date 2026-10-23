@@ -637,6 +637,67 @@ case_tribunal_admitted_onto_the_run_the_engine_named
 case_tribunal_verdict_still_the_engines
 case_tribunal_under_no_hold_claims_nothing
 case_tribunal_without_proposal_asks_plainly
+# ---- A launch whose args.tribunal is not tribunal.js is refused before any claim ----
+# One launch carried the installed docket-workflow.js as its tribunal path; the
+# lane claimed three steps before anyone noticed. The hook refuses such a launch
+# first: no engine call, exit 2, the path verbatim on stderr. A real tribunal.js
+# passes through to the engine's own verdict.
+workflow_payload_tribunal() { # <scriptPath> <tribunal> [string]
+    jq -nc --arg p "$1" --arg t "$2" --arg shape "${3:-object}" --arg s "$REPO_ROOT" \
+        '{tool_name:"Workflow", cwd:$s, tool_input:{scriptPath:$p,
+          args:({cwd:$s, tribunal:$t} | if $shape == "string" then tojson else . end)}}'
+}
+
+WAVE_SCRIPT="$HOME/.claude/workflows/docket-workflow.js"
+TRIBUNAL_FIXTURE="${SANDBOX}/workflows/tribunal.js"
+mkdir -p "${SANDBOX}/workflows" && : >"$TRIBUNAL_FIXTURE"
+
+expect_tribunal_refused() { # <label> <bad> <reason> <payload>
+    expect_cwd_refused "$@"
+}
+
+case_wave_tribunal_is_wave_script_refused() {
+    expect_tribunal_refused "docket-workflow.js launched with args.tribunal set to docket-workflow.js" \
+        "$WAVE_SCRIPT" "not a path to tribunal.js" \
+        "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$WAVE_SCRIPT")"
+}
+
+case_wave_tribunal_is_wave_script_stringified_refused() {
+    expect_tribunal_refused "same launch, args as a JSON string (the shape the harness sends)" \
+        "$WAVE_SCRIPT" "not a path to tribunal.js" \
+        "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$WAVE_SCRIPT" string)"
+}
+
+case_wave_tribunal_lookalike_refused() {
+    local bad="${SANDBOX}/workflows/tribunal.js.bak"
+    : >"$bad"
+    expect_tribunal_refused "args.tribunal named tribunal.js.bak, a lookalike that exists" \
+        "$bad" "not a path to tribunal.js" \
+        "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$bad")"
+}
+
+case_wave_tribunal_missing_refused() {
+    local bad="${SANDBOX}/nowhere/tribunal.js"
+    expect_tribunal_refused "args.tribunal a tribunal.js path that does not exist" \
+        "$bad" "does not exist" \
+        "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$bad")"
+}
+
+case_wave_tribunal_exists_passes() {
+    expect_cwd_passes_through "docket-workflow.js with args.tribunal an existing tribunal.js" \
+        "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$TRIBUNAL_FIXTURE")"
+}
+
+case_wave_tribunal_exists_stringified_passes() {
+    expect_cwd_passes_through "same launch, args as a JSON string" \
+        "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$TRIBUNAL_FIXTURE" string)"
+}
+
+case_wave_without_tribunal_passes() {
+    expect_cwd_passes_through "docket-workflow.js with no args.tribunal is not this check's business" \
+        "$(workflow_payload_cwd "$WAVE_SCRIPT" "$REPO_ROOT")"
+}
+
 case_tribunal_malformed_proposal_asks_plainly
 case_wave_still_denies
 case_agent_call_still_denies
@@ -656,6 +717,13 @@ case_tribunal_cwd_missing_stringified_refused
 case_tribunal_cwd_subdirectory_refused
 case_tribunal_cwd_toplevel_passes
 case_tribunal_cwd_toplevel_trailing_slash_passes
+case_wave_tribunal_is_wave_script_refused
+case_wave_tribunal_is_wave_script_stringified_refused
+case_wave_tribunal_lookalike_refused
+case_wave_tribunal_missing_refused
+case_wave_tribunal_exists_passes
+case_wave_tribunal_exists_stringified_passes
+case_wave_without_tribunal_passes
 case_usage_join_installed_path
 case_usage_join_not_for_wave
 case_usage_join_not_for_foreign_path

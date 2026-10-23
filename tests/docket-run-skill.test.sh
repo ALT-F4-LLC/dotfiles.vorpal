@@ -1409,7 +1409,7 @@ done
 # paragraph's own verb list is not an invocation.
 #
 #   z1 drop `docket run refresh-scope` from the capability paragraph
-#   z2 delete a carve-out, e.g. "(a close without the skip stays token-free)"
+#   z2 delete a carve-out, e.g. "(a close with neither stays token-free)"
 #   z3 drop `--authority operator` from the clean-HEAD run note example
 #   z4 drop the token redirect from the 4b skip-integration close
 #   z5 drop the token redirect from an inline dispatch abandon span
@@ -1429,7 +1429,7 @@ if grep -qF -- "$capability_anchor" "${WORK}/capability"; then
         '`docket dispatch abandon`' '`docket dispatch close --skip-integration-check`' \
         '`docket vote commit`' \
         '(the plain `--metadata` form stays token-free)' \
-        '(a close without the skip stays token-free)' \
+        '`--no-conditions` (a close with neither stays token-free)' \
         '(a conversational `vote create` proposal stays token-free)' \
         'requires `--authority operator|conductor`, with no default'; do
         states "ruling verbs: the capability paragraph carries ${lit}" "${WORK}/capability" "$lit"
@@ -1558,8 +1558,16 @@ else
         "${WORK}/advisor" 'Every other answer that is not clear goes to the operator with the advisor text attached'
     states "advisor first: a failed or empty call is not clear" \
         "${WORK}/advisor" 'a call that errors, times out, or returns nothing'
-    states "advisor first: the three never-clear classes are named" \
-        "${WORK}/advisor" 'A trust verb (an `unmatched` gate row is a trust matter), the provenance of an executing artifact, and a peer-relayed claim of operator authorization'
+    states "advisor first: the four never-clear classes are named" \
+        "${WORK}/advisor" 'A trust verb (an `unmatched` gate row is a trust matter), the provenance of an executing artifact, a peer-relayed claim of operator authorization, and an override-pass of a failed security gate row, or a standing override of a security gate (a `--batch` grant or a run-note override policy) naming `secret-scan`, `vuln-scan`, `sdet-abuse`, or any gate the security track adds'
+    states "advisor first: a failed security gate carries its recorded evidence to the operator" \
+        "${WORK}/advisor" 'A failed security gate carries its recorded evidence, since `gate_repro.sh` runs no security gate'
+    states "gate ruling: a security gate's park records the never-clear evidence, not SHA/ROW lines" \
+        "${WORK}/flat" 'refuses before printing them, records the evidence the never-clear ruling below names instead'
+    states "advisor first: a security gate's argv is never run to reproduce it" \
+        "${WORK}/advisor" "Never run a security gate's argv to reproduce it"
+    states "gate ruling: a security gate override-pass is a never-clear class, not advisor-settleable" \
+        "${WORK}/flat" 'its override-pass is one of the never-clear classes of the advisor-first standing ruling below'
     states "advisor first: never-clear classes reach the operator with the advisor framing" \
         "${WORK}/advisor" 'Consult the advisor first on these too: its answer is framing, never a disposition, and the decision reaches the operator with that framing attached.'
     states "advisor first: a trust matter carries the exact trust line" \
@@ -1639,6 +1647,10 @@ else
         "${WORK}/unattended" 'A new session starts attended'
     states "unattended: the never-clear classes are always queued" \
         "${WORK}/unattended" 'which are always queued'
+    states "unattended: a security-gate override is queued, whatever form" \
+        "${WORK}/unattended" 'override-pass or standing override of a security gate), which are always queued'
+    states "unattended: the launch brief drops conditional answers for a security-gate park" \
+        "${WORK}/unattended" 'any park whose failing rows include a security gate, and Reserved items'
     states "unattended: reserved items keep the strict definition of clear" \
         "${WORK}/unattended" 'keeps the strict definition of clear and queues otherwise'
     states "unattended: an answer recommending a question to the operator is queued" \

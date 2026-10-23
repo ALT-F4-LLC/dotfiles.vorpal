@@ -4,8 +4,8 @@ Covers the `docket report` and `docket doctor` families, the single copy of
 this engine CLI contract, split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-18 against `docket
-nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`) by
+contract and parsing traps. Verified 2026-10-23 against `docket
+nightly-37-gce50f60` (commit `ce50f60`, built `2026-10-23T00:58:29Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.

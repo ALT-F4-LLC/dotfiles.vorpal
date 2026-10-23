@@ -5,8 +5,8 @@ family and `docket pin show` (consumer: the docket-run skill), except two
 verbs: `run verify-pins` is documented in [pins.md](pins.md), and `run fact
 add` in the docket-run [SKILL.md](../SKILL.md). Response shapes and parsing
 traps live in docket's
-[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-18 against `docket
-nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`) by
+[reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes). Verified 2026-10-23 against `docket
+nightly-37-gce50f60` (commit `ce50f60`, built `2026-10-23T00:58:29Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -15,7 +15,7 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 861 lines
+- [`docket run`](#run-commands) — 890 lines
   - [`run start`](#run-start) — 49 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 32 lines
@@ -23,13 +23,13 @@ examples reflect the swept commands as of that build.
   - [`run refresh-body RUN-N --issue <ID> --reason R`](#run-refresh-body) — 27 lines
   - [`run refresh-files RUN-N --issue <ID> --reason R`](#run-refresh-files) — 28 lines
   - [`run report RUN-N`](#run-report) — 105 lines
-  - [`run activate RUN-N`](#run-activate) — 218 lines
-  - [`run conduct RUN-N`](#run-conduct) — 46 lines
+  - [`run activate RUN-N`](#run-activate) — 236 lines
+  - [`run conduct RUN-N`](#run-conduct) — 47 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 92 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
   - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
-  - [`run status [RUN-N]`](#run-status) — 30 lines
+  - [`run status [RUN-N]`](#run-status) — 40 lines
 
 <a id="run-commands"></a>
 
@@ -537,7 +537,25 @@ anchored entry clears the issue. A scope may name files the work will
 CREATE, so the lint deliberately under-reports rather than flagging
 greenfield new-file scopes. A run with no recorded exec root skips it
 entirely. The message names the root it resolved against and the way out —
-`docket issue move --project`, or fix the scope.
+`docket issue move --project`, or fix the scope. The security-routing lint
+below is a separate check.
+
+**The security-routing lint.** Distinct from the exec-root routing lint
+above, `run activate --dry-run` also reports a security-routing lint in a
+top-level `routing_lint` object of its `--json` envelope; a real activation's
+envelope carried no such key in the two activations observed (neither had a lint finding), so treat the field as a dry-run read. Its keys, as
+observed: `label` is the configured `routing.security_label` (default
+`security`); `lexicon_terms` counts the terms in `routing.security_lexicon`,
+a comma-separated list that `config set` refuses with `VALIDATION_ERROR`
+(exit 3) if it holds whitespace or non-ASCII, so `password,secret` counts 2;
+`linted` counts the bound issues compared, which excludes an issue already
+carrying the label; `unscoped` counts the linted issues with no scope glob
+that has a literal prefix; `labelled_issues` stayed 0 while the one labelled
+issue had no comparable scope. When the lint compared nothing the text mode
+prints a warning beginning `the security-routing lint checked nothing` for
+an empty `routing.security_lexicon`, or `compared no scopes ... only the
+lexicon was checked` once a lexicon is set. The matches themselves are documented to appear in
+the envelope's `routing_warnings` array (per the docket-plan skill; not observed in this build).
 
 Re-activating an `active` run expands newly-unblocked phases only and
 **inherits** the original pin set — a workflow re-registered or a pinned
@@ -584,10 +602,11 @@ rotated) and then the token on its own stdout line, `step claim`'s
 discipline, so a session whose stdout lands in a transcript uses `--json`
 and extracts the field without printing it.
 
-The conductor verbs — the nine operator verbs `step
+The conductor verbs — the ten operator verbs `step
 approve|reject|resolve|reap|hold`, `run pause|resume|abandon` (with or
-without `--issue`), `run fact add`, and the ten ruling verbs `step
-annotate --integrated-sha`, `run note add`, `run refresh-scope`,
+without `--issue`), `run hold-issue`, `run fact add`, and the eleven ruling
+verbs `step
+integrate`, `step annotate --integrated-sha`, `run note add`, `run refresh-scope`,
 `run refresh-body`, `run refresh-files`, `run repin`, `dispatch
 waive-target`, `dispatch abandon`, `dispatch close
 --skip-integration-check` (a close without the skip stays token-free), and
@@ -890,5 +909,15 @@ payload and a `Pin drift:` block to the human rendering, naming each
 drifted ref, both hashes, and pointing at `docket run repin` as the remedy.
 Absent whenever every pin is sound. Skipped for a terminal run: its pins
 are history.
+
+**Unexpanded roster issues are listed unprompted.** The JSON payload
+carries `unexpanded` (`omitempty`) and the human rendering prints the same
+block: each bound issue that holds no step, with its `blocked_by` chains,
+lists of `{issue, status}` hops from the direct blocker to the root
+blocker, capped at 16 chains (`blocked_by_truncated` marks a cut). A done
+blocker drops out; any other status counts as unmet. Absent when every
+bound issue holds a step. `retry_eligible` (`omitempty`) lists gap-only
+parks whose issue has at least one `depends_on` prerequisite and every
+one done: `step`, `instance`, `issue`, `park_class`, `depends_on`.
 
 None of the `run` verbs are watch-eligible.

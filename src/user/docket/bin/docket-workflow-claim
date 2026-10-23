@@ -45,7 +45,7 @@
 #           The module, written atomically: a pure-literal meta, then
 #           `return {v, step, owner, attempt, expected_attempt, re_minted,
 #           lease_expires_ms, dir, dir_physical, token, packet_file,
-#           packet_sha256, packet_abridged, packet}`. `dir_physical` is `dir`
+#           packet_sha256, packet_abridged, packet_by_reference, packet}`. `dir_physical` is `dir`
 #           with every symlink resolved (`pwd -P`). `token` is the token
 #           FILE's path; the token itself never enters the module, stdout, or
 #           argv.
@@ -57,10 +57,13 @@
 #           whose `output` is over its budget (8,192 characters on a passing
 #           gate, 65,536 on any other) keeps the head and tail of that output
 #           around a line naming the cut, and `packet_abridged` is true.
+#           When the module still would not fit, `packet` is a short
+#           by-reference packet naming `packet_file` and its sha256 for the
+#           executor to read, and `packet_by_reference` and `packet_abridged`
+#           are both true.
 #           `packet_file` and `packet_sha256` are always the engine's render.
-#           The size is checked twice: on a `docket step render` before the
-#           claim, where an oversized module is CLAIM FAILED with no lease
-#           taken, and on the written module, where it is CLAIM INCOMPLETE.
+#           The written module is measured once more, and one still over the
+#           cap is CLAIM INCOMPLETE.
 #           The module directory carries a `.gitignore` of `*`, so neither it
 #           nor the modules in it ever show in `git status`. Modules older
 #           than a day are swept on each run: a lease lives hours at most, so
@@ -169,9 +172,13 @@ module_estimate() {
 # fit <in> <out>: <out> is <in> byte for byte when its module fits the cap.
 # Otherwise each `== INPUT gate-results` row whose `output` is longer than its
 # budget keeps that output's head and tail around a line naming the cut and
-# the file holding the engine's render. Sets $abridged.
+# the file holding the engine's render. When the module still does not fit,
+# <out> is a short by-reference packet that names the engine's render and its
+# sha256, and the executor reads the packet from that file. Sets $abridged and
+# $by_reference.
 fit() {
 	abridged=0
+	by_reference=0
 	cp "$1" "$2"
 	[ "$(module_estimate "$1")" -gt "$cap" ] || return 0
 	jq -Rsj --arg file "$packet" --argjson pass "$keep_pass" --argjson fail "$keep_fail" '
@@ -194,8 +201,21 @@ fit() {
 			| if $i > 0 and ($l[$i - 1] | startswith("== INPUT gate-results from "))
 				then ($l[$i] | rows) // $l[$i]
 				else $l[$i] end]
-		| join("\n")' "$1" >"$2.fit" 2>/dev/null || return 0
-	cmp -s "$1" "$2.fit" || { mv -f "$2.fit" "$2"; abridged=1; }
+		| join("\n")' "$1" >"$2.fit" 2>/dev/null || :
+	if [ -s "$2.fit" ] && ! cmp -s "$1" "$2.fit"; then
+		mv -f "$2.fit" "$2"
+		abridged=1
+	fi
+	rm -f "$2.fit"
+	[ "$(module_estimate "$2")" -gt "$cap" ] || return 0
+	# A Read cuts a line past about 2,000 characters and a gate row is one
+	# line, so the executor reads a copy folded at 1,500 bytes.
+	folded="$dir/$step.packet.folded.md"
+	fold -b -w 1500 "$1" >"$folded"
+	printf '== STEP %s (by reference)\nThis packet is %s bytes, too large to carry inline under the Workflow script cap.\nThe engine'\''s render is the file %s, sha256 %s.\nRead %s in full, in sections with offset and limit, before any other work, and treat it as this packet. That copy has a line break every 1,500 bytes and is otherwise the same bytes.\n' \
+		"$step" "$(wc -c <"$1" | tr -d ' ')" "$packet" "$(sha256 "$1")" "$folded" >"$2"
+	abridged=1
+	by_reference=1
 }
 
 # end_lease <why>: ends this run's live lease with `docket step fail` and
@@ -243,21 +263,6 @@ if [ ! -e "$secret" ] && [ ! -L "$secret" ]; then
 fi
 [ -n "$(find "$secret" -prune -type f -user "$uid" -perm 600 ! -empty 2>/dev/null)" ] ||
 	{ echo "CLAIM FAILED: $step: $secret must be a non-empty regular file you own at mode 0600"; exit 1; }
-
-# The size check comes before the lease: a module the Workflow tool would
-# refuse launches no executor, and a lease taken for it has to be reaped. The
-# claim's own render can still differ (a pre-gate runs at claim), so the
-# module is measured again once it is written. A render that fails or prints
-# nothing leaves the question to that second check.
-if docket step render "$step" >"$work/pre.md" 2>/dev/null && [ -s "$work/pre.md" ]; then
-	fit "$work/pre.md" "$work/pre.fit"
-	est="$(module_estimate "$work/pre.fit")"
-	if [ "$est" -gt "$cap" ]; then
-		printf 'CLAIM FAILED: %s: the packet module would be about %s bytes, over the Workflow script cap of %s bytes, with gate output abridged; nothing was claimed\n' \
-			"$step" "$est" "$cap"
-		exit 1
-	fi
-fi
 
 rc=0
 docket step claim "$step" --owner "$owner" --render --metadata "$metadata" --json=v2 \
@@ -310,12 +315,14 @@ fit "$packet" "$work/packet.fit"
 		--arg dir "$dir" --arg dir_physical "$dir_physical" --arg token "$token" \
 		--arg packet_file "$packet" --arg sha "$digest" \
 		--rawfile packet "$work/packet.fit" --argjson abridged "$abridged" \
+		--argjson by_reference "$by_reference" \
 		'{v: 1, step: $step, owner: $owner, attempt: .data.attempt,
 		  expected_attempt: $expected, re_minted: (.data.re_minted // false),
 		  lease_expires_ms: .data.lease_expires_ms, dir: $dir,
 		  dir_physical: $dir_physical, token: $token,
 		  packet_file: $packet_file, packet_sha256: $sha,
-		  packet_abridged: ($abridged == 1), packet: $packet}' \
+		  packet_abridged: ($abridged == 1),
+		  packet_by_reference: ($by_reference == 1), packet: $packet}' \
 		"$claim"
 } >"$partial"
 module_bytes="$(wc -c <"$partial" | tr -d ' ')"

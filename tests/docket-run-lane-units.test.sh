@@ -393,7 +393,7 @@ printf '%s' "$skill_text" | grep -qF 'Never hold a deferred lane while fewer tha
 # never at a bounce: relaunching at every return spun refused lanes against a
 # live holder. Both the refill step and the paragraph after it must say so.
 printf '%s' "$skill_text" | grep -qF 'Relaunch a `skipped-not-ready` lane only at a return where a holder released its scope (an in-dispatch launch returned having claimed or settled steps, or a dead holder was reaped at that return) or at a non-bounce launch return, never at a bounce return' &&
-    printf '%s' "$skill_text" | grep -qF 'A held lane relaunches only at a return where a holder released its scope or at a non-bounce launch return, and never at a bounce return, a return whose launch claimed nothing because every claim was refused.' &&
+    printf '%s' "$skill_text" | grep -qF 'falls back to the hold'"'"'s own rule: a held lane relaunches only at a return where a holder released its scope or at a non-bounce launch return, and never at a bounce return, a return whose launch claimed nothing because every claim was refused.' &&
     ! printf '%s' "$skill_text" | grep -qF 'relaunches at every return that settles it' &&
     ! printf '%s' "$skill_text" | grep -qF 'even when no other launch is in flight' &&
     ! printf '%s' "$skill_text" | grep -qF 'relaunches at the return that settled it'; ok $? \
@@ -413,19 +413,33 @@ printf '%s' "$join_item" | grep -qiE 'bounce[^.]*(no join|without[^.]*join|skip[
     "SKILL.md's dispatch-close item 1 names no bounce exemption from the usage join"
 # A bounce is a launch that claimed nothing because every claim was refused.
 # The test runs as SKILL.md spells it.
-bounce=$(sed -n 's/.*`jq -e '"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE"`.*/\1/p' "$SKILL")
+# Which rows wait is read per issue from the manifest of record ($WAITS), so
+# the commands run against a rows file naming each step's issue.
+waits=$(sed -n "s/^ *\`WAITS='\\(.*\\)'\`,\$/\\1/p" "$SKILL")
+skill_rows() { # <step:issue>...: the manifest of record the commands read
+    : > "$WORK/skill-rows.jsonl"
+    local p
+    for p in "$@"; do jq -cn --arg s "${p%%:*}" --arg i "${p#*:}" '{step: $s, issue: $i}' >> "$WORK/skill-rows.jsonl"; done
+}
+bounce_test() { jq -e --slurpfile rows "$WORK/skill-rows.jsonl" "$waits$bounce" "$WORK/statuses.json" > /dev/null 2>&1; }
+bounce=$(sed -n 's/.*`jq -e --slurpfile rows "$ROWS_FILE" "$WAITS"'"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE"`.*/\1/p' "$SKILL")
+skill_rows STEP-1:ISS-1 STEP-2:ISS-1 STEP-3:ISS-1 STEP-4:ISS-2 STEP-5:ISS-3
 printf '%s' '[{"step":"STEP-1","status":"skipped-not-ready"},{"step":"STEP-2","status":"skipped-chain-dead"}]' > "$WORK/statuses.json"
-jq -e "$bounce" "$WORK/statuses.json" > /dev/null 2>&1; rc=$?
-[ -n "$bounce" ] && [ "$rc" -eq 0 ]; ok $? \
+bounce_test; rc=$?
+[ -n "$waits" ] && [ -n "$bounce" ] && [ "$rc" -eq 0 ]; ok $? \
     "SKILL.md's bounce test matches a launch whose every claim was refused (test '$bounce', rc=$rc)"
 printf '%s' '[{"step":"STEP-1","status":"returned"},{"step":"STEP-2","status":"skipped-not-ready"},{"step":"STEP-3","status":"skipped-chain-dead"}]' > "$WORK/statuses.json"
-jq -e "$bounce" "$WORK/statuses.json" > /dev/null 2>&1; rc=$?
+bounce_test; rc=$?
 [ -n "$bounce" ] && [ "$rc" -eq 1 ]; ok $? \
     "SKILL.md's bounce test rejects a launch that claimed a step before a refusal (rc=$rc)"
 printf '%s' '[{"step":"STEP-1","status":"not-launched-run-parked"}]' > "$WORK/statuses.json"
-jq -e "$bounce" "$WORK/statuses.json" > /dev/null 2>&1; rc=$?
+bounce_test; rc=$?
 [ -n "$bounce" ] && [ "$rc" -eq 1 ]; ok $? \
     "SKILL.md's bounce test rejects a launch with no refused claim (rc=$rc)"
+printf '%s' '[{"step":"STEP-4","status":"skipped-not-ready"},{"step":"STEP-5","status":"skipped-chain-dead"}]' > "$WORK/statuses.json"
+bounce_test; rc=$?
+[ -n "$bounce" ] && [ "$rc" -eq 1 ]; ok $? \
+    "SKILL.md's bounce test rejects a launch whose chain-dead row belongs to another issue's deferral (rc=$rc)"
 # Refill step 4 holds a bounce's refused rows and empties the hold at any
 # other return. The prose pins the exit mapping; the two commands run as
 # SKILL.md spells them, driven bounce, bounce, non-bounce.
@@ -439,7 +453,7 @@ hold_release=$(sed -n 's/.*`\(cat \/dev\/null > "\$HELD_FILE"\)`.*/\1/p' "$SKILL
 hold_after() { # <statuses-json>: one return through step 4; prints the held set
     export STATUSES_FILE="$WORK/statuses.json" HELD_FILE="$WORK/held"
     printf '%s' "$1" > "$STATUSES_FILE"
-    if jq -e "$bounce" "$STATUSES_FILE" > /dev/null 2>&1; then
+    if bounce_test; then
         eval "$hold_append"
     else
         eval "$hold_release"
@@ -465,15 +479,21 @@ printf '%s' "$refill_steps" | grep -qF 'For each row this return settled as `unr
 # A returned launch's statuses settle every row except a refused row and, in
 # the refused row's lane, the chain-dead rows waiting on it. The filter runs
 # as SKILL.md spells it.
-settle=$(sed -n 's/.*`jq -r '"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE" >> "$SETTLED_FILE"`.*/\1/p' "$SKILL")
+settle=$(sed -n 's/.*`jq -r --slurpfile rows "$ROWS_FILE" "$WAITS"'"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE" >> "$SETTLED_FILE"`.*/\1/p' "$SKILL")
+settle_run() { jq -r --slurpfile rows "$WORK/skill-rows.jsonl" "$waits$settle" "$WORK/statuses.json" | tr '\n' ' '; }
+skill_rows STEP-1:ISS-1 STEP-2:ISS-1 STEP-3:ISS-1 STEP-4:ISS-2 STEP-5:ISS-2 STEP-6:ISS-3 STEP-7:ISS-4 STEP-8:ISS-4 STEP-9:ISS-5
 printf '%s' '[{"step":"STEP-1","status":"returned"},{"step":"STEP-2","status":"skipped-not-ready"},{"step":"STEP-3","status":"skipped-chain-dead"}]' > "$WORK/statuses.json"
-got=$(jq -r "$settle" "$WORK/statuses.json" | tr '\n' ' ')
-[ -n "$settle" ] && [ "$got" = "STEP-1 " ]; ok $? \
+got=$(settle_run)
+[ -n "$waits" ] && [ -n "$settle" ] && [ "$got" = "STEP-1 " ]; ok $? \
     "SKILL.md's settle filter keeps a refused row and its chain-dead rows pending (filter '$settle', got '$got')"
 printf '%s' '[{"step":"STEP-4","status":"spawn-failed"},{"step":"STEP-5","status":"skipped-chain-dead"},{"step":"STEP-6","status":"returned"}]' > "$WORK/statuses.json"
-got=$(jq -r "$settle" "$WORK/statuses.json" | tr '\n' ' ')
+got=$(settle_run)
 [ -n "$settle" ] && [ "$got" = "STEP-4 STEP-5 STEP-6 " ]; ok $? \
     "SKILL.md's settle filter settles every row of a launch with no refused row, chain-dead included (got '$got')"
+printf '%s' '[{"step":"STEP-7","status":"returned"},{"step":"STEP-8","status":"skipped-chain-dead"},{"step":"STEP-9","status":"skipped-not-ready"}]' > "$WORK/statuses.json"
+got=$(settle_run)
+[ -n "$settle" ] && [ "$got" = "STEP-7 STEP-8 " ]; ok $? \
+    "SKILL.md's settle filter settles a deferred lane's chain-dead rows beside another issue's refusal (got '$got')"
 # The pending rows are the manifest of record minus the settled and held
 # step ids, matched whole: STEP-12 settled must not drop STEP-123.
 filter=$(sed -n 's/.*--rawfile held "$HELD_FILE" '"'"'\([^'"'"']*\)'"'"' "$ROWS_FILE" > "$PENDING_FILE".*/\1/p' "$SKILL")

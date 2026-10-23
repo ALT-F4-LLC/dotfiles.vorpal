@@ -83,9 +83,12 @@ offering other issues' rows. Every question still goes through the
 question tool, never plain text. Before asking, check whether this run has
 work the answer does not gate: a launch still in flight, or `next` still
 offering unaffected rows. If so, hold the question, send one
-`PushNotification` naming the run and gate, and continue the loop (close,
-next, open, launch) until nothing unaffected can move; then ask. The
-question tool freezes the conversation until answered, so ask once, at
+`PushNotification` naming the run, the gate and each parked step id, and
+continue the loop (close, next, open, launch) until nothing unaffected can
+move; then ask. A Stop hook and a check after each wave or dispatch call
+enforce the push for every new park on an attended run, including one you
+ask about at once; a push sent before the question is asked satisfies it.
+The question tool freezes the conversation until answered, so ask once, at
 that point. Hold at most one open question: a further park joins the same
 question, and the answer carries a ruling per labelled gate. Ask at once
 when nothing can move until the operator rules (`next` offers nothing but
@@ -110,14 +113,16 @@ engine mutating verb, a trust verb, or a launch; those stay yours.
 ## The conductor capability
 
 The engine binds the CONDUCTOR VERBS to a run-scoped CONDUCTOR CAPABILITY:
-the nine operator verbs, `docket step approve|reject|resolve|reap|hold`,
-`docket run pause|resume|abandon` (with or without `--issue`), and `docket
-run fact add`; and the ten ruling verbs, `docket step annotate
---integrated-sha` (the plain `--metadata` form stays token-free), `docket
+the ten operator verbs, `docket step approve|reject|resolve|reap|hold`,
+`docket run pause|resume|abandon` (with or without `--issue`), `docket run
+hold-issue`, and `docket run fact add`; and the eleven ruling verbs,
+`docket step integrate`, `docket step annotate --integrated-sha` (the
+plain `--metadata` form stays token-free), `docket
 run note add`, `docket run refresh-scope`, `docket run refresh-body`,
 `docket run refresh-files`, `docket run repin`, `docket dispatch
 waive-target`, `docket dispatch abandon`, `docket dispatch close
---skip-integration-check` (a close without the skip stays token-free),
+--skip-integration-check` or `--no-conditions` (a close with neither stays
+token-free),
 and `docket vote commit` on a vote-step proposal (a conversational `vote
 create` proposal stays token-free). `run note add` also requires
 `--authority operator|conductor`, with no default: `operator` when the
@@ -209,6 +214,7 @@ docket guard spawn --run $RUN   # after a reconciled close; exit 2 names a hold 
 docket guard spawn --run $RUN --ack-reap <seq>
 docket step approve STEP-N --authority operator --note "<their words>" < <scratchpad>/conductor.d/$RUN.token
 docket step hold STEP-N --reason "<the repeated failure, and the operator's word to hold it>" < <scratchpad>/conductor.d/$RUN.token
+docket run hold-issue $RUN <ISSUE> --reason "<the operator's note id and word>" < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --authority standing-grant --authority-ref machine-caused-gate-failure < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as override-pass --batch --authority standing-grant --authority-ref batch-grant < <scratchpad>/conductor.d/$RUN.token
 docket step resolve STEP-N --as fix-round --authority standing-grant --authority-ref <proposal id> < <scratchpad>/conductor.d/$RUN.token
@@ -227,6 +233,7 @@ docket run note add $RUN --authority conductor --text "<the ruling>" < <scratchp
 docket run note add $RUN --authority operator --text "<their words>" < <scratchpad>/conductor.d/$RUN.token
 docket dispatch abandon --run $RUN --reason "<why the manifest is given up>" < <scratchpad>/conductor.d/$RUN.token
 docket run refresh-scope $RUN --issue <ID> --reason "<the authorized scope change>" < <scratchpad>/conductor.d/$RUN.token
+docket step integrate STEP-N [STEP-M ...] < <scratchpad>/conductor.d/$RUN.token
 docket step annotate STEP-N --integrated-sha <new full sha> --metadata '{"writer_sha":"<sha>"}' < <scratchpad>/conductor.d/$RUN.token
 EOF
 ```
@@ -239,7 +246,7 @@ and the verbs file.
 **Supply it per command, by redirecting the file into stdin.** Every
 conductor verb, in every example below and on every path this file names
 (the standing rulings, the operator escalation, a forced reap, a hold, a
-run fact, a run note, a scope refresh, an integration annotate, a target
+run fact, a run note, a scope refresh, an integration, an annotate, a target
 waiver, a dispatch abandon, a skip-integration close, a vote-step commit,
 a pause, a resume, a run abandon), ends in `< <scratchpad>/conductor.d/$RUN.token`:
 
@@ -614,14 +621,13 @@ tool call with another:**
 2. **Back-fill the panel's seat usage**: the seats-mode case of **A
    panel you convened yourself gets the same treatment** (loop step 3):
 
-   ```
-   Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
-              args: {dir: "<tribunal-transcript-dir>", mode: "seats", exclude: []} })
+   ```bash
+   bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<tribunal-transcript-dir>" --mode seats > "<scratchpad>/panel.tmp" && mv "<scratchpad>/panel.tmp" "<scratchpad>/panel.json"
    ```
 
    ```bash
    docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
-     --from-json - < "<scratchpad>/panel.json"   # the return's `rows` ARRAY, not the whole envelope
+     --from-json - < "<scratchpad>/panel.json"   # the script's stdout: the `rows` ARRAY, not the whole envelope
    ```
 
    Never run `run activate` in the same call as reading the tally.
@@ -684,15 +690,23 @@ exactly three things:**
    `waiting-human`, or every remaining issue is parked (a `human:*` step,
    or a vote step whose tally fell short) and `next` offers only parked
    rows with no launch in flight. Apply every standing ruling under
-   **Gates** first, the twice-classifier-stopped ruling among them, then
-   present whatever remains to the operator through the question tool and wait. In unattended mode, the queue goes through the switch-back procedure instead. A vote step merely ready is work for you, mid-loop, not this.
+   **Gates** first, the twice-classifier-stopped ruling among them, and
+   settle any `.data.retry_eligible` park, then present whatever remains to the operator through the question tool and wait. In unattended mode, the queue goes through the switch-back procedure instead. A vote step merely ready is work for you, mid-loop, not this.
 2. An engine **refusal** you cannot resolve: report it verbatim and stop.
 3. `next` returns **no rows and nothing is running**, and the roster is
-   covered. Compare `run status`'s bound-issue roster against issues
-   whose chains reached a terminal step before saying "done": when
-   counts cannot cover the roster, issues sit unexpanded and the state is
-   phase quiesced, not finished. Report it as phase quiesced, name the
-   waiting issues, and surface the re-activation gate.
+   covered. Read `docket run status $RUN --json | jq '.data.unexpanded'`
+   before saying "done": it lists each bound issue that holds no step,
+   with its `blocked_by` chains, each a list of `{issue, status}` hops
+   from the direct blocker to the root blocker that holds it (an issue
+   with no unmet blocker carries an empty list); a done blocker drops out
+   of a chain, any other status counts as unmet, and the field is absent
+   when every issue holds a step. When it is present, issues sit
+   unexpanded and the state is phase quiesced, not finished. Report it as
+   phase quiesced, name the waiting issues with each one's own `status`,
+   and surface the re-activation gate with that block pasted into
+   the question. Never state what a release unblocks, or that an issue is
+   absent from the run, from a diff you typed of `issue list --run`
+   against the step list: the block is the engine's answer.
 
 Anything else is the middle of the loop, not a stop: stop-and-ask
 gates live inside it, each stated where it arises, including symlink
@@ -839,6 +853,22 @@ about why the branch diverged is not a claim-time answer. A non-empty
 `reap_hold` on the same answer is a second stop-and-verify: convene the
 ack-reap panel from it now, before composing the launch.
 
+**A `retry_eligible` list is settled in the same loop iteration.** It
+names each gap-only park (`park_class` `gap-only`) whose issue has at
+least one `depends_on` prerequisite and every one of them done, on
+`dispatch open` and on `docket run status $RUN --json | jq
+'.data.retry_eligible'`; the open also records one `park-retry-eligible`
+event per park. Only a `depends_on` or `blocks` link counts: a
+`relates_to` link, or none, never lists a park. Do not wait for the
+operator to ask whether a park can move: before termination 1 or a
+quiesced report, read `run status` and take each listed step
+advisor-first (**Standing ruling: the advisor answers first**) with
+`retry` among the dispositions offered, and run the verb the clear
+answer names. Read the list, not the event: the event is written lazily
+on a successful open and a failure to record it is discarded, and the
+open shows no list if its read fails, where `run status` returns the
+error. Other park classes still go through **Gates**.
+
 **Before a dispatch carrying hard gates, derive the roster from `docket
 trust list`**, never the argv a prior step happened to record (a subset
 of the roster, not the whole). Resolve each gate's argv at the step
@@ -941,6 +971,24 @@ rows as JSON lines, one row per line, with `jq -c '.data.rows[] |
 select(.kind != "human")'` over the open's answer: the refill below
 appends to that file and filters it line by line.
 
+**An operator's hold on an issue is an engine hold, never a filter.** When
+the operator rules that an issue's rows wait, run `docket run hold-issue
+$RUN <ISSUE> --reason "<the operator's note id and word>" < <scratchpad>/conductor.d/$RUN.token`.
+It parks every pending step of the issue, ready and staged alike,
+waiting-human (park class `held`), so no dispatch offers any of its rows;
+the open's answer lists them under `held` with the reason. Never write the
+hold as a `jq` exclusion over the rows file: a staged row cannot be
+filtered by what is ready, and the exclusion lives only in this
+conversation. The verb refuses, and changes nothing, while any step of the
+issue is claimed, running, or gated, and when the issue has no pending
+step: reap a claimed step whose holder is gone (**A dead spawn is reaped,
+not waited out**), let a running or gated step record, then hold. Release
+is per step, `docket step resolve STEP-N --as retry --authority operator
+--note "<their words>" < <scratchpad>/conductor.d/$RUN.token`, which
+resets the step's retry budget. Steps minted after the hold are not held:
+hold the issue again after an expansion. `dispatch extend` answers with no
+`held` list.
+
 **Split the launches before you launch.** From the kept rows (the file
 you wrote after the kind filter), the installed script partitions the
 dispatch: every issue lane is a launch of its own (a row with no issue is
@@ -967,10 +1015,15 @@ python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUN
 ```
 
 Run it as its own Bash call, with no `jq -c` or other `-c` flag in the same
-command: the deny rule `Bash(python* -*c *)` matches a ` -c ` anywhere after
-`python`, so `python3 ... ; jq -c . "$LAUNCH_DIR/launches.json"` is refused
-(measured: the same command passes with `jq --compact-output`). Read the
-launch files in a second call.
+command: the deny rules `Bash(python* -c*)` and its combined-flag spellings
+(`-Ic*`, `-uc*`, and the other listed letters) match a ` -c` flag anywhere
+after `python`, so `python3 ... ; jq -c . "$LAUNCH_DIR/launches.json"` is
+refused (measured under the earlier, wider rule: the same command passes with
+`jq --compact-output`; the rows now match by construction, assuming the
+harness matches the whole compound command as well as each part). A path or
+argument ending in `c`, such as `launch-d10c`, matches no row; an argument
+starting with `-c`, or with a listed `-<letter>c`, does. Read the launch files
+in a second call.
 
 Always pass `--tribunal`; without it no generated object carries
 `tribunal`, and the script says so on stderr. `$WRITE_CAP` is the write
@@ -1030,24 +1083,30 @@ refused lanes waiting for a return that can have freed their holder;
 every other row of the manifest of record is work that remains. Each time one launch returns while the dispatch is open, right after
 launching its usage join (step 3), before waiting on the rest:
 
-1. Run `docket dispatch extend --run $RUN --json`. It appends the steps
-   that became ready since the open (a fix round minted when its step
-   recorded, a held-cluster gate, an `on_fail` route, a limit-cut chain
-   tail) to the same open manifest. Apply the kind filter to any appended
-   rows and append them, as JSON lines, to the kept rows file. No verb
-   re-reads the open manifest, so that file is the manifest of record:
-   keep it for the whole dispatch.
+1. Extend the open manifest. `refill.sh` (below) runs
+   `docket dispatch extend --run $RUN --json` itself; never run it by hand
+   or pipe it into a count. It appends the steps that became ready since the
+   open (a fix round minted when its step recorded, a held-cluster gate, an
+   `on_fail` route, a limit-cut chain tail) to the same open manifest, and
+   the script appends every non-human row among them, as JSON lines, to the
+   kept rows file. No verb re-reads the open manifest, so that file is the
+   manifest of record: keep it for the whole dispatch.
 2. Write the returned launch's `statuses` array, as the wave returned
    it, to `$STATUSES_FILE` under the session's scratchpad with the Write
    tool, then append the steps it settled to `$SETTLED_FILE`, one step id
-   per line:
-   `jq -r '(any(.[]; .status == "skipped-not-ready")) as $refused | .[] | select(.status != "skipped-not-ready" and (($refused and .status == "skipped-chain-dead") | not)) | .step' "$STATUSES_FILE" >> "$SETTLED_FILE"`.
-   That settles every row except a `skipped-not-ready` row and, in a
-   launch holding one, its `skipped-chain-dead` rows: docket-workflow.js settles the
-   later stages of a refused row's issue `skipped-chain-dead`, and they
-   wait on that row, so they stay pending with it. The settled rows
-   finished, or are re-offered next dispatch (the statuses list under
-   **3. Close the dispatch**).
+   per line. First mark which rows wait, reading each step's issue from
+   the manifest of record:
+   `WAITS='(reduce $rows[] as $r ({}; .[$r.step] = ($r.issue // ""))) as $iss | ([.[] | select(.status == "skipped-not-ready") | $iss[.step] // ""] | unique) as $refused | map(. + {waits: (.status == "skipped-not-ready" or (.status == "skipped-chain-dead" and (($iss[.step] // "") as $i | $refused | any(.[]; . == $i))))})'`,
+   then settle the rest:
+   `jq -r --slurpfile rows "$ROWS_FILE" "$WAITS"' | .[] | select(.waits | not) | .step' "$STATUSES_FILE" >> "$SETTLED_FILE"`.
+   That settles every row except a `skipped-not-ready` row and the
+   `skipped-chain-dead` rows of an issue that has one in this launch:
+   docket-workflow.js settles the later stages of a refused row's issue
+   `skipped-chain-dead`, and they wait on that row, so they stay pending
+   with it. A `skipped-chain-dead` row of any other issue (a writer that
+   recorded pending, a failed predecessor) settles beside another lane's
+   refusal. The settled rows finished, or are re-offered next dispatch
+   (the statuses list under **3. Close the dispatch**).
 3. Reap the dead in-dispatch holders this return reports. For each row
    this return settled as `unrecorded` or `unsettled` whose step still
    reads claimed by that spawn, run `docket step reap STEP-N --reason R`
@@ -1064,10 +1123,9 @@ launching its usage join (step 3), before waiting on the rest:
 4. Hold a bounce's refused lanes, release every held lane at any other
    return, then rebuild the pending rows. A return is a *bounce* when its
    launch claimed nothing because every claim was refused: every row
-   settled `skipped-not-ready` or `skipped-chain-dead`, at least one
-   `skipped-not-ready`, so step 2 settled nothing and step 3 reaped
-   nothing. Test it with
-   `jq -e 'any(.[]; .status == "skipped-not-ready") and all(.[]; .status == "skipped-not-ready" or .status == "skipped-chain-dead")' "$STATUSES_FILE"`.
+   waits as step 2 marks it, at least one `skipped-not-ready`, so step 2
+   settled nothing and step 3 reaped nothing. Test it with
+   `jq -e --slurpfile rows "$ROWS_FILE" "$WAITS"' | any(.[]; .status == "skipped-not-ready") and all(.[]; .waits)' "$STATUSES_FILE"`.
    On a bounce (exit 0), append its rows to the hold with
    `jq -r '.[].step' "$STATUSES_FILE" >> "$HELD_FILE"`; lanes held at
    earlier returns stay held. On any other return (exit 1), empty the
@@ -1092,9 +1150,38 @@ launching its usage join (step 3), before waiting on the rest:
    `skipped-not-ready` lane only at a return where a holder released its
    scope (an in-dispatch launch returned having claimed or settled steps,
    or a dead holder was reaped at that return) or at a non-bounce launch
-   return, never at a bounce return. Add the new launches' transcript
-   directories to the watcher below, restart it, then end the turn
-   again.
+   return, never at a bounce return, and keep a lane held while the
+   holder its refusal named still holds (see below). Add the new launches'
+   transcript directories to the watcher below, restart it, then end the
+   turn again.
+
+Steps 1, 2, 4 and 5 are one installed script, so the bookkeeping is not
+hand-run: write the returned launch's `statuses` array to `$STATUSES_FILE`,
+do step 3's reaps, then run, as its own Bash call from the run's work tree,
+
+```bash
+bash ~/.claude/skills/docket-run/scripts/refill.sh --run "$RUN" --rows "$ROWS_FILE" --settled "$SETTLED_FILE" --held "$HELD_FILE" --pending "$PENDING_FILE" --launch-dir "$LAUNCH_DIR" --statuses "$STATUSES_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
+```
+
+adding `--reaped` when step 3 reaped a dead holder at this return (the
+return is then never a bounce), `--integrated "$INTEGRATED_FILE"` when the
+dispatch carries it, and omitting `--write-cap` when the open's answer has
+no `limits.write`. The script runs `docket dispatch extend` itself, appends
+every appended row that is not a human row and not already in
+`$ROWS_FILE`, settles and holds as steps 2 and 4 say, rebuilds
+`$PENDING_FILE`, re-splits it with lane_units.py, and prints N alone on
+stdout. Extend's rows exist only in its answer, which the engine never
+repeats, so the script saves the answer as `$ROWS_FILE.extend.json` and
+removes it only once the rows are kept. Exit 1 before extend (a bad rows or
+statuses file) leaves everything as it was. Exit 1 after extend names that
+file: append its rows to `$ROWS_FILE`, delete the file, and run the script
+again (it refuses while the file exists), which is
+safe because repeated settled and held lines are ignored. A `reap hold`
+line on stderr means extend reaped an expired lease and raised a hold that
+denies the next launch: verify it as under **`--ack-reap`** before step 6.
+Step 6 launches what the script wrote. Never pipe `docket dispatch
+extend` into a count or a filter by hand: an answer read that way did not
+reach the kept rows file, and its rows waited for the next dispatch.
 
 Re-splitting all pending rows, never the appended rows alone, keeps both
 invariants lane_units.py computes: an appended write-class row never runs
@@ -1103,10 +1190,36 @@ share reflects the pending manifest's headroom. A launch already in
 flight keeps the class share of its own split, so the shares can briefly
 sum past the engine's limit; the engine refuses the extra claim, the row
 settles `skipped-not-ready`, and the refill relaunches it at the next
-return that is not a bounce. A wave reports why a claim was refused, not
-which launch holds the scope, so there is no holder tracking, only the
-hold. A held lane relaunches only at a return where a holder released
-its scope or at a non-bounce launch return, and never at a bounce return,
+return that is not a bounce. A wave's status row carries only why a
+claim was refused, but the engine names the holders in the refusal and in
+its `claim-refused` event (`data.holders`, each `{step, status}`). A scope
+refusal names claimed or running steps (a gated step has released the
+scope); a class-headroom refusal names claimed, running, and gated ones.
+Check the holders before step 6 relaunches a lane the hold released. The
+script empties the hold at a non-bounce return, so copy it first (`cp
+"$HELD_FILE" "$HELD_FILE.prev"`), run the script, then judge each lane by
+its refused rows (its `skipped-not-ready` rows in this return's statuses;
+its `skipped-chain-dead` rows follow the lane, since they have no refusal
+of their own). For each refused step in the copy read its latest refusal
+with `docket events list --run $RUN --kind claim-refused --step STEP-N
+--tail 1 --json=v2 | jq -c '.data.items[] | {step: .data.step, reason:
+.data.reason, holders: .data.holders}'` and `docket step show` each holder.
+A `reason` ending in "its scope conflicts with a claimed or running step"
+(with or without a holder clause) is a scope refusal and keeps the lane
+held while any named holder is still claimed or running; one carrying "no
+concurrency headroom in its class" is a headroom refusal and frees the
+lane once any named holder has left claimed, running, and gated, since one
+free slot admits the claim. For each lane kept held, append its steps to
+`$HELD_FILE` and run the script again with the same other flags
+(`--tribunal`, `--in-flight`, `--write-cap`, `--integrated`) but without
+`--statuses` or `--reaped` (it leaves the hold alone), into a fresh
+`--launch-dir`; it extends again, so keep its rows and verify any `reap
+hold` line as for the first run. Step 6 launches that run's files. A
+refusal that names no holder (a pre-gate hold, an event from an
+older build, or a headroom slot filled by an unacknowledged reap that a
+refusal does not name) falls back to the hold's own rule: a held lane
+relaunches only at a return where a holder released its scope or at a
+non-bounce launch return, and never at a bounce return,
 a return whose launch claimed nothing because every claim was refused.
 A holder releases its scope when an in-dispatch launch returns having
 claimed or settled steps, or when its dead holder is reaped and acked
@@ -1126,8 +1239,9 @@ launchable, and every row of the manifest of record is in
 `$SETTLED_FILE` or `$HELD_FILE`. The loop ends only when no work remains
 in this dispatch. A row still held at the close waits on a holder no
 later return in this dispatch could release: another session's claim, a
-detached pre-gate, or an in-dispatch holder that returned while the held
-lane's own launch was still in flight. The engine offers it again next
+detached pre-gate, an in-dispatch holder that returned while the held
+lane's own launch was still in flight, or a holder the check above found
+still holding at the last return. The engine offers it again next
 dispatch.
 
 **A launch that never notifies is a stall, not a wait.** The completion
@@ -1149,7 +1263,7 @@ not.** A wave agent parked on a permission prompt leaves its launch's task
 output empty and sends nothing until it finishes, so at dispatch open,
 beside the launches, start ONE watcher for the whole dispatch: a Bash
 call with `run_in_background: true` listing every launch's transcript
-directory (the same `<transcript-dir>` docket-workflow-usage reads). It takes each
+directory (the same `<transcript-dir>` usage_join.sh reads). It takes each
 agent transcript's (`agent-<agentId>.jsonl`) last-entry time from its
 modification time, since transcripts are append-only, and exits when a
 running agent's transcript has had no new entry for 15 minutes. Its exit
@@ -1236,8 +1350,9 @@ started by a refill is a launch of this dispatch, and its join precedes
 the close like any other.
 
 **1. Launch the usage join first, before reading or diagnosing the wave's
-result.** In the same turn, while it runs: every cherry-pick, `step
-annotate`, and worktree sweep for rows this notification settled. A row
+result.** In the same turn, while it runs: every
+`step integrate`, `step annotate`, and worktree sweep for rows this
+notification settled. A row
 this notification settled as `unrecorded` or `unsettled` whose step
 still reads claimed by that spawn is reaped and acked at this return,
 before the refill relaunches any `skipped-not-ready` lane (step 3 of
@@ -1305,8 +1420,8 @@ stay as they are. One step can appear in several launches' `statuses`:
 docket-workflow.js reads `skipped-not-ready` as chain-dead, marks that row's issue
 dead and settles the issue's later rows `skipped-chain-dead`, and its
 `statuses` carries one entry per row the launch held; step 2 of **Refill
-freed launch slots each time a launch returns** leaves every
-`skipped-chain-dead` row of a launch holding a `skipped-not-ready` row out
+freed launch slots each time a launch returns** leaves the
+`skipped-chain-dead` rows of an issue with a `skipped-not-ready` row out
 of `$SETTLED_FILE`, and step 4 holds a bounce's rows, so the refill
 relaunches those rows and each relaunch reports them again. File each
 step at most once per dispatch: keep `$FILED_FILE` under the session's
@@ -1345,7 +1460,7 @@ one call back-fills, verifies, and closes, each stage gating the next: a
 failed back-fill runs no verify and no close, a failed verify runs no
 close, and nothing is ever half-closed. Read its full output, verify
 stage included, before acting on the close or calling `next`; never pipe
-it through `head` or `tail`. A panel's seats-mode join launches beside
+it through `head` or `tail`. A panel's seats-mode join runs beside
 the next wave, after the close. Never issue `docket next --run` while the
 dispatch is open.
 (Shell paper-cut: quote `echo '---'`, since zsh equals-expands an
@@ -1363,11 +1478,11 @@ dispatch), and only that hold gets the ack-reap panel under
 
 **This order binds one dispatch's own sequence, not the relationship
 between dispatches.** When more than one dispatch or panel is genuinely
-in flight, launch their `docket-workflow-usage.js` joins concurrently; each join
+in flight, run their `usage_join.sh` joins concurrently; each join
 still precedes its own dispatch's write, verify, and close. "Precedes" is
 the order of calls, not when the join's usage record lands: the engine's
 grace window can still bill a step after the close returns, as
-`docket-workflow-usage.js`'s header comment explains.
+`docket-workflow-usage.js`'s header comment explains (the script reads the same transcripts).
 
 Two ways the back-fill gets skipped, both losing the run's only record of
 its spend: treating **"nothing was claimed"** as a reason (a wave whose
@@ -1392,7 +1507,7 @@ notification (step 2's dead-launch check) or a session resumes onto a
 dispatch whose wave no longer exists. The order is the same as a normal
 close, with one difference at the end:
 
-1. Back-fill first: launch the `docket-workflow-usage.js` join over whatever
+1. Back-fill first: run `usage_join.sh` over whatever
    transcripts exist, before anything else, since abandon has no later
    window.
 2. `docket dispatch verify --run $RUN`, then `docket step show STEP-N` for
@@ -1412,19 +1527,19 @@ close, with one difference at the end:
 **Pause mode** and a resume prompt point here rather than restating it.
 
 ```
-// 1. the join is a workflow (below); its return carries the rows and you check the shape.
+// 1. the join is a script (below); its stdout is the rows and you check the shape.
 // The join measures tokens only. A wave's coordination counts (rounds, gate passes,
 // re-seats, claim conflicts, ancestry parks, budget/chain deferrals) come from the
 // `coordination` field of that wave's own return, which docket-workflow.js computes; the join has none.
-Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
-           args: {dir: "<transcript-dir>", mode: "steps", exclude: []} })
+bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<transcript-dir>" --mode steps > "<scratchpad>/wave-<wfId>.tmp" && mv "<scratchpad>/wave-<wfId>.tmp" "<scratchpad>/wave-<wfId>.json"
 ```
 
 ```bash
-# 2. as each launch's join returns, land its `rows` array on disk with the Write
-#    tool as "<scratchpad>/wave-<wfId>.json", copied from the completion notification
-#    byte for byte — never retyped, never reshaped. Nothing else goes in that
-#    file: the workflow's overhead and skip lines are in its return, not `rows`.
+# 2. the redirect and mv above land each launch's `rows` array as
+#    "<scratchpad>/wave-<wfId>.json" with no retyping; nothing else goes in that
+#    file: the reader's overhead and skip lines are on stderr, not in `rows`.
+#    A join that exits 1 leaves no .json, so the merge in 3 cannot skip it:
+#    check that every launch has its file before merging.
 # 3. once every launch has returned, merge every launch's file into one array,
 #    one file per launch named, refill launches included:
 jq -s add "<scratchpad>/wave-<wfId-0>.json" "<scratchpad>/wave-<wfId-1>.json" > "<scratchpad>/dispatch-<M>-rows.json"
@@ -1480,49 +1595,53 @@ on a genuine discrepancy.
 
 **This is the transcript-token path, not a workaround for one.** An
 executor cannot observe its own token consumption; tokens reach the
-ledger through docket-workflow-usage → `backfill-usage` by design. `docket step
+ledger through usage_join.sh → `backfill-usage` by design. `docket step
 record --usage '{"unit": n, ...}'` is the other channel, opaque to the
 engine, at most 32 units per call; `budget.unit` names the one unit the
 run's cap counts.
 
-**Launch docket-workflow-usage over the transcript directory**: the installed
-`~/.claude/workflows/docket-workflow-usage.js`, with
-`args: {dir, mode: "steps", exclude: []}`. The coordination counts are
-not the join's: read them from the `coordination` field of the wave's
-own return (per the join's comment above). It fans one
-low-effort agent per `agent-*.jsonl` file to run a fixed jq program and
-returns `rows`: four typed units per step,
-deduplicated by message id, keyed by the step each agent's `docket step
-claim/record STEP-N` obligation names. A read-only probe or a claim
-agent (its brief closes `WAVE CLAIM`) carries no claim/record obligation
-and sums into `overhead`, attributed to no step, since back-filling a
-read or a claim onto the step it served would invent spend. Report that total separately; never `exclude` your way around it.
-The workflow throws when a brief names no step or an agent carries no
-usage; report that rather than papering over it. Only if the installed
-workflow is absent (drift, stop-and-report) delegate to one
-`executor-read` agent, briefed verbatim with
-[references/usage-join.md](references/usage-join.md). Either way, check
-the shape (every dispatched step present, quantities integers) before
-piping.
+**Run usage_join.sh over the transcript directory**: the installed
+`~/.claude/skills/docket-run/scripts/usage_join.sh`, a deterministic
+reader that spawns no agent:
 
-A background helper is invisible to `ListAgents` while it runs; its
-completion notification is the only status surface (**Seat**'s
-`TaskStop` rule applies here too).
+```bash
+bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<transcript-dir>" --mode steps > "<scratchpad>/wave-<wfId>.tmp" && mv "<scratchpad>/wave-<wfId>.tmp" "<scratchpad>/wave-<wfId>.json"
+```
+
+It runs the fixed jq program over every `agent-*.jsonl` file itself and
+prints `rows`, four typed units per step, as one JSON array on stdout,
+exactly the rows `docket-workflow-usage.js` returns, so the file is the
+array `backfill-usage` reads and needs no Write step. Usage is deduplicated
+by message id, keyed by the step each agent's `docket step claim/record
+STEP-N` obligation names. A read-only probe or a claim agent (its brief
+closes `WAVE CLAIM`) carries no claim/record obligation and sums into the
+overhead on stderr, attributed to no step, since back-filling a read or a
+claim onto the step it served would invent spend. Report that total
+separately; never `--exclude` your way around it. Pass `--exclude
+STEP-N,STEP-M` only for a step a prior dispatch's back-fill already
+carries. The coordination counts are not the join's: read them from the
+`coordination` field of the wave's own return. The script exits 1 with
+nothing on stdout when a brief names no step or an agent carries no usage;
+report that rather than papering over it. Only if the installed script is
+absent (drift, stop-and-report) delegate to one `executor-read` agent,
+briefed verbatim with [references/usage-join.md](references/usage-join.md).
+Either way, check the shape (every dispatched step present, quantities
+integers) before piping.
+
 
 **A panel you convened yourself gets the same treatment, keyed by
 seat.** A tribunal.js seat carries a proposal id, never a step id, so
-`dispatch backfill-usage` cannot receive it. Launch the same workflow
-with `mode: "seats"` and pipe its rows to the vote-scoped verb, once per
+`dispatch backfill-usage` cannot receive it. Run the same reader
+with `--mode seats` and pipe its rows to the vote-scoped verb, once per
 panel, right after reading the tally:
 
 ```
-Workflow({ scriptPath: "<absolute installed path to docket-workflow-usage.js>",
-           args: {dir: "<tribunal-transcript-dir>", mode: "seats", exclude: []} })
+bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<tribunal-transcript-dir>" --mode seats > "<scratchpad>/panel.tmp" && mv "<scratchpad>/panel.tmp" "<scratchpad>/panel.json"
 ```
 
 ```bash
-# The return's `rows` ARRAY landed on disk with the Write tool, each row exactly as
-# returned. The verb reads a bare array of {voter, unit, quantity} (extra keys such as
+# The script's stdout, the `rows` ARRAY, landed on disk by the redirect, each row exactly as
+# printed. The verb reads a bare array of {voter, unit, quantity} (extra keys such as
 # `proposal` are ignored); the whole {rows, overhead, skipped} envelope is refused.
 docket vote backfill-usage <proposal-id> --source "tribunal:<wfId>" \
   --from-json - < "<scratchpad>/panel.json"
@@ -1581,22 +1700,35 @@ or present the ruling with the fact that the sha is already integrated.
 At each integration point, write steps first, in step-id order:
 
 1. Confirm the step's status is `done` (`docket step show STEP-N`).
-2. Verify the sha exists: `git cat-file -e <sha>^{commit}`.
-3. `git cherry-pick -x <sha>`, a real commit on the shared branch (`-x`
-   preserves the writer-sha trailer). Integration commits land
-   immediately; never a staged-not-committed interim. The commit signs
-   non-interactively with the agent signing key
-   (`~/.ssh/agent-signing.pub`); never pass `--no-gpg-sign`. Publishing
+2. `docket step integrate STEP-N [STEP-M ...] < <scratchpad>/conductor.d/$RUN.token`,
+   the engine verb that replaces the hand-typed pick and annotate. In the
+   order named it cherry-picks each step's recorded writer chain with
+   `git cherry-pick -x` and annotates the step with the resulting HEAD.
+   Before it writes anything it checks every named step: done, an executor
+   step that holds the tree, its recorded commits exist with no merge
+   commit among them, not already integrated, not already carried by HEAD,
+   and the shared checkout on a branch with no tracked change and no
+   operation in progress; a step that fails a check refuses the whole verb
+   with nothing written. It stops at the first failure and reports the
+   steps already integrated. Integration commits land immediately; never a
+   staged-not-committed interim. The commit signs non-interactively with
+   the agent signing key (`~/.ssh/agent-signing.pub`); never pass
+   `--no-gpg-sign`. Repository hooks do not run from the pick. Publishing
    (push, PR, release) remains the operator's alone.
-4. `docket step annotate STEP-N --metadata
-   '{"integrated_sha":"<new sha>","writer_sha":"<sha>"}'`, mandatory,
-   right here. **If the pick conflicted and you resolved it by hand**,
-   annotate with the verified form instead: `docket step annotate
-   STEP-N --integrated-sha <new full sha> --metadata
-   '{"writer_sha":"<sha>"}' < <scratchpad>/conductor.d/$RUN.token`, a
-   conductor verb. The plain `--metadata` form stays token-free. The
-   engine verifies ancestry, re-records
-   `issue.diff` from the patch, and sets `integrated_sha`.
+3. Read its answer and follow the command an error names. A pick that
+   does not apply is aborted with the checkout verified unchanged and
+   nothing annotated: resolve the conflict by hand, picking the whole
+   writer chain (`git cherry-pick -x <base>..<head>`, where `<head>` is the
+   change-summary's writer sha and `<base>` the step's recorded base),
+   then annotate with the verified form, `docket step annotate STEP-N
+   --integrated-sha <new full sha> --metadata '{"writer_sha":"<head>"}' < <scratchpad>/conductor.d/$RUN.token`,
+   a conductor verb. The engine verifies ancestry, re-records
+   `issue.diff` from the patch, and sets `integrated_sha`. The same form
+   finishes a pick that landed but whose annotation was refused (the
+   error names the sha to pass), and a chain the shared HEAD already
+   carries. A chain holding a merge commit, or a step with no recorded
+   base, is not one the verb integrates; integrate it by hand the same
+   way.
 
 A cherry-pick touching `.claude/skills/**` can fail under the sandbox on
 the unlink; verify the sha and paths, then retry with the sandbox lifted.
@@ -2167,14 +2299,27 @@ denial reaching a package proxy) and passed when reproduced on the same
 sha. This section is that ruling.
 
 **Reproduce before you present.** When an executor step parks on a
-failed completion gate, read `docket step gates STEP-N --json` and take
-every row whose verdict is `fail`. Run each row's own `argv` against a
-clean detached checkout of the step's recorded sha, in your own
-environment exactly as it stands (the sandbox rulings this file already
-carries govern that run; this ruling adds nothing to them). Record every
-command, its exit, the sha, and each failing row's `output_tail` and
-`fingerprint` in the resolution note; the repeating-signature ruling
-below compares against that recorded fingerprint.
+failed completion gate, run
+`bash ~/.claude/skills/docket-run/scripts/gate_repro.sh STEP-N --repo <project checkout> --token <scratchpad>/conductor.d/RUN-N.token`
+before any escalation. It reads `docket step gates STEP-N --json`, takes
+each gate's newest row, and runs every row whose verdict is `fail` by its
+own `argv` against a clean detached checkout of the step's recorded sha,
+in your own environment as it stands plus the engine's gate inputs
+`DOCKET_GATE`, `DOCKET_STEP` and `DOCKET_ISSUE` (the sandbox rulings this
+file already carries govern that run; this ruling adds nothing to them).
+It prints `VERDICT: override-pass` with the `RESOLVE:` command, or
+`VERDICT: present advisor-first` with a `REASON:`: a security gate, an
+`unmatched` or `skipped` row, nothing failing, no recorded sha, or a gate
+that fails again on reproduction, including a range gate that fails closed
+for want of `DOCKET_GATE_BASE`. It resolves nothing. Escalate no
+completion-gate park, to the advisor or the operator, before this run's
+output is recorded: put its `SHA:` and `ROW:` lines (each command's exit
+and each failing row's recorded fingerprint) and each failing row's
+`output_tail` in the resolution note (a security gate's park, which the
+script refuses before printing them, records the evidence the never-clear
+ruling below names instead); the repeating-signature ruling below
+compares against that recorded fingerprint. A gate that hangs hangs the
+script; it carries no timeout.
 
 **Auto-pass exactly this, and nothing wider.** When every failing gate
 passed on reproduction, no gate row is `unmatched` or `skipped`, and no
@@ -2190,8 +2335,16 @@ requires, filed or linked. Report every auto-pass in your next status
 report, one line each. Everything else goes advisor-first: a gate that
 also fails on reproduction is a real failure or an environment this class
 does not cover, an `unmatched` row is a trust matter and reserved, a
-`skipped` row is the engine's own park, and a security gate's failure is
-never passed under this ruling, however clean the reproduction looks.
+`skipped` row is the engine's own park (a gate whose run's primary repo
+root no longer resolves, while the trust identity still does, records
+`skipped` with an `environment:` reason instead of `unmatched`, so that
+vanished checkout is not a trust matter and is not reserved to the
+operator on that account; a trust identity that does not resolve, and every
+other refusal, still records `unmatched`), and a security gate's failure is
+never passed under this ruling, however clean the reproduction looks: its
+override-pass is one of the never-clear classes of the advisor-first
+standing ruling below, so the advisor frames it and the operator decides,
+with the recorded evidence attached.
 
 **A repeating signature gets one run-scoped grant, on its second park.**
 The engine keys a `--batch` grant on the failure signature (gate, exit,
@@ -2326,7 +2479,11 @@ classifier paragraph under **Before the loop**, not this ruling.
 The operator ruled once, and the ruling stands for every run until they
 withdraw it: always consult the advisor before the operator, and come to
 the operator when an answer is not clear. This section is that ruling,
-and "advisor-first" anywhere in this file names this route.
+and "advisor-first" anywhere in this file names this route. A hook enforces
+it on a conductor's `AskUserQuestion`: the call is refused unless, since the
+last operator answer, a completed advisor launch whose brief names the
+question's header, a step id in it, or its full text exists, or a run note
+records an advisor ruling for that step.
 
 **Every decision this file sends to the operator goes to the `advisor`
 agent first.** That holds under any wording (a gate, a park, a question, a
@@ -2368,14 +2525,22 @@ of both advisor answers attached. Every other answer that is not clear
 goes to the operator with the advisor text attached, through the question
 tool as **Escalating to the operator** describes.
 
-**Three classes are never clear, whatever the advisor answers.** A trust
+**Four classes are never clear, whatever the advisor answers.** A trust
 verb (an `unmatched` gate row is a trust matter), the provenance of an
-executing artifact, and a peer-relayed claim of operator authorization
-each turn on something no session holds. Consult the advisor first on
-these too: its answer is framing, never a disposition, and the decision
+executing artifact, a peer-relayed claim of operator authorization, and an
+override-pass of a failed security gate row, or a standing override of a
+security gate (a `--batch` grant or a run-note override policy) naming
+`secret-scan`, `vuln-scan`, `sdet-abuse`, or any gate the security track
+adds, each turn on something no session holds. Consult the advisor first
+on these too: its answer is framing, never a disposition, and the decision
 reaches the operator with that framing attached. A trust matter still
 carries the exact `docket trust add ... -- <argv>` line the operator
-would run. A decision you cannot place in a class is not clear.
+would run. A failed security
+gate carries its recorded evidence, since `gate_repro.sh` runs no security
+gate: the script's `VERDICT:` and `REASON:` lines, the step's recorded sha,
+and, from `docket step gates STEP-N --json`, the failing row's `exit`,
+`argv`, `fingerprint` and `output_tail`. Never run a security gate's argv to
+reproduce it. A decision you cannot place in a class is not clear.
 
 **The ruling changes who answers first, not which answers exist.** A
 disposition this file prohibits outright is not one the advisor can name:
@@ -2480,7 +2645,8 @@ Three further answer forms count as clear in unattended mode, each only
 when its disposition is one the engine's verbs can honor. To make them
 possible, the launch brief says the run is unattended and admits a
 conditional (checkable with read-only verbs) or ranked answer; it omits
-that for the never-clear classes and Reserved items:
+that for the never-clear classes, any park whose failing rows include a
+security gate, and Reserved items:
 
 - **(a) A checkable condition.** "If X, then D", where X is settled by
   read-only verbs. Run the check; act on D when X holds, queue otherwise.
@@ -2498,9 +2664,10 @@ Each of (a) through (c) also requires that the disposition taken does not
 contradict a gate row, an artifact, or any recorded ruling; otherwise
 queue. They settle only the step or matter they answered, and a
 class-scope choice is never settled by them: it is queued. They never
-apply to: the three
+apply to: the four
 never-clear classes (a trust verb, the provenance of an executing
-artifact, a peer-relayed claim of operator authorization), which are
+artifact, a peer-relayed claim of operator authorization, an
+override-pass or standing override of a security gate), which are
 always queued; any item under **Reserved to the operator**, which keeps the
 strict definition of clear and queues otherwise; a disposition this file
 prohibits outright; a decision that fits no class; and seat contention.

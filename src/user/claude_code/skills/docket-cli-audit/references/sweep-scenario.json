@@ -2,7 +2,8 @@
   "schema_version": 1,
   "about": "Ordered probes cli_sweep.py runs against a fresh scratch store. Ids are deterministic because the store starts empty. A step without expect_exit records whatever exit it gets; a step with modes omitted runs as text, --json and --format json. Placeholders in braces come from earlier captures. Trust steps stay last so no gate can ever execute.",
   "skipped": [
-    {"command": "docket trust probe", "reason": "executes every trusted command in a worktree; the sweep never runs trusted commands"}
+    {"command": "docket trust probe", "reason": "executes every trusted command in a worktree; the sweep never runs trusted commands"},
+    {"command": "docket step integrate", "reason": "cherry-picks recorded writer commits onto the shared checkout; the sweep never writes git"}
   ],
   "steps": [
     {"id": "root-help", "argv": [], "modes": ["text"]},
@@ -311,6 +312,8 @@
     {"id": "step-hold", "argv": ["step", "hold", "STEP-7", "--reason", "keeps failing; operator looks first"], "env": {"DOCKET_TOKEN": "{conductor3}"}, "modes": ["json"]},
     {"id": "step-hold-again", "argv": ["step", "hold", "STEP-7", "--reason", "already held"], "env": {"DOCKET_TOKEN": "{conductor3}"}, "modes": ["text", "json"]},
     {"id": "step-show-held", "argv": ["step", "show", "STEP-7"], "modes": ["json"]},
+    {"id": "run-hold-issue-without-token", "argv": ["run", "hold-issue", "RUN-3", "DKT-6", "--reason", "no capability"], "modes": ["text", "json"]},
+    {"id": "run-hold-issue", "argv": ["run", "hold-issue", "RUN-3", "DKT-6", "--reason", "operator note: look at this issue first"], "env": {"DOCKET_TOKEN": "{conductor3}"}, "modes": ["json"]},
     {"id": "run-abandon-issue", "argv": ["run", "abandon", "RUN-3", "--issue", "DKT-1", "--reason", "one issue dropped", "--authority", "operator"], "env": {"DOCKET_TOKEN": "{conductor3}"}, "modes": ["json"]},
     {"id": "run-abandon", "argv": ["run", "abandon", "RUN-3", "--reason", "sweep abandons", "--authority", "operator"], "env": {"DOCKET_TOKEN": "{conductor3}"}, "modes": ["json"]},
     {"id": "run-abandon-again", "argv": ["run", "abandon", "RUN-3", "--reason", "already abandoned", "--authority", "operator"], "env": {"DOCKET_TOKEN": "{conductor3}"}, "modes": ["text", "format"]},

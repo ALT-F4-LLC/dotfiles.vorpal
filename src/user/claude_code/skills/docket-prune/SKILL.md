@@ -13,9 +13,9 @@ description: >-
   docket-refit to land. Bare invocation is one pass over what changed since
   the ledger; `all` re-tries everything; under /loop it passes until the
   corpus is unchanged and every cut is filed, then rests. Never executes a
-  cut. Distinct from corpus-check, which audits coherence; simplify-corpus,
-  which shortens files; declutter-code, which cleans code; and
-  docket-refit corpus mode, which keeps by default and redesigns.
+  cut. Distinct from corpus-check (coherence audit), simplify-corpus (files
+  shortening issues), simplify-code (files code cleanups), and
+  docket-refit (redesigns one named definition).
 argument-hint: "[all]"
 ---
 
@@ -24,7 +24,10 @@ argument-hint: "[all]"
 Run this skill inline in the main session. You enumerate the corpus, launch
 the trial, file the issues, land the ledger, and commit. The workflow never
 writes to the repository; the ledger candidate and every issue body land
-under scratch.
+under scratch. The ledger commit is this skill's one write to the checkout,
+by the operator's decision: the ledger drives the next pass, so filing it as
+an issue would re-try the same definitions until a worker landed it. Every
+cut is filed as an issue and never applied here.
 
 **Automation first is the primary goal of every verdict.** Per the docket
 skill's [automation reference](../docket/references/automation.md), an

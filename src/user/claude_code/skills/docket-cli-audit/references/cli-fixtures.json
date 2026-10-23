@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "verified_on": "2026-10-21",
-  "binary_version": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: 2026-10-20T23:48:26Z)",
-  "inventory_version": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: 2026-10-20T23:48:26Z)",
-  "scenario_sha256": "e2a1c41e9699488ec8cdfe69680af63cea542954ee39b7acaebe3606facf4638",
+  "verified_on": "2026-10-23",
+  "binary_version": "docket version nightly-37-gce50f60 (commit: ce50f60, built: 2026-10-23T00:58:29Z)",
+  "inventory_version": "docket version nightly-37-gce50f60 (commit: ce50f60, built: 2026-10-23T00:58:29Z)",
+  "scenario_sha256": "04065625277902d720a1013c76bfcfef14dd916091c30452de2a914f18163e6f",
   "probe_contract": "Every probe runs against a scratch HOME, XDG config and git repository; the trust roster is empty for every run- and step-level verb; --watch, --follow, --interval and 'trust probe' are refused.",
   "coverage": {
     "exercised": [
@@ -103,6 +103,7 @@
       "docket run conduct",
       "docket run fact",
       "docket run fact add",
+      "docket run hold-issue",
       "docket run issue",
       "docket run issue add",
       "docket run issue remove",
@@ -169,6 +170,10 @@
     ],
     "skipped": [
       {
+        "command": "docket step integrate",
+        "reason": "cherry-picks recorded writer commits onto the shared checkout; the sweep never writes git"
+      },
+      {
         "command": "docket trust probe",
         "reason": "executes every trusted command in a worktree; the sweep never runs trusted commands"
       }
@@ -193,7 +198,7 @@
         "version"
       ],
       "exit": 0,
-      "stdout": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: <TIMESTAMP>)\n",
+      "stdout": "docket version nightly-37-gce50f60 (commit: ce50f60, built: <TIMESTAMP>)\n",
       "stderr": ""
     },
     {
@@ -208,11 +213,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-35-g9d8eaf8",
-          "commit": "9d8eaf8",
+          "version": "nightly-37-gce50f60",
+          "commit": "ce50f60",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: <TIMESTAMP>)"
+        "message": "docket version nightly-37-gce50f60 (commit: ce50f60, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -229,11 +234,11 @@
       "json": {
         "ok": true,
         "data": {
-          "version": "nightly-35-g9d8eaf8",
-          "commit": "9d8eaf8",
+          "version": "nightly-37-gce50f60",
+          "commit": "ce50f60",
           "build_date": "<TIMESTAMP>"
         },
-        "message": "docket version nightly-35-g9d8eaf8 (commit: 9d8eaf8, built: <TIMESTAMP>)"
+        "message": "docket version nightly-37-gce50f60 (commit: ce50f60, built: <TIMESTAMP>)"
       },
       "stderr": ""
     },
@@ -461,7 +466,7 @@
         "get"
       ],
       "exit": 0,
-      "stdout": "lease.ttl.default <DURATION> (default)\nattempt.max 3 (default)\nbudget.default 0 (default)\nbudget.unit <unset> (default)\nbudget.usage.default 0 (default)\nbudget.usage.unit <unset> (default)\ndispatch.ttl <DURATION> (default)\ndispatch.grace <DURATION> (default)\nevents.retain 0 (default)\nvote.hold.rule <unset> (default)\nvote.hold.voters <unset> (default)\nvote.hold.cost 0 (default)\nregistration.auto true (default)\ncontext.warn_bytes 65536 (default)\ncontext.error_bytes 131072 (default)\n",
+      "stdout": "lease.ttl.default <DURATION> (default)\nattempt.max 3 (default)\nbudget.default 0 (default)\nbudget.unit <unset> (default)\nbudget.usage.default 0 (default)\nbudget.usage.unit <unset> (default)\ndispatch.ttl <DURATION> (default)\ndispatch.grace <DURATION> (default)\nevents.retain 0 (default)\nvote.hold.rule <unset> (default)\nvote.hold.voters <unset> (default)\nrouting.security_label security (default)\nrouting.security_lexicon <unset> (default)\nvote.hold.cost 0 (default)\nregistration.auto true (default)\ncontext.warn_bytes 65536 (default)\ncontext.error_bytes 131072 (default)\n",
       "stderr": ""
     },
     {
@@ -534,6 +539,16 @@
               "source": "default"
             },
             {
+              "key": "routing.security_label",
+              "value": "security",
+              "source": "default"
+            },
+            {
+              "key": "routing.security_lexicon",
+              "value": "",
+              "source": "default"
+            },
+            {
               "key": "vote.hold.cost",
               "value": "0",
               "source": "default"
@@ -554,9 +569,9 @@
               "source": "default"
             }
           ],
-          "total": 15
+          "total": 17
         },
-        "message": "lease.ttl.default <DURATION> (default)\nattempt.max 3 (default)\nbudget.default 0 (default)\nbudget.unit <unset> (default)\nbudget.usage.default 0 (default)\nbudget.usage.unit <unset> (default)\ndispatch.ttl <DURATION> (default)\ndispatch.grace <DURATION> (default)\nevents.retain 0 (default)\nvote.hold.rule <unset> (default)\nvote.hold.voters <unset> (default)\nvote.hold.cost 0 (default)\nregistration.auto true (default)\ncontext.warn_bytes 65536 (default)\ncontext.error_bytes 131072 (default)"
+        "message": "lease.ttl.default <DURATION> (default)\nattempt.max 3 (default)\nbudget.default 0 (default)\nbudget.unit <unset> (default)\nbudget.usage.default 0 (default)\nbudget.usage.unit <unset> (default)\ndispatch.ttl <DURATION> (default)\ndispatch.grace <DURATION> (default)\nevents.retain 0 (default)\nvote.hold.rule <unset> (default)\nvote.hold.voters <unset> (default)\nrouting.security_label security (default)\nrouting.security_lexicon <unset> (default)\nvote.hold.cost 0 (default)\nregistration.auto true (default)\ncontext.warn_bytes 65536 (default)\ncontext.error_bytes 131072 (default)"
       },
       "stderr": ""
     },
@@ -631,6 +646,16 @@
               "source": "default"
             },
             {
+              "key": "routing.security_label",
+              "value": "security",
+              "source": "default"
+            },
+            {
+              "key": "routing.security_lexicon",
+              "value": "",
+              "source": "default"
+            },
+            {
               "key": "vote.hold.cost",
               "value": "0",
               "source": "default"
@@ -651,10 +676,10 @@
               "source": "default"
             }
           ],
-          "total": 15,
+          "total": 17,
           "truncated": false
         },
-        "message": "lease.ttl.default <DURATION> (default)\nattempt.max 3 (default)\nbudget.default 0 (default)\nbudget.unit <unset> (default)\nbudget.usage.default 0 (default)\nbudget.usage.unit <unset> (default)\ndispatch.ttl <DURATION> (default)\ndispatch.grace <DURATION> (default)\nevents.retain 0 (default)\nvote.hold.rule <unset> (default)\nvote.hold.voters <unset> (default)\nvote.hold.cost 0 (default)\nregistration.auto true (default)\ncontext.warn_bytes 65536 (default)\ncontext.error_bytes 131072 (default)"
+        "message": "lease.ttl.default <DURATION> (default)\nattempt.max 3 (default)\nbudget.default 0 (default)\nbudget.unit <unset> (default)\nbudget.usage.default 0 (default)\nbudget.usage.unit <unset> (default)\ndispatch.ttl <DURATION> (default)\ndispatch.grace <DURATION> (default)\nevents.retain 0 (default)\nvote.hold.rule <unset> (default)\nvote.hold.voters <unset> (default)\nrouting.security_label security (default)\nrouting.security_lexicon <unset> (default)\nvote.hold.cost 0 (default)\nregistration.auto true (default)\ncontext.warn_bytes 65536 (default)\ncontext.error_bytes 131072 (default)"
       },
       "stderr": ""
     },
@@ -827,7 +852,7 @@
       ],
       "exit": 3,
       "stdout": "",
-      "stderr": "Error: unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, limits.max.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)\n"
+      "stderr": "Error: unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, routing.security_label, routing.security_lexicon, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, limits.max.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)\n"
     },
     {
       "id": "config-set-invalid",
@@ -843,7 +868,7 @@
       "exit": 3,
       "json": {
         "ok": false,
-        "error": "unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, limits.max.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)",
+        "error": "unknown config key: \"no.such.key\" (known keys: lease.ttl.default, attempt.max, budget.default, budget.unit, budget.usage.default, budget.usage.unit, dispatch.ttl, dispatch.grace, events.retain, vote.hold.rule, vote.hold.voters, routing.security_label, routing.security_lexicon, vote.hold.cost, registration.auto, context.warn_bytes, context.error_bytes, lease.ttl.<class>, limits.max.<class>, vote.rule.<name>.threshold, vote.rule.<name>.criticality, vote.rule.<name>.sealed, vote.rule.<name>.hold_on_dissent)",
         "code": "VALIDATION_ERROR"
       },
       "stderr": ""
@@ -2370,7 +2395,7 @@
         "DKT-1"
       ],
       "exit": 0,
-      "stdout": "Comments\nsweep <AGO>\nFirst comment\n\nsweep <AGO>\nSecond comment\n\nsweep <AGO>\nSecond comment\n",
+      "stdout": "Comments\nsweep <AGO>\n  First comment\n\nsweep <AGO>\n  Second comment\n\nsweep <AGO>\n  Second comment\n",
       "stderr": ""
     },
     {
@@ -9437,7 +9462,7 @@
       ],
       "exit": 3,
       "stdout": "",
-      "stderr": "Error: run needs a subcommand: abandon, activate, budget, conduct, fact, issue, note, pause, refresh-body, refresh-files, refresh-scope, repin, report, resume, start, status, verify-pins\n"
+      "stderr": "Error: run needs a subcommand: abandon, activate, budget, conduct, fact, hold-issue, issue, note, pause, refresh-body, refresh-files, refresh-scope, repin, report, resume, start, status, verify-pins\n"
     },
     {
       "id": "run-status-empty",
@@ -10163,7 +10188,7 @@
         "RUN-1"
       ],
       "exit": 0,
-      "stdout": "RUN-1 planning\nIssues: 2\n",
+      "stdout": "RUN-1 planning\nIssues: 2\nUnexpanded (no steps yet): 2\n  DKT-2 (backlog)\n    blocked by DKT-1 (backlog)\n  DKT-5 (backlog) not blocked\n",
       "stderr": ""
     },
     {
@@ -10187,7 +10212,26 @@
             "created_at_ms": "<N>",
             "updated_at_ms": "<N>"
           },
-          "issues": 2
+          "issues": 2,
+          "unexpanded": [
+            {
+              "issue": "DKT-2",
+              "status": "backlog",
+              "blocked_by": [
+                [
+                  {
+                    "issue": "DKT-1",
+                    "status": "backlog"
+                  }
+                ]
+              ]
+            },
+            {
+              "issue": "DKT-5",
+              "status": "backlog",
+              "blocked_by": []
+            }
+          ]
         }
       },
       "stderr": ""
@@ -10215,7 +10259,26 @@
             "updated_at_ms": "<N>",
             "row_version": 1
           },
-          "issues": 2
+          "issues": 2,
+          "unexpanded": [
+            {
+              "issue": "DKT-2",
+              "status": "backlog",
+              "blocked_by": [
+                [
+                  {
+                    "issue": "DKT-1",
+                    "status": "backlog"
+                  }
+                ]
+              ]
+            },
+            {
+              "issue": "DKT-5",
+              "status": "backlog",
+              "blocked_by": []
+            }
+          ]
         }
       },
       "stderr": ""
@@ -10232,7 +10295,7 @@
       ],
       "exit": 0,
       "stdout": "Dry run of RUN-1: 2 issue(s) bound (DKT-2->sweep-dev@1, DKT-5->sweep-dev@1), 2 issue(s) expanded, 4 step(s), 0.00 expected cost added, 0.00 expected cost total, 1 pin(s), promoted DKT-2, DKT-5 (would move RUN-1: planning -> active)\n",
-      "stderr": "Warning: DKT-2 is bound to sweep-dev@1 and no scope is declared, so its \"check\" step holds the tree without excluding, or being excluded by, any other issue; declare one with `docket issue edit DKT-2 --scope GLOB`\nWarning: DKT-5 is bound to sweep-dev@1 and no scope is declared, so its \"check\" step holds the tree without excluding, or being excluded by, any other issue; declare one with `docket issue edit DKT-5 --scope GLOB`\n\nregistered from the instance config (2):\n  \"sweep-dev\"@1 \"<SCRATCH>/repo/.docket/config/workflows/sweep-dev.toml\" (unchanged)\n  \"sweep-park\"@1 \"<SCRATCH>/repo/.docket/config/workflows/sweep-park.toml\" (new)\n"
+      "stderr": "Warning: DKT-2 is bound to sweep-dev@1 and no scope is declared, so its \"check\" step holds the tree without excluding, or being excluded by, any other issue; declare one with `docket issue edit DKT-2 --scope GLOB`\nWarning: DKT-5 is bound to sweep-dev@1 and no scope is declared, so its \"check\" step holds the tree without excluding, or being excluded by, any other issue; declare one with `docket issue edit DKT-5 --scope GLOB`\nWarning: the security-routing lint checked nothing: no lexicon terms are configured and no bound issue with a comparable scope carries the security label; judge each issue's sensitivity yourself\n\nregistered from the instance config (2):\n  \"sweep-dev\"@1 \"<SCRATCH>/repo/.docket/config/workflows/sweep-dev.toml\" (unchanged)\n  \"sweep-park\"@1 \"<SCRATCH>/repo/.docket/config/workflows/sweep-park.toml\" (new)\n"
     },
     {
       "id": "run-activate-dry-run",
@@ -10275,6 +10338,13 @@
               "reason": "no scope is declared, so its \"check\" step holds the tree without excluding, or being excluded by, any other issue"
             }
           ],
+          "routing_lint": {
+            "label": "security",
+            "lexicon_terms": 0,
+            "labelled_issues": 0,
+            "linted": 2,
+            "unscoped": 2
+          },
           "hold_policy": {
             "panel": false
           },
@@ -10360,6 +10430,13 @@
               "reason": "no scope is declared, so its \"check\" step holds the tree without excluding, or being excluded by, any other issue"
             }
           ],
+          "routing_lint": {
+            "label": "security",
+            "lexicon_terms": 0,
+            "labelled_issues": 0,
+            "linted": 2,
+            "unscoped": 2
+          },
           "hold_policy": {
             "panel": false
           },
@@ -11345,7 +11422,7 @@
           "title": "Beta",
           "updated_at": "<TIMESTAMP>",
           "warnings": [
-            "DKT-2 is bound into RUN-1, which froze its scope at activation as no declared scope — the 2 step(s) still live there will render that frozen scope in their packets and record their diffs over it, NOT the [src/**] you just wrote. The live column does take effect for scheduling's mutual-exclusion check, and for nothing else. To make the widened scope real for this run's remaining work, refresh its snapshot — `docket run refresh-scope RUN-1 --issue DKT-2 --reason \"scope widened\"` (DKT-869; refuses while any of the issue's steps is claimed, running or gated, or while a dispatch is open). If the run's PREMISE changed rather than one declaration, the older disposition still applies: take the issue out of the run — `docket run abandon RUN-1 --issue DKT-2 --reason \"scope widened\"` — and re-plan it into a new run, whose activation snapshots the scope afresh"
+            "DKT-2 is bound into RUN-1, which froze its scope at activation as no declared scope — the 2 step(s) still live there will render that frozen scope in their packets and record their diffs over it, NOT the [src/**] you just wrote. The live column does take effect for scheduling's mutual-exclusion check, and for nothing else. To make the widened scope real for this run's remaining work, refresh its snapshot — `docket run refresh-scope RUN-1 --issue DKT-2 --reason \"scope widened\"` (DKT-869; refuses while any of the issue's steps is claimed, running or gated). If the run's PREMISE changed rather than one declaration, the older disposition still applies: take the issue out of the run — `docket run abandon RUN-1 --issue DKT-2 --reason \"scope widened\"` — and re-plan it into a new run, whose activation snapshots the scope afresh"
           ]
         },
         "message": "Updated DKT-2: Beta"
@@ -11504,7 +11581,7 @@
           "title": "Beta",
           "updated_at": "<TIMESTAMP>",
           "warnings": [
-            "DKT-2 is bound into RUN-1, which froze its description at activation — the 2 step(s) still live there will render that frozen description as their packets' REQUEST and issue.body, NOT the description you just wrote. To make the amendment reach this run's remaining work, refresh its snapshot — `docket run refresh-body RUN-1 --issue DKT-2 --reason \"description amended\"` (refuses while any of the issue's steps is claimed, running or gated, or while a dispatch is open)"
+            "DKT-2 is bound into RUN-1, which froze its description at activation — the 2 step(s) still live there will render that frozen description as their packets' REQUEST and issue.body, NOT the description you just wrote. To make the amendment reach this run's remaining work, refresh its snapshot — `docket run refresh-body RUN-1 --issue DKT-2 --reason \"description amended\"` (refuses while any of the issue's steps is claimed, running or gated)"
           ]
         },
         "message": "Updated DKT-2: Beta"
@@ -12372,7 +12449,7 @@
         "step"
       ],
       "exit": 0,
-      "stdout": "Steps are the units of work a run schedules.\n\nA step is CLAIMED — which mints a capability token and returns the whole\ncontext bundle in one response — then COMPLETED with an artifact. Completion is\na saga: the artifact records and the token retires in one commit, after which\nthe step is engine-owned and finishes under any later invocation, even if the\nworker that claimed it died.\n\nGate steps are never claimed. A human gate is approved or rejected directly; a\nvote gate is decided by its voters casting on the proposal the engine opened\nfor it, whose id rides on the step row.\n\nRead verbs here compute effective status and WRITE NOTHING. Only `next` and\n`step claim` reap an expired lease.\n\nUsage:\n  docket step [command]\n\nAvailable Commands:\n  annotate Record facts about a finished step: opaque metadata, or a verified integration\n  approve Approve a gate step awaiting a person\n  artifact Read one artifact in full, body and payload\n  artifacts List what a step produced, without the bodies\n  claim Claim a step, minting a token and returning its context bundle\n  complete Record a step's artifact and run the completion saga\n  context Re-emit a step's context bundle, read-only\n  fail Report a step as failed, consuming an attempt\n  gates List a step's recorded gate results\n  heartbeat Extend the lease on a claimed step\n  hold Park one ready step for the operator\n  list List a run's or an issue's steps with effective status and cost\n  reap Clear a dead holder's claim without waiting out the lease\n  reject Reject a gate step awaiting a person\n  render Render a step's context bundle into a work packet\n  resolve Resolve a parked step\n  show Show a step at its effective status\n\nFlags:\n  -h, --help help for step\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket step [command] --help\" for more information about a command.\n",
+      "stdout": "Steps are the units of work a run schedules.\n\nA step is CLAIMED — which mints a capability token and returns the whole\ncontext bundle in one response — then COMPLETED with an artifact. Completion is\na saga: the artifact records and the token retires in one commit, after which\nthe step is engine-owned and finishes under any later invocation, even if the\nworker that claimed it died.\n\nGate steps are never claimed. A human gate is approved or rejected directly; a\nvote gate is decided by its voters casting on the proposal the engine opened\nfor it, whose id rides on the step row.\n\nRead verbs here compute effective status and WRITE NOTHING. Only `next` and\n`step claim` reap an expired lease.\n\nUsage:\n  docket step [command]\n\nAvailable Commands:\n  annotate Record facts about a finished step: opaque metadata, or a verified integration\n  approve Approve a gate step awaiting a person\n  artifact Read one artifact in full, body and payload\n  artifacts List what a step produced, without the bodies\n  claim Claim a step, minting a token and returning its context bundle\n  complete Record a step's artifact and run the completion saga\n  context Re-emit a step's context bundle, read-only\n  fail Report a step as failed, consuming an attempt\n  gates List a step's recorded gate results\n  heartbeat Extend the lease on a claimed step\n  hold Park one pending step for the operator\n  integrate Cherry-pick finished write-class steps onto the shared branch and annotate them\n  list List a run's or an issue's steps with effective status and cost\n  reap Clear a dead holder's claim without waiting out the lease\n  reject Reject a gate step awaiting a person\n  render Render a step's context bundle into a work packet\n  resolve Resolve a parked step\n  show Show a step at its effective status\n\nFlags:\n  -h, --help help for step\n\nGlobal Flags:\n      --format string Output format: json (alias for --json=v2)\n      --json string[=\"v1\"] Output in JSON format (--json, or --json=v2)\n  -q, --quiet Suppress non-essential output\n\nUse \"docket step [command] --help\" for more information about a command.\n",
       "stderr": ""
     },
     {
@@ -12962,7 +13039,7 @@
         "resolved-prober"
       ],
       "exit": 0,
-      "stdout": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
+      "stdout": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nround: 0\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
       "stderr": ""
     },
     {
@@ -12981,7 +13058,7 @@
       "json": {
         "ok": true,
         "data": {
-          "packet": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
+          "packet": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nround: 0\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
           "template": "default",
           "template_pinned": true
         }
@@ -13005,7 +13082,7 @@
       "json": {
         "ok": true,
         "data": {
-          "packet": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
+          "packet": "== STEP STEP-1 check@0\nrun: RUN-1\nissue: DKT-2 Beta\nkind: executor\ntarget: resolved-prober\nscope: src/**\nround: 0\nattempt: 0\n\n== REQUEST\nBeta body, amended.\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
           "template": "default",
           "template_pinned": true
         }
@@ -14193,7 +14270,7 @@
         "STEP-1"
       ],
       "exit": 0,
-      "stdout": "ARTIFACT KIND BYTES PAYLOAD SHA256\n----------------------------------------------------------------------------\nARTIFACT-1 check-report 35 - <HEX12>\nARTIFACT-2 issue.diff 27510 - <HEX12>\n\nRead one in full: docket step artifact ARTIFACT-1\n\n",
+      "stdout": "ARTIFACT KIND BYTES PAYLOAD SHA256\n----------------------------------------------------------------------------\nARTIFACT-1 check-report 35 - <HEX12>\nARTIFACT-2 issue.diff 28236 - <HEX12>\n\nRead one in full: docket step artifact ARTIFACT-1\n\n",
       "stderr": ""
     },
     {
@@ -14225,7 +14302,7 @@
               "kind": "issue.diff",
               "producer": "check@0",
               "sha256": "<HEX64>",
-              "bytes": 27510,
+              "bytes": 28236,
               "created_at_ms": "<N>"
             }
           ]
@@ -14263,7 +14340,7 @@
               "kind": "issue.diff",
               "producer": "check@0",
               "sha256": "<HEX64>",
-              "bytes": 27510,
+              "bytes": 28236,
               "created_at_ms": "<N>"
             }
           ]
@@ -15100,7 +15177,7 @@
         "rendered-prober"
       ],
       "exit": 0,
-      "stdout": "Claimed STEP-3 until <TIMESTAMP> (attempt 1)\n<HEX64>\n\n== STEP STEP-3 check@0\nrun: RUN-1\nissue: DKT-5 Epsilon\nkind: executor\ntarget: rendered-prober\nattempt: 1\n\n== REQUEST\n\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
+      "stdout": "Claimed STEP-3 until <TIMESTAMP> (attempt 1)\n<HEX64>\n\n== STEP STEP-3 check@0\nrun: RUN-1\nissue: DKT-5 Epsilon\nkind: executor\ntarget: rendered-prober\nround: 0\nattempt: 1\n\n== REQUEST\n\n\n== RUN NOTE 1 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 2 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 3 (authority: operator)\nA note for the packets.\n\n== RUN NOTE 4 (authority: conductor)\nNote from stdin.\n\n\n\n== PINNED\nworkflow:sweep-dev@1 <HEX64>\n\n== OUTPUT\nRecord an artifact of kind: check-report\n",
       "stderr": ""
     },
     {
@@ -15329,7 +15406,7 @@
               "executor": "prober",
               "issue": "DKT-2",
               "sha256": "<HEX64>",
-              "bytes": 27510
+              "bytes": 28236
             }
           ],
           "metadata": [
@@ -16990,7 +17067,7 @@
       ],
       "exit": 4,
       "stdout": "",
-      "stderr": "Error: step check@0 is waiting-human; `step hold` parks a READY step only — a claimed step is force-reaped first (`step reap`), and a parked one is already waiting on the operator\n"
+      "stderr": "Error: step check@0 is waiting-human; `step hold` parks a PENDING step only — a claimed step is force-reaped first (`step reap`), and a parked one is already waiting on the operator\n"
     },
     {
       "id": "step-hold-again",
@@ -17007,7 +17084,7 @@
       "exit": 4,
       "json": {
         "ok": false,
-        "error": "step check@0 is waiting-human; `step hold` parks a READY step only — a claimed step is force-reaped first (`step reap`), and a parked one is already waiting on the operator",
+        "error": "step check@0 is waiting-human; `step hold` parks a PENDING step only — a claimed step is force-reaped first (`step reap`), and a parked one is already waiting on the operator",
         "code": "CONFLICT"
       },
       "stderr": ""
@@ -17050,6 +17127,72 @@
       "stderr": ""
     },
     {
+      "id": "run-hold-issue-without-token",
+      "mode": "text",
+      "argv": [
+        "docket",
+        "run",
+        "hold-issue",
+        "RUN-3",
+        "DKT-6",
+        "--reason",
+        "no capability"
+      ],
+      "exit": 3,
+      "stdout": "",
+      "stderr": "Error: RUN-3 is bound to a conductor capability and run hold-issue requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-3`, which re-mints it\n"
+    },
+    {
+      "id": "run-hold-issue-without-token",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "hold-issue",
+        "RUN-3",
+        "DKT-6",
+        "--reason",
+        "no capability",
+        "--json"
+      ],
+      "exit": 3,
+      "json": {
+        "ok": false,
+        "error": "RUN-3 is bound to a conductor capability and run hold-issue requires it: supply the run's token via DOCKET_TOKEN or stdin (never argv). It was returned once when the run activated; a session that does not hold it takes the seat with `docket run conduct RUN-3`, which re-mints it",
+        "code": "VALIDATION_ERROR"
+      },
+      "stderr": ""
+    },
+    {
+      "id": "run-hold-issue",
+      "mode": "json",
+      "argv": [
+        "docket",
+        "run",
+        "hold-issue",
+        "RUN-3",
+        "DKT-6",
+        "--reason",
+        "operator note: look at this issue first",
+        "--json"
+      ],
+      "exit": 0,
+      "json": {
+        "ok": true,
+        "data": {
+          "held": [
+            "STEP-9",
+            "STEP-10"
+          ],
+          "issue": "DKT-6",
+          "reason": "operator note: look at this issue first",
+          "run": "RUN-3"
+        },
+        "message": "Held 2 step(s) of DKT-6 in RUN-3: [STEP-9 STEP-10]"
+      },
+      "stderr": ""
+    },
+    {
       "id": "run-abandon-issue",
       "mode": "json",
       "argv": [
@@ -17075,9 +17218,9 @@
             "check@0",
             "approve@0"
           ],
-          "run_status": "active"
+          "run_status": "waiting-human"
         },
-        "message": "Abandoned DKT-1 in RUN-3 (2 step(s)); the run is active: one issue dropped"
+        "message": "Abandoned DKT-1 in RUN-3 (2 step(s)); the run is waiting-human: one issue dropped"
       },
       "stderr": ""
     },
@@ -17488,7 +17631,7 @@
               }
             }
           ],
-          "total": 78
+          "total": 81
         }
       },
       "stderr": ""
@@ -17580,7 +17723,7 @@
               }
             }
           ],
-          "total": 78,
+          "total": 81,
           "truncated": true
         }
       },
@@ -17672,36 +17815,32 @@
         "data": {
           "events": [
             {
-              "seq": 76,
+              "seq": 79,
               "at_ms": "<N>",
-              "kind": "issue-abandoned",
+              "kind": "run-paused",
               "run": "RUN-3",
-              "issue": "DKT-1",
               "project": "repo",
               "data": {
-                "issue": "DKT-1",
-                "reason": "one issue dropped",
-                "steps": [
-                  "check@0",
-                  "approve@0"
-                ]
+                "from": "active",
+                "reason": "rollup",
+                "to": "waiting-human"
               }
             },
             {
-              "seq": 77,
+              "seq": 80,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-3",
               "project": "repo",
               "data": {
                 "authority": "operator",
-                "from": "active",
+                "from": "waiting-human",
                 "reason": "sweep abandons",
                 "to": "abandoned"
               }
             },
             {
-              "seq": 78,
+              "seq": 81,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-1",
@@ -17715,7 +17854,7 @@
               }
             }
           ],
-          "total": 78
+          "total": 81
         }
       },
       "stderr": ""
@@ -17812,7 +17951,7 @@
       ],
       "exit": 3,
       "stdout": "",
-      "stderr": "Error: unknown event kind \"no-such-kind\"; valid kinds: claim-refused, conductor-seated, config-changed, dispatch-abandoned, dispatch-close-refused, dispatch-closed, dispatch-extended, dispatch-opened, events-pruned, gate-override-granted, gate-recorded, gate-rerun, gate-started, gate-unmatched, issue-abandoned, issue-body-refreshed, issue-diff-repinned, issue-files-refreshed, issue-in-progress, issue-promoted, issue-review, issue-scope-refreshed, join-completed, lease-reaped, loop-entered, project-registered, reap-acknowledged, run-abandoned, run-activated, run-budget-set, run-done, run-note-added, run-paused, run-repinned, run-resumed, run-started, spawn-admitted, stale-target-waived, step-annotated, step-approved, step-batch-overridden, step-claimed, step-deferred, step-failed, step-heartbeat, step-held, step-ready, step-recorded, step-rejected, step-reminted, step-resolved, step-routed, step-skipped, step-superseded, trust-added, trust-removed, vote-opened, vote-reseated, vote-tallied\n"
+      "stderr": "Error: unknown event kind \"no-such-kind\"; valid kinds: claim-refused, conductor-seated, config-changed, dispatch-abandoned, dispatch-close-refused, dispatch-closed, dispatch-extended, dispatch-opened, events-pruned, gate-override-granted, gate-recorded, gate-rerun, gate-started, gate-unmatched, issue-abandoned, issue-body-refreshed, issue-diff-repinned, issue-files-refreshed, issue-in-progress, issue-promoted, issue-review, issue-scope-refreshed, join-completed, lease-reaped, loop-entered, park-retry-eligible, project-registered, reap-acknowledged, run-abandoned, run-activated, run-budget-set, run-done, run-note-added, run-paused, run-repinned, run-resumed, run-started, spawn-admitted, stale-target-waived, step-annotated, step-approved, step-batch-overridden, step-claimed, step-deferred, step-failed, step-heartbeat, step-held, step-ready, step-recorded, step-rejected, step-reminted, step-resolved, step-routed, step-skipped, step-superseded, trust-added, trust-removed, vote-opened, vote-reseated, vote-tallied\n"
     },
     {
       "id": "events-list-kind-unknown",
@@ -17828,7 +17967,7 @@
       "exit": 3,
       "json": {
         "ok": false,
-        "error": "unknown event kind \"no-such-kind\"; valid kinds: claim-refused, conductor-seated, config-changed, dispatch-abandoned, dispatch-close-refused, dispatch-closed, dispatch-extended, dispatch-opened, events-pruned, gate-override-granted, gate-recorded, gate-rerun, gate-started, gate-unmatched, issue-abandoned, issue-body-refreshed, issue-diff-repinned, issue-files-refreshed, issue-in-progress, issue-promoted, issue-review, issue-scope-refreshed, join-completed, lease-reaped, loop-entered, project-registered, reap-acknowledged, run-abandoned, run-activated, run-budget-set, run-done, run-note-added, run-paused, run-repinned, run-resumed, run-started, spawn-admitted, stale-target-waived, step-annotated, step-approved, step-batch-overridden, step-claimed, step-deferred, step-failed, step-heartbeat, step-held, step-ready, step-recorded, step-rejected, step-reminted, step-resolved, step-routed, step-skipped, step-superseded, trust-added, trust-removed, vote-opened, vote-reseated, vote-tallied",
+        "error": "unknown event kind \"no-such-kind\"; valid kinds: claim-refused, conductor-seated, config-changed, dispatch-abandoned, dispatch-close-refused, dispatch-closed, dispatch-extended, dispatch-opened, events-pruned, gate-override-granted, gate-recorded, gate-rerun, gate-started, gate-unmatched, issue-abandoned, issue-body-refreshed, issue-diff-repinned, issue-files-refreshed, issue-in-progress, issue-promoted, issue-review, issue-scope-refreshed, join-completed, lease-reaped, loop-entered, park-retry-eligible, project-registered, reap-acknowledged, run-abandoned, run-activated, run-budget-set, run-done, run-note-added, run-paused, run-repinned, run-resumed, run-started, spawn-admitted, stale-target-waived, step-annotated, step-approved, step-batch-overridden, step-claimed, step-deferred, step-failed, step-heartbeat, step-held, step-ready, step-recorded, step-rejected, step-reminted, step-resolved, step-routed, step-skipped, step-superseded, trust-added, trust-removed, vote-opened, vote-reseated, vote-tallied",
         "code": "VALIDATION_ERROR"
       },
       "stderr": ""
@@ -18651,7 +18790,7 @@
               }
             },
             {
-              "seq": 78,
+              "seq": 81,
               "at_ms": "<N>",
               "kind": "run-abandoned",
               "run": "RUN-1",

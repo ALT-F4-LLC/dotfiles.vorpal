@@ -48,7 +48,7 @@ export const meta = {
 // variant}; tribunal.js only fills an open one.
 //
 // Return: CONVERSATIONAL {voteId, outcome, seatsSpawned, respawns, respawned,
-// replies} — `outcome` is the probe's {status, final_outcome, votes} read of
+// replies} — `outcome` is the probe's {status, votes} read of
 // the vote record, or null when the final probe returned nothing (the first
 // read is retried once, the read after a re-seat is not; unknown, never "no
 // casts"), `respawns` counts the seats re-spawned once, and
@@ -309,7 +309,9 @@ THE EVIDENCE IS IN THE RECORD, not in this brief: this gate readied mid-wave,
 so read what the claims rest on yourself before you vote —
 
   docket run status ${step.run} --json (this run's state; there is no \`run show\`)
-  docket step show ${step.step} / docket step context ${step.step} --json
+  docket step show ${step.step} --json | jq -r '.data.status'   (the status; .data.step is the step id string)
+  docket step context ${step.step} --json | jq -r '.data.context.inputs[] | "\\(.artifact) \\(.kind)"'
+  (the JSON is {ok, data}; an artifact payload is a JSON string, or null on an input with no payload, so read one with select(.payload) | .payload | fromjson)
   (no \`run activate --dry-run\` here: a step vote previews no activation, and
    the verb is one dropped flag from activating the run)
   git log --oneline -20 / git diff / git show <sha>
@@ -354,7 +356,9 @@ have read-only tools; use them. Useful and safe from ${cwd}:
 
   cd ${cwd} && docket run status RUN-N --json   (there is no \`run show\`)
   cd ${cwd} && docket run activate RUN-N --dry-run --json   (--dry-run is load-bearing: without it this ACTIVATES the run)
-  cd ${cwd} && docket step show STEP-N / step context STEP-N / step render STEP-N
+  cd ${cwd} && docket step show STEP-N --json | jq -r '.data.status'   (the status; .data.step is the step id string)
+  cd ${cwd} && docket step context STEP-N --json | jq -r '.data.context.inputs[] | "\\(.artifact) \\(.kind)"'   (a payload is a JSON string, or null: select(.payload) | .payload | fromjson)
+  cd ${cwd} && docket step render STEP-N
   cd ${cwd} && docket step artifacts STEP-N   (then \`docket step artifact ARTIFACT-N\`)
   cd ${cwd} && git log --oneline -20 / git diff / git show <sha>
 
@@ -372,10 +376,10 @@ decides a number against evidence of spend; an ack-reap gate decides whether a
 holder is gone; a fix-batch gate decides whether the conductor's batch of fixes
 may land as one unit, judged on the files the batch changed; a retro-batch
 gate decides whether a docket-retro batch of shared-corpus config edits may
-land as one unit, judged on the mined evidence cited for each proposal and
+be filed as issues, judged on the mined evidence cited for each proposal and
 the diff against the current file — a different decision from fix-batch's,
-though both land a batch of edits; a loop-extension gate decides whether ONE
-more fix round is
+though fix-batch judges edits that land and retro-batch edits that are
+filed; a loop-extension gate decides whether ONE more fix round is
 likely to converge, read from the loop history in the rationale — rounds
 against the cap, consecutive rejections, the tiers served, spend, and the
 finding-volume trend — not from re-reviewing the work, which the loop's own
@@ -541,15 +545,23 @@ reads.`
 // the harness, is the record or it is nothing. A conversational proposal has
 // no step, so `docket gate status` cannot address it; `vote result` is the
 // read — the tally and who cast, which is all the verifier needs.
+// TEST-BEGIN vote-result-schema — extracted and exercised by
+// tests/tribunal-seat-brief.test.sh; keep it free of workflow globals.
 const VOTE_RESULT_JQ =
-    `jq -c '{status: .data.status, final_outcome: .data.final_outcome, ` +
+    `jq -c '{status: .data.status, ` +
     `votes: [.data.votes[]? | {voter_name, verdict}]}'`
+
+// The engine's proposal statuses (internal/model/proposal.go, validProposalStatuses).
+// The relay once turned 'approved' and 'rejected' into 'ok'; an enum makes the
+// harness reject any status the engine cannot emit. final_outcome is not projected:
+// the engine writes the operator's --reason or commit outcome there, free text no
+// enum can list and nothing here reads, so an unrelayed value cannot be rewritten.
+const VOTE_STATUSES = ['open', 'approved', 'rejected', 'committed', 'closed']
 
 const VOTE_RESULT_SCHEMA = {
     type: 'object',
     properties: {
-        status: { type: 'string' },
-        final_outcome: { type: 'string' },
+        status: { type: 'string', enum: VOTE_STATUSES },
         votes: {
             type: 'array',
             items: {
@@ -561,6 +573,7 @@ const VOTE_RESULT_SCHEMA = {
         error: { type: 'string' },
     },
 }
+// TEST-END vote-result-schema
 
 // A seat's whole reply. The cast is its deliverable; this field carries the
 // one thing its text was ever for, a cast that failed twice.

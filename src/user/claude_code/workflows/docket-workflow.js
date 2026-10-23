@@ -64,7 +64,7 @@ export const meta = {
 // Workflow({scriptPath}) — never by name, and once per issue, every
 // launch in the same conductor turn. args is lane_units.py's args-<i>.json,
 // passed unedited: {rowsModule, rows_sha256, unit?, harnessCap?, cwd,
-// tribunal, integrated?}. rowsModule is a module under
+// tribunal (required when the rows include a vote row), integrated?}. rowsModule is a module under
 // <cwd>/.claude/docket-packets returning {v: 1, rows_sha256, rows}; the wave
 // loads it and refuses the launch, before any claim, when the module's
 // rows_sha256 differs from the args'. The older inline form, which carries
@@ -255,8 +255,9 @@ function archetype(row, hint) {
 // spawn prompt is not. No executor spawns without a packet: a claim that
 // yields no valid module launches nothing. The Workflow tool refuses a script
 // file over 524,288 bytes, so docket-workflow-claim abridges long gate-results output
-// when the module would not fit (packet_abridged), and refuses the claim when
-// it still would not: CLAIM FAILED before the lease, CLAIM INCOMPLETE after.
+// when the module would not fit (packet_abridged), and when it still would
+// not, hands the executor a short by-reference packet that names the packet
+// file and its sha256 (packet_by_reference).
 //
 // HOW THESE BRIEFS ARE WORDED, and it is load-bearing: state the required
 // form, omit the defense. A brief never addresses the safety classifier,
@@ -382,6 +383,7 @@ function packetFromModule(mod, row, owner) {
         sha256: typeof mod.packet_sha256 === 'string' ? mod.packet_sha256 : '',
         reMinted: mod.re_minted === true,
         abridged: mod.packet_abridged === true,
+        byReference: mod.packet_by_reference === true,
     }
 }
 // TEST-END packet
@@ -442,7 +444,8 @@ YOUR ASSIGNMENT: step ${row.step} (issue ${row.issue}, run ${row.run}). Every
 ${row.step} below is your real, already-substituted step id. The wave claimed
 it for you with \`docket step claim ${row.step} --owner ${owner} --render\`
 (attempt ${claim.attempt}): the lease is live, and the work packet the engine
-rendered at that claim closes this brief, verbatim. Claiming again re-keys
+rendered at that claim closes this brief, verbatim; when it opens with
+\`(by reference)\`, the file it names holds the packet. Claiming again re-keys
 the lease and voids the parked token.${isolationNote}
 
 1. YOUR PRIVATE STEP SCRATCH DIR is ${dir} (mode 0700). EVERYTHING you write
@@ -528,7 +531,8 @@ ${isWrite ? `
      and wait on none; the engine runs them. A step with no gates records
      inline.` : ''}
    - TERMINAL STATE: after record exits 0, read the step once with
-     \`docket step show ${row.step} --json\`, and for a failed or parked step
+     \`docket step show ${row.step} --json | jq -r '.data.status'\` (the
+     status sits at .data.status; .data.step is the step id string), and for a failed or parked step
      \`docket step gates ${row.step}\` for the failed gate's captured output.
      Never loop on it. A status of done, waiting-human, or paused is the
      step's terminal state. Any other status means the engine's detached
@@ -678,9 +682,39 @@ async function launchRows(input) {
     log(`wave: ${mod.rows.length} row(s) loaded from ${ref}; rows_sha256 matches the args`)
     return mod.rows
 }
+
+// args.tribunal is the one path this script launches as a nested workflow, and
+// the conductor hand-types it. One launch passed this script's own installed
+// path there; the lane claimed three steps before the first panel failed. The
+// path must name tribunal.js (its own path therefore never passes). This
+// script cannot stat a path; docket-spawn-guard-hook.sh checks that it
+// exists. An absent tribunal is a launch without panels and is not refused.
+function assertTribunalPath(input) {
+    const path = input.tribunal
+    if (path === undefined || path === null) return
+    if (typeof path === 'string' && path.split('/').pop() === 'tribunal.js') return
+    const text = `docket-workflow.js: args.tribunal ${JSON.stringify(path)} is not a path to ` +
+        `tribunal.js; nothing was claimed. Pass lane_units.py's args unedited. Refusing to route.`
+    log(text)
+    throw new Error(text)
+}
+
+// A vote row seats its panel through args.tribunal after the lane's executor
+// steps are claimed, so a launch that holds one and names no tribunal fails the
+// same way late. Refused here, once the rows are loaded and before any claim.
+function assertTribunalForVotes(input, rows) {
+    if (input.tribunal !== undefined && input.tribunal !== null) return
+    if (!Array.isArray(rows) || !rows.some((row) => row && row.kind === 'vote')) return
+    const text = `docket-workflow.js: the launch holds a vote row but args carries no tribunal; ` +
+        `nothing was claimed. Pass lane_units.py's args with --tribunal. Refusing to route.`
+    log(text)
+    throw new Error(text)
+}
 // TEST-END launch-rows
 
+assertTribunalPath(input)
 const rows = await launchRows(input)
+assertTribunalForVotes(input, rows)
 
 // An agent's reply is PROSE. Read only the shapes the brief mandates, never
 // a substring of the body: a judge reviewing park handling quotes the very
@@ -1224,7 +1258,8 @@ async function claimPacket(row, r, phaseLabel) {
             log(`${row.step}: claimed by ${owner} at attempt ${claim.attempt}` +
                 (claim.reMinted ? ' (re-minted)' : '') +
                 `; packet of ${claim.packet.length} characters loaded from ${modulePath}` +
-                (claim.abridged ? ' (gate output abridged to fit the script cap)' : ''))
+                (claim.byReference ? ' (by reference: the executor reads the packet file)'
+                    : claim.abridged ? ' (gate output abridged to fit the script cap)' : ''))
             return { ok: true, owner, claim }
         }
         const text = `${row.step}: packet module ${modulePath} REFUSED — ${claim.why}; ` +
@@ -2528,6 +2563,11 @@ const PROGRESSING_BLOCKS = [
     'a detached pre-gate run for its target is in flight',
 ]
 
+// What a writer left in the saga holds its same-issue successors on: the
+// first PROGRESSING_BLOCKS clause, the one a claim agent would have been
+// refused with.
+const WRITER_PENDING_DEFERRAL = PROGRESSING_BLOCKS[0]
+
 // Returns the engine's blocked_reason when it names a still-progressing
 // predecessor, else null. Null is the SAFE answer: under-claiming a deferral
 // costs one imprecise line; over-claiming one tells the operator to wait for
@@ -2960,6 +3000,23 @@ function settleRow(row, res) {
               `dispatch rather than dead`
             : `${row.step}: settled ${out.status} — issue ${row.issue}'s later ` +
               `stages will not be launched this wave`)
+    } else if (row.issue && !deadIssues.has(row.issue) && isWriter(row) &&
+               out.status === 'returned' && recordTail(out.text) === 'pending') {
+        // A writer that recorded pending is still in the engine's saga (its
+        // gates run detached), so its same-issue `after` successors are
+        // unclaimable. Each would cost a claim agent to learn that from a
+        // CONFLICT; settle them as the deferred tail without the spawn. The
+        // status is skipped-chain-dead, not skipped-not-ready: the refill
+        // relaunches a not-ready row in the same dispatch, where the writer
+        // row is gone and each review would spawn its claim agent again.
+        // Known limits: the writer read pending once, so a gate that ends
+        // seconds later would have let a claim succeed (the lane now waits a
+        // dispatch), and the deferral is issue-wide. An earlier failure in the
+        // issue keeps its own wording.
+        deadIssues.set(row.issue, { step: row.step, status: 'recorded-pending',
+            deferral: WRITER_PENDING_DEFERRAL })
+        log(`${row.step}: writer recorded pending — issue ${row.issue}'s later ` +
+            `rows wait on its saga; deferring them without a claim agent`)
     }
 }
 

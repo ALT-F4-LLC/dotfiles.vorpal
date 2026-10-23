@@ -4,21 +4,22 @@ description: >-
   Use on "refit the ui-change workflow", "/refit standard-change", "/refit
   policy.toml", "tighten the implement contract", "refit the findings schema",
   "add a phase to security-change", "redesign the investigation pipeline",
-  bare "/refit" for the whole corpus, or any request to change what a
-  definition under src/user/docket/config does. Redesigns one workflow,
+  or any request to change what a definition under src/user/docket/config
+  does. Redesigns one workflow,
   policy.toml, contract, fragment, or schema: gathers its evidence through a
   read-only Workflow script (consumer sweep, cross-project run mining,
   engine-source verification), iterates the spec with the operator, surfaces
   engine-forced deviations as decisions, renders the design as an Artifact
   for approval, lands the full co-change closure, lints consumers, files
-  engine issues, and commits. Bare invocation runs corpus mode over every
-  surface. Runs in the main session so its gates are real questions.
+  engine issues, and commits. Bare invocation asks which definition to
+  refit; sweeping the corpus for cuts belongs to docket-prune. Runs in the
+  main session so its gates are real questions.
 ---
 
 # docket-refit
 
-You redesign definitions in this repository's shared docket corpus — one
-named target, or, invoked bare, every target the evidence calls for. The
+You redesign one definition at a time in this repository's shared docket
+corpus. The
 operator describes what they want; you verify what the engine can actually
 express; every gap between the two becomes a decision the operator makes,
 never a silent downgrade; only then do you implement, lint, and commit.
@@ -40,11 +41,12 @@ You run in the main conversation, never in a forked subagent: the deviation
 decisions, the spec iteration, and the artifact approval gate below are real
 questions through `AskUserQuestion` and `Artifact`, and a fork has neither.
 The evidence the gates rest on is agent work: the blast-radius sweep, the
-cross-project mining, the engine-source verification, and corpus mode's
-triage each fan out through the read-only workflow script described next.
+cross-project mining, and the engine-source verification each fan out
+through the read-only workflow script described next.
 Treat whatever the conversation already discussed as background, not
 evidence: read the target and launch the evidence stages yourself, and
-start from `$ARGUMENTS` (the named target, or nothing for corpus mode). If
+start from `$ARGUMENTS` (the named target; with none, ask which definition
+through `AskUserQuestion`). If
 `AskUserQuestion` is unavailable, stop before §4 and return the decisions
 still open, with options and a recommendation, to the caller to ask through
 `AskUserQuestion` or relay upward, instead of implementing. Your closing report names the commit
@@ -68,10 +70,6 @@ grooming, no executing the pipeline you just changed (`docket-run` does
 that). A live run is out of scope unless the operator asks for one
 afterward.
 
-Two modes: a named target enters single mode, running §1–§8 on that one
-definition; no parameter enters corpus mode (below), running the same
-§1–§8 across the whole corpus, one target at a time.
-
 ## The evidence workflow
 
 Every read-only evidence phase runs through one script, launched by
@@ -90,10 +88,10 @@ settled, after §1's sweep:
 
 ```
 Workflow({ scriptPath: "<absolute installed path to docket-refit.js>", args: {
-  stage: "evidence" | "verify" | "triage",
+  stage: "evidence" | "verify",
   checkoutRoot: "<absolute path of this dotfiles checkout>",
-  projects: [{ name, prefix, root }, ...],   // evidence and triage; from `docket project list --json`, root is the identity path
-  target: { surface, path, name } | null,    // evidence only; surface is workflow|policy|contract|fragment|schema
+  projects: [{ name, prefix, root }, ...],   // evidence; from `docket project list --json`, root is the identity path
+  target: { surface, path, name },           // evidence only; surface is workflow|policy|contract|fragment|schema
   engineRoot: "<absolute engine checkout>" | null,
   capabilities: ["<question>", ...],         // verify only
 } })
@@ -110,8 +108,7 @@ Sweeps grep the corpus and the harness scripts, mining analysts run
 engine source. Nothing in it edits, mutates a store, or asks
 the operator anything. Each return carries a `summary` line and an
 `uncovered` list naming every agent that returned nothing, every project
-whose checkout could not be entered, and every pair a fan-out bound
-dropped; report those as uncovered, never as clean. If the workflow throws
+whose checkout could not be entered; report those as uncovered, never as clean. If the workflow throws
 or returns nothing, say so and stop rather than substituting a manual grep
 or a from-memory answer.
 
@@ -146,61 +143,6 @@ on any surface, not only the five above:
   the primary optimization signal; a budget nothing has ever approached, or
   one chronically exhausted, is a finding either way.
 
-## Corpus mode (invoked bare)
-
-Invoked with nothing named, redesign the whole corpus instead of one
-definition: triage and verdict every surface, then carry every verdict that
-calls for a change through the full §1–§8 process to a landed commit,
-target by target, in the same session. Every non-`keep` verdict proceeds
-straight into its own §1–§8 run; there is no upfront action list to approve
-before work starts. The operator checkpoints match single mode's — §4's
-deviation gate and §5's artifact approval — hit per target as each is
-reached, not batched.
-
-**Triage, then deep-dive, in one launch.** Read every definition under
-`src/user/docket/config/` whole: every workflow, `policy.toml`, every
-contract, fragment, and schema. Then launch the script with
-`stage: "triage"`. It seats one aggregate analyst per project (run counts,
-outcomes, parks, gate outcomes, budget exhaustions, and cost against
-`expected_cost` per workflow, attributed onward to the contracts,
-fragments, schemas, and policy rows those workflows consume) plus one
-static consumer census over the corpus tree (fragments and schemas with
-zero consumers, policy rows routing nothing, version skew), merges the
-flags, and then runs §2's full mining and §1's sweep only on what the
-aggregate or census flagged. The return separates `suspects` (each with its
-`reasons`, `sweep`, and per-project `mining`) from `cleared` (each with the
-aggregate that cleared it). A definition cleared on aggregate numbers alone
-is reported as such, not as deep-mined. This launch satisfies §1's sweep and
-§2's mining for every suspect — don't relaunch `evidence` for a target on
-entry to its own §1–§8 run; carry the suspect's `sweep` and `mining` forward
-as the finding.
-
-**Verdicts drive the target, not a suggestion.** Every definition gets one:
-
-- **keep** — evidence shows it earning its shape. Record the finding and
-  move to the next target; nothing else runs for this one.
-- **refit** — name what needs changing and why, citing numbers. That
-  evidence-backed shape is the target spec for this run, since the mining
-  already produced it. Weigh the shapes (§1), then run §3 through §8 on
-  this target, landing its own commit before moving to the next.
-- **remove** — no runs, superseded, or overlapping a sibling that already
-  covers it. Confirm from the suspect's sweep that nothing still depends
-  on it, gate the removal through §4 like any other deviation, get §5
-  approval on the blast-radius picture, then execute the removal — delete
-  the file, retire the references that named it — through §6–§8, landing
-  its own commit.
-- **addition** — a named gap the evidence shows the corpus not covering.
-  Launch `evidence` for the nearest sibling on the surface the gap demands
-  (even an empty consumer set is worth recording for a wholly new
-  definition) and run §3's engine verification alongside designing its
-  shape (workflow, policy row, contract, fragment, or schema), then run §4
-  for any deviation the design forces, §5 for approval, and §6–§8 to
-  implement and land it as its own commit.
-
-Report each target's verdict and evidence in plain language as it's reached,
-not held back for an end-of-run summary; the operator weighs in on any one
-target at the §4/§5 gates.
-
 ## 1. Intake
 
 Resolve the target: one definition on one of the five surfaces. Read it
@@ -210,8 +152,7 @@ expression precedent; for any shared surface, the house-shape precedent of
 its siblings.
 
 **Sweep the blast radius before proposing anything.** Every surface except
-a workflow is shared, and a workflow shares its executors. In single mode
-launch the script with `stage: "evidence"` and the resolved target: its
+a workflow is shared, and a workflow shares its executors. Launch the script with `stage: "evidence"` and the resolved target: its
 sweep agent greps the corpus and the harness scripts and returns every
 consumer with the `file:line` of the reference, plus the siblings that
 serve as precedent, while its mining analysts (§2) run in the same launch.
@@ -296,8 +237,8 @@ instead, never dressed as data. Mined findings feed §1's iteration as
 proposal input; when the operator invoked docket-refit as "optimize
 <target>" with no spec of their own, they are the proposal. When the
 operator arrives with a full spec, mining still runs as a check: does the
-evidence contradict anything the spec assumes? (`docket-retro` sweeps the
-whole corpus on its own cadence; this mining is scoped to the one
+evidence contradict anything the spec assumes? (`docket-retro` reads
+several runs for corpus-wide tuning; this mining is scoped to the one
 definition being redesigned.)
 
 ## 3. Verify against the engine

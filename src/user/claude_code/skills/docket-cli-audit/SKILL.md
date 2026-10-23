@@ -7,26 +7,25 @@ description: >-
   binary's help surface and, against a throwaway store, every command's exit
   codes, messages and both JSON dialects, then audits every file under src/user
   that names a docket command against that evidence through a multi-agent
-  workflow. Mechanical drift (renamed or removed commands, flags, aliases,
-  defaults) is fixed directly; behavior, shape and wording changes land only
-  after operator confirmation. Distinct from corpus-check, which checks the
-  corpus against itself and never consults the binary.
+  workflow. Files the drift as Docket issues, one per file plus one for the
+  refreshed evidence; never edits the checkout. Distinct from corpus-check,
+  which checks the corpus against itself and never consults the binary.
 argument-hint: "[--no-sweep to reuse the recorded fixtures]"
 ---
 
 # docket-cli-audit
 
-Run this skill inline in the main session. It uses `AskUserQuestion` to
-confirm semantic fixes before landing them. Do not delegate the confirmation
-gate or the fix application to a subagent.
+Run this skill inline in the main session. You probe the binary, launch the
+audit, and file the issues. The checkout is read-only: every probe writes
+under scratch, and the only writes outside scratch are Docket issues. A fix
+is an issue's work, never this skill's.
 
-**Automation first is the primary goal of every fix.** Per the docket
+**Automation first is the primary goal of every remedy.** Per the docket
 skill's [automation reference](../docket/references/automation.md), drift
 a program could have caught gets a remedy on the highest rung of its ladder
 that fits (a sweep scenario row, a fixture assertion, a `crossref-check`
 rule) beside the prose fix, so the next upgrade finds it without a person
-reading. The confirmation gate above still authorizes landing semantic
-fixes.
+reading. An issue names that rung in its Remedy.
 
 ## Scope
 
@@ -35,12 +34,15 @@ produce it, both read-only against the operator's own state:
 
 - **Help surface**: `skills/docket/scripts/cli_inventory.py` records every
   command path, alias, usage line, flag, value type and default from `--help`
-  and `--version` into `skills/docket/references/cli-inventory.json`.
+  and `--version`. The committed copy is
+  `skills/docket/references/cli-inventory.json`; this skill writes the fresh
+  one under scratch with `--inventory`.
 - **Runtime sweep**: `scripts/cli_sweep.py` drives every command the
   inventory lists, in the order `references/sweep-scenario.json` scripts,
   against a scratch store, and records exit code, human output and both JSON
-  dialects (`--json` v1, `--format json` v2) into
-  `references/cli-fixtures.json`. It runs with `HOME`, every `XDG_*_HOME` and
+  dialects (`--json` v1, `--format json` v2). The committed copy is
+  `references/cli-fixtures.json`; this skill writes the fresh one under
+  scratch with `--fixtures`. It runs with `HOME`, every `XDG_*_HOME` and
   the git config pointed at a scratch directory, refuses to continue if the
   store it opened lives anywhere else, keeps the trust roster empty for every
   run- and step-level verb so no gate can execute, and refuses `trust probe`,
@@ -55,7 +57,7 @@ found by grep at run time (step 4), not a fixed list. Comments and strings in
 `.rs`, `.js`, `.sh` and `.toml` files count: a permission row naming a verb, a
 hook parsing an output shape, a script passing a flag.
 
-Report-only, never edited: `src/user/claude_code/CLAUDE.md` and
+Report-only, never filed as a remedy: `src/user/claude_code/CLAUDE.md` and
 `src/user/claude_code/references/working-agreement.md` (the operator's own
 charter). The generated `cli-inventory.json` and `cli-fixtures.json`, and the
 hand-authored `sweep-scenario.json`, are evidence, not prose, and are excluded
@@ -63,25 +65,32 @@ from the audit. Never run `just activate`. Never point a probe at
 `~/.docket` or `~/.config/docket`.
 
 `$ARGUMENTS` may carry `--no-sweep`: skip step 2 and audit against the
-fixtures already recorded. Use it only when the recorded fixtures carry the
+fixtures already committed. Use it only when the committed fixtures carry the
 installed binary's version; the report must say the sweep was skipped.
 
-## 1. Refresh the help surface
+Confirm the Docket project bound to this checkout before step 1, since cwd
+picks the project. If no project answers, stop and say so; do not register
+one.
 
-From the repository root:
+## 1. Probe the help surface
+
+From the repository root, with `$SCRATCH` an empty directory under
+`$TMPDIR` unique to this audit:
 
 ```bash
 python3 src/user/claude_code/skills/docket/scripts/cli_inventory.py --check
 ```
 
-Exit 0 means the inventory already matches the installed binary. Exit 1
-prints a unified diff of old inventory against installed binary: save it to
-the scratchpad as `inventory-diff.patch` and read it, since every hunk is a
-mechanical finding candidate (an added or removed command, flag, alias or
-default). Note the old and new `binary_version` lines. Then refresh:
+Exit 0 means the committed inventory already matches the installed binary.
+Exit 1 prints a unified diff of the committed inventory against the installed
+binary: save it to `$SCRATCH/inventory-diff.patch` and read it, since every
+hunk is a mechanical finding candidate (an added or removed command, flag,
+alias or default). Note the committed and installed `binary_version` lines.
+On exit 0 or 1, write the fresh inventory to scratch, since later steps
+read it either way:
 
 ```bash
-python3 src/user/claude_code/skills/docket/scripts/cli_inventory.py --write
+python3 src/user/claude_code/skills/docket/scripts/cli_inventory.py --inventory "$SCRATCH/cli-inventory.json" --write
 ```
 
 Exit 2 means a probe failed or the help output could not be parsed; stop and
@@ -89,55 +98,73 @@ report it, since the rest of the audit has no surface to check against.
 
 ## 2. Run the runtime sweep
 
-```bash
-python3 src/user/claude_code/skills/docket-cli-audit/scripts/cli_sweep.py --coverage
-```
+Skip this step under `--no-sweep`; steps 3 and 5 then read the committed
+fixtures.
 
-The scenario must exercise every command the refreshed inventory lists or
-skip it with a reason. A coverage failure after an upgrade is expected and is
-itself a finding: for each `uncovered:` line, add a step to
-`references/sweep-scenario.json` (read the command's `--help`; place engine
-verbs inside the run they belong to, and any `trust add` after every engine
-step), or add a `skipped` row with a reason a reader would accept, such as a
-verb that executes trusted commands or blocks on a terminal. A `stale skip:`
-line means a skip row now shadows a scripted step; delete the row. A `not in
-inventory:` line means the upstream removed a command the scenario still
-drives; delete the step and record the removal as a mechanical finding.
-
-Then:
+The sweep refuses to run when its scenario no longer matches the inventory
+(`collect` checks coverage first and exits 2 on an `uncovered:`, `stale
+skip:`, or `not in inventory:` line, or on an `expect_exit` mismatch), and
+that is exactly the state an upgrade leaves. So the scenario is repaired on
+a scratch copy first, against the fresh inventory, never the committed one:
 
 ```bash
-python3 src/user/claude_code/skills/docket-cli-audit/scripts/cli_sweep.py --check
+cp src/user/claude_code/skills/docket-cli-audit/references/sweep-scenario.json "$SCRATCH/sweep-scenario.json"
+python3 src/user/claude_code/skills/docket-cli-audit/scripts/cli_sweep.py --coverage --scenario "$SCRATCH/sweep-scenario.json" --inventory "$SCRATCH/cli-inventory.json"
 ```
 
-Exit 0 means the recorded fixtures match the installed binary. Exit 1 prints
-the unified diff of old fixtures against installed behavior: save it as
-`fixtures-diff.patch` and read it, since each changed record is a semantic
-finding candidate (a new exit code, a renamed `data` key, a reworded
+The scenario must exercise every command the fresh inventory lists or skip
+it with a reason. For each `uncovered:` line, add a step to the scratch
+scenario (read the command's `--help`, place engine verbs inside the run
+they belong to, and place any `trust add` after every engine step), or add a
+`skipped` row with a reason a reader would accept, such as a verb that
+executes trusted commands or blocks on a terminal. A `stale skip:` line means
+a skip row now shadows a scripted step; delete the row. A `not in inventory:`
+line means the upstream removed a command the scenario still drives; delete
+the step and record the removal as a mechanical finding. Rerun `--coverage`
+until it exits 0, then save the difference for the evidence issue:
+
+```bash
+diff -u src/user/claude_code/skills/docket-cli-audit/references/sweep-scenario.json "$SCRATCH/sweep-scenario.json" > "$SCRATCH/scenario.patch"
+```
+
+Then check the committed fixtures against the installed binary, with the
+repaired scenario:
+
+```bash
+python3 src/user/claude_code/skills/docket-cli-audit/scripts/cli_sweep.py --check --scenario "$SCRATCH/sweep-scenario.json" --inventory "$SCRATCH/cli-inventory.json"
+```
+
+Exit 0 means the committed fixtures match the installed binary. Exit 1 prints
+the unified diff of committed fixtures against installed behavior: save it as
+`$SCRATCH/fixtures-diff.patch` and read it, since each changed record is a
+semantic finding candidate (a new exit code, a renamed `data` key, a reworded
 message). Exit 2 is a scenario failure: a step with `expect_exit` got a
 different code, a capture path no longer resolves, or an isolation assertion
-fired. Fix the scenario for the first two; for an isolation failure stop
-immediately and report the message verbatim, since the script refused to touch
-a store outside its scratch root.
+fired. For the first two, fix the scratch scenario, extend `scenario.patch`,
+and rerun. For an isolation failure stop immediately and report the message
+verbatim, since the script refused to touch a store outside its scratch root.
 
-Refresh the fixtures once the sweep completes:
+Write the fresh fixtures to scratch once the sweep completes:
 
 ```bash
-python3 src/user/claude_code/skills/docket-cli-audit/scripts/cli_sweep.py --write
+python3 src/user/claude_code/skills/docket-cli-audit/scripts/cli_sweep.py --scenario "$SCRATCH/sweep-scenario.json" --inventory "$SCRATCH/cli-inventory.json" --fixtures "$SCRATCH/cli-fixtures.json" --write
 ```
 
-Run `--check` once more. A second diff means the output is nondeterministic
-for some record: extend the normalizer in `cli_sweep.py` (timestamps, hashes,
-relative ages, padded columns) or mark the step `"unordered": true` when only
-the order of same-instant rows varies. Do not commit fixtures that fail their
-own check.
+Run `--check` once more with the same three paths. A second diff means the
+output is nondeterministic for some record: the evidence issue's remedy
+extends the normalizer in `cli_sweep.py` (timestamps, hashes, relative ages,
+padded columns) or marks the step `"unordered": true` when only the order of
+same-instant rows varies. Name the record in the issue.
 
 ## 3. Build the evidence bundle
 
-Write the digest to the scratchpad:
+Write the digest to scratch from the fresh evidence. Under `--no-sweep`, set
+`FIXTURES` to the committed
+`src/user/claude_code/skills/docket-cli-audit/references/cli-fixtures.json`;
+otherwise to `$SCRATCH/cli-fixtures.json`:
 
 ```bash
-python3 src/user/claude_code/skills/docket-cli-audit/scripts/cli_sweep.py --digest > <scratchpad>/digest.md
+python3 src/user/claude_code/skills/docket-cli-audit/scripts/cli_sweep.py --digest --inventory "$SCRATCH/cli-inventory.json" --fixtures "$FIXTURES" > "$SCRATCH/digest.md"
 ```
 
 It lists, per command, every record's id, mode, exit code and the top-level
@@ -172,13 +199,13 @@ Workflow({
   args: {
     files: [<every path from step 4>],
     evidence: {
-      digest: "<scratchpad>/digest.md",
-      inventoryDiff: "<scratchpad>/inventory-diff.patch or ''>",
-      fixturesDiff: "<scratchpad>/fixtures-diff.patch or ''>",
-      inventory: "src/user/claude_code/skills/docket/references/cli-inventory.json",
-      fixtures: "src/user/claude_code/skills/docket-cli-audit/references/cli-fixtures.json",
+      digest: "<$SCRATCH>/digest.md",
+      inventoryDiff: "<$SCRATCH>/inventory-diff.patch or ''>",
+      fixturesDiff: "<$SCRATCH>/fixtures-diff.patch or ''>",
+      inventory: "<$SCRATCH>/cli-inventory.json",
+      fixtures: "<the same $FIXTURES path step 3 used>",
       binaryVersion: "<docket --version line>",
-      previousVersion: "<binary_version the inventory held before step 1>"
+      previousVersion: "<binary_version the committed inventory held>"
     },
     protectedFiles: ["src/user/claude_code/CLAUDE.md", "src/user/claude_code/references/working-agreement.md"]
   }
@@ -203,75 +230,139 @@ unverified findings by file as unaudited, never as clean; when
 If the workflow throws or returns nothing, say so and stop. Do not substitute
 a smaller manual read as if it satisfied the step.
 
-## 6. Classify
+## 6. File the issues
 
-Two edits are deterministic and land without a finding:
+The filing contract is docket-postmortem's
+[worker-ready issue contract](../docket-postmortem/references/filing.md#worker-ready-issue-contract)
+and [deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating)
+sections as written, with these substitutions: the label is `cli-drift`, the
+fingerprint line is `Drift fingerprint:`, and the priority and description
+follow this section. Read both sections before the first write. The
+dotfiles project owns every issue here, since the prose lives in this
+checkout; a finding about the engine's own behavior goes to the Docket
+engine project per that reference's routing section.
 
-- The inventory paragraph in `skills/docket/reference.md` (the one that names
-  `cli-inventory.json`) states the refresh date, binary version and command
-  count; rewrite it from the refreshed inventory.
-- Any statement elsewhere that quotes an inventory or fixture version
-  verbatim (search for the old nightly tag) is updated the same way.
+**Group the survivors.** One issue per independent outcome, as the sizing
+reference requires: a finding a worker could deliver and verify without the
+file's other findings is its own issue. Batch findings into one issue per file
+only when they are wording-only `chore` drift on one surface sharing one
+remedy, or one-for-one mechanical rewrites in one file that a single
+verification covers. One more issue holds the evidence refresh whenever step
+1 or 2 found a difference (see below).
 
-Then, for each surviving finding:
+**Classify each finding inside its issue** so the worker knows what the
+fix may do:
 
 - **Mechanical** (`kind: mechanical`): a command, flag, alias or default that
-  the inventory renamed, removed or added. Apply directly. A mechanical
-  finding in a protected file is reported, not applied.
+  the inventory renamed, removed or added. The remedy is a one-for-one
+  rewrite. A mechanical finding in a protected file is reported in the
+  summary, never filed.
 - **Semantic** (`kind: semantic`): a described behavior, exit code, message,
   JSON field or shape that the fixtures contradict, or a wording change the
-  fix implies. Stage it. Do not land it without confirmation.
-- **Needs operator decision** (`needsOperatorDecision: true`, or any finding
-  whose fix changes a rule rather than a description): do not stage it; carry
-  it to the report with enough context to act on.
+  fix implies. The remedy states the before and after and cites the fixture
+  record or inventory hunk.
+- **Needs a decision** (`needsOperatorDecision: true`, or any finding whose
+  fix changes a rule rather than a description): file it as its own issue
+  titled for the decision, with the options and a recommendation in the
+  body, so the executing worker does not guess. A schema fix is always this
+  kind.
 
 A code change (a hook or workflow script passing a flag the binary no longer
 takes, a permission row for a removed verb) is mechanical when the
-replacement is one-for-one and semantic otherwise. Keep frozen-file rules in
-mind: `src/user/docket/config` contracts, fragments and workflows carry
-versions; a prose fix there follows the same bump rules corpus-check applies,
-and a schema fix is an operator-decision item.
+replacement is one-for-one and semantic otherwise. The Remedy of an issue
+that touches `src/user/docket/config` contracts, fragments or workflows names
+the version bump `frozen-drift-check` demands and, for a workflow, the
+changelog entry.
 
-When the session can launch agents, launch the `advisor` agent on the staged batch before
-presenting it, and fold its input in with the rest of the classification.
-Carry the drafted approval question in its brief so the launch is its
-[question review](../../references/working-agreement.md#question-review);
-the options the advisor recommends carry `(Recommended)`.
+**The evidence issue** carries the regeneration, not the bytes:
 
-Present the staged semantic batch with `AskUserQuestion`: group by file, show
-each fix's before and after, and cite the fixture record or inventory hunk it
-rests on. Options are the whole batch, a filtered subset, or none. An
-ambiguous or skipped response is not confirmation.
+- Remedy: refresh `skills/docket/references/cli-inventory.json` with
+  `cli_inventory.py --write`, refresh
+  `references/cli-fixtures.json` with `cli_sweep.py --write` (after the
+  scenario changes this audit found), rewrite the inventory paragraph in
+  `skills/docket/reference.md` (it names `cli-inventory.json` and states the
+  refresh date, binary version and command count), and update any statement
+  that quotes the old version verbatim.
+- The scenario changes from step 2 (`uncovered`, `stale skip`, `not in
+  inventory`, nondeterministic records), each named, with
+  `$SCRATCH/scenario.patch` inline in the body so the worker applies the
+  repaired scenario before regenerating the fixtures.
+- Acceptance: `cli_inventory.py --check`, `cli_sweep.py --coverage`, and
+  `cli_sweep.py --check` exit 0 on the committed files, then
+  `bash tests/docket-cli-inventory.test.sh`,
+  `bash tests/docket-cli-sweep.test.sh`, and `just secret-scan` pass. The
+  fixtures file is committed, so a token or hash the normalizer missed would
+  land in the repository.
+- Paths (`-f`): the two evidence files, the scenario, `reference.md`, and
+  `scripts/cli_sweep.py` when the remedy extends the normalizer. `--scope`
+  is the `docket-cli-audit/` and `docket/` directories that hold those
+  files.
 
-## 7. Apply and verify
+**Priority and type.** A finding that breaks behavior (a hook, a permission
+row, a script passing a removed flag) is a `bug` at `high`. Prose that tells
+a worker the wrong command is a `task` at `medium`. Wording-only drift in
+one file is a `chore` at `low`. The evidence issue is a `task` at `medium`.
+A batched issue takes the type and priority of its highest-ranked finding.
 
-Apply fixes one file at a time, serially, in this session. After every batch
-of edits:
+**Fingerprint.** `docket-cli-audit/<repo-relative path>/<command or claim>/<remedy class>`
+for a file issue; `docket-cli-audit/evidence/<installed binary_version>` for
+the evidence issue. A file issue carries the lead finding's identity. The
+binary version is in the evidence fingerprint only, so a repeated audit of
+the same binary returns the same issue while a new upgrade files a new one.
 
-```bash
-just crossref-check
-just frozen-drift-check
-just doc-validate
-just secret-scan
-bash tests/docket-cli-inventory.test.sh
-bash tests/docket-cli-sweep.test.sh
-bash tests/crossref-check.test.sh
-bash tests/ci-suite-wiring.test.sh
+**Idempotency key.** The key is the fingerprint, verbatim. A repeated create
+with it returns the original issue, open or closed, so it covers retries and
+repeat audits of unchanged drift. When the dedupe listing finds the finding
+again under a closed issue without `wont-do`, that is a regression: follow
+filing.md's new-regression convention, link the prior id in the body, and
+append `/after-<prior issue id>` to the key so the create does not replay
+the closed issue. A closed issue labelled `wont-do` files nothing; record its
+id. A closed decision issue without `wont-do` records a chosen option: link
+it and file nothing, since the option's work belongs in its own issue. Ask
+in each decision issue that a leave-as-is answer close it with `wont-do`.
+
+**Description:**
+
+```text
+[Only when the remedy touches a hook, a permission row, secrets handling, or
+another security-sensitive surface, as the first line:] Security gate
+required: this remedy touches <the relevant categories>.
+
+Observed: the claim as written (file:line, minimal verbatim excerpt) and
+the installed behavior that contradicts it.
+Evidence: binary versions (committed and installed), the inventory hunk or
+fixture record id, and exit code or output where material.
+Countercheck: what the refuters tried and what was found.
+Remedy: per finding, kind, the one-for-one rewrite or the before and after;
+the automation rung; the version bump when a frozen file changes.
+Acceptance: the check of resulting behavior and the failing variant it
+rejects, plus the gates below.
+Drift fingerprint: <identity>.
 ```
 
-Run `contract-corpus`, `contract-includes` and `mutant-rule-crossref` from
-`tests/` as well when a file under `src/user/docket/config` changed. A failure
-means a fix was wrong or incomplete, not a stale suite. `secret-scan` matters
-here specifically: the fixtures file is committed, and a token or hash the
-normalizer missed would land in the repository.
+Acceptance for a file issue always includes `just crossref-check`,
+`just frozen-drift-check`, `just doc-validate`, `just secret-scan`, and
+`bash tests/crossref-check.test.sh`, plus `contract-corpus`,
+`contract-includes` and `mutant-rule-crossref` from `tests/` when a file
+under `src/user/docket/config` is among its paths. The worker applies a
+file's fixes serially and reruns them, and a failure means a fix was wrong or
+incomplete, not a stale suite.
 
-## 8. Report
+When the session can launch agents, launch the `advisor` agent on the drafted
+issue set before filing it, and fold its input in. File with `docket issue
+create`, `-f`, `--scope`, `--size` and `--idempotency-key` set, no routing
+label, no assignee; read each receipt back and record the id.
+
+## 7. Report
 
 State the binary versions before and after, what the help-surface diff and
-the fixture diff contained, how the scenario changed (new steps, new skips,
-removed steps), what the audit found and verified, what landed (mechanical
-directly, semantic after confirmation), every item left for an operator
-decision, every protected-file finding, and every file or range the workflow
-could not cover or verify. Say whether the sweep ran or `--no-sweep` reused
-the recorded fixtures. Do not claim `just activate` ran; the installed corpus
-under `~/.claude` lags this checkout until the operator runs it.
+the fixture diff contained, which scenario changes the audit found, what the
+audit found and verified, every issue filed with its id and grade, every
+finding attached to an existing issue instead of a duplicate, every finding
+held with its reason, every protected-file finding, and every file or range
+the workflow could not cover or verify. Say whether the sweep ran or
+`--no-sweep` reused the committed fixtures. Say that no fixes were applied;
+filed issues drain through `docket-groom` into a `docket-plan` and
+`docket-run` execution or direct work. Do not claim `just activate` ran; the
+installed corpus under `~/.claude` lags this checkout until the operator runs
+it.

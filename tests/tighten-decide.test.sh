@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Behavior suite for tighten.js's acceptance decisions: a chunk lands only
-# when the check script's own output says its protected spans are intact, it
-# is strictly smaller, and a majority of refuters uphold it.
+# Behavior suite for tighten.js's acceptance decisions: a chunk is accepted
+# only when the check script's own output says its protected spans are intact,
+# it is strictly smaller, and a majority of refuters uphold it.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it never runs a workflow.
 #
-# WHY THIS EXISTS. The skill applies accepted candidates without a
-# confirmation gate and reruns under /loop until a pass lands nothing, so the
-# decisions in code are what make the loop converge and what keep a
-# paraphrase or a lone uphold from landing. The parsers are fed the real
+# WHY THIS EXISTS. The skill files accepted candidates as Docket issues and
+# reruns under /loop until a pass has nothing new to file, so the decisions
+# in code are what make the loop converge and what keep a paraphrase or a
+# lone uphold from being filed. The parsers are fed the real
 # output of protected-spans.sh and tighten-chunks.sh, so a change to either
 # script's report format fails here instead of rejecting every chunk live.
 #
@@ -133,7 +133,7 @@ ok $? 'the decision helpers evaluate outside a workflow run'
 get() { node -e "const o=require('${WORK}/out.json'); process.stdout.write(String($1))"; }
 
 [ "$(get 'o.smaller')" = "true" ]; ok $? 'a strictly smaller candidate shrank'
-[ "$(get 'o.equal')" = "false" ]; ok $? 'an equal-size candidate did not shrink (a paraphrase cannot land)'
+[ "$(get 'o.equal')" = "false" ]; ok $? 'an equal-size candidate did not shrink (a paraphrase cannot be filed)'
 [ "$(get 'o.larger')" = "false" ]; ok $? 'a larger candidate did not shrink'
 
 [ "$(get 'o.threeUphold.accepted')" = "true" ]; ok $? 'three upholds accept'

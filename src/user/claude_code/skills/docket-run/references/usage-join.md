@@ -1,6 +1,6 @@
 # Where the usage numbers are
 
-Consumer: the docket-run skill, step 3. When the installed `docket-workflow-usage.js`
+Consumer: the docket-run skill, step 3. When the installed `scripts/usage_join.sh`
 is absent (drift, stop-and-report), the conductor delegates the usage join
 to one `executor-read` agent. The brief is the text below verbatim, followed
 by two inputs the conductor appends: the journal directory path and the

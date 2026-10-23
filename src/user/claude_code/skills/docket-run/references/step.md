@@ -4,8 +4,8 @@ Covers the `docket step` family, the single copy of this engine CLI contract,
 split out of docket's
 [reference.md](../../docket/reference.md#json-envelope--per-verb-data-shapes)
 (consumer: the docket-run skill), which still holds the response-shape
-contract and parsing traps. Verified 2026-10-18 against `docket
-nightly-35-g9d8eaf8` (commit `9d8eaf8`, built `2026-10-18T19:59:21Z`) by
+contract and parsing traps. Verified 2026-10-23 against `docket
+nightly-37-gce50f60` (commit `ce50f60`, built `2026-10-23T00:58:29Z`) by
 `--help`/`--version` and the docket-cli-audit skill's runtime sweep
 (`../../docket-cli-audit/references/cli-fixtures.json`); behavior and JSON
 examples reflect the swept commands as of that build.
@@ -14,13 +14,13 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 536 lines
-  - [`step artifacts`](#step-artifacts) — 36 lines
+- [`docket step`](#step-commands) — 561 lines
+  - [`step artifacts`](#step-artifacts) — 41 lines
   - [`step claim`](#step-claim) — 45 lines
   - [`step reap`](#step-reap) — 36 lines
-  - [`step complete`](#step-complete) — 69 lines
+  - [`step complete`](#step-complete) — 70 lines
   - [`step fail`](#step-fail) — 23 lines
-  - [`step annotate`](#step-annotate) — 51 lines
+  - [`step annotate`](#step-annotate) — 69 lines
   - [`step resolve`](#step-resolve) — 117 lines
   - [`step approve|reject`](#step-approve-reject) — 42 lines
   - [`step context`](#step-context) — 52 lines
@@ -38,10 +38,11 @@ then **completed** with an artifact.
 | `step claim STEP-N [--render] [--template F]` | no | CAS claim; mints token; returns token + context (or packet) |
 | `step heartbeat STEP-N` | **yes** | extends the lease; does not touch `attempt` |
 | `step reap STEP-N --reason R` | **conductor** | forced reap of a dead holder's claim, without waiting out the lease |
-| `step hold STEP-N --reason R` | **conductor** | parks one READY step `waiting-human` (park class `held`, `--reason` as its park reason; event `step-held`) so dispatch stops offering it while the rest of its issue runs; any other status is `CONFLICT` (exit 4), so reap a claimed step first; resolve it like any park (`step resolve --as retry\|skip`) |
+| `step hold STEP-N --reason R` | **conductor** | parks one PENDING step (ready or staged) `waiting-human` (park class `held`, `--reason` as its park reason; event `step-held`) so dispatch stops offering it while the rest of its issue runs; any other status is `CONFLICT` (exit 4), so reap a claimed step first (`run hold-issue` holds every pending step of one issue); resolve it like any park (`step resolve --as retry\|skip`) |
 | `step complete STEP-N --artifact-file F …` | **yes** (until the artifact records) | the saga |
 | `step fail STEP-N [--note …] [--metadata …]` | **yes** | routes per `on_fail` when the CLAIM count reaches `max_attempts` (attempt counts claims, never failures); counts the failure into the row's `failed_attempts` (a reap counts into `reaped_claims` instead) |
 | `step annotate STEP-N [--metadata JSON] [--integrated-sha SHA]` | **conductor** for `--integrated-sha`; none for `--metadata` alone | merges opaque KV onto a **finished** step's record; `--integrated-sha` verifies ancestry and re-records the step's `issue.diff` from the named commit; event-logged |
+| `step integrate STEP-N…` | **conductor** | cherry-picks the recorded writer chain of each named step onto the shared checkout and annotates the step with the resulting HEAD; writes git (see `step annotate` below) |
 | `step approve\|reject STEP-N --authority A [--authority-ref R] [--note …] [--value V (approve only)]` | **conductor** | `type="human"` gate steps, and a materialized held step of either kind (a vote-minted one once a failed tally parks it) |
 | `step resolve STEP-N --as … --authority A [--authority-ref R]` | **conductor** | `waiting-human` resolutions; `retry` **resets the retry budget** (moves `attempt_base`) — `attempt` itself and the `failed_attempts`/`reaped_claims` breakdown are never reset and not incremented by it |
 | `step show STEP-N` | no | read-only; effective status |
@@ -122,6 +123,11 @@ string**, so `jq` reaches the verdict's own keys directly:
 ```
 docket step artifact ARTIFACT-3 --payload --json=v2 | jq -r '.data[0].severity'
 ```
+
+`--payload` on an artifact with no structured payload is `NOT_FOUND` (exit
+2): `ARTIFACT-N has no structured payload; omit --payload to read its body.`
+The sweep exercised only that refusal, so the `.data[0]` shape above is
+unverified.
 
 Both take the `ARTIFACT-N` form the listing and the run report's index print; a
 bare `N` is accepted too. Both are **read-only** — no reap, no lease touch.
@@ -219,6 +225,7 @@ when the word `complete` collides with shell-builtin classification.
 | `--artifact-file` | string | **required**; the artifact body. Capped at **1 MiB**; over it is `VALIDATION_ERROR` naming the size and the cap |
 | `--payload-file` | string | JSON array of objects. When the step declares `payload = "name@version"`, it is validated against that schema — the bytes the run PINNED, not the registry's current ones — and a failure is a `VALIDATION_ERROR` (exit 3) naming the element and property (`payload[3].severity: …`), up to five lines and then `(+N more)`. Omitting it on a step that declares `payload` is the same refusal: a declared payload is a contract, and recording none would make every threshold over it evaluate against the empty set. A step that declares no `payload` is shape-checked only. |
 | `--gap-file` | string, **repeatable** | one out-of-scope problem the work surfaced. Each records an auxiliary artifact of kind `gap` beside the step's declared emit **and** materializes a backlog issue related (`relates_to`) to the step's own — same transaction, so the residue cannot evaporate. Capped at **1 MiB** each, like any artifact; an **empty** gap is `VALIDATION_ERROR` (exit 3). Gap files are read whole before the saga starts, so a bad path refuses without spending the completion |
+| `--comment-file` | string, **repeatable** | File holding one issue comment the acceptance criterion requires, at most **4** files and **16 KiB** each. The engine posts it on the step's own issue, attributed to the step, in the same transaction as the recording, and records the body as an auxiliary artifact of kind `issue-comment` |
 | `--usage` | string | `{"unit": n, …}` — a JSON object of **opaque** unit names to numbers, recorded in the run's usage ledger and summed per unit by `run report`. At most **32** units; each name at most **64** printable-ASCII bytes with no whitespace; each number finite and **≥ 0**. Any other shape is `VALIDATION_ERROR` (exit 3) naming the offending key. Docket never interprets, converts, or routes on these numbers — the one named by `docket config budget.unit`, if any, participates in the run's cap comparison, and that is the whole contract |
 | `--metadata` | string | a JSON **object** of opaque keys to values, **merged onto the step's own** metadata: keys the definition declared survive, keys only the worker reports are added, and a key in both takes the worker's value. The merge is **shallow** — a nested object is a value, replaced wholesale, never descended into. Capped at **16 KiB** measured on the supplied bytes; over it is `VALIDATION_ERROR` naming the size, the cap, and the two channels for bulk detail (`--artifact-file`, `--payload-file`). Anything that is not a JSON object — an array, a scalar, `null` — is `VALIDATION_ERROR`. Docket never reads a key inside: the merged bag is delivered verbatim in the context bundle and rolled up key → distinct value → count by `run report` |
 | `--worktree` | string | the checkout the work happened in; the recorded `issue.diff` is computed **there** rather than in the invoking checkout (the default). The declared path lands in the diff's round record beside the head sha, which is where a consumer's `target_worktree` comes from |
@@ -349,6 +356,24 @@ as a `step-annotated` event carrying the annotation **verbatim**.
 Refusals: a step that has not reached a terminal status is `CONFLICT`
 (exit 4) naming its actual status. Empty or non-object `--metadata` is
 `VALIDATION_ERROR` (exit 3); a missing step is `NOT_FOUND` (exit 2).
+
+`step integrate STEP-N…` does the cherry-pick and the annotation in one
+call: for each step, in the order named, it cherry-picks the step's recorded
+writer chain onto the shared checkout's branch with `git cherry-pick -x` and
+annotates the step with the resulting HEAD. It is the one engine verb that
+writes git, and on a bound run it requires the conductor token through
+`DOCKET_TOKEN` or stdin, never argv, when every named step belongs to a run that token governs. Before anything
+is written every named step must pass read-only checks: it is done, it is an
+executor step that holds the tree, its recorded commits exist with no merge
+commit among them, it is not already annotated as integrated, and the shared
+HEAD does not already carry it; the checkout must also be on a branch with no
+tracked change and no operation in progress. A failed check refuses the whole
+verb with nothing written. After that, a pick that does not apply is aborted
+and the verb exits nonzero without annotating, and a later step that fails
+leaves the earlier steps integrated and annotated, reported. If a pick lands
+but the annotation is refused, the error names the sha to give
+`step annotate --integrated-sha`. The sweep skips this verb, so this
+paragraph rests on `--help`.
 
 <a id="step-resolve"></a>
 

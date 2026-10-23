@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # Compare the protected spans of two Markdown files: the mechanical check
-# behind tighten.js and simplify-corpus.js, and the main session's check
-# before it lands a candidate.
+# behind tighten.js and simplify-corpus.js, and the check a filed issue
+# names as acceptance.
 #
 # Usage:
 #   protected-spans.sh equal   <original> <candidate>

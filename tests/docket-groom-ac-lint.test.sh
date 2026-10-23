@@ -114,6 +114,83 @@ expect nonzero "a bare file name shared by two files"
 lint "See src/missing/file.sh:3 \`x\`."
 expect nonzero "a path that does not exist at the base"
 
+# A moving base. A criterion once measured assertions from
+# `git merge-base HEAD main`, where a sibling's earlier commit had already
+# removed four assertion lines, so it read unmet whatever the fix did; the
+# amended text names the literal sha.
+lintShared() { # <criterion text>: --shared-base, exit status in $RC, stdout in $OUT.
+    OUT=$(printf '%s\n' "$1" | bash "$LINT" --base "$BASE" --repo "$REPO" --shared-base 2>&1)
+    RC=$?
+}
+ORIG_AC3='- No assertion is dropped: Verify: `test "$(git diff -U0 $(git merge-base HEAD main) -- internal/engine/report_test.go | grep -cE '"'"'^-[^-].*(assert|require)'"'"')" -le 0` exits 0. Mutant: deleting one assertion line.'
+AMENDED_AC3='- No assertion is dropped: Verify: `test "$(git diff -U0 563519c -- internal/engine/report_test.go | grep -cE '"'"'^-[^-].*(assert|require)'"'"')" -le 0` exits 0. Mutant: deleting one assertion line.'
+lintShared "$ORIG_AC3"
+expect nonzero "a merge-base Verify on an issue with siblings (shared base)"
+case "$OUT" in *moving-base*merge-base*) pass "the merge-base criterion is reported as moving-base" ;; *) fail "the merge-base criterion is not reported as moving-base: ${OUT}" ;; esac
+lintShared "$AMENDED_AC3"
+expect 0 "the amended criterion with a literal base sha (shared base)"
+lint "$ORIG_AC3"
+expect 0 "a merge-base Verify on an issue with no siblings or dependencies"
+lintShared '- Done: Verify: `git diff --stat main..HEAD -- src/a.sh` prints one line.'
+expect nonzero "a Verify range from bare main (shared base)"
+case "$OUT" in *moving-base*"measures from main"*) pass "the bare-main range is reported as measuring from main" ;; *) fail "the bare-main range is not reported as measuring from main: ${OUT}" ;; esac
+lintShared '- Done: Verify: `git log --oneline origin/main -- src/a.sh` prints nothing.'
+expect nonzero "a Verify log from origin/main (shared base)"
+lintShared '- Done: Verify: `git diff -U0 563519c -- cmd/main.go internal/main_test.go` prints nothing.'
+expect 0 "file names containing main are not a moving base (shared base)"
+lintShared '- Done: Verify: `git grep -n main -- src/a.sh` prints nothing.'
+expect 0 "git grep for the word main is not a base (shared base)"
+lintShared 'Prose only: the branch main moves, and `git merge-base HEAD main` is how it was once measured.'
+expect 0 "a merge-base mentioned outside a Verify command (shared base)"
+
+# Wrapped and fenced criteria are joined before they are read.
+lintShared '- No assertion is dropped: Verify: `test "$(git diff -U0
+  $(git merge-base HEAD main) -- internal/engine/report_test.go | grep -c assert)" -le 0`
+  exits 0. Mutant: deleting one assertion line.'
+expect nonzero "a merge-base Verify wrapped inside its command (shared base)"
+lintShared '- No assertion is dropped. Verify:
+  `git diff -U0 main...HEAD -- internal/engine/report_test.go` prints nothing.'
+expect nonzero "a Verify whose command starts on the next line (shared base)"
+lintShared '- No assertion is dropped. Verify:
+  ```
+  git diff -U0 $(git merge-base HEAD main) -- a.go
+  ```
+  Mutant: delete one assertion.'
+expect nonzero "a fenced Verify command (shared base)"
+lintShared '- Done. verify: `git log --oneline main..HEAD -- a.go` prints nothing.'
+expect nonzero "a lower-case verify label (shared base)"
+# Global git options do not hide the subcommand.
+lintShared '- Done. Verify: `git -C repo diff main -- a.go` prints nothing.'
+expect nonzero "git -C before the subcommand (shared base)"
+lintShared '- Done. Verify: `git --no-pager diff main` prints nothing.'
+expect nonzero "a global option before the subcommand (shared base)"
+lintShared '- Done. Verify: `git -C repo merge-base HEAD main` prints a sha.'
+expect nonzero "git -C before merge-base (shared base)"
+# The report names the offending command.
+lintShared '- Done. Verify: `git diff main...HEAD -- a.go` prints nothing.'
+case "$OUT" in *moving-base*"git diff main...HEAD"*"measures from main"*) pass "the report quotes the command and says it measures from main" ;; *) fail "the report does not quote the command: ${OUT}" ;; esac
+lintShared '- Done. Verify: `git show main:src/a.sh` prints the file.'
+expect nonzero "git show of a main path (shared base)"
+lintShared '- Done. Verify: `git diff 563519c..main -- a.go` prints nothing.'
+expect nonzero "a range ending at main (shared base)"
+# Stable forms and prose pass.
+lintShared '- Done. Verify: `git log --oneline 563519c..HEAD` lists one commit on the main branch.'
+expect 0 "prose after the command that mentions main (shared base)"
+lintShared '- Done. Verify: `git diff 563519c -- main` prints nothing.'
+expect 0 "a pathspec named main (shared base)"
+lintShared '- Done. Verify: `git diff 563519c | grep main` prints nothing.'
+expect 0 "main after a pipe (shared base)"
+lintShared '- Done. Verify: `git merge-base --is-ancestor 563519c HEAD` exits 0.'
+expect 0 "merge-base --is-ancestor with a literal sha (shared base)"
+lintShared '- Done. Verify: `git merge-base --is-ancestor 563519c main` exits 0.'
+expect nonzero "merge-base --is-ancestor against main (shared base)"
+lintShared '- Done. Verify: `git diff 563519c -- src/main.sh` prints nothing.'
+expect 0 "a path containing main.sh (shared base)"
+lintShared '- First. Verify: `git diff 563519c -- a.go` prints nothing.
+- Second. Verify: `git diff main -- b.go` prints nothing.'
+expect nonzero "one moving-base criterion among several (shared base)"
+case "$OUT" in *"git diff main -- b.go"*) pass "only the offending criterion is quoted" ;; *) fail "the offending criterion is not quoted: ${OUT}" ;; esac
+
 # A base that is not a commit is a usage error, not a pass.
 OUT=$(printf 'x\n' | bash "$LINT" --base 0000000000000000000000000000000000000000 --repo "$REPO" 2>&1)
 RC=$?

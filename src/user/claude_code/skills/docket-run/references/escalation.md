@@ -137,7 +137,11 @@ or timed-out launch: recommend your own option and say the advisor named
 none. A class the ruling names as never clear carries the advisor's
 framing the same way and has no advisor pick, since its answer is never a
 disposition; a trust matter still carries the exact `docket trust add ...
--- <argv>` line the operator would run.
+-- <argv>` line the operator would run, and an override-pass of a failed
+security gate row carries its recorded evidence (`gate_repro.sh` runs no
+security gate): the script's `VERDICT:` and `REASON:` lines, the step's
+recorded sha, and the failing row's `exit`, `argv`, `fingerprint` and
+`output_tail` from `docket step gates STEP-N --json`.
 
 Present every gate the advisor's answer left unsettled through the
 question tool, recommended option first, each answer's real routing in its
@@ -226,10 +230,10 @@ ruling in place of the operator's word.
 that declares no `max_attempts` is re-offered after every failure, so the
 engine never parks it on its own. When one step fails the same way again,
 the hold goes advisor-first; when that answer is not clear,
-offer the operator `docket step hold` (above) for that step: it parks the
-one READY step `waiting-human` (park class `held`), the next dispatch stops
-offering it, and the rest of its issue runs on. A claimed step is
-force-reaped first, which spends no attempt. The held step resolves like
+offer the operator `docket step hold` (above) for that step: it
+parks the one PENDING step `waiting-human` (park class `held`), the next
+dispatch stops offering it, and the rest of its issue runs on. A claimed
+step is force-reaped first, which spends no attempt. The held step resolves like
 any park: `--as retry` returns it to the pool, `--as skip` skips it. Never
 offer `docket run abandon $RUN --issue` to stop one step: it fails every
 step of the issue.

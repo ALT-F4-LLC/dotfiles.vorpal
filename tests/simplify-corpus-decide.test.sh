@@ -1,19 +1,21 @@
 #!/bin/bash
 
-# Behavior suite for simplify-corpus.js's decisions: which kind and landing
-# rule a path gets, and that a candidate lands only when simplify-check.sh's
-# own report says it passed, it is strictly smaller, it carries a greater
-# version where one is required, and a majority of refuters uphold it.
+# Behavior suite for simplify-corpus.js's decisions: which kind and filing
+# rule a path gets, and that a candidate is accepted for filing only when
+# simplify-check.sh's own report says it passed, it is strictly smaller, it
+# carries a greater version where one is required, and a majority of refuters
+# uphold it. It also pins that the skill files Docket issues and never edits
+# the checkout.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node`, `awk`, and `bash` — no
 # engine, no database, no network, and it never runs a workflow.
 #
-# WHY THIS EXISTS. The skill lands accepted candidates without a confirmation
-# gate for every file but settings.rs and reruns under /loop until a pass
-# lands nothing, so the classifier decides which files get the confirmation
-# and version-bump rules, and the decision helpers are what make the loop
-# converge and keep a restyling or a lone uphold from landing. The report
+# WHY THIS EXISTS. The skill files every accepted candidate as a Docket issue
+# and reruns under /loop until a pass has nothing new to file, so the
+# classifier decides which files get the security gate line and the
+# version-bump rules, and the decision helpers are what make the loop
+# converge and keep a restyling or a lone uphold from being filed. The report
 # parser is fed simplify-check.sh's real output, so a change to the report
 # format fails here instead of rejecting every candidate live. The prompt
 # guards pin the check's move out of the agent: it once composed its own
@@ -25,6 +27,7 @@ set -uo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SIMPLIFY="${SIMPLIFY_CORPUS_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/simplify-corpus.js}"
 SCRIPTS="${SCRIPT_DIR}/../src/user/claude_code/skills/simplify-corpus/scripts"
+SKILL="${SIMPLIFY_CORPUS_SKILL:-${SCRIPT_DIR}/../src/user/claude_code/skills/simplify-corpus/SKILL.md}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
@@ -32,6 +35,7 @@ fatal() {
 }
 
 [ -f "$SIMPLIFY" ] || fatal "simplify-corpus.js not found at ${SIMPLIFY}"
+[ -f "$SKILL" ] || fatal "SKILL.md not found at ${SKILL}"
 [ -f "${SCRIPTS}/simplify-check.sh" ] || fatal "simplify-check.sh not found under ${SCRIPTS}"
 for tool in node awk; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
@@ -147,7 +151,7 @@ get() { node -e "const o=require('${WORK}/out.json'); process.stdout.write(Strin
 [ "$(get 'o.signers.kind')" = "data" ]; ok $? 'allowed_signers is data'
 
 [ "$(get 'o.smaller')" = "true" ]; ok $? 'a strictly smaller candidate shrank'
-[ "$(get 'o.equal')" = "false" ]; ok $? 'an equal-size candidate did not shrink (a restyling cannot land)'
+[ "$(get 'o.equal')" = "false" ]; ok $? 'an equal-size candidate did not shrink (a restyling cannot be filed)'
 [ "$(get 'o.larger')" = "false" ]; ok $? 'a larger candidate did not shrink'
 
 [ "$(get 'o.bumped')" = "true" ]; ok $? 'a greater version counts as bumped'
@@ -180,6 +184,13 @@ get 'o.empty.problem' | grep -q '^unparsable'; ok $? 'empty runner output is rep
 grep -q 'simplify-check.sh' "$SIMPLIFY"; ok $? 'the check runs simplify-check.sh'
 ! grep -nE 'python3 -c|(^|[^A-Za-z0-9_])path=' "$SIMPLIFY"; ok $? 'no prompt carries python3 -c or assigns path='
 ! grep -nE 'intact: \{ type' "$SIMPLIFY"; ok $? 'no agent schema reports its own intact verdict'
+
+# The skill files issues and never edits the checkout.
+grep -q 'docket issue create' "$SKILL" && grep -qF -- '--idempotency-key "$fp"' "$SKILL"; ok $? 'the skill files issues under a fingerprint idempotency key'
+grep -qF -- '-l "$LABEL"' "$SKILL" && grep -qF 'LABEL` is `corpus-$MODE`' "$SKILL"; ok $? 'the skill files under the corpus-simplify and corpus-tighten labels'
+grep -qF -- '--size small' "$SKILL" && grep -qF -- '--scope "$scope"' "$SKILL"; ok $? 'every filing carries a size and a scope'
+! grep -qE 'cp "<candidate>" "<file>"|Skill\(\{skill: "commit"' "$SKILL"; ok $? 'the skill copies no candidate over a file and invokes no commit'
+grep -qF 'edits the checkout: its only writes are Docket issues' "$SKILL"; ok $? 'the skill says its only writes are Docket issues and scratch'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

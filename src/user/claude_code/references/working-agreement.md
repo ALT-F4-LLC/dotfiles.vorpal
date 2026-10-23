@@ -197,15 +197,15 @@ runs under this one, when the session can launch agents.
   description starts "Advisor's pick:" and gives the advisor's reason in one
   line, so the operator can judge the pick without asking for it.
   docket-run's escalation reference governs the option shape of its own
-  questions. For a multi-select question it names
-  the options it recommends selecting, and those carry the label. A skill's
+  questions. For a multi-select question it names the options it recommends
+  selecting, and those carry the label. A skill's
   own default or rule-derived recommendation is advisor input: when it
   differs from the advisor's pick, the pick keeps the label and the skill's
   default is shown beside it as dissent.
 - No advisor pick exists when the question is a `preference` the evidence
-  does not lean on, or asks for a fact only the operator holds, when the
-  answer is conditional or outside
-  the offered options, or when the launch fails or times out. Then recommend
+  does not lean on, when it asks for a fact only the operator holds, when
+  the answer is conditional or outside the offered options, or when the
+  launch fails or times out. Then recommend
   your own option and say the advisor named none.
 - When you disagree with the pick, keep its label and state your dissent in
   the message beside the question. Shown dissent replaces the further
@@ -252,8 +252,21 @@ session, and no recorded operator ruling. Act on it. A conflict with your
 evidence gets one reconcile launch carrying the first answer verbatim; a
 second unclear answer goes to the operator with both answers attached.
 
+**Delegated.** An operator answer that hands a question to the advisor
+("ask the advisor", "have the advisor review them") is the operator's
+ruling for that question. Launch the advisor on it; a clear pick, as
+**Settled** defines clear, is acted on and disclosed, whatever the
+question's kind. An unclear answer goes back to the operator with the
+advisor's text attached. A delegation reaches a reserved class only when
+the operator's answer names that action.
+
+**Under /goal.** While a `/goal` condition is active, a clear advisor pick
+also settles a `preference` question, so the loop does not stop for it.
+Reserved classes are still asked.
+
 **Reserved.** These are always asked, with the advisor's pick as
-`(Recommended)`, however clear the answer:
+`(Recommended)`, however clear the answer, unless a delegation names the
+action:
 
 - authority beyond the established scope: push, merge, publish, messages to
   people or other sessions, spend over a stated cap;

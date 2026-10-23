@@ -154,9 +154,10 @@ Rules:
   unresolved cluster stays open. When a judge and the clustering analyst
   disagree on a merge, it is unresolved: neither verdict wins by rank. Run
   the advisor on both one-sentence defenses as review input, then put them
-  to the operator through §4a. An operator answer that only delegates ("ask
-  the advisor") is not a decision: take the advisor's view as review input
-  and ask again with it shown.
+  to the operator through §4a. An operator answer that delegates ("ask the
+  advisor") follows the working agreement's **Delegated** rule: a clear
+  advisor pick is applied and reported as advisor-settled, and an unclear
+  one is asked again with the advisor's text shown.
 - **Value comes before polish.** Do not invent demand, benefits, urgency,
   estimates, or requirements to justify keeping an issue. A complete issue
   can be worthless; an old or poorly written one can still matter. Missing

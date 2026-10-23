@@ -14,9 +14,9 @@
 #   (b) a run note of a run the session conducts records an advisor ruling for
 #       a step id the question names.
 # Otherwise the call is refused with the ruling's name, and the conductor
-# launches the advisor and asks again. A launch counts as completed when its
-# result is the report itself, or when a later transcript line carries its
-# completion notice or hand-back.
+# launches the advisor and asks again. A launch with a non-error result counts
+# as completed when the result is the report itself, or when a later transcript
+# line carries its completion notice or hand-back.
 #
 # Sessions that conduct no run, subagents, a missing docket-driven-runs.jq, and
 # any unreadable transcript, engine answer or payload are allowed. A run id held
@@ -70,10 +70,11 @@ done
 # this hook's own refusal, a classifier denial and any other hook error are
 # written the same way and must not void the reviews before them. An operator's
 # rejection of the call is an error result that still counts.
-# A launch is complete when its result is the report itself, or when a later
-# line carries its completion: a completed task notice (in a user line, a
-# queued-command attachment or a queue-operation line) or a hand-back whose
-# origin names it. Assistant text never counts, so a quoted id completes nothing.
+# A launch with a non-error result is complete when that result is the report
+# itself, or when a later line carries its completion: a completed task notice
+# (in a user line, a queued-command attachment or a queue-operation line) or a
+# hand-back whose origin names it. Assistant text never counts, so a quoted id
+# completes nothing.
 # A brief names a question when it carries the question's full text, a step id
 # in it, or its header introduced as one ("header CI row", "Header: CI row"),
 # compared case-blind with punctuation and runs of spaces folded: a bare header
@@ -108,7 +109,7 @@ UNCOVERED=$(jq -Rnc --argjson qs "$QUESTIONS" '
     | [ $uses[] | select(.brief != null and .i > $last)
         | . as $a
         | ($results | map(select(.tid == $a.id)) | first) as $r
-        | select($r != null)
+        | select($r != null and ($r.err | not))
         | (if ($r.text | contains("Async agent launched")) then
              (($r.text | capture("agentId: (?<a>[0-9A-Za-z]+)")? | .a) as $aid
               | $aid != null and ($completions | any(.id == $aid and .i > $r.i)))

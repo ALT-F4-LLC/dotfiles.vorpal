@@ -249,5 +249,36 @@ run "an unreadable run note list allows" 0 "$(ask_in 'Retry' 'Retry STEP-9001?')
 # 13. A malformed transcript line is skipped, not fatal.
 reset; answered; printf '{"type":"assistant","message":{"content":[{"type":"tool_use"\n' >> "$TRANSCRIPT"
 run "a malformed transcript line does not disable the check" 2 "$(ask_in 'CI row' 'May I add the row?')" "CI row"
+
+# 14. A failed advisor result is not a review, regardless of its text.
+reset; answered; id=$(nextid)
+use "$id" Agent '{"subagent_type":"advisor","prompt":"Review this: May I add the row?"}'
+result_err "$id" "Permission to use Agent has been denied."
+run "a permission-denied advisor launch does not count" 2 "$(ask_in 'CI row' 'May I add the row?')" "CI row"
+reset; answered; id=$(nextid)
+use "$id" Agent '{"subagent_type":"advisor","prompt":"Review the restart of STEP-9001."}'
+result_err "$id" "PreToolUse:Agent hook error: [bash ~/.claude/hooks/docket-spawn-guard-hook.sh]: refused"
+run "an advisor launch refused by a spawn hook does not count" 2 "$(ask_in 'Retry' 'Retry STEP-9001?')" "Retry"
+reset; answered; id=$(nextid)
+use "$id" Agent '{"subagent_type":"advisor","prompt":"Review header CI row."}'
+result_err "$id" "Advisor report: pick the first option."
+run "an error result with report-like text does not count" 2 "$(ask_in 'CI row' 'May I add the row?')" "CI row"
+reset; answered; id=$(nextid)
+use "$id" Agent '{"subagent_type":"advisor","prompt":"Review header CI row."}'
+result_err "$id" "Async agent launched successfully.
+agentId: f1 (internal ID)"
+attach_done f1
+run "an error result with async launch text and a later completion does not count" 2 "$(ask_in 'CI row' 'May I add the row?')" "CI row"
+advisor f2 "Review header CI row." sync
+run "a successful review after a failed launch allows" 0 "$(ask_in 'CI row' 'May I add the row?')"
+reset; answered; id=$(nextid)
+use "$id" Agent '{"subagent_type":"advisor","prompt":"Review header CI row."}'
+line "$(jq -cn --arg id "$id" '{type:"user",message:{content:[{type:"tool_result",tool_use_id:$id,is_error:false,content:"Advisor report: pick the first option."}]}}')"
+run "an explicitly non-error advisor report allows" 0 "$(ask_in 'CI row' 'May I add the row?')"
+reset; answered; launch_only f3 "Review header CI row."; id=$(nextid)
+use "$id" TaskOutput '{"task_id":"f3"}'
+result_err "$id" '<task-notification><task-id>f3</task-id><status>completed</status></task-notification> from="f3"'
+run "an error tool result cannot complete a pending advisor launch" 2 "$(ask_in 'CI row' 'May I add the row?')" "CI row"
+
 printf '%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

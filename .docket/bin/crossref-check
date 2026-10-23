@@ -72,6 +72,11 @@
 #                table lists every `docket step` command, and every family
 #                with a `#### docket <family>` heading is in the
 #                engine-conductor family list. Skipped without the inventory.
+#   fixtures     The docket skill's lists cover the CLI fixtures: every verb
+#                whose no-token refusal fixture says it needs the conductor
+#                token is in each conductor-gated list, and every engine
+#                config key the fixtures list is a row of the configuration
+#                table. Skipped without the fixtures.
 #
 # What is skipped, and why. src/user/docket/config/changelogs/<name>.md holds
 # each workflow's and policy.toml's version history; a renamed path is CORRECT
@@ -539,6 +544,93 @@ if [ -f "$inventory" ]; then
           fail inventory "$docket_ref" "$ref_line" "family $fam has a docket-run reference heading but is not in the engine-conductor family list" ;;
         esac
       done < <(grep -rh '^#### `docket [a-z][a-z-]*' "$run_refs" 2>/dev/null | sed 's/^#### `docket \([a-z][a-z-]*\).*/\1/' | sort -u)
+    fi
+  fi
+fi
+
+# --- fixtures: prose lists cover the CLI fixtures ----------------------------
+# skills/docket-cli-audit/references/cli-fixtures.json records what the swept
+# binary emits. Two lists in the docket skill mirror it, and a new gated verb
+# or engine key leaves them silently short:
+#   1. every verb whose refusal without the run's token says "<verb> requires
+#      it: supply the run's token" is named in each conductor-gated list: the
+#      gated row of SKILL.md, the AUTH_ERROR row of transport.md and the
+#      bullets after "the conductor-gated verbs read it from" there. A name
+#      of the form `<family> <verb>` also matches inside an alternation such
+#      as `step approve/reject`. A gated verb the sweep skips has no refusal
+#      fixture, so the fixtures cannot require it (step integrate today).
+#   2. every key the config-get-all fixture lists is a row of the
+#      configuration table in workflows.md.
+# Each list is found by a phrase, not a line number. A corpus without the
+# fixtures skips both rules.
+fixtures="$claude_tree/skills/docket-cli-audit/references/cli-fixtures.json"
+skill_md="$claude_tree/skills/docket/SKILL.md"
+transport_md="$claude_tree/skills/docket/references/transport.md"
+workflows_md="$claude_tree/skills/docket/references/workflows.md"
+
+region() {
+  # $1 file, $2 start regex, $3 end regex or "" for the start line alone.
+  # Prints "<start line><TAB><region joined on one line>"; nothing if the
+  # start is not found.
+  REGION_S="$2" REGION_E="$3" awk '
+    function out() { printf "%d\t%s\n", start, text; done = 1; exit }
+    BEGIN { s = ENVIRON["REGION_S"]; e = ENVIRON["REGION_E"] }
+    !on && $0 ~ s { on = 1; start = FNR; text = $0; if (e == "") out(); next }
+    on && $0 ~ e { out() }
+    on { text = text " " $0 }
+    END { if (on && !done) out() }
+  ' "$1" | sed 's/  */ /g'
+}
+
+gated_name_in() {
+  # $1 verb name, $2 text. True when the text names the verb.
+  local name="$1" text="$2" fam sub
+  case "$name" in
+    *" "*" "*|*--*) [[ "$text" == *"$name"* ]] ;;
+    *) fam="${name%% *}"; sub="${name#* }"
+       [[ "$text" =~ (^|[^a-z-])$fam\ ([a-z-]+/)*$sub(/[a-z-]+)*([^a-z-]|$) ]] ;;
+  esac
+}
+
+if [ -f "$fixtures" ]; then
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "crossref-check FAILED: $fixtures is present but jq is not installed." >&2
+    exit 1
+  fi
+
+  if [ -f "$skill_md" ] && [ -f "$transport_md" ]; then
+    gated="$(jq -r '.. | objects | select(.id?) | ((.stderr // "") + " " + (.json?.error? // "")) | scan("and ([a-z][a-z0-9 -]*) requires it: supply the run.s token") | .[0]' "$fixtures" | sort -u)"
+    check_gated_list() {
+      # $1 file, $2 start regex, $3 end regex or "", $4 first-cell marker or "".
+      local file="$1" row line text name
+      row="$(region "$file" "$2" "$3")"
+      if [ -z "$row" ]; then
+        fail fixtures "$file" 1 "cannot find the conductor-gated list (\"$2\")"
+        return
+      fi
+      line="${row%%$'\t'*}"; text="${row#*$'\t'}"
+      # SKILL.md's row also carries the no-authority sentence: keep the first cell.
+      [ -z "$4" ] || text="${text%%"$4"*}"
+      while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        gated_name_in "$name" "$text" || fail fixtures "$file" "$line" "$name needs the conductor token (CLI fixtures) but is not in this list"
+      done <<< "$gated"
+    }
+    check_gated_list "$skill_md" "Require the run's conductor capability" "" "| Require the run"
+    check_gated_list "$transport_md" '^\| `AUTH_ERROR` \|' "" ""
+    check_gated_list "$transport_md" "conductor-gated verbs read it from" '^Three `--authority` rules' ""
+  fi
+
+  if [ -f "$workflows_md" ]; then
+    row="$(region "$workflows_md" '^\| *Key *\| *Type' '^[^|]')"
+    if [ -z "$row" ]; then
+      fail fixtures "$workflows_md" 1 "cannot find the engine configuration table (\"| Key | Type\")"
+    else
+      line="${row%%$'\t'*}"; text="${row#*$'\t'}"
+      while IFS= read -r key; do
+        [ -n "$key" ] || continue
+        [[ "$text" == *"| \`$key\` |"* ]] || fail fixtures "$workflows_md" "$line" "config key $key is in the CLI fixtures but not in this table"
+      done < <(jq -r '.. | objects | select(.id? == "config-get-all" and .mode? == "json") | .json.data.entries[].key' "$fixtures" | sort -u)
     fi
   fi
 fi

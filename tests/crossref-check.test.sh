@@ -5,8 +5,8 @@
 # paths, relative links and their heading anchors, /docket-* skill references
 # and the skill names a description hands off to, schema versions, workflow
 # executors, workflow gates, routing labels, each definition's declared
-# name, Contents line counts, and prose tables that mirror the CLI
-# inventory — and the gate names the check and the
+# name, Contents line counts, and prose tables and lists that mirror the CLI
+# inventory and fixtures — and the gate names the check and the
 # location of every reference that does not resolve. Nothing else reads both trees: a rename
 # on one side used to leave the other side describing a thing that is gone,
 # with every other gate green.
@@ -428,6 +428,83 @@ expect_fail "inventory: a family with a heading is missing from the family list"
 build_corpus "$FIX"; add_inventory "$FIX"
 rm "$FIX/$INV_S/docket-run/references/dispatch.md" "$FIX/$INV_S/docket-run/references/step.md"
 expect_pass "inventory: a missing target file skips its rule" "$FIX"
+
+# --- fixtures -----------------------------------------------------------------
+# add_fixtures <dir>: the CLI fixtures plus the docket-skill lists that mirror
+# them, all in agreement. step approve/reject share one alternation in the
+# SKILL.md row, and `run hold-issue` also sits in its no-authority sentence so
+# a case can prove that sentence does not stand in for the gated list.
+add_fixtures() { # <dir>
+    local d="$1" s="$1/src/user/claude_code/skills"
+    mkdir -p "$s/docket/references" "$s/docket-cli-audit/references"
+    cat > "$s/docket-cli-audit/references/cli-fixtures.json" <<'JSON'
+{"records": [
+ {"id": "run-hold-issue-without-token", "mode": "text", "argv": ["docket", "run", "hold-issue"], "exit": 3, "stderr": "Error: RUN-3 is bound to a conductor capability and run hold-issue requires it: supply the run's token via DOCKET_TOKEN or stdin"},
+ {"id": "step-approve-without-token", "mode": "text", "argv": ["docket", "step", "approve"], "exit": 3, "stderr": "Error: RUN-1 is bound to a conductor capability and step approve requires it: supply the run's token via DOCKET_TOKEN or stdin"},
+ {"id": "step-reject-without-token", "mode": "text", "argv": ["docket", "step", "reject"], "exit": 3, "stderr": "Error: RUN-1 is bound to a conductor capability and step reject requires it: supply the run's token via DOCKET_TOKEN or stdin"},
+ {"id": "config-get-all", "mode": "json", "argv": ["docket", "config", "get"], "exit": 0, "json": {"ok": true, "data": {"entries": [{"key": "lease.ttl.default"}, {"key": "routing.security_label"}], "total": 2}}}
+]}
+JSON
+    printf -- '---\nname: docket\ndescription: fixture\n---\n# docket\n\n| Verbs | Rule |\n|---|---|\n| `step approve/reject`, `run hold-issue` | Require the run'"'"'s conductor capability on a bound run. `run resume` and `run hold-issue` take no `--authority`. |\n' \
+        > "$s/docket/SKILL.md"
+    cat > "$s/docket/references/transport.md" <<'EOF2'
+# Transport
+
+| `code` | Exit | Meaning |
+|---|---|---|
+| `AUTH_ERROR` | 5 | not the run's conductor capability on a conductor-gated verb: `step approve`, `step reject`, `run hold-issue` |
+
+On a bound run the conductor-gated verbs read it from `DOCKET_TOKEN` or
+stdin:
+
+- `step approve`, `step reject`
+- `run hold-issue`
+
+Three `--authority` rules apply:
+EOF2
+    cat > "$s/docket/references/workflows.md" <<'EOF2'
+# Workflows
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `lease.ttl.default` | duration | `15m` | fallback lease TTL |
+| `routing.security_label` | label | `security` | the security label |
+
+After the table.
+EOF2
+}
+FX_S="src/user/claude_code/skills"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+expect_pass "fixtures: lists that cover the fixtures pass" "$FIX"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+sed -i.bak '/^- `run hold-issue`$/d' "$FIX/$FX_S/docket/references/transport.md"
+expect_fail "fixtures: a gated verb missing from the transport bullets" "$FIX" fixtures "run hold-issue needs the conductor token"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+sed -i.bak 's/`step approve`, `step reject`, `run hold-issue` |/`step approve`, `step reject` |/' "$FIX/$FX_S/docket/references/transport.md"
+expect_fail "fixtures: a gated verb missing from the AUTH_ERROR row" "$FIX" fixtures "run hold-issue needs the conductor token"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+sed -i.bak 's/^| `step approve\/reject`, `run hold-issue` |/| `step approve\/reject` |/' "$FIX/$FX_S/docket/SKILL.md"
+expect_fail "fixtures: the no-authority sentence does not stand in for the gated row" "$FIX" fixtures "run hold-issue needs the conductor token"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+sed -i.bak 's/`step approve\/reject`/`step approve`/' "$FIX/$FX_S/docket/SKILL.md"
+expect_fail "fixtures: one half of an approve/reject alternation is missing" "$FIX" fixtures "step reject needs the conductor token"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+sed -i.bak '/^| `routing.security_label`/d' "$FIX/$FX_S/docket/references/workflows.md"
+expect_fail "fixtures: a config key missing from the table" "$FIX" fixtures "config key routing.security_label"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+sed -i.bak 's/^| Key | Type/| Name | Type/' "$FIX/$FX_S/docket/references/workflows.md"
+expect_fail "fixtures: a table that cannot be found is named, not skipped" "$FIX" fixtures "cannot find the engine configuration table"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+rm "$FIX/$FX_S/docket-cli-audit/references/cli-fixtures.json"
+expect_pass "fixtures: a corpus without the fixtures skips the rules" "$FIX"
 
 # --- every failure is listed, not only the first ------------------------------
 build_corpus "$FIX"

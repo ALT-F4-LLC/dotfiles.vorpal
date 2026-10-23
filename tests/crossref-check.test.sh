@@ -5,7 +5,8 @@
 # paths, relative links and their heading anchors, /docket-* skill references
 # and the skill names a description hands off to, schema versions, workflow
 # executors, workflow gates, routing labels, each definition's declared
-# name, and Contents line counts — and the gate names the check and the
+# name, Contents line counts, and prose tables that mirror the CLI
+# inventory — and the gate names the check and the
 # location of every reference that does not resolve. Nothing else reads both trees: a rename
 # on one side used to leave the other side describing a thing that is gone,
 # with every other gate green.
@@ -341,6 +342,92 @@ expect_fail "contents: a stale line count" "$FIX" contents "#one states 4 lines;
 build_corpus "$FIX"
 write_contents "$FIX" 3 three
 expect_fail "contents: an entry with no anchor" "$FIX" contents "entry #three has no <a id> anchor"
+
+# --- inventory ----------------------------------------------------------------
+# add_inventory <dir>: the CLI inventory plus the docket-run prose that mirrors
+# it, all in agreement. Each case below removes one entry and expects red.
+add_inventory() { # <dir>
+    local d="$1" s="$1/src/user/claude_code/skills"
+    mkdir -p "$s/docket/references" "$s/docket-run/references"
+    cat > "$s/docket/references/cli-inventory.json" <<'JSON'
+{"commands": [
+ {"command": "docket dispatch close", "flags": [{"name": "--help"}, {"name": "--no-conditions"}, {"name": "--run"}], "inherited_flags": [{"name": "--json"}]},
+ {"command": "docket step claim", "flags": [{"name": "--help"}, {"name": "--owner"}], "inherited_flags": []},
+ {"command": "docket step approve", "flags": [{"name": "--help"}], "inherited_flags": []},
+ {"command": "docket step reject", "flags": [{"name": "--help"}], "inherited_flags": []},
+ {"command": "docket step integrate", "flags": [{"name": "--help"}], "inherited_flags": []},
+ {"command": "docket pin show", "flags": [{"name": "--help"}], "inherited_flags": []}
+]}
+JSON
+    cat > "$s/docket/reference.md" <<'EOF2'
+# Reference
+
+The engine-conductor families (dispatch, step,
+pin) are documented elsewhere.
+EOF2
+    cat > "$s/docket-run/references/dispatch.md" <<'EOF2'
+# Dispatch
+
+#### `docket dispatch close`
+
+| Flag | Type | Notes |
+|---|---|---|
+| `--run` | string | **required** |
+| `--no-conditions` | string | close despite unlinked conditions |
+
+Prose after the table.
+EOF2
+    cat > "$s/docket-run/references/step.md" <<'EOF2'
+# Step
+
+| Verb | Token | Effect |
+|---|---|---|
+| `step claim STEP-N` | no | claim |
+| `step approve\|reject STEP-N` | **conductor** | decide |
+| `step integrate STEP-N…` | **conductor** | cherry-pick |
+
+#### `docket step claim`
+
+| Flag | Type | Notes |
+|---|---|---|
+| `--owner` | string | **required** |
+EOF2
+    cat > "$s/docket-run/references/run.md" <<'EOF2'
+# Run
+
+#### `docket pin show RUN-N PATH`
+
+Reads what a run pinned.
+EOF2
+}
+INV_S="src/user/claude_code/skills"
+
+build_corpus "$FIX"; add_inventory "$FIX"
+expect_pass "inventory: prose that covers the inventory passes" "$FIX"
+
+build_corpus "$FIX"; add_inventory "$FIX"
+sed -i.bak '/--no-conditions` | string/d' "$FIX/$INV_S/docket-run/references/dispatch.md"
+expect_fail "inventory: a flag missing from its table" "$FIX" inventory "docket dispatch close --no-conditions"
+
+build_corpus "$FIX"; add_inventory "$FIX"
+sed -i.bak 's/`--run` | string/`--run-id` | string/' "$FIX/$INV_S/docket-run/references/dispatch.md"
+expect_fail "inventory: a longer flag name does not satisfy a shorter one" "$FIX" inventory "docket dispatch close --run"
+
+build_corpus "$FIX"; add_inventory "$FIX"
+sed -i.bak '/step integrate STEP-N/d' "$FIX/$INV_S/docket-run/references/step.md"
+expect_fail "inventory: a step verb missing from the verb table" "$FIX" inventory "docket step integrate"
+
+build_corpus "$FIX"; add_inventory "$FIX"
+sed -i.bak 's/step approve\\|reject STEP-N/step approve STEP-N/' "$FIX/$INV_S/docket-run/references/step.md"
+expect_fail "inventory: one half of an approve|reject row is missing" "$FIX" inventory "docket step reject"
+
+build_corpus "$FIX"; add_inventory "$FIX"
+sed -i.bak 's/^pin) are/) are/' "$FIX/$INV_S/docket/reference.md"
+expect_fail "inventory: a family with a heading is missing from the family list" "$FIX" inventory "family pin"
+
+build_corpus "$FIX"; add_inventory "$FIX"
+rm "$FIX/$INV_S/docket-run/references/dispatch.md" "$FIX/$INV_S/docket-run/references/step.md"
+expect_pass "inventory: a missing target file skips its rule" "$FIX"
 
 # --- every failure is listed, not only the first ------------------------------
 build_corpus "$FIX"

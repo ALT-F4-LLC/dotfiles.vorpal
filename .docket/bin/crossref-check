@@ -67,6 +67,11 @@
 #                `<a id>` anchor in the same file, and N equals the span
 #                from that anchor to the next entry's at the same or a
 #                shallower indent (or to end of file).
+#   inventory    The docket-run references cover the CLI inventory: a flag
+#                table lists every local flag of its verb, step.md's verb
+#                table lists every `docket step` command, and every family
+#                with a `#### docket <family>` heading is in the
+#                engine-conductor family list. Skipped without the inventory.
 #
 # What is skipped, and why. src/user/docket/config/changelogs/<name>.md holds
 # each workflow's and policy.toml's version history; a renamed path is CORRECT
@@ -426,6 +431,117 @@ while IFS= read -r f; do
     fail contents "$f" "$line" "$msg"
   done < <(contents_mismatches "$f")
 done < <(corpus_files)
+
+# --- inventory: prose tables cover the CLI inventory -------------------------
+# skills/docket/references/cli-inventory.json lists every docket command and
+# its local flags. The docket-run references mirror parts of it in prose, and
+# a new verb or flag leaves those tables silently short. Three rules, each
+# keyed on headings and table headers, never on line numbers:
+#   1. under a `#### `docket <family> <verb>`` heading in dispatch.md or
+#      step.md, the table headed `| Flag |` names every local flag the
+#      inventory lists for that verb (--help excepted);
+#   2. the `| Verb |` table in step.md names every `docket step` command;
+#   3. every family with a `#### `docket <family>`` heading under
+#      skills/docket-run/references is in docket/reference.md's list of
+#      engine-conductor families.
+# A corpus without the inventory, or without a target file, skips the rule.
+inventory="$claude_tree/skills/docket/references/cli-inventory.json"
+run_refs="$claude_tree/skills/docket-run/references"
+docket_ref="$claude_tree/skills/docket/reference.md"
+
+flag_table_gaps() {
+  # $1 markdown file; INV_FLAGS is "docket <family> <verb><TAB><flag>" rows.
+  awk '
+    BEGIN {
+      n = split(ENVIRON["INV_FLAGS"], rows, "\n")
+      for (i = 1; i <= n; i++) {
+        split(rows[i], p, "\t")
+        if (p[1] != "") want[p[1]] = want[p[1]] " " p[2]
+      }
+    }
+    function flush(   s, w, nv, v, i, key, nf, fl, j, re) {
+      if (!intab) return
+      intab = 0
+      if (!match(head, /`docket [a-z]+ [a-z-]+(\|[a-z-]+)*/)) return
+      s = substr(head, RSTART + 1, RLENGTH - 1)
+      split(s, w, " ")
+      nv = split(w[3], v, "|")
+      for (i = 1; i <= nv; i++) {
+        key = "docket " w[2] " " v[i]
+        if (!(key in want)) continue
+        nf = split(want[key], fl, " ")
+        for (j = 1; j <= nf; j++) {
+          if (fl[j] == "") continue
+          re = "(^|[^-A-Za-z0-9])" fl[j] "([^-A-Za-z0-9]|$)"
+          if (tab !~ re) printf "%d\t%s %s is in the CLI inventory but not in the flag table under this heading\n", hl, key, fl[j]
+        }
+      }
+    }
+    /^#+ / { flush(); head = $0; hl = FNR; next }
+    /^\| *Flag *\|/ { flush(); intab = 1; tab = ""; next }
+    intab && /^\|/ { tab = tab "\n" $0; next }
+    { flush() }
+    END { flush() }
+  ' "$1"
+}
+
+step_verb_gaps() {
+  # $1 step.md; INV_CMDS is one inventory command per line.
+  awk '
+    /^\| *Verb *\|/ { intab = 1; next }
+    intab && /^\|/ {
+      if (match($0, /^\| *`step [a-z-]+(\\\|[a-z-]+)*/)) {
+        s = substr($0, RSTART, RLENGTH); sub(/^\| *`step /, "", s); gsub(/\\\|/, " ", s)
+        nv = split(s, v, " ")
+        for (i = 1; i <= nv; i++) seen["docket step " v[i]] = 1
+      }
+      next
+    }
+    { intab = 0 }
+    END {
+      n = split(ENVIRON["INV_CMDS"], cmds, "\n")
+      for (i = 1; i <= n; i++)
+        if (cmds[i] ~ /^docket step [a-z-]+$/ && !(cmds[i] in seen))
+          printf "%s is in the CLI inventory but not in the verb table\n", cmds[i]
+    }
+  ' "$1"
+}
+
+if [ -f "$inventory" ]; then
+  if ! command -v jq >/dev/null 2>&1; then
+    echo "crossref-check FAILED: $inventory is present but jq is not installed." >&2
+    exit 1
+  fi
+  INV_FLAGS="$(jq -r '.commands[] | .command as $c | .flags[]? | select(.name != "--help") | "\($c)\t\(.name)"' "$inventory")"
+  INV_CMDS="$(jq -r '.commands[].command' "$inventory")"
+  export INV_FLAGS INV_CMDS
+
+  for f in "$run_refs/dispatch.md" "$run_refs/step.md"; do
+    [ -f "$f" ] || continue
+    while IFS=$'\t' read -r line msg; do
+      fail inventory "$f" "$line" "$msg"
+    done < <(flag_table_gaps "$f")
+  done
+
+  if [ -f "$run_refs/step.md" ] && grep -q '^| *Verb *|' "$run_refs/step.md"; then
+    while IFS= read -r msg; do
+      fail inventory "$run_refs/step.md" 1 "$msg"
+    done < <(step_verb_gaps "$run_refs/step.md")
+  fi
+
+  if [ -f "$docket_ref" ]; then
+    families="$(tr '\n' ' ' < "$docket_ref" | grep -o 'engine-conductor families ([^)]*)' | head -1 | sed 's/^[^(]*(//; s/)$//; s/,/ /g' || true)"
+    if [ -n "$families" ]; then
+      ref_line="$(grep -n 'engine-conductor families' "$docket_ref" | head -1 | cut -d: -f1)"
+      while IFS= read -r fam; do
+        [ -n "$fam" ] || continue
+        case " $families " in *" $fam "*) ;; *)
+          fail inventory "$docket_ref" "$ref_line" "family $fam has a docket-run reference heading but is not in the engine-conductor family list" ;;
+        esac
+      done < <(grep -rh '^#### `docket [a-z][a-z-]*' "$run_refs" 2>/dev/null | sed 's/^#### `docket \([a-z][a-z-]*\).*/\1/' | sort -u)
+    fi
+  fi
+fi
 
 # --- ask: an ask of the operator names its channel ---------------------------
 # CLAUDE.md's ask rule: the operator is asked only through AskUserQuestion, and

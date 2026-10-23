@@ -425,6 +425,14 @@ build_corpus "$FIX"; add_inventory "$FIX"
 sed -i.bak 's/^pin) are/) are/' "$FIX/$INV_S/docket/reference.md"
 expect_fail "inventory: a family with a heading is missing from the family list" "$FIX" inventory "family pin"
 
+
+build_corpus "$FIX"; add_inventory "$FIX"
+sed -i.bak 's/^| `--no-conditions` | string | close despite unlinked conditions |$/| `--other` | string | mentions `--no-conditions` in prose |/' "$FIX/$INV_S/docket-run/references/dispatch.md"
+expect_fail "inventory: a flag named only in another row's notes is not documented" "$FIX" inventory "docket dispatch close --no-conditions"
+
+build_corpus "$FIX"; add_inventory "$FIX"
+sed -i.bak 's/^The engine-conductor families (dispatch, step,$/The engine-conductor\nfamilies (dispatch, step,/' "$FIX/$INV_S/docket/reference.md"
+expect_pass "inventory: a wrapped family phrase does not abort the gate" "$FIX"
 build_corpus "$FIX"; add_inventory "$FIX"
 rm "$FIX/$INV_S/docket-run/references/dispatch.md" "$FIX/$INV_S/docket-run/references/step.md"
 expect_pass "inventory: a missing target file skips its rule" "$FIX"
@@ -502,6 +510,14 @@ build_corpus "$FIX"; add_fixtures "$FIX"
 sed -i.bak 's/^| Key | Type/| Name | Type/' "$FIX/$FX_S/docket/references/workflows.md"
 expect_fail "fixtures: a table that cannot be found is named, not skipped" "$FIX" fixtures "cannot find the engine configuration table"
 
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+sed -i.bak 's/ requires it: supply/ needs it: supply/g' "$FIX/$FX_S/docket-cli-audit/references/cli-fixtures.json"
+expect_fail "fixtures: reworded refusals that yield no gated verb are named, not passed" "$FIX" fixtures "no conductor-gated verb extracted"
+
+build_corpus "$FIX"; add_fixtures "$FIX"
+sed -i.bak 's/"id": "config-get-all"/"id": "config-list"/' "$FIX/$FX_S/docket-cli-audit/references/cli-fixtures.json"
+expect_fail "fixtures: a config-get-all fixture that is gone is named, not passed" "$FIX" fixtures "no configuration keys extracted"
 build_corpus "$FIX"; add_fixtures "$FIX"
 rm "$FIX/$FX_S/docket-cli-audit/references/cli-fixtures.json"
 expect_pass "fixtures: a corpus without the fixtures skips the rules" "$FIX"

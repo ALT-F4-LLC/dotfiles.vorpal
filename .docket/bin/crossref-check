@@ -464,6 +464,18 @@ flag_table_gaps() {
         if (p[1] != "") want[p[1]] = want[p[1]] " " p[2]
       }
     }
+    # A flag is documented by the first cell of a row, not by a mention in prose.
+    function firstcell(t, re,   rl, nr, r, k, c) {
+      nr = split(t, rl, "\n")
+      for (r = 1; r <= nr; r++) {
+        if (rl[r] !~ /^\|/) continue
+        c = substr(rl[r], 2)
+        k = index(c, "|")
+        if (k > 0) c = substr(c, 1, k - 1)
+        if (c ~ re) return 1
+      }
+      return 0
+    }
     function flush(   s, w, nv, v, i, key, nf, fl, j, re) {
       if (!intab) return
       intab = 0
@@ -478,7 +490,7 @@ flag_table_gaps() {
         for (j = 1; j <= nf; j++) {
           if (fl[j] == "") continue
           re = "(^|[^-A-Za-z0-9])" fl[j] "([^-A-Za-z0-9]|$)"
-          if (tab !~ re) printf "%d\t%s %s is in the CLI inventory but not in the flag table under this heading\n", hl, key, fl[j]
+          if (!firstcell(tab, re)) printf "%d\t%s %s is in the CLI inventory but not in the flag table under this heading\n", hl, key, fl[j]
         }
       }
     }
@@ -537,7 +549,7 @@ if [ -f "$inventory" ]; then
   if [ -f "$docket_ref" ]; then
     families="$(tr '\n' ' ' < "$docket_ref" | grep -o 'engine-conductor families ([^)]*)' | head -1 | sed 's/^[^(]*(//; s/)$//; s/,/ /g' || true)"
     if [ -n "$families" ]; then
-      ref_line="$(grep -n 'engine-conductor families' "$docket_ref" | head -1 | cut -d: -f1)"
+      ref_line="$(grep -n 'engine-conductor' "$docket_ref" | head -1 | cut -d: -f1 || true)"; ref_line="${ref_line:-1}"
       while IFS= read -r fam; do
         [ -n "$fam" ] || continue
         case " $families " in *" $fam "*) ;; *)
@@ -616,6 +628,9 @@ if [ -f "$fixtures" ]; then
         gated_name_in "$name" "$text" || fail fixtures "$file" "$line" "$name needs the conductor token (CLI fixtures) but is not in this list"
       done <<< "$gated"
     }
+    if [ -z "$gated" ]; then
+      fail fixtures "$fixtures" 1 "no conductor-gated verb extracted from the fixtures: the refusal wording may have changed"
+    fi
     check_gated_list "$skill_md" "Require the run's conductor capability" "" "| Require the run"
     check_gated_list "$transport_md" '^\| `AUTH_ERROR` \|' "" ""
     check_gated_list "$transport_md" "conductor-gated verbs read it from" '^Three `--authority` rules' ""
@@ -627,10 +642,14 @@ if [ -f "$fixtures" ]; then
       fail fixtures "$workflows_md" 1 "cannot find the engine configuration table (\"| Key | Type\")"
     else
       line="${row%%$'\t'*}"; text="${row#*$'\t'}"
+      keys="$(jq -r '.. | objects | select(.id? == "config-get-all" and .mode? == "json") | .json.data.entries[].key' "$fixtures" | sort -u)"
+      if [ -z "$keys" ]; then
+        fail fixtures "$fixtures" 1 "no configuration keys extracted from the config-get-all fixture"
+      fi
       while IFS= read -r key; do
         [ -n "$key" ] || continue
         [[ "$text" == *"| \`$key\` |"* ]] || fail fixtures "$workflows_md" "$line" "config key $key is in the CLI fixtures but not in this table"
-      done < <(jq -r '.. | objects | select(.id? == "config-get-all" and .mode? == "json") | .json.data.entries[].key' "$fixtures" | sort -u)
+      done <<< "$keys"
     fi
   fi
 fi

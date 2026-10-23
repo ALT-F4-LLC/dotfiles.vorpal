@@ -48,6 +48,15 @@
 
 set -euo pipefail
 
+# Loop input goes through files, never here-strings: bash 3.2 writes a
+# here-string to a temp file outside TMPDIR, the sandbox refuses it from
+# some working directories, and set -e does not stop on that failed
+# redirect, so the loop runs zero times and the script exits 0 having
+# checked nothing.
+lint_tmpd=$(mktemp -d "${TMPDIR:-/tmp}/lint.XXXXXX")
+trap 'rm -rf "$lint_tmpd"' EXIT
+lines_of() { local f; f=$(mktemp "$lint_tmpd/l.XXXXXX"); printf '%s\n' "$1" > "$f"; printf '%s' "$f"; }
+
 usage() {
     printf 'usage: scope-lint.sh --base <sha> [--repo <dir>] [issue.json]\n' >&2
     exit 2
@@ -134,7 +143,7 @@ tokens=$(printf '%s\n' "$criteria" | awk '
 tree=$(git -C "$repo" ls-tree -r --full-tree --name-only "$commit")
 dirs=$(git -C "$repo" ls-tree -r -d --full-tree --name-only "$commit")
 in_list() { # <item> <newline-separated list>
-    grep -Fxq -- "$1" <<<"$2"
+    printf '%s\n' "$2" | grep -Fxq -- "$1"
 }
 
 ac_paths=""
@@ -169,7 +178,7 @@ while IFS=$'\t' read -r chain tok; do
         continue
     fi
     ac_paths="${ac_paths}${path}"$'\n'
-done <<<"$tokens"
+done < "$(lines_of "$tokens")"
 ac_paths=$(printf '%s' "$ac_paths" | sort -u)
 
 # Rows to check against scope: path, then why it must be in scope.
@@ -177,7 +186,7 @@ scope_rows=""
 while IFS= read -r path; do
     [ -n "$path" ] || continue
     scope_rows="${scope_rows}${path}"$'\t'"named by the acceptance criteria"$'\n'
-done <<<"$ac_paths"
+done < "$(lines_of "$ac_paths")"
 while IFS= read -r file; do
     case "$file" in
         *_test.go | "") continue ;;
@@ -187,7 +196,7 @@ while IFS= read -r file; do
     sibling="${file%.go}_test.go"
     in_list "$sibling" "$tree" || continue
     scope_rows="${scope_rows}${sibling}"$'\t'"test beside ${file}"$'\n'
-done <<<"$files"
+done < "$(lines_of "$files")"
 
 problems=0
 while IFS= read -r path; do
@@ -196,7 +205,7 @@ while IFS= read -r path; do
         problems=$((problems + 1))
         printf 'missing from files: %s (named by the acceptance criteria)\n' "$path"
     fi
-done <<<"$ac_paths"
+done < "$(lines_of "$ac_paths")"
 
 outside=$(printf '%s' "$scope_rows" | SCOPE_LINT_GLOBS="$scope" awk -F '\t' '
 function literal_re(c) {

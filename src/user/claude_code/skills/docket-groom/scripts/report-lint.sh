@@ -12,7 +12,7 @@
 # "up to you", "not re-judged", "did not re-judge", "not yet proposed", "matches
 # its siblings", "check belongs with", "re-run to", "want me to", "let me know".
 # Gate states name their own gap instead: "blocked on the operator: <input
-# needed>", "waiting on <id>", "declined #<n>", "held by protection", or
+# needed>", "waiting on <id or named condition>", "declined #<n>", "held by protection", or
 # "reported limit: <blocker>".
 #
 # Read-only. Exit 0 with no output when the draft holds no hand-back, 1 with

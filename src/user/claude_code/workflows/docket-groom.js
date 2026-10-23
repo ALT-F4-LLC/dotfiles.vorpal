@@ -72,7 +72,11 @@ export const meta = {
 //               other issue the judge's entry
 //               (see LEDGER_SCHEMA) plus the survey facts this script stamps:
 //               id, project, title, kind, size.storedSize, routing.current,
-//               and epic.current. Evidence entries are "<source>: <quote>"
+//               epic.current, and undraftedCriteria ({text, repair} of every
+//               index-0 draft that is placeholder text or names neither a
+//               mutant nor read-verified;
+//               the skill drafts those inline instead of applying them).
+//               Evidence entries are "<source>: <quote>"
 //               strings.
 //   clusters  — [{project, duplicates, epicMatches, epicProposals, notes}]
 //   uncovered — [{what, why}] every issue or project an agent could not cover,
@@ -139,6 +143,8 @@ const ownershipRef = `${skillsRoot}/docket/references/queue-ownership.md`
 const planSkill = `${skillsRoot}/docket-plan/SKILL.md`
 const scopeLint = `${skillsRoot}/docket-groom/scripts/scope-lint.sh`
 const acLint = `${skillsRoot}/docket-groom/scripts/ac-lint.sh`
+// A drafted criterion that is filler, not a contract: the caller drafts it inline.
+const PLACEHOLDER = /drafted for an uncovered|stores no acceptance|not linted|\(drafted\)|^\s*$/i
 const rulings = Array.isArray(input.rulings) ? input.rulings.filter((r) => typeof r === 'string' && r !== '') : []
 const projects = input.projects
 const issues = input.issues
@@ -482,7 +488,8 @@ Rules the schema cannot carry:
 - Every decision, verdict, and repair carries evidence with a source you read. Write each evidence entry as one string, "<source>: <quote>": the source is a file:line, an issue id and comment, a verb and its output, or a run or step id, and the quote is the exact text or value there that supports the claim. Missing evidence is uncertainty, not proof of value or worthlessness. A "clarify" records the smallest question that would settle it under readiness.decisionsNeeded.
 - A needs-design issue's open approach is the run's to settle, not an operator decision: do not list the approach, a flag shape, or "who picks the design" under readiness.decisionsNeeded, and do not recommend an operator pick for it. List a decision only for a fact or constraint the outcome itself needs that no evidence supplies. Draft its criteria at the outcome level, including one that the run records its design decision.
 - Judge criteria individually and as a set. When every criterion is already met at HEAD, the value decision is close with closeReason delivered and each criterion carries metAtHead.
-- Lint what the caller would otherwise lint after writing. Take the HEAD sha from \`git rev-parse HEAD\` in the checkout. Run \`docket issue show ${row.id} --json=v2 | ${scopeLint} --base <sha> --repo ${project.root}\` and record its exit code and reported lines in readiness.scopeLint. For every criterion, pass its text (the repair when you draft one, else the stored text) on stdin through a quoted heredoc: \`${acLint} --base <sha> --repo ${project.root} --shared-base <<'CRITERION'\` ... \`CRITERION\`; record the sha, exit, and lines in that criterion's lint. A repair whose lint exits non-zero is unfinished: rewrite it until the lint exits 0 (cite path:N only with a quoted expression line N contains, or a path with an expression that occurs on exactly one line), and name in notes any repair you could not bring to 0.
+- Lint what the caller would otherwise lint after writing. Take the HEAD sha from \`git rev-parse HEAD\` in the checkout. Run \`docket issue show ${row.id} --json=v2 | ${scopeLint} --base <sha> --repo ${project.root}\` and record its exit code and reported lines in readiness.scopeLint. For every criterion, pass its text (the repair when you draft one, else the stored text) on stdin through a quoted heredoc: \`${acLint} --base <sha> --repo ${project.root} --shared-base <<'CRITERION'\` ... \`CRITERION\`; record the sha, exit, and lines in that criterion's lint; when the output holds "cannot create temp file", record lint "" (it did not run), never 0. A repair whose lint exits non-zero is unfinished: rewrite it until the lint exits 0 (cite path:N only with a quoted expression line N contains, or a path with an expression that occurs on exactly one line), and name in notes any repair you could not bring to 0.
+- A criterion you draft (index 0) is a contract or nothing: both its text and its repair carry the drafted contract, which names the observable outcome, a verify command or read target, and a mutant that would fail it or the read-verified marking the plan skill's mutant rule allows. Never return a placeholder ("drafted for an uncovered requirement", "stores no acceptance criteria", "not linted") as text: when you cannot draft the contract from evidence, return text "" and repair "" with lint "" and say in notes what evidence is missing, so the caller drafts it inline instead of applying filler.
 - Size: tier "oversized" applies on either ground the reference's cap states: two or more independent outcomes, or one outcome past the bounded ceiling (files, directories, or verification surfaces) even with no bundled criterion — read the reference's current ceiling numbers, do not assume the values in this brief. Bias toward finding the split: the reference's own mined evidence is that a wide single-outcome issue costs sharply more and needs extra rounds, so an issue at or past the ceiling is a decomposition to find, not a large-but-legitimate exception. For oversized, fill splitDraft with piece 0 as what the original keeps and one piece per further outcome or file/surface group (whichever ground triggered it), criteria indexes carried verbatim, dependsOn only where one piece cannot start before another. sizeVerdict is "set" when the stored size is null or unknown and the tier is a size value, "correct" when the stored size differs from the tier, "oversized" for the oversized tier, else "ok".
 - Routing: judge the route-* verdict from the reference's rules in the skill's "Missing or stale routing label" finding; "unrouted" when no rule clearly holds or the size is null or unknown, with what would settle it in defense. Compute matches from the registry above against the issue's labels and stored size: labels_any and labels_all must hold when declared, sizes_any must hold when declared, and any unless_labels hit excludes.
 - Epic: name one open epic from the list above only with a one-sentence defense from the epic's title and description, shared relations, files, scope, or recorded decisions; a shared label alone is not a defense. Never propose an epic in another project.
@@ -600,6 +607,9 @@ const results = await pipeline(
             }
             if (e.readOk === false) uncovered.push({ what: `judge ${row.id} (${group.project.name})`, why: e.notes || 'issue could not be read' })
             const labels = Array.isArray(row.labels) ? row.labels : []
+            const draftOf = (c) => [c.text, c.repair].filter((s) => typeof s === "string" && !PLACEHOLDER.test(s)).join(" ")
+            const undrafted = (Array.isArray(e.criteria) ? e.criteria : []).filter((c) => c && c.index === 0 && !/mutant|read-verified/i.test(draftOf(c)))
+            if (undrafted.length) log(`docket-groom: ${row.id} returned ${undrafted.length} drafted criterion(s) that are placeholder text or name neither a mutant nor read-verified; the caller drafts them inline`)
             return {
                 ...e,
                 id: row.id,
@@ -610,6 +620,7 @@ const results = await pipeline(
                 routing: { ...e.routing, current: labels.filter((l) => typeof l === 'string' && l.startsWith('route-')) },
                 epic: { ...e.epic, current: row.parent_id || '' },
                 judged: true,
+                undraftedCriteria: undrafted.map((c) => ({ text: c.text || "", repair: c.repair || "" })),
             }
         }).filter(Boolean)
         return { ...group, entries: judged }

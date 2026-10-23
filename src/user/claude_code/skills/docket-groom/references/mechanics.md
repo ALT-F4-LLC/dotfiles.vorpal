@@ -106,3 +106,37 @@ gap unless it follows one of scope-lint's inspect markers, so name a trusted
 command (`build`, `tests`) rather than its script path when the issue does
 not change that script. Apply only a shape both lints pass; then the
 post-apply lint is a confirmation, not a second drafting round.
+
+## Facts a live pass paid for
+
+- The lint scripts once failed silently under the sandbox: bash 3.2 writes a
+  here-string to a temp file outside TMPDIR, the sandbox refuses that from
+  some working directories (the engine checkout in one session, both in
+  another), and set -e does not stop on the failed redirect, so the loop
+  ran zero times and the script exited 0 having checked nothing. Both
+  scripts now read loop input from files under TMPDIR. Treat "cannot
+  create temp file" in any lint output as a lint that did not run.
+- The gate split between Run-ready and Waiting comes from
+  `scripts/open-deps.sh`, which reads each issue's `depends_on` relations
+  and the live status of every target; a judge's readiness does not see
+  dependency status.
+- Judges return placeholder criterion drafts ("drafted for an uncovered
+  requirement", "not linted") marked lint 0. The workflow logs them and
+  returns them under `undraftedCriteria`; the pass drafts those criteria
+  inline from source before any apply.
+- An advisor result that never arrives is read from the subagent transcript
+  at `~/.claude/projects/<project dir>/<session id>/subagents/agent-<agent
+  id>.jsonl` (the assistant text entries), where the agent id is the spawn
+  result's agentId and the sibling `.meta.json` names the agent's
+  description for finding it; relaunching repeats the work
+  and loses the same way. Three of six results in one pass needed this.
+- A criterion that needs the engine QA suite is operator evidence under this
+  sandbox: `pgrep` exits 3 (no process list), which makes the suite's
+  detached-child wait return at once, and a here-document in the suite is
+  refused. Say so when drafting the criterion, and ask the operator through
+  `AskUserQuestion` to run
+  `bash scripts/qa.sh "$(command -v docket)" <section>` from the engine
+  checkout when the gate needs the result.
+- macOS `grep` has no `-P`; key a tab-separated lookup with
+  `awk -F'\t' -v k="$id" '$1==k'`. Check every helper script on bash 3.2
+  and BSD userland before the pass depends on it.

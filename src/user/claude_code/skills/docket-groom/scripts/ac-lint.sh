@@ -43,6 +43,15 @@
 
 set -euo pipefail
 
+# Loop input goes through files, never here-strings: bash 3.2 writes a
+# here-string to a temp file outside TMPDIR, the sandbox refuses it from
+# some working directories, and set -e does not stop on that failed
+# redirect, so the loop runs zero times and the script exits 0 having
+# checked nothing.
+lint_tmpd=$(mktemp -d "${TMPDIR:-/tmp}/lint.XXXXXX")
+trap 'rm -rf "$lint_tmpd"' EXIT
+lines_of() { local f; f=$(mktemp "$lint_tmpd/l.XXXXXX"); printf '%s\n' "$1" > "$f"; printf '%s' "$f"; }
+
 usage() {
     printf 'usage: ac-lint.sh --base <sha> [--repo <dir>] [--shared-base] [file ...]\n' >&2
     exit 2
@@ -156,7 +165,7 @@ while IFS=$'\037' read -r path from to expr; do
     elif [ "$hits" -gt 1 ]; then
         report "ambiguous: ${cite}: \"${expr}\" occurs on ${hits} lines at ${base}; add a line or a longer expression"
     fi
-done <<<"$citations"
+done < "$(lines_of "$citations")"
 
 # A moving base: on an issue with siblings or dependencies, a Verify command
 # that measures from the merge-base with main, or from bare main, shifts as
@@ -190,8 +199,8 @@ if [ "$shared_base" -eq 1 ]; then
             elif printf '%s\n' "$head" | grep -qE "${git_cmd}(diff|log|rev-list|show|cherry)[^|;&]*${main_ref}"; then
                 report "moving-base: \`${excerpt}\` measures from main, which moves as sibling work lands; record the literal base sha at groom time"
             fi
-        done <<<"$spans"
-    done <<<"$units"
+        done < "$(lines_of "$spans")"
+    done < "$(lines_of "$units")"
 fi
 
 [ "$problems" -eq 0 ] || exit 1

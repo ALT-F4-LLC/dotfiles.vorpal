@@ -1092,7 +1092,10 @@ all splits, repairs, rescopes, re-parents, closures, merges, relation
 corrections, and epic creations the survey supports. For each proposal that
 writes criteria, files, or scope, build the stored shape it would leave in
 scratchpad files and run `scripts/scope-lint.sh` and `scripts/ac-lint.sh`
-on that shape, so the apply needs no second drafting round. When the
+on that shape, so the apply needs no second drafting round. The shape
+scope-lint reads is the whole replacement description, not the criteria
+lines alone: a note under the criteria heading or a backticked script name
+in the prose fails after apply when only the criteria were linted. When the
 session can launch agents, brief the advisor on the whole set as
 soon as it is drafted, with §4a's questions in the same brief, and apply
 §3's safe edits while it runs. That launch is the pass's one advisor
@@ -1219,8 +1222,12 @@ pass back to §3 or §4:
   contract state: §3's rule that grooming verifies the definition, not
   completion, holds here, so a criterion HEAD does not yet satisfy is the
   run's work, while one that cites a path, line, or current behavior HEAD
-  does not have is a §2c defect.
-- **Waiting on a named prerequisite:** complete contract, real `depends_on`.
+  does not have is a §2c defect. Every `depends_on` target is done.
+- **Waiting on a named prerequisite:** complete contract, and a `depends_on`
+  target that is not done, or a condition the body names that no issue
+  can carry (an external capability, a measurement window), stated as such:
+  the ledger quotes the body's condition, and the report words it "waiting
+  on <condition>" and says no relation holds the issue back.
 - **Blocked on the operator:** a decision asked this pass and deferred,
   declined, or unanswered, with the exact input needed recorded.
 - **Retired:** closed or merged on an applied proposal.
@@ -1231,6 +1238,14 @@ pass back to §3 or §4:
 - **Reported limit:** `AskUserQuestion` unavailable, a proposal outdated, a
   mutation failed or uncertain, or evidence unavailable, with the exact
   blocker recorded.
+
+Compute the split between Run-ready and Waiting mechanically, not from the
+judges' readiness: pipe every retained id through `scripts/open-deps.sh
+--checkout <dir>` (one flag per judged checkout) and read each line it
+prints as that row's Waiting detail. A row it prints nothing for is
+Run-ready on this axis unless the ledger records a body-named condition
+for it; a row it marks `unresolved`, or a target it marks `(missing)`, is
+a Reported limit.
 
 Run `scripts/report-lint.sh` on the draft report before sending it. A hit
 is a hand-back: a decision left as "your call", a check "not re-judged", a

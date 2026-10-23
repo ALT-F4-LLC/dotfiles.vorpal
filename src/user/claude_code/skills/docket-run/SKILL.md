@@ -2601,8 +2601,9 @@ issue for a finding with no home is clear when the advisor names it: file
 it in the owning project, unbound from the run, with the advisor's answer
 quoted in its body, unless the goal or a recorded ruling forbids new
 issues; it never lowers a security label. Narrowing or dropping an
-acceptance criterion, and amending an issue's scope, are never clear; a
-split that keeps every condition is clear when the advisor names it.
+acceptance criterion, and amending an issue's scope, are not settled by
+this ruling: they reach the operator with the advisor's pick. A split that
+keeps every condition is clear when the advisor names it.
 
 **A session that cannot launch the `advisor` agent sends every such decision to the
 operator.** Say so in the question.

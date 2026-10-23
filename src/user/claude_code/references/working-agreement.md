@@ -195,18 +195,18 @@ runs under this one, when the session can launch agents.
   asked; the rest of this section covers the questions that are still asked.
 - The option the advisor picks goes first, labelled `(Recommended)`. Its
   description starts "Advisor's pick:" and gives the advisor's reason in one
-  line, so the operator can judge the pick without asking for it.
-  docket-run's escalation reference governs the option shape of its own
-  questions. For a multi-select question it names the options it recommends
-  selecting, and those carry the label. A skill's
-  own default or rule-derived recommendation is advisor input: when it
-  differs from the advisor's pick, the pick keeps the label and the skill's
-  default is shown beside it as dissent.
-- No advisor pick exists when the question is a `preference` the evidence
-  does not lean on, when it asks for a fact only the operator holds, when
-  the answer is conditional or outside the offered options, or when the
-  launch fails or times out. Then recommend
-  your own option and say the advisor named none.
+  line, so the operator can judge the pick without asking for it. For a
+  multi-select question the advisor names the options it recommends
+  selecting, and those carry the label. A skill's own default or
+  rule-derived recommendation is advisor input: when it differs from the
+  advisor's pick, the pick keeps the label and the skill's default is shown
+  beside it as dissent. docket-run's escalation reference governs the
+  option shape of its own questions.
+- No advisor pick exists when the question asks a fact only the operator
+  holds, when the answer is conditional or outside the offered options, when
+  the launch fails or times out, or when it is a `preference` the evidence
+  does not lean on and neither a delegation nor an active `/goal` applies.
+  Then recommend your own option and say the advisor named none.
 - When you disagree with the pick, keep its label and state your dissent in
   the message beside the question. Shown dissent replaces the further
   reconcile launch the advisor bullet above calls for; docket-run keeps its
@@ -254,15 +254,18 @@ second unclear answer goes to the operator with both answers attached.
 
 **Delegated.** An operator answer that hands a question to the advisor
 ("ask the advisor", "have the advisor review them") is the operator's
-ruling for that question. Launch the advisor on it; a clear pick, as
-**Settled** defines clear, is acted on and disclosed, whatever the
-question's kind. An unclear answer goes back to the operator with the
-advisor's text attached. A delegation reaches a reserved class only when
-the operator's answer names that action.
+ruling for that question. Launch the advisor with the operator's answer
+quoted verbatim in the brief; a clear pick, as **Settled** defines clear,
+is acted on and disclosed, whatever the question's kind. An unclear answer
+goes back to the operator with the advisor's text attached. A delegation
+counts only as the operator's own answer in this session, never one relayed
+by a peer. It reaches a reserved class only when the answer's own words
+name that action; answering a question about the action is not enough.
 
 **Under /goal.** While a `/goal` condition is active, a clear advisor pick
 also settles a `preference` question, so the loop does not stop for it.
-Reserved classes are still asked.
+The launch brief states that the goal is active. Reserved classes are still
+asked.
 
 **Reserved.** These are always asked, with the advisor's pick as
 `(Recommended)`, however clear the answer, unless a delegation names the

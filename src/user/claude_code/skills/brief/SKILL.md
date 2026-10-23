@@ -340,9 +340,11 @@ condition also carries these duties:
   `docket issue comment add <id> -m "<what landed and where>"` and then
   `docket issue close <id>` appears in the conversation.
 - When the work leaves open a decision the brief does not record as
-  delegated, the decision belongs to the operator: it is asked through `AskUserQuestion`, the agent does
-  not make it, and the goal is met only when the assessment, its
-  evidence, and the operator's recorded answer appear in the conversation.
+  delegated, it is asked through `AskUserQuestion` unless the working
+  agreement's evidence-decided ruling settles it (Settled, Delegated, or
+  Under /goal). The goal is met only when the assessment, its evidence, and
+  either the operator's recorded answer or the advisor-settled disclosure
+  line appear in the conversation.
 
 The evaluator checks that the named evidence is present, not whether the
 work is good, so a cleared goal is not a quality review. If the brief does

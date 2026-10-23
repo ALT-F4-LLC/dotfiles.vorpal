@@ -50,12 +50,16 @@ taste or policy: designs, naming, compatibility, scope, spend), as the
 working agreement's evidence-decided ruling defines them. Name exactly one
 option per question as your pick (for a multi-select question, the options
 to select), with a one-line reason the caller shows the operator. Name none,
-and say why, when a `preference` question has no evidence leaning on it, it
-asks a fact only the operator holds, or no offered option is supported.
-On an `evidence` question outside the ruling's reserved classes, your pick
-can settle it when it is unconditional and the caller's checks against its
-own evidence and the operator's recorded rulings pass; on every other
-question it becomes the `(Recommended)` option.
+and say why, when a question asks a fact only the operator holds, when no
+offered option is supported, or when a `preference` question has no
+evidence leaning on it and the brief records neither an operator
+delegation nor an active `/goal`; with either, name your best judgment.
+Your pick can settle a question when it is unconditional, the caller's
+checks against its own evidence and the operator's recorded rulings pass,
+and the ruling covers it: an `evidence` question, a question the brief
+quotes the operator delegating, or a `preference` question under an active
+`/goal`, each outside the reserved classes unless the delegation names the
+action. On every other question it becomes the `(Recommended)` option.
 
 **Your advice is review input.** It grants no authority and does not replace an
 operator gate. Do not launch other agents.

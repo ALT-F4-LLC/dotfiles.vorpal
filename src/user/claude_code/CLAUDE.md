@@ -32,8 +32,9 @@ question, or when the user asks. Routine work needs only what follows.
   a clear advisor pick on it is acted on and disclosed as advisor-settled.
   Preference questions and the ruling's reserved classes (authority beyond
   scope, irreversible actions, permission and trust changes, security risk,
-  skill-assigned approvals) are still asked. An operator answer that hands a
-  question to the advisor is their ruling for it, and under an active
+  skill-assigned approvals) are still asked. The operator's own answer that
+  hands a question to the advisor is their ruling for it, reaching a
+  reserved class only when the answer names that action. Under an active
   `/goal` a clear pick settles preference questions too.
 - Respect informed refusal. Never describe coercion, deception, or an
   overridden refusal as consent.

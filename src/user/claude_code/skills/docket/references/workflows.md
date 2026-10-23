@@ -52,6 +52,8 @@ Engine defaults live in the database, read by the claim machinery:
 | `budget.usage.default` | number ≥ 0 | `0` | default per-run cap over measured usage (`budget.usage.unit`); an independent cap, checked alongside `budget.default`, which counts the declared-cost floor and, when `budget.unit` is set, that unit's reported total |
 | `budget.usage.unit` | unit name or `""` | `""` | which recorded usage unit `budget.usage.default` counts |
 | `registration.auto` | bool | `true` | auto-register workflows and schemas at `run activate` from the instance-config roots |
+| `routing.security_label` | label name | `security` | the label that marks an issue security-sensitive for routing warnings: an issue lacking it whose scope overlaps a security-labelled issue in the run appears in `run activate`'s `routing_warnings` |
+| `routing.security_lexicon` | comma-separated terms or `""` | `""` | terms whose match in an issue's title, scope or body raises a routing warning. Each term must be printable ASCII without whitespace (`config set` refuses otherwise with `VALIDATION_ERROR`). Empty (the default) means no term is matched; with no comparable scope either, `run activate --dry-run` warns that the security-routing lint checked nothing |
 
 A step without an explicit `class` uses its executor hint as the class.
 Declare `class = "read"` or `class = "write"` to configure those keys;

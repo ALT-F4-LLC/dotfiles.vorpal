@@ -87,10 +87,10 @@ and stop, do not retry, and do not guess at a similar name.
 
 ## Invocations
 
-- **`/peer`** (bare): join. Run the naming script, compare its output with
-  the listing's first line, and ask the operator through `AskUserQuestion`
-  to `/rename` on a
-  mismatch. Then list the peers in one line each, name and status. Joining
+- **`/peer`** (bare): join. Run the naming script and compare its output
+  with the listing's first line. On a mismatch, state the exact `/rename
+  <name>` command in one line as an instruction, not a question, and
+  continue. Then list the peers in one line each, name and status. Joining
   sends nothing: an announcement would start a turn in every idle peer, and
   the operator sees the new session in `/peers` already.
 - **`/peer list`**: the listing, one line per peer with name, status, and

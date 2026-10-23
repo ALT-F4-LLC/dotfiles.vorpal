@@ -105,6 +105,15 @@ every lane's gate). A tree state failing only writer lanes does not hold
 the launch: launch, name those lanes in the notification, and let the
 standing machine-caused-gate-failure ruling answer their parks once fixed.
 
+**A refused conductor-side script is one boundary question, not a retry
+loop.** When the auto-mode classifier or a permission rule refuses a script
+this skill ships (`lane_units.py`, `gate_repro.sh`, and the like), do not
+retry it, reword it, or ask a peer to change permissions. It is a
+permission matter (**Reserved to the operator**): it goes advisor-first,
+then into the one open boundary question (queued in unattended mode),
+carrying the exact command, the allow-rule text that would admit it, and
+the `! <command>` alternative the operator can run.
+
 **Helpers.** An `Agent` you spawn is visible only through its completion
 notification and `SendMessage`; its idle notification is not an event.
 `TaskStop` it the moment its report is in hand. A helper never runs an
@@ -2578,6 +2587,22 @@ quotes the advisor's answer, never your summary of it.
 **Report every advisor-settled decision in your next status report, one
 line each:** the step or run, the disposition, the verb run, and the
 advisor's answer quoted.
+
+**Review waiting decisions in one batch.** When several parks or held rows
+wait at once, one advisor launch carries all of them and returns a
+disposition and one-line reason per item. Settle each clear item as above;
+the rest join the one open question, a ruling per labelled item.
+
+**Holds and follow-ups.** Holding a step and releasing a conductor-placed
+hold are engine verbs this ruling already covers. Releasing a hold the
+operator placed (an operator note, or `run hold-issue` on the operator's
+note) is not clear: it contradicts a recorded ruling. Filing a follow-up
+issue for a finding with no home is clear when the advisor names it: file
+it in the owning project, unbound from the run, with the advisor's answer
+quoted in its body, unless the goal or a recorded ruling forbids new
+issues; it never lowers a security label. Narrowing or dropping an
+acceptance criterion, and amending an issue's scope, stay with the
+operator; a split that keeps every condition may be settled.
 
 **A session that cannot launch the `advisor` agent sends every such decision to the
 operator.** Say so in the question.

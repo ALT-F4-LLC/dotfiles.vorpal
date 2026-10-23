@@ -162,8 +162,10 @@ authority separately. Preserve independently demonstrated violations from a
 partially blocked run. If the cause remains uncertain or a control is absent,
 state that limit rather than claiming an environmental diagnosis. Gap the
 missing evidence or capability and name the smallest authorized runner or
-operator action needed; do not broaden the sandbox or execute a control
-yourself.
+operator action needed, with the option you recommend and its evidence
+(for example, rerun the gate with the named service available); do not
+broaden the sandbox or execute a control yourself, and never recommend a
+sandbox, permission, or trust change.
 
 **Separate scope limits from AC results.** Inspect permitted evidence before
 calling a requirement incompatible with the plan: a file outside write scope

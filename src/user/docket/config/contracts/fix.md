@@ -269,7 +269,10 @@ Gap the dependent work when required inputs are missing, requirements remain
 irreconcilable, a correct repair exceeds this role's scope, or a finding can
 neither be reproduced nor rebutted with sufficient evidence. Name the
 affected IDs, what you established, and the smallest decision, scope change,
-or evidence needed from the conductor or operator. Continue independent
+or evidence needed from the conductor or operator. When it is a decision,
+list the options the evidence supports and name the one you recommend with
+its evidence; the recommendation is input to whoever decides, and it is
+never a sandbox, permission, or trust change. Continue independent
 authorized work unless an execution rule requires stopping the step; never
 represent the blocked portion as closed.
 

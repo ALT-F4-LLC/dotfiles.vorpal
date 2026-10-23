@@ -26,8 +26,9 @@ drift only, not changes to runtime semantics or JSON response shapes.
 The docket-cli-audit skill's sweep records those in
 [../docket-cli-audit/references/cli-fixtures.json](../docket-cli-audit/references/cli-fixtures.json):
 it drives every inventoried command against a scratch store and keeps each
-exit code, message and both JSON dialects. The JSON envelope table and
-behavioral notes below were checked against that same build's fixtures; a
+exit code, message and both JSON dialects. The JSON envelope table below
+was checked against the `nightly-37-gce50f60` fixtures, the behavioral notes
+against an earlier build's; a
 flag path the swept scenario did not exercise remains a previously-observed
 claim, not a re-checked one. Run `/docket-cli-audit` after a CLI upgrade: it audits the
 prose against both and files an issue to refresh them.
@@ -132,7 +133,7 @@ core shapes, not exhaustive field lists; additive fields can appear.
 | `issue list` | `{issues: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `step list --run RUN-N` | `{steps: [...], total: <int>}` | `{items: [...], total, truncated}` |
 | `run status` (no id) | `{runs: [...], total: <int>}` | `{items: [...], total, truncated}` |
-| `run status RUN-N` | `{run: {...}, issues: <int>, steps: [...], pins: [...]}` | identical |
+| `run status RUN-N` | `{run: {...}, issues: <int>, steps: [...], pins: [...], activation_head: {branch, commit}}`; a run in `planning` returns `{run, issues: <int>, unexpanded: [{issue, status, blocked_by: [[{issue, status}]]}]}` instead (`blocked_by` is a nested array), and `steps`, `pins` and `activation_head` appear once the run is activated | identical |
 | `run budget RUN-N` | `{run, budget, source, floor, reported, spend, row_version}` | identical |
 | `step artifact ARTIFACT-N --payload` | the payload itself — array or object; `NOT_FOUND` (not `data: null`) when the artifact has no structured payload | identical |
 | `step artifact ARTIFACT-N` (no `--payload`) | `{artifact, kind, producer, body, bytes, sha256, created_at_ms}`, plus `payload` and `payload_bytes` only when the artifact has a structured payload | identical |

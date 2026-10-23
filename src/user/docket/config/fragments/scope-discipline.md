@@ -58,7 +58,9 @@ authorize it. Disclosure records a deviation; it does not authorize one.
   permitted evidence that could resolve missing input or an apparent conflict.
   If it remains, state exactly what is unknown or forbidden, what work it
   blocks, and the smallest decision or evidence needed from the named owner.
-  Stop that dependent work and complete independent authorized work. Do not
+  For a decision, list the options the evidence supports and name the one
+  you recommend with its evidence; never recommend a sandbox, permission, or
+  trust change. Stop that dependent work and complete independent authorized work. Do not
   invent a contract or implement several incompatible readings. An honest gap
   is a valid outcome for the blocked portion, never evidence that its
   acceptance criteria passed.

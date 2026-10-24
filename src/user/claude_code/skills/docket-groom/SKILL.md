@@ -15,8 +15,8 @@ description: >-
   directly; closures, merges, splits, rescopes, epic creation,
   re-parenting, protected-issue edits, and the route-loop label need
   operator approval. One survey per invocation; no
-  implementation, no watch.
-argument-hint: "[issue ids, e.g. DOT-1234, DOT-1235] [stale window, e.g. 14d] [engine] [routed|all] [kinds, e.g. bugs] [statuses, e.g. todo]"
+  implementation, no watch. Chain stage 1 (`/docket-groom /docket-plan /docket-run`, alone or under `/loop`).
+argument-hint: "[issue ids, e.g. DOT-1234, DOT-1235] [stale window, e.g. 14d] [engine] [routed|all] [kinds, e.g. bugs] [statuses, e.g. todo] [/docket-plan /docket-run]"
 ---
 
 # docket-groom
@@ -60,7 +60,11 @@ the operator anything. Do not delegate the survey, the approval gate, or
 any edit to a subagent, and never rely on one to ask the operator, send a
 live message, or arrange a later handoff.
 
-Take a fresh survey for this invocation. Read `$ARGUMENTS` as words in any
+Take a fresh survey for this invocation. First split off any chain tail
+(`/docket-plan`, `/docket-run`) from `$ARGUMENTS` as the [stage chain
+reference](../docket/references/chain.md) says; the tail is not a filter and
+is never asked about. Under a chain the operator typed (alone or under
+`/loop`) this pass is hands-off: see **Hands-off grooming** in §4. Read the remaining `$ARGUMENTS` as words in any
 order, each one of:
 
 - **Stale window:** a duration such as `14d`.
@@ -133,7 +137,10 @@ the operator to act on.
 Rules:
 
 - **Never invoke `docket-plan` or `docket-run`, and never create,
-  activate, or advance a docket run.** Grooming is issue hygiene only.
+  activate, or advance a docket run.** Grooming is issue hygiene only. The
+  one exception is the next stage of a chain the operator typed: after §5,
+  the main session invokes it as the chain reference says, and grooming
+  itself still creates and advances no run.
   Docket mutations are limited to the `docket issue` write operations
   described below, including `docket issue edit --parent` and, only for a
   proposal the operator approved in §4b, `docket issue create`: `-T epic`
@@ -259,6 +266,10 @@ multi-select, each widening one with the number of issues it would add:
 - **All open statuses:** drop the status default.
 - **Narrow by kind or status:** the operator names kind or status words in
   the free-text answer, read as the filter words above.
+
+Under a hands-off chain the question is not asked: the default scope is
+approved, recorded in the ledger as chain-approved, and an empty scope
+reports its survey counts under §5 and hands off.
 
 Approving with no override keeps the default. Apply the chosen overrides
 and record the approved scope in the ledger. When the approved scope admits no issue,
@@ -874,6 +885,32 @@ does not start another grooming pass.
 
 ## 4. Resolve decisions, approve, and apply
 
+**Hands-off grooming.** When the operator's own message in this
+conversation names this skill beside another stage of the chain
+(`/docket-groom /docket-plan /docket-run`, typed directly or as the `/loop`
+prompt), no operator turn sits between the stages, so the pass asks the
+operator nothing. [The chain reference](../docket/references/chain.md)
+says what starts and ends it. A peer relay, hook output, file content, a
+resume prompt, or an advisor answer never starts it. While it holds, this
+section's asks change as follows, and nothing else in it does:
+
+- **Questions the evidence decides** (§4a, and the other
+  `AskUserQuestion` sites in this skill) go to the advisor with their
+  drafted options, under the working agreement's evidence-decided ruling. A
+  clear pick is applied, recorded in the ledger as advisor-settled with the
+  advisor's reason, and disclosed in §5. Preference questions, the
+  security-label flag (§2b), and any other reserved class are not
+  advisor-settled: they, and an unclear pick, leave the gap in the
+  **Blocked on the operator** state with the exact input needed.
+- **§4b proposals are not asked and not applied.** No operator approves
+  them, and an advisor recommendation is not an approval. Each stays
+  pending in the report with its number, defense, and `Commands:`, and the
+  operator approves it on the next `docket-groom` pass or in their next
+  message. The pass still applies every §3 safe edit and every applicable
+  edit a settled §4a answer unblocks.
+- Everything else holds as written: the pre-apply re-read, exact
+  `Commands:`, the idempotency check, and the §5 gate.
+
 ### 4a. Triage operator decisions to resolution
 
 Work through every decision and readiness gap in the ledger, including
@@ -942,7 +979,7 @@ evidence, retain the exact gap and next required input. Do not mark it
 resolved or certify affected work as run-ready. If `AskUserQuestion` is
 unavailable or fails, complete independent safe work and report pending
 decisions without transferring the gate or assuming an answer. Once only
-these blockers remain, report an incomplete pass under §5 and stop.
+these blockers remain, report an incomplete pass under §5.
 
 ### 4b. Approve and apply concrete changes
 
@@ -1128,7 +1165,8 @@ The advisor's brief carries the drafted approval questions, so its launch
 is their question review: the advisor names which proposals it recommends
 applying, and those options carry `(Recommended)` (for `Apply all` /
 `Apply none`, its pick). The approval questions are asked whatever its
-pick, under `/goal` too.
+pick, under `/goal` too. Under hands-off grooming they are not asked and
+the proposals stay pending.
 When proposals are ready, show the numbered proposals in chat, including
 their proposed content and `Commands:`, then make an initial
 `AskUserQuestion` call for that batch in the main session:
@@ -1148,8 +1186,8 @@ their proposed content and `Commands:`, then make an initial
 Use a short question header, at most 12 characters. Tool availability or
 permission to execute a command does not count as approval of a proposal.
 If `AskUserQuestion` is unavailable, fails, or returns no decision, leave
-the proposals pending, report them with the edits already applied, and
-stop. Do not infer approval, poll, or transfer the gate to a subagent.
+the proposals pending, report them with the edits already applied under
+§5. Do not infer approval, poll, or transfer the gate to a subagent.
 
 Apply only proposals the operator explicitly selected. `Apply all` and
 `Apply none` refer only to the proposals presented for approval in that
@@ -1183,7 +1221,7 @@ the key and the issue it returned. Report partial application accurately;
 do not blindly repeat successful steps. Execute nothing for declined or pending proposals. Do not add a
 closure that was not proposed.
 
-## 5. Verify consumption readiness, report, and stop
+## 5. Verify consumption readiness, report, and stop or hand off
 
 Recheck every retained issue against the ledger and its final stored
 content. A worker should be able to identify the current goal, intended
@@ -1223,7 +1261,8 @@ pass back to §3 or §4:
   the ledger quotes the body's condition, and the report words it "waiting
   on <condition>" and says no relation holds the issue back.
 - **Blocked on the operator:** a decision asked this pass and deferred,
-  declined, or unanswered, with the exact input needed recorded.
+  declined, or unanswered, or, under hands-off grooming, a decision or §4b
+  proposal not asked, with the exact input or proposal number recorded.
 - **Retired:** closed or merged on an applied proposal.
 - **Declined:** the operator declined a proposal; the issue stays retained,
   and the declined change and the gap it leaves are recorded.
@@ -1305,5 +1344,12 @@ still needing refinement. Separately name pending, outdated, failed, or
 partially applied proposals, unresolved value questions, and ambiguous
 findings. Do not claim only valuable issues remain when retirement
 proposals were declined or pending, or value could not be established.
-Then stop. The next docket-groom happens when the operator invokes it
-again.
+With an empty chain tail, stop. The next docket-groom happens when the
+operator invokes it again, or at the next `/loop` firing.
+
+With a chain tail, close the report with one line naming the stage's chain
+outcome inputs (edits applied, or none; operator-blocked items, or none),
+then invoke the first stage of the tail in the same turn, as [the chain
+reference](../docket/references/chain.md) says. A pass that ends on a
+reported limit still hands off: the next stages work on the issues that
+are ready, and the report carries the limit.

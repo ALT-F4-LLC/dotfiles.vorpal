@@ -68,6 +68,7 @@ jobs:
 
       - run: sudo apt-get update && sudo apt-get install -y zsh
 
+      - run: bash tests/docket-chain-skill.test.sh
       - run: bash tests/docket-run-skill.test.sh
       - run: bash tests/docket-run-usage-join.test.sh
 

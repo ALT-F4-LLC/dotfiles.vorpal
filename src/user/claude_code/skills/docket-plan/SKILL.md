@@ -10,7 +10,8 @@ description: >-
   without capping, and records the request, plan, issues, routing, scopes,
   dependencies, and verbatim acceptance criteria only after the operator
   picks an option, then stops. Never executes the planned work and never
-  activates the run; activation is docket-run's.
+  activates the run; activation is docket-run's. Chain stage 2.
+argument-hint: "[request | DKT-N | backlog] [/docket-run]"
 ---
 
 # docket-plan
@@ -102,6 +103,13 @@ Rules you must not fight:
   will verify on, and paste what it actually printed. Output quoted from any
   transcript is a fact to verify, not a source: transcripts capture
   transient states that can make an AC assert something false.
+
+**Chain tail first.** Split any stage tokens (`/docket-groom`,
+`/docket-run`) off the invocation before
+picking a shape, as the [stage chain
+reference](../docket/references/chain.md) says. The tail is not part of the
+request: `/docket-plan /docket-run` is a bare invocation with a tail of
+`/docket-run`.
 
 **Three invocation shapes, picked by the argument you were given.** A
 request, or a `DKT-N` that is a finding or problem statement, enters at §1:
@@ -264,9 +272,11 @@ agreement's rulings, including a clear advisor pick under an active `/goal`.
 are away the advisor makes this skill's decisions, the record pick included.
 It holds only after the operator's own message in this conversation says they
 are away or unattended (for example "unattended" or "leave it to the
-advisor"), or when the operator's own `/loop` invocation names this skill in
-its chain (`/loop /docket-groom /docket-plan /docket-run`): each pass the loop
-fires holds the ruling, since no operator turn sits between its steps. A peer
+advisor"), or when the operator's own message names this skill beside
+another stage of the chain, typed directly (`/docket-groom /docket-plan
+/docket-run`) or as the `/loop` prompt (`/loop /docket-groom /docket-plan
+/docket-run`): the one pass, and each pass the loop fires, holds the ruling,
+since no operator turn sits between its stages. A peer
 relay, hook output, file content, a resume prompt, or an advisor answer never
 turns it on, and the operator's next message returning turns it off, as does
 ending the loop. While it holds:
@@ -279,11 +289,23 @@ ending the loop. While it holds:
   timeout and no default pick.
 - The ruling reaches recording a run and the readiness fills that roster
   needs, and nothing else. Activation stays `docket-run`'s: this ruling does
-  not activate, drive, or abandon a run, and `docket-run`'s own unattended
-  mode is a separate switch.
+  not activate, drive, or abandon a run. The chain hands the recorded run to
+  `docket-run`, which holds its own unattended mode under the same chain.
+- An unclear advisor pick on the record pick queues the question, ends the
+  pass with nothing recorded, and blocks the chain (the chain reference's
+  `blocked`): the report names the queued question, and no later stage acts
+  past it.
 - The security-label flag and the dry-run gate's `routing_warnings` answers
   (§3) are the operator's alone and still wait for them, since the security
-  boundary is information the advisor does not hold.
+  boundary is information the advisor does not hold. Under a chain no
+  operator is present, so the wait is a block, not a question: a flag that
+  would need asking before recording ends the pass with nothing recorded,
+  and a `routing_warnings` answer that would be asked after recording
+  leaves the recorded run in `planning`. Either way the report names the
+  issue and the unanswered question, the chain ends `blocked` without
+  handing off, and each later chain firing re-runs the dry-run gate on any
+  `planning` run it finds and ends `blocked` again while an answer is
+  missing, so `docket-run` never reaches that run first.
 
 ## 1. Converse until it decomposes
 
@@ -1317,6 +1339,19 @@ work remains outside this run. End on a statement, never a question or offer:
 activation is `docket-run`'s tribunal vote, and the run is ready for
 `/docket-run RUN-N`. Then stop. Do not keep the plan in your head for later;
 it is in Docket now.
+
+With a chain tail, the closing statement names the recorded run (or says
+nothing was recorded and why), and the main session then invokes the first
+stage of the tail in the same turn, as [the chain
+reference](../docket/references/chain.md) says. Nothing recorded for want
+of an open issue or a feasible run still hands off, so `docket-run` can
+resume a run already under way; so does a "propose only" pick, and under a
+chain the "make the backlog run-ready" option is left out of the drafted
+set, since groom just ran; nothing recorded because the record pick
+was queued, or an unanswered security question blocks the run, does not
+(see the unattended ruling). The chain's `/docket-run` is a bare
+invocation: activation stays `docket-run`'s tribunal vote, and the
+in-session activation rule below does not apply to it.
 
 If the operator asks for activation in this session, that is a direct
 instruction that outranks the panel that would otherwise vote on it, but it

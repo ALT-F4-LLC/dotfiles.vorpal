@@ -63,6 +63,22 @@ looks like cruft and is not (Leave alone).
   https://sive.rs/book/PoSD summarizes Ousterhout: comments should carry
   what the code cannot.
 
+### Trailing restating comment
+- Signal: an end-of-line comment that repeats the identifier or value on its
+  line (`errorStyle = style.Error // red`, `retries = 3 // retries`,
+  `return nil // success`). A line-leading grep misses it: search
+  `\S\s+(//|#)\s+\w+$` and compare each hit with the code to its left.
+- Why: it says nothing the code does not, and it goes stale first. A comment
+  that names a token as "dim" while the token is now "faint" is wrong
+  information.
+- Simplification: delete the comment, keeping the code on its line.
+- Risk: a trailing comment that carries a unit, a reason, or a pointer to an
+  external rule (`timeout = 30 // seconds`, `// per RFC 7230`) is load-bearing.
+  Delete only a comment that adds nothing beyond the adjacent code.
+- Proof: `inert`.
+- Source: https://managed-code.com/blog-post/ai-slop-in-code (comments that
+  restate what code does).
+
 ### Section-divider banner
 - Signal: `^\s*(//|#|/\*)\s*[-=*#]{5,}`, often bracketing a titled block.
 - Why: visual noise that indentation and function boundaries already
@@ -306,6 +322,42 @@ looks like cruft and is not (Leave alone).
   calls unchanged); https://sourcemaking.com/refactoring/smells (Middle
   Man).
 
+### Needless wrapper layer
+- Signal: a type or class whose methods only delegate to one wrapped value
+  (`Service` calls `Manager` calls `Helper`, each method one call deep), or a
+  layer that adds no validation, translation, state, or policy. Count the
+  frames a call passes through before real work starts: more than two with
+  nothing added is the signal.
+- Why: every layer is a name, a file, and a hop to trace. Generated code
+  stacks layers because each prompt added one.
+- Simplification: have the callers use the wrapped value directly and delete
+  the layer. Collapse the chain one layer at a time, from the outside in.
+- Risk: a layer that is a test seam, a published export, an interface the
+  caller must not see past, or a boundary that translates errors or types is
+  not a pass-through. Check the test tree for doubles of the layer before
+  removing it. A single function is a Forwarding wrapper instead.
+- Proof: `probe` at each caller.
+- Source: https://sive.rs/book/PoSD (pass-through methods and shallow
+  modules); https://managed-code.com/blog-post/ai-slop-in-code.
+
+### Speculative option
+- Signal: a parameter, option, config field, or functional option that every
+  call site passes the same value for, or that nothing outside its
+  definition sets or reads (`WithTimeout` never called, an options struct
+  field always left zero), added "in case" a caller needs it.
+- Why: configurability nobody uses is a branch to read and a combination to
+  test. Fowler's Speculative Generality.
+- Simplification: delete the option and inline the one value every caller
+  uses, or delete the field and the branch it controls.
+- Risk: an option read from a file, the environment, or a flag is
+  configuration, which is frozen; an option on a published export is a
+  contract. Both stay. Search the whole tree, tests included, for every
+  setter before removing.
+- Proof: `probe` where the option is read in live code, `reachability` when
+  nothing sets or reads it.
+- Source: https://sourcemaking.com/refactoring/smells (Speculative
+  Generality).
+
 ### Single-implementation interface
 - Signal: an interface, trait, abstract class, or protocol with exactly one
   implementer in the tree, often named `Foo` and `FooImpl`.
@@ -519,6 +571,22 @@ looks like cruft and is not (Leave alone).
 - Source: https://refactoring.com/catalog/ (Consolidate Conditional
   Expression).
 
+### Duplicate helper in one module
+- Signal: two helpers in the same file or package with the same body up to
+  names and whitespace (a second `clamp`, a second `truncate`, two
+  `contains` loops). The cross-file entry misses them because no file
+  boundary separates the copies.
+- Why: the second was written without scrolling to the first. Divergence
+  hides in the later fix that reached only one copy.
+- Simplification: keep the copy with more callers or a test, redirect the
+  others to it, delete the rest. When the language has the helper in its
+  standard library, use that instead (see Hand-rolled standard library).
+- Risk: diff the copies line by line. When they differ in edge behavior
+  (rounding, empty input, trimming) they are not duplicates.
+- Proof: `probe` at every redirected caller.
+- Source: https://www.gitclear.com/the_ai_code_quality_maintainability_gap
+  (block duplication).
+
 ### Same concern three ways
 - Signal: pagination, error formatting, or validation implemented
   differently in three or more files, each internally consistent.
@@ -565,6 +633,29 @@ looks like cruft and is not (Leave alone).
 - Proof: `probe`.
 - Source: https://refactoring.com/catalog/ (Replace Nested Conditional with
   Guard Clauses).
+
+### Over-defensive error handling
+- Signal: error handling that guards against what cannot happen or has
+  already been handled. A `try` around code that cannot throw; an error
+  check on a call documented to never fail (writing to a `strings.Builder`,
+  `Close` on a handle already closed by `defer`); a check for a value the
+  type or an earlier line already rules out; a recover that re-raises
+  unchanged. An error logged and then returned, so the caller logs it again,
+  is report only: removing a log write changes a side effect.
+- Why: the unreachable branches inflate every complexity metric, and an
+  error logged at every layer buries the one that matters. GitClear measured
+  error-masking constructs rising 47% in generated code.
+- Simplification: remove the guard when the type system or the callee's
+  contract proves it dead.
+- Risk: a check on data that crossed a trust boundary is defensive on
+  purpose (see Leave alone). A callee whose contract the language does not
+  enforce, a branch a test pins, and a log line a downstream parser reads
+  stay. A swallowed error (empty catch) is not this entry; it is report
+  only.
+- Proof: `reachability` where the compiler enforces the guarantee; `probe`
+  where only a callee's contract does.
+- Source: https://www.gitclear.com/the_ai_code_quality_maintainability_gap;
+  https://dev.to/tauridev/does-ai-generated-code-silently-swallow-errors-120-measured-generations-every-flagged-case-was-a-241p.
 
 ### Rewrapping try/catch
 - Signal: a `try` around one call whose `catch` throws a new error with
@@ -680,6 +771,28 @@ looks like cruft and is not (Leave alone).
   behavior change. Search every read.
 - Proof: `probe`.
 - Source: https://sourcemaking.com/refactoring/smells (Temporary Field).
+
+### Redundant type
+- Signal: a type alias used once (`type Name = string` with one use); a named
+  struct or class wrapping one field and used only to carry it; an
+  interface that repeats a concrete type's whole method set with one
+  implementer and no double; an explicit type annotation or type argument
+  the compiler infers identically.
+- Why: a name to learn that carries no meaning the underlying type did not,
+  and a conversion at each boundary.
+- Simplification: use the underlying type and delete the alias, wrapper, or
+  annotation. Update every in-repo use in the same change.
+- Risk: a distinct type that stops two values of the same shape being mixed
+  up (`UserID` versus `OrderID`), carries methods, or serializes under its
+  own name is not redundant. A type on a published export or a wire shape is
+  frozen. A redundant annotation is removable only where the compiler
+  (or type checker) accepts the code without it, and never where the
+  language reads annotations at runtime (Python dataclass, pydantic, attrs,
+  and `get_type_hints` fields; TypeScript `emitDecoratorMetadata`).
+- Proof: `inert` for an annotation or type argument the build still accepts;
+  `probe` for an alias or wrapper type.
+- Source: https://sourcemaking.com/refactoring/smells (Data Class, Lazy
+  Class); https://managed-code.com/blog-post/ai-slop-in-code.
 
 ### Flag argument
 - Signal: a boolean parameter that selects between two behaviors, with

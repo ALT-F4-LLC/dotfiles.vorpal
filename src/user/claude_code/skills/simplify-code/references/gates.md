@@ -219,9 +219,8 @@ every tick.
 
 - `simplify-ledger.md`: the [ledger](#ledger).
 - `simplify-findings.md`: the [findings queue](#findings-queue).
-- `simplify-state.md`: one line, `depth: <simple|standard|deep>`, written
-  when the depth is first resolved. A missing or unreadable file means
-  `simple`.
+- `simplify-state.md`: one line, `surveyed-head: <sha>`, the HEAD the last
+  survey covered; a missing file means survey every shard.
 
 ## Findings queue
 

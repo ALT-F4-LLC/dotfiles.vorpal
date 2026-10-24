@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Behavior suite for simplify-code.js's pure decisions: the per-depth agent
-# caps, argument parsing, which paths can be units, how scout returns merge and
-# rank, which refuted items survive, and which model and effort each seat gets.
+# Behavior suite for simplify-code.js's pure decisions: which shards are
+# scouted, argument parsing, which paths can be units, how scout returns merge
+# and rank, how units batch for refuters, which refuted items survive, and which
+# model and effort each seat gets.
 # It also pins the skill's contract: read-only on the checkout, with Docket
 # issues as its only output.
 #
@@ -10,8 +11,8 @@
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it never runs a workflow.
 #
-# WHY THIS EXISTS. The skill hands a discovery round a named depth and trusts
-# the workflow to hold the agent count under that depth's cap, because the
+# WHY THIS EXISTS. The skill hands a discovery round every shard of the
+# repository and trusts the workflow to refute every unit it ranks, because the
 # round runs unattended under /loop and a drain and nothing else bounds its
 # cost. The exclusion and merge helpers decide which units become issues, so
 # a regression there files cruft removal against a test file or a security
@@ -68,25 +69,16 @@ const ok = (cond, label) => {
 }
 const throws = (fn) => { try { fn(); return false } catch (e) { return true } }
 
-// Depth parsing and caps.
-ok(parseDepth(undefined) === 'simple', 'no depth means simple')
-ok(parseDepth('') === 'simple', 'an empty depth means simple')
-ok(parseDepth('deep') === 'deep', 'deep parses')
-ok(throws(() => parseDepth('10')), 'a number is not a depth')
-ok(throws(() => parseDepth('toString')), 'an inherited property name is not a depth')
-ok(agentTotal('simple') === 10, 'simple plans 10 agents')
-ok(agentTotal('standard') === 15, 'standard plans 15 agents')
-ok(agentTotal('deep') >= 20 && agentTotal('deep') <= 30, 'deep plans between 20 and 30 agents')
-for (const d of ['simple', 'standard', 'deep']) {
-  ok(agentTotal(d) <= DEPTHS[d].cap, `${d} plans within its cap`)
-}
-ok(DEPTHS.simple.cap < DEPTHS.standard.cap && DEPTHS.standard.cap < DEPTHS.deep.cap, 'caps rise with depth')
-ok(scoutTasks('simple').length === 7, 'simple seats one scout per section plus one combined signal scout')
-ok(scoutTasks('standard').length === 10, 'standard seats six section scouts and four signal scouts')
-ok(scoutTasks('deep').length === 16, 'deep seats two angles per section plus four signal scouts')
-ok(new Set(scoutTasks('deep').map((t) => t.source)).size === 16, 'every deep scout has a distinct source')
-ok(scoutTasks('simple').filter((t) => t.kind === 'section').map((t) => t.section).sort().join('|') === [...SECTIONS].sort().join('|'), 'every catalog pattern section gets a scout')
-ok(!SECTIONS.includes('Report only') && !SECTIONS.includes('Leave alone'), 'Report only and Leave alone are not fan-out sections')
+// Scout tasks: every shard the caller passes is scanned.
+const mkShards = (n) => Array.from({ length: n }, (_, i) => ({ name: `s${i}`, files: [`f${i}.go`], lines: 100 }))
+ok(scoutTasks(mkShards(40)).length === 41, 'every shard is scanned, plus one tree scout')
+ok(new Set(scoutTasks(mkShards(40)).map((t) => t.source)).size === 41, 'every scout has a distinct source')
+ok(scoutTasks([{ name: 'e', files: [] }, null, ...mkShards(1)]).length === 2, 'an empty or null shard is not scouted')
+ok(scoutTasks(undefined).length === 1 && scoutTasks(undefined)[0].kind === 'tree', 'no shards leaves only the tree scout')
+ok(scoutTasks(mkShards(9)).filter((t) => t.kind === 'shard')[0].shard.name === 's0', 'the first shard is the caller\'s highest priority')
+ok(scoutTasks(mkShards(3), false).length === 3 && scoutTasks(mkShards(3), false).every((t) => t.kind === 'shard'), 'a launch with tree false seats shard scouts only')
+ok(scoutTasks(mkShards(3)).filter((t) => t.kind === 'tree').length === 1, 'the tree scout is on by default')
+ok(REFUTERS === 2, 'every batch is judged by two refuters')
 const budget = makeBudget(3)
 budget.take(); budget.take(); budget.take()
 ok(budget.used() === 3, 'the budget counts seats')
@@ -192,20 +184,33 @@ ok(exclusionReason('spec/user_spec.rb', []) === 'test' && exclusionReason('app/u
 ok(exclusionReason('pkg/conftest.py', []) === 'test' && exclusionReason('pkg/testdata/a.json', []) === 'test', 'conftest and testdata are test infrastructure')
 ok(exclusionReason('src/jwt.ts', []) === 'security' && exclusionReason('src/tls/config.go', []) === 'security', 'jwt and tls paths are security boundaries')
 
-// The discovery reference table matches the caps in code.
-const disco = fs.readFileSync(process.env.DC_DISCOVERY, 'utf8')
-for (const d of ['simple', 'standard', 'deep']) {
-  const row = disco.split('\n').find((l) => l.startsWith(`| \`${d}\``))
-  ok(row && row.split('|')[2].trim() === String(DEPTHS[d].cap) && row.split('|')[4].trim() === String(DEPTHS[d].refuteUnits), `discovery.md table matches the ${d} cap and refuted units`)
-}
+// Refutation has no cut: every ranked unit lands in some batch.
+const bu = (path, n) => unit(path, Array.from({ length: n }, (_, i) => f('E', [i + 1])))
+const many = Array.from({ length: 40 }, (_, i) => bu(`u${i}.go`, 3))
+const batches = batchUnits(many, REFUTE_BATCH_ITEMS)
+ok(batches.flat().length === 40 && new Set(batches.flat().map((u) => u.path)).size === 40, 'every ranked unit is in exactly one refuter batch')
+ok(batches.every((b) => b.reduce((n, u) => n + itemCount(u), 0) <= REFUTE_BATCH_ITEMS), 'no batch holds more than the item limit')
+ok(batchUnits([bu('big.go', 25), bu('s.go', 2)], 10).map((b) => b.map((u) => u.path).join()).join('|') === 'big.go|s.go', 'a unit larger than the limit is judged alone')
+ok(batchUnits([], 10).length === 0, 'no units, no batches')
+ok(batchUnits(many, 10)[0][0].path === 'u0.go', 'batches keep the ranked order')
+const sv = sliceVerdicts([{ verdicts: [{ id: 0, refuted: false, reason: 'a' }, { id: 3, refuted: true, reason: 'b' }, { id: 4, refuted: false, reason: 'c' }] }, null], 3, 2)
+ok(sv[0].verdicts.length === 2 && sv[0].verdicts[0].id === 0 && sv[0].verdicts[0].refuted === true && sv[0].verdicts[1].id === 1 && sv[1] === null, 'a batch verdict slice renumbers to the unit and keeps a missing vote missing')
+const outOfRange = sliceVerdicts([{ verdicts: [{ id: 9, refuted: false, reason: '' }] }], 0, 3)
+ok(outOfRange[0].verdicts.length === 0, 'a verdict outside the unit\'s slice is dropped')
+const gu = (id) => ({ id, refuted: false, reason: '' })
+const gr = (id) => ({ id, refuted: true, reason: 'r' })
+const twoRefuters = applyVerdicts(unit('pkg/fmt.go', [f('Dead store', [1]), f('Dead store', [9])]), [{ verdicts: [gu(0), gu(1)] }, { verdicts: [gu(0), gr(1)] }], 2)
+ok(twoRefuters.findings.length === 1 && twoRefuters.findings[0].lines[0] === 1, 'with two refuters, an item one of them refutes is dropped')
+ok(upholdMin(2) === 2 && upholdMin(3) === 2 && upholdMin(1) === 1, 'the uphold threshold is a majority')
 
-// The catalog's sections and entries match what the workflow fans out over.
+// The catalog's sections and entries are well formed.
 const catalog = fs.readFileSync(process.env.DC_DISCOVERY.replace('discovery.md', 'catalog.md'), 'utf8')
 const headings = catalog.split('\n').filter((l) => l.startsWith('## ')).map((l) => l.slice(3).trim())
 const NOT_PATTERN = ['Evidence that generated code is where to look', 'Report only', 'Leave alone']
-ok(headings.filter((h) => !NOT_PATTERN.includes(h)).join('|') === SECTIONS.join('|'), 'the catalog pattern sections match the workflow SECTIONS, in order')
+const sections = headings.filter((h) => !NOT_PATTERN.includes(h))
+ok(sections.length > 0, 'the catalog has pattern sections')
 ok(NOT_PATTERN.slice(1).every((h) => headings.includes(h)), 'the catalog keeps its Report only and Leave alone sections')
-const patternBody = catalog.slice(catalog.indexOf(`## ${SECTIONS[0]}`), catalog.indexOf('## Report only'))
+const patternBody = catalog.slice(catalog.indexOf(`## ${sections[0]}`), catalog.indexOf('## Report only'))
 const entries = patternBody.split(/^### /m).slice(1)
 ok(entries.length > 0 && entries.every((e) => /^- Proof: `(inert|reachability|probe)`/m.test(e)), 'every catalog pattern entry names a valid proof class')
 
@@ -234,8 +239,9 @@ ok(!/Skill\(\{skill: "commit"/.test(skill) && !/commit` skill/.test(skill), 'the
 ok(/Decide:/.test(skill) && /Decision issues/.test(gates), 'report-only findings become decision issues')
 ok(/Deduplicate before filing/.test(gates) && /wont-do/.test(gates), 'filing deduplicates against open and declined issues')
 ok(/Issue contract/.test(gates) && /frozen/i.test(gates) && /mutation probe/i.test(gates), 'the issue contract carries the frozen contracts and the probe')
-ok(/simple/.test(skill) && /standard/.test(skill) && /deep/.test(skill), 'the skill names all three depths')
-ok(new RegExp(`simple\`\\s+\\(about ${DEPTHS.simple.cap}\\)`).test(skill) && new RegExp(`standard\`\\s+\\(about ${DEPTHS.standard.cap}\\)`).test(skill) && new RegExp(`deep\`\\s+\\(up to ${DEPTHS.deep.cap}`).test(skill), 'the skill states each depth cap as the workflow enforces it')
+ok(!/refuteUnits|DEPTHS|parseDepth|agentTotal/.test(src), 'no depth table or refutation cut remains in the workflow')
+ok(!/\bdepth\b/i.test(skill) && !/\bdepth\b/i.test(fs.readFileSync(process.env.DC_DISCOVERY, 'utf8')), 'neither the skill nor the discovery reference names a depth')
+ok(/shard\.sh/.test(skill) && /shards:/.test(skill), 'the skill builds shards with shard.sh and passes them to the workflow')
 
 console.log(`${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
@@ -250,5 +256,9 @@ if (!m) { console.error("AGENT_CONFIG not found"); process.exit(1) }
 process.stdout.write("const AGENT_CONFIG_FOR_TEST = " + m[1].replace(/\/\/[^\n]*/g, "") + "\n")
 ' "$WORKFLOW" > "${WORK}/config.js" || fatal "could not read AGENT_CONFIG"
 
+# The whole script must parse: the region above is only the helpers, so a
+# syntax error elsewhere would otherwise reach the runtime first.
+{ echo 'async function main() {'; sed 's/^export const meta/const meta/' "$WORKFLOW"; echo '}'; } > "${WORK}/whole.js"
+node --check "${WORK}/whole.js" || fatal "simplify-code.js does not parse as a workflow script"
 { cat "${WORK}/region.js"; cat "${WORK}/config.js"; cat "${WORK}/cases.js"; } > "${WORK}/run.js"
 DC_WORKFLOW="$WORKFLOW" DC_SKILL="$SKILL" DC_DISCOVERY="$DISCOVERY" node "${WORK}/run.js"

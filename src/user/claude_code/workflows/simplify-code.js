@@ -1,6 +1,6 @@
 export const meta = {
   name: 'simplify-code',
-  description: 'Fan read-only scouts across the cleanup catalog and its discovery signals and refute each top finding',
+  description: 'Scout disjoint repository shards against the cleanup catalog and refute every ranked unit',
   phases: [
     { title: 'Scout' },
     { title: 'Refute' },
@@ -12,14 +12,23 @@ export const meta = {
 // workflow is the discovery round and nothing else. It is read-only: every
 // seat searches and reads, none edits, and nothing in the repository changes
 // inside it. There is no writer seat; a worker applies a filed issue later,
-// outside this skill.
+// outside this skill. One scout reads each disjoint shard of the source once
+// against the whole catalog, one more scout covers the cross-file signals, and
+// each scout's units go to refuters as soon as that scout returns (no
+// barrier). Every shard the caller passes is scanned and every ranked unit is
+// refuted.
 //
 // args: {
 //   repo: string          absolute path of the repository under review
 //   catalogPath: string   absolute path of references/catalog.md
 //   discoveryPath: string absolute path of references/discovery.md
-//   depth: string         'simple' | 'standard' | 'deep'; default 'simple'
 //   head: string          `git rev-parse HEAD` the round inspects
+//   shards: [{ name, files: string[], lines: number }]
+//                         disjoint source-file groups the caller built with
+//                         references/shard.sh, highest priority first; the
+//                         caller may split them across several launches
+//   tree: boolean         false skips the tree scout (default true); the
+//                         caller sets it on every launch but one
 //   ledger: string[]      repo-relative paths the ledger excludes
 //   refutedKeys: string[] `<path>#<item or entry>#<symbol>` keys of items already
 //                         settled (refuted, declined, resolved, ...); matching
@@ -30,79 +39,53 @@ export const meta = {
 //                         warnings; empty when none were supplied (no build or lint is run)
 // }
 //
-// Returns { depth, cap, head, agentsPlanned, agentsUsed, units, unverified,
-// securitySkipped, excluded, refuted, refutedKeys, summary }. `units` are the ranked units
-// whose findings survived refutation, each { path, kind, score, sources,
-// findings: [{ entry, section, proofClass, lines, symbol, evidence }], testFiles,
-// evidencePaths, reportOnly: [{ item, symbol, lines, note }], pickable }.
-// `unverified` lists units ranked below the refutation cut, whose refutation failed, or with an item that got no vote, each { path, score, reason };
-// the caller treats them as nothing yet. `securitySkipped` lists units
+// Returns { head, scouts, agentsUsed, units, unverified, uncovered,
+// securitySkipped, excluded, refuted, refutedKeys, summary }.
+// `units` are the ranked units whose findings survived refutation, each
+// { path, kind, score, sources, findings: [{ entry, section, proofClass, lines,
+// symbol, evidence }], testFiles, evidencePaths, reportOnly: [{ item, symbol,
+// lines, note }], pickable }. `unverified` lists units whose refutation failed
+// or with an item that got no vote, each { path, score, reason }. `uncovered`
+// lists shards whose scout returned nothing. `securitySkipped` lists units
 // excluded as security boundaries, each { path, boundary }. `excluded` counts
-// ledgered, test, generated, and vendored paths dropped. Agents are bounded by
-// the depth's hard cap; the script refuses to start a round whose plan exceeds
-// it and refuses to seat an agent past it.
+// ledgered, test, generated, and vendored paths dropped. MAX_AGENTS is a
+// runaway backstop, not a coverage cut.
 
 // Pin models so the run never inherits the caller's quota-limited model.
 const AGENT_CONFIG = {
-  scout: { model: 'opus', effort: 'medium' }, // reads widely and judges matches; changes nothing
+  scout: { model: 'opus', effort: 'medium' }, // reads a shard, matches the catalog, and judges security boundaries; changes nothing
   refute: { model: 'fable', effort: 'high' }, // defaults to refuted, so it must read closely
 }
 
 // TEST-BEGIN simplify-code-decide — pure decision helpers, exercised by
 // tests/simplify-code-decide.test.sh without a run.
 
-// The catalog's pattern sections, one scout each. "Report only" and "Leave
-// alone" are not pattern sections: the first belongs to the report-only scout,
-// the second is the refuters' defense list.
-const SECTIONS = [
-  'Comments and noise',
-  'Dead code',
-  'Needless indirection',
-  'Duplication',
-  'Control flow and error handling',
-  'Naming and shape',
-]
+// Every round scans every shard the caller passes and two refuters judge each
+// batch. MAX_AGENTS is a runaway backstop, not a coverage cut.
+const REFUTERS = 2
+const MAX_AGENTS = 900
 
-const SIGNALS = ['unused', 'churn', 'duplicates', 'report-only']
+// Items one refuter judges in one agent. A batch groups whole units; a unit
+// with more items than this is judged alone.
+const REFUTE_BATCH_ITEMS = 10
 
-// Hard caps per depth. `cap` bounds the agents of one discovery round; the
-// plan must fit under it and the budget refuses a seat past it. A section
-// scout runs once per angle: lexical scouts lead with the catalog's grep
-// signals, semantic scouts read the code and ignore the grep signals.
-// simple folds all four signals into one scout.
-const DEPTHS = {
-  simple: { cap: 10, angles: ['lexical'], signals: ['combined'], refuteUnits: 3, refuters: 1 },
-  standard: { cap: 15, angles: ['lexical'], signals: SIGNALS, refuteUnits: 5, refuters: 1 },
-  deep: { cap: 30, angles: ['lexical', 'semantic'], signals: SIGNALS, refuteUnits: 6, refuters: 2 },
-}
-
-// The workflow has one mode. A caller that still passes `work` gets a refusal
-// instead of a silent discovery round, because no writer seat exists.
+// The workflow has one mode. A caller that still passes `work` or `apply` gets
+// a refusal instead of a silent discovery round, because no writer seat exists.
 function parseMode(value) {
   const mode = value === undefined || value === null || value === '' ? 'discover' : String(value)
   if (mode !== 'discover') throw new Error(`simplify-code: args.mode must be discover, got ${mode}`)
   return mode
 }
 
-function parseDepth(value) {
-  const depth = value === undefined || value === null || value === '' ? 'simple' : String(value)
-  if (!Object.prototype.hasOwnProperty.call(DEPTHS, depth)) throw new Error(`simplify-code: args.depth must be simple, standard, or deep, got ${depth}`)
-  return depth
-}
-
-function scoutTasks(depth) {
-  const plan = DEPTHS[depth]
-  const tasks = []
-  for (const section of SECTIONS) {
-    for (const angle of plan.angles) tasks.push({ kind: 'section', section, angle, source: angle === 'lexical' ? `section:${section}` : `section:${section}:${angle}` })
-  }
-  for (const signal of plan.signals) tasks.push({ kind: 'signal', signal, source: `signal:${signal}` })
+// The shards a round scans: every group the caller passes, each a
+// non-empty list of files, plus one tree-wide scout for the cross-file signals
+// unless the caller turned it off (a launch that scans only some of the shards
+// of a split discovery: args.tree false).
+function scoutTasks(shards, withTree = true) {
+  const usable = (Array.isArray(shards) ? shards : []).filter((s) => s && s.name && Array.isArray(s.files) && s.files.length)
+  const tasks = usable.map((shard) => ({ kind: 'shard', shard, source: `shard:${shard.name}` }))
+  if (withTree) tasks.push({ kind: 'tree', source: 'tree' })
   return tasks
-}
-
-function agentTotal(depth) {
-  const plan = DEPTHS[depth]
-  return scoutTasks(depth).length + plan.refuteUnits * plan.refuters
 }
 
 // Refuse a seat past the cap. The count includes seats that later fail.
@@ -183,7 +166,7 @@ function mergeUnits(returns, repo) {
       if (!raw || !raw.path) continue
       const u = { ...raw, path: normalizePath(raw.path, repo) }
       const cur = byPath.get(u.path) || { path: u.path, kind: u.kind || 'file', sources: [], findings: [], testFiles: [], evidencePaths: [], reportOnly: [], securityBoundary: '' }
-      cur.sources = uniq([...cur.sources, r.source])
+      cur.sources = uniq([...cur.sources, ...(u.sources || []), r.source])
       for (const f of u.findings || []) {
         const key = `${f.entry}|${(f.lines || []).join(',')}`
         if (!cur.findings.some((g) => `${g.entry}|${(g.lines || []).join(',')}` === key)) cur.findings.push(f)
@@ -226,12 +209,10 @@ function pickable(unit) {
 }
 
 // More distinct findings rank higher; a unit several independent scouts agree
-// on ranks higher still, and a churn hotspot gets a small bump because cruft
-// there is read most.
+// on ranks higher still.
 function scoreUnit(unit) {
   const independent = Math.max(0, unit.sources.length - 1)
-  const churn = unit.sources.some((s) => s === 'signal:churn' || s === 'signal:combined') ? 1 : 0
-  return unit.findings.length + unit.reportOnly.length + 2 * independent + churn
+  return unit.findings.length + unit.reportOnly.length + 2 * independent
 }
 
 function rankUnits(units) {
@@ -240,9 +221,10 @@ function rankUnits(units) {
     .sort((a, b) => b.score - a.score || Number(b.pickable) - Number(a.pickable) || a.path.localeCompare(b.path))
 }
 
-// Majority uphold over returned votes; a missing vote is no vote, and a
-// shortfall keeps an item out of the round. Only an explicit refutation is
-// remembered; an item whose refuter returned nothing is simply not confirmed.
+// Majority uphold over returned votes (with two refuters, both); a missing
+// vote is no vote, and a shortfall keeps an item out of the round. Only an
+// explicit refutation is remembered; an item whose refuter returned nothing is
+// simply not confirmed.
 function upholdMin(refuters) {
   return Math.floor(refuters / 2) + 1
 }
@@ -283,6 +265,40 @@ function applyVerdicts(unit, returns, refuters) {
   // nothing); the unit is reported as unverified, not dropped.
   const unconfirmedCount = total - findings.length - reportOnly.length - refutedItems
   return { ...unit, findings, reportOnly, refutedKeys, refutedCount: refutedItems, unconfirmedCount }
+}
+
+const itemCount = (unit) => unit.findings.length + unit.reportOnly.length
+
+// Group ranked units into refuter batches of whole units, at most `maxItems`
+// items each; a unit larger than that is a batch of its own. Order is kept, so
+// the strongest units are judged first.
+function batchUnits(units, maxItems) {
+  const batches = []
+  let cur = []
+  let n = 0
+  for (const u of units) {
+    const c = itemCount(u)
+    if (cur.length && n + c > maxItems) {
+      batches.push(cur)
+      cur = []
+      n = 0
+    }
+    cur.push(u)
+    n += c
+    if (n >= maxItems) {
+      batches.push(cur)
+      cur = []
+      n = 0
+    }
+  }
+  if (cur.length) batches.push(cur)
+  return batches
+}
+
+// A refuter judges a whole batch with ids numbered across its units; cut its
+// verdicts down to the one unit's slice and renumber them from zero.
+function sliceVerdicts(returns, offset, count) {
+  return returns.map((r) => (r ? { verdicts: (r.verdicts || []).filter((v) => Number.isInteger(v.id) && v.id >= offset && v.id < offset + count).map((v) => ({ ...v, id: v.id - offset })) } : null))
 }
 // TEST-END simplify-code-decide
 
@@ -337,7 +353,7 @@ const SCOUT_SCHEMA = {
               required: ['item', 'symbol', 'lines', 'note'],
             },
           },
-          securityBoundary: { type: 'string', description: 'The boundary matched (authentication, authorization, session, secrets, cryptography, permissions, sandboxing, untrusted input), or empty string' },
+          securityBoundary: { type: 'string', description: 'The boundary the code in this unit implements (authentication, authorization, session, secrets, cryptography, permissions, sandboxing, untrusted input), or empty string when the code only has a boundary word in its name' },
         },
         required: ['path', 'kind', 'findings', 'testFiles', 'evidencePaths', 'reportOnly', 'securityBoundary'],
       },
@@ -372,10 +388,10 @@ and make no edit: the working tree is in use by the caller and another
 session may be editing it between rounds.`
 
 function exclusions(ledger) {
-  return `Never return as a unit: a test file or test directory (tests are frozen, so
-list them under testFiles instead), a generated or vendored file (lockfiles,
-node_modules, vendor, target, dist, files whose header says generated), or
-any path on the ledger: ${ledger.length ? ledger.join(', ') : 'none'}.
+  return `Never return as a unit: a test file or test directory (tests are frozen,
+so list them under testFiles instead), a generated or vendored file
+(lockfiles, node_modules, vendor, target, dist, files whose header says
+generated), or any path on the ledger: ${ledger.length ? ledger.join(', ') : 'none'}.
 For a unit in a security boundary (authentication, authorization, session
 handling, secrets, cryptography, permissions, sandboxing, untrusted input at a
 privilege boundary), return it with findings and reportOnly empty and
@@ -389,25 +405,32 @@ its proof class from the entry, the lines, the symbol, and the matched code
 quoted. For each finding and report-only item the symbol is the bare name of
 the innermost enclosing function, method, or class, without parentheses or a
 line number; for a top-level declaration or import it is the declared name
-itself. List
-the test files that reference the unit under testFiles, and any other file a
-finding depends on under evidencePaths. Return only matches you have read:
-a guess costs a refuter and a round. Return at most twelve units, the
-strongest first. Return no units when nothing matches.`
+itself. List the test files that reference the unit under testFiles, and any
+other file a finding depends on under evidencePaths. Return only matches you
+have read: a guess costs a refuter and a round. Return the strongest first.
+Return no units when nothing matches.`
 }
 
-function sectionPrompt(task, a) {
-  const lead = task.angle === 'lexical'
-    ? 'Lead with each entry\'s Signal: run its grep or LSP signal, then read the hits and judge them against the entry\'s Risk and the Leave alone section.'
-    : 'Ignore the grep signals. Read the code of the largest and most-changed files as a maintainer would, and name what the entries describe where a pattern search would miss it: renamed variants, split across lines, spread over a module.'
-  return `Scout one section of a cleanup catalog across a repository.
+function shardPrompt(task, a) {
+  const list = task.shard.files.join('\n')
+  return `Scout one shard of a repository against the whole cleanup catalog.
 Repository: ${a.repo}
-Catalog: ${a.catalogPath} (read the section "${task.section}" in full, and the
-Leave alone section)
+Catalog: ${a.catalogPath} (read every pattern section once, then Report only and
+Leave alone)
 Discovery notes: ${a.discoveryPath}
 
-Your section: ${task.section}. Your angle: ${task.angle}. ${lead}
-Return only findings of entries in your section.
+Your shard: ${task.shard.name} (${task.shard.lines || 'unknown'} lines). Read every file below in full, once,
+and match what you read against the catalog's entries; use an entry's Signal
+as a hint, not a filter. The files are disjoint from every other scout's.
+
+${list}
+
+Diagnostics the repository already produced, if any (untouched tree, HEAD ${a.head}). Treat it as ground truth for unused symbols in your files:
+${a.baselineReports ? a.baselineReports : '(none supplied; no build or lint was run)'}
+
+Return findings of any pattern section, and Report only items with their
+symbol and lines. Return the unit's test files by looking for the tests that
+reference it.
 
 ${READ_ONLY}
 
@@ -416,23 +439,23 @@ ${exclusions(a.ledger)}
 ${returnRules()}`
 }
 
-function signalPrompt(task, a) {
-  const all = task.signal === 'combined'
-  const parts = {
-    unused: `UNUSED SYMBOLS. Take the repository's own lint, typecheck, and build output below as ground truth for unused imports, parameters, locals, functions, and exports, then confirm each reported symbol by search across the whole tree, tests and string literals included. Return the Dead code entries it proves. If the output is empty, search for the same patterns the catalog's Dead code signals describe.`,
-    churn: `CHURN HOTSPOTS. Run git log --since=6.months --name-only --pretty=format: and count files by touches. In the twenty most-changed source files, read for any catalog entry. Cruft in a hotspot is read most often, so say in the unit that it is a hotspot by returning it.`,
-    duplicates: `CROSS-FILE DUPLICATES. Look for near-identical function bodies and blocks in more than one file: normalize names and whitespace and compare, or use the repository's clone detector if it names one. Return the Duplication entries it proves, with the partner file under evidencePaths, and only where the copies behave the same.`,
-    'report-only': `REPORT-ONLY ITEMS. Read the catalog's Report only section in full. Search the whole tree for those items and return each as a reportOnly item with its symbol (the bare name of the enclosing function, method, or class) and lines. Return a unit with empty findings when it holds only report-only items.`,
-  }
-  const body = all ? SIGNALS.map((s) => parts[s]).join('\n\n') : parts[task.signal]
-  return `Run discovery signals over a repository that a pattern search alone would miss.
+function treePrompt(a) {
+  return `Run the two cross-file signals that a per-shard read cannot see.
 Repository: ${a.repo}
 Catalog: ${a.catalogPath}
 Discovery notes: ${a.discoveryPath}
 
-${all ? 'Run all four signals below, in order.' : 'Run the one signal below.'}
+CROSS-FILE DUPLICATES. Look for near-identical function bodies and blocks in
+more than one file: normalize names and whitespace and compare, or use the
+repository's clone detector if it names one. Return the Duplication entries it
+proves, with the partner file under evidencePaths, and only where the copies
+behave the same.
 
-${body}
+UNUSED ACROSS FILES. Take the lint, typecheck, and build output below as
+ground truth for unused imports, parameters, locals, functions, and exports,
+then confirm each reported symbol by search across the whole tree, tests and
+string literals included. Return the Dead code entries it proves. If the
+output is empty, search for exported symbols with no importer.
 
 Diagnostics the repository already produced, if any (untouched tree, HEAD ${a.head}):
 ${a.baselineReports ? a.baselineReports : '(none supplied; no build or lint was run)'}
@@ -444,18 +467,21 @@ ${exclusions(a.ledger)}
 ${returnRules()}`
 }
 
-function refutePrompt(unit, framing, a) {
-  const items = [
-    ...unit.findings.map((f, i) => `${i}. FINDING ${f.entry} (${f.proofClass}) lines ${f.lines.join(', ')}: ${f.evidence}`),
-    ...unit.reportOnly.map((r, i) => `${unit.findings.length + i}. REPORT-ONLY ${r.item} in ${r.symbol} lines ${r.lines.join(', ')}: ${r.note}`),
-  ]
-  return `Try to REFUTE these cleanup items in one unit.
+function refutePrompt(batch, framing, a) {
+  let n = 0
+  const sections = batch.map((unit) => {
+    const items = [
+      ...unit.findings.map((f) => `${n++}. FINDING ${f.entry} (${f.proofClass}) lines ${f.lines.join(', ')}: ${f.evidence}`),
+      ...unit.reportOnly.map((r) => `${n++}. REPORT-ONLY ${r.item} in ${r.symbol} lines ${r.lines.join(', ')}: ${r.note}`),
+    ]
+    return `Unit: ${unit.path}\n${items.join('\n')}`
+  })
+  return `Try to REFUTE these cleanup items.
 Repository: ${a.repo}
-Unit: ${unit.path}
 Catalog: ${a.catalogPath} (read the cited entries' Risk fields and the Leave alone section)
 
-Items, numbered:
-${items.join('\n')}
+Items, numbered across the units below:
+${sections.join('\n\n')}
 
 Your angle: ${framing.angle}
 
@@ -474,51 +500,67 @@ const discoveryPath = args?.discoveryPath
 if (!repo || !repo.startsWith('/')) throw new Error('simplify-code: args.repo must be an absolute path')
 if (!catalogPath || !catalogPath.startsWith('/')) throw new Error('simplify-code: args.catalogPath must be an absolute path')
 if (!discoveryPath || !discoveryPath.startsWith('/')) throw new Error('simplify-code: args.discoveryPath must be an absolute path')
-const depth = parseDepth(args?.depth)
-const plan = DEPTHS[depth]
 const ledger = Array.isArray(args?.ledger) ? args.ledger.filter(Boolean) : []
+const refutedIn = Array.isArray(args?.refutedKeys) ? args.refutedKeys.filter(Boolean) : []
 const shared = { repo, catalogPath, discoveryPath, head: args?.head || 'unknown', ledger, baselineReports: String(args?.baselineReports || '').slice(0, 6000) }
 
-const planned = agentTotal(depth)
-if (planned > plan.cap) throw new Error(`simplify-code: depth ${depth} plans ${planned} agents, over its cap of ${plan.cap}`)
-const budget = makeBudget(plan.cap)
+const withTree = args?.tree !== false
+const tasks = scoutTasks(args?.shards, withTree)
+if (!tasks.some((t) => t.kind === 'shard')) throw new Error('simplify-code: args.shards must list at least one non-empty shard')
+if (tasks.length > MAX_AGENTS) throw new Error(`simplify-code: ${tasks.length} scouts is over the ${MAX_AGENTS}-agent backstop; pass fewer shards per launch`)
+const budget = makeBudget(MAX_AGENTS)
+log(`${tasks.filter((t) => t.kind === 'shard').length} shard scouts and ${withTree ? 1 : 0} tree scout, every ranked unit refuted in batches of up to ${REFUTE_BATCH_ITEMS} items by ${REFUTERS} refuters each`)
 
-const tasks = scoutTasks(depth)
-log(`depth ${depth}: ${tasks.length} scouts, up to ${plan.refuteUnits} units refuted by ${plan.refuters} each, ${planned} of ${plan.cap} agents planned`)
-
-phase('Scout')
-const scoutReturns = await parallel(tasks.map((task) => () => {
-  budget.take()
-  const prompt = task.kind === 'section' ? sectionPrompt(task, shared) : signalPrompt(task, shared)
-  return agent(prompt, { agentType: 'general-purpose', phase: 'Scout', label: `scout:${task.source}`, schema: SCOUT_SCHEMA, ...AGENT_CONFIG.scout })
-    .then((out) => (out ? { source: task.source, units: out.units } : null))
-}))
-
-const refutedIn = Array.isArray(args?.refutedKeys) ? args.refutedKeys.filter(Boolean) : []
-const merged = dropRefuted(mergeUnits(scoutReturns, repo), refutedIn)
-const { kept, securitySkipped, excluded } = partitionUnits(merged, ledger, repo)
-const ranked = rankUnits(kept.filter((u) => u.findings.length || u.reportOnly.length))
-log(`${scoutReturns.filter(Boolean).length}/${tasks.length} scouts returned; ${ranked.length} unit(s) ranked, ${securitySkipped.length} security-boundary skipped`)
-
-phase('Refute')
-const cut = ranked.slice(0, plan.refuteUnits)
-const refuted = await pipeline(
-  cut,
-  (unit) => parallel(FRAMINGS.slice(0, plan.refuters).map((framing) => () => {
+// One chain per scout, no barrier: a scout's units go to refuters as soon as
+// that scout returns, so refuters overlap the scouts still reading.
+const chains = await pipeline(
+  tasks,
+  (task) => {
     budget.take()
-    return agent(refutePrompt(unit, framing, shared), { agentType: 'general-purpose', phase: 'Refute', label: `refute:${unit.path}:${framing.key}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.refute })
-  })),
-  (returns, unit) => applyVerdicts(unit, returns || [], plan.refuters)
+    const prompt = task.kind === 'shard' ? shardPrompt(task, shared) : treePrompt(shared)
+    return agent(prompt, { agentType: 'general-purpose', phase: 'Scout', label: `scout:${task.source}`, schema: SCOUT_SCHEMA, ...AGENT_CONFIG.scout })
+      .then((out) => (out ? { source: task.source, units: out.units } : null))
+  },
+  async (scouted, task) => {
+    if (!scouted) return { task, scouted: false, securitySkipped: [], excluded: { test: 0, generated: 0, ledger: 0 }, refuted: [], failed: [], batches: 0 }
+    const merged = dropRefuted(mergeUnits([scouted], repo), refutedIn)
+    const { kept, securitySkipped, excluded } = partitionUnits(merged, ledger, repo)
+    const ranked = rankUnits(kept.filter((u) => u.findings.length || u.reportOnly.length))
+    const batches = batchUnits(ranked, REFUTE_BATCH_ITEMS)
+    const judged = await parallel(batches.map((batch) => async () => {
+      const framings = FRAMINGS.slice(0, REFUTERS)
+      const returns = await parallel(framings.map((framing) => () => {
+        budget.take()
+        return agent(refutePrompt(batch, framing, shared), { agentType: 'general-purpose', phase: 'Refute', label: `refute:${task.source}:${batch[0].path}:${framing.key}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.refute })
+      }))
+      let offset = 0
+      return batch.map((unit) => {
+        const slice = sliceVerdicts(returns, offset, itemCount(unit))
+        offset += itemCount(unit)
+        return applyVerdicts(unit, slice, framings.length)
+      })
+    }))
+    const refuted = judged.flatMap((r, i) => (r ? r : batches[i].map((u) => ({ ...u, failed: true }))))
+    return { task, scouted: true, securitySkipped, excluded, refuted: refuted.filter((u) => !u.failed), failed: refuted.filter((u) => u.failed), batches: batches.length }
+  }
 )
 
-const survivors = refuted.filter(Boolean).filter((u) => u.findings.length || u.reportOnly.length)
-const units = rankUnits(survivors)
-const refutedCount = refuted.filter(Boolean).reduce((n, u) => n + u.refutedCount, 0)
-const unvoted = refuted.filter(Boolean).filter((u) => u.unconfirmedCount > 0).map((u) => ({ path: u.path, score: scoreUnit(u), reason: 'an item got no vote' }))
-const failed = cut.filter((_, i) => !refuted[i]).map((u) => ({ path: u.path, score: u.score, reason: 'its refutation failed' }))
-const unverified = [...failed, ...unvoted, ...ranked.slice(plan.refuteUnits).map((u) => ({ path: u.path, score: u.score, reason: 'ranked below the refutation cut' }))]
-const summary = `depth ${depth}: ${budget.used()} of ${plan.cap} agents; ${units.length} unit(s) confirmed, ${refutedCount} item(s) refuted, ${unverified.length} unit(s) unverified, ${securitySkipped.length} security-boundary skipped`
+const done = chains.filter(Boolean)
+const uncovered = tasks.filter((t, i) => t.kind === 'shard' && !(chains[i] && chains[i].scouted)).map((t) => t.shard.name)
+const refutedUnits = done.flatMap((c) => c.refuted)
+const securitySkipped = done.flatMap((c) => c.securitySkipped)
+const excluded = done.reduce((e, c) => ({ test: e.test + c.excluded.test, generated: e.generated + c.excluded.generated, ledger: e.ledger + c.excluded.ledger }), { test: 0, generated: 0, ledger: 0 })
+
+// The tree scout can name a path a shard scout also named; merge by path.
+const survivors = refutedUnits.filter((u) => u.findings.length || u.reportOnly.length)
+const units = rankUnits(mergeUnits(survivors.map((u) => ({ source: u.sources[0], units: [u] })), repo))
+const refutedCount = refutedUnits.reduce((n, u) => n + u.refutedCount, 0)
+const unvoted = refutedUnits.filter((u) => u.unconfirmedCount > 0).map((u) => ({ path: u.path, score: scoreUnit(u), reason: 'an item got no vote' }))
+const failedUnits = done.flatMap((c) => c.failed).map((u) => ({ path: u.path, score: scoreUnit(u), reason: 'its refutation failed' }))
+const unverified = [...failedUnits, ...unvoted]
+const keptKeys = new Set(units.flatMap((u) => [...u.findings.map((f) => findingKey(u.path, f)), ...u.reportOnly.map((r) => reportOnlyKey(u.path, r))]))
+const refutedKeys = uniq(refutedUnits.flatMap((u) => u.refutedKeys || [])).filter((k) => !keptKeys.has(k))
+const summary = `${budget.used()} agents (${tasks.length} scouts); ${units.length} unit(s) confirmed, ${refutedCount} item(s) refuted, ${unverified.length} unit(s) unverified, ${uncovered.length} shard(s) uncovered, ${securitySkipped.length} security-boundary skipped`
 log(summary)
 
-const refutedKeys = refuted.filter(Boolean).flatMap((u) => u.refutedKeys || [])
-return { depth, cap: plan.cap, head: shared.head, agentsPlanned: planned, agentsUsed: budget.used(), units, unverified, securitySkipped, excluded, refuted: refutedCount, refutedKeys, summary }
+return { head: shared.head, scouts: tasks.length, agentsUsed: budget.used(), units, unverified, uncovered, securitySkipped, excluded, refuted: refutedCount, refutedKeys, summary }

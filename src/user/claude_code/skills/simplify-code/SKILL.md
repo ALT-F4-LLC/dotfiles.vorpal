@@ -4,9 +4,9 @@ description: >-
   Use on "/simplify-code", "simplify the whole repo's code", "strip the
   generated cruft", "run the simplify-code loop", `/loop /simplify-code`, or
   `/goal /simplify-code`. Audits the repository in the current working
-  directory without editing it: fans read-only scouts across the bundled
-  catalog and discovery signals at a named depth (simple, standard, deep),
-  refutes what they find, checks the static proof each cleanup needs, and
+  directory without editing it: splits the source into disjoint shards, fans
+  one read-only scout over each against the bundled catalog, refutes every
+  ranked unit with two refuters, checks the static proof each cleanup needs, and
   files one worker-ready Docket issue per unit of cruft, plus a decision
   issue per report-only finding. Each issue tells the worker who later
   applies it which guard to prove, which contracts are frozen, and which
@@ -47,32 +47,21 @@ behavior is a decision an operator makes on a
 
 ## Invocation
 
-`/simplify-code [simple|standard|deep] [unattended] [drain]`
+`/simplify-code [unattended] [drain]`
 
-- **Depth** sets how many read-only agents a discovery round may spend, by
-  name, never by number: `simple` (about 10), `standard` (about 15), `deep`
-  (up to 30, two angles per section). The
-  [discovery reference](references/discovery.md#depth) holds the table. The
-  workflow enforces the caps.
-  1. A depth passed with the invocation wins and is recorded in
-     `simplify-state.md`.
-  2. Otherwise the recorded depth wins.
-  3. Otherwise, on an attended invocation, ask once through `AskUserQuestion`
-     with the three names and a line each (simple: a fast pass; standard: all
-     signals; deep: two angles per section and two refuters per unit), record
-     the answer, and never ask again this session.
-  4. Otherwise (unattended) use `simple` and record it.
+- **Coverage** is fixed: every shard of the source is scanned, every ranked
+  unit is refuted, and no setting trims either. The
+  [discovery reference](references/discovery.md#scope) holds the rule.
 - **Unattended** means no one is at the keyboard: the argument, or any
   firing of `/loop` after its first. An unattended run never calls
-  `AskUserQuestion`. Filing needs no answer from anyone, so this only skips
-  the depth question.
+  `AskUserQuestion`. Filing needs no answer from anyone.
 - **Run modes.** Under `/loop`, the skill rests between ticks. Under a
   session goal whose condition names `/simplify-code`, or with `drain`, it
   drains: it works until nothing is left (see Stop) and never rests. Invoked
   bare, it does one discovery round, files its queue, then stops and says
   there will be no next tick.
 
-`/loop /simplify-code deep` (self-pacing) or `/loop 30m /simplify-code`
+`/loop /simplify-code` (self-pacing) or `/loop 30m /simplify-code`
 supplies the recurring wake-up; each firing re-enters this skill from §1.
 
 ## 1. Each tick
@@ -84,19 +73,27 @@ supplies the recurring wake-up; each firing re-enters this skill from §1.
    path it lists is someone else's work in progress: pass those paths in the
    round's `ledger` for this tick, so no unit describes code in flux, and
    touch nothing. Read the [session files](references/gates.md#session-files):
-   the ledger, the findings queue, and the depth. Drop expired entries before
+   the ledger, the findings queue, and the surveyed head. Drop expired entries before
    reading the rest.
 2. **Gate commands.** Discover the repository's build, typecheck, test,
    format, and lint commands as the
    [gates reference](references/gates.md#discovery) describes, and record
-   them for the issues. Run none of them. The `unused` signal gets whatever
+   them for the issues. Run none of them. The tree scout gets whatever
    diagnostics already exist without a build (language-server diagnostics, a
    CI log the operator names); otherwise `baselineReports` is empty and the
-   scout falls back to the catalog's Dead code signals.
+   scouts fall back to the catalog's Dead code signals.
 3. **Discover.** Keep the queue from this tick's last round while its units
    pass the queued-units staleness check; launch a new round (§4) when there
-   is no queue or when step 5 sends it back. The round returns ranked units
-   whose findings survived refutation, the units it skipped as security
+   is no queue or when step 5 sends it back. A round scans every shard of the
+   source: run `~/.claude/skills/simplify-code/references/shard.sh <repo>`
+   (expanding `~` yourself) and pass its array as `shards`. After the first
+   survey, `simplify-state.md` holds the HEAD it covered, and a later round
+   scans only the shards whose files appear in `git diff --name-only
+   <surveyed-head> HEAD`, plus the shards the last round returned `uncovered`
+   or holding `unverified` units. If the list is empty, report that no source
+   files changed and go to step 5. Write the new `surveyed-head` at step 6,
+   once a round returned with no `uncovered` shard. The round returns ranked
+   units whose findings survived refutation, the units it skipped as security
    boundaries, and the report-only items it confirmed.
    - Scouts are read-only by instruction only. Before anything else, require
      that `git status --porcelain` matches the scratch copy from step 1 and
@@ -115,9 +112,9 @@ supplies the recurring wake-up; each firing re-enters this skill from §1.
      re-refute it. A `stale` line for the key is replaced; a line in any
      other state is kept. A key is new when the findings queue did not hold
      it before this round.
-   - Units ranked below the cut or whose refutation failed, and items left
-     unvoted, are nothing yet. A unit's confirmed findings in `units` still
-     count. The next round re-ranks the rest.
+   - Units under `unverified`, and shards under `uncovered` (their scan
+     failed), are nothing yet. A unit's confirmed findings in `units` still
+     count. The next round rescans those shards.
 4. **File.** Take the queued units from the highest rank down. A unit whose
    test references are non-empty, or whose matched entries all carry proof
    class `inert` or `reachability`, is filed whole (§2). A unit with no tests
@@ -130,10 +127,13 @@ supplies the recurring wake-up; each firing re-enters this skill from §1.
    through §3. Invoked bare, go to step 6. Otherwise, if the round that just
    drained filed at least one issue, or added a key to the passed-back set (a
    `refuted`, `skipped`, `declined`, or `filed` entry, §3 outcomes included)
-   or a new unit-level ledger path while units remain `unverified`, return to
-   step 3: the next round excludes what this one checked. Both sets only grow
-   while HEAD stands still, which bounds the loop. Otherwise go to step 6.
-6. **Rest or end.** Under self-paced `/loop /simplify-code`, arm
+   or a new unit-level ledger path, and step 3's shard list for the next
+   round is not empty (shards that failed or hold `unverified` units), return
+   to step 3: the next round excludes what this one checked. Both sets only
+   grow while HEAD stands still, which bounds the loop. Otherwise go to step 6.
+6. **Rest or end.** Write `surveyed-head: <HEAD>` to `simplify-state.md` when
+   the last round returned no `uncovered` shard. Under self-paced
+   `/loop /simplify-code`, arm
    `ScheduleWakeup` (1200 to 1800 seconds, `noop: true`) and stop; under an
    explicit interval the cron firing supplies the next tick, so stop; invoked
    bare, stop and say the pass is done. A drain does not rest: it ends per
@@ -277,7 +277,7 @@ both `model` and `effort` explicitly; the workflow holds the pins, `opus` at
 `medium` for scouts and `fable` at `high` for refuters.
 
 ```
-Workflow({ scriptPath: "<absolute installed path>", args: { repo: "<absolute repo path>", catalogPath: "<absolute installed catalog.md>", discoveryPath: "<absolute installed discovery.md>", depth: "<simple|standard|deep>", head: "<HEAD>", ledger: [<ledgered paths and the dirty paths from step 1>], baselineReports: "<diagnostics, or empty>" } })
+Workflow({ scriptPath: "<absolute installed path>", args: { repo: "<absolute repo path>", catalogPath: "<absolute installed catalog.md>", discoveryPath: "<absolute installed discovery.md>", shards: [<this launch's slice of the shard array>], tree: <true on one launch, false on the rest>, head: "<HEAD>", ledger: [<ledgered paths and the dirty paths from step 1>], baselineReports: "<diagnostics, or empty>" } })
 ```
 
 `ledger` holds the paths of unit-level entries only (`no tests`, `security
@@ -285,8 +285,17 @@ boundary`, `held`) and the dirty paths from step 1.
 The workflow also accepts `refutedKeys: [<first column of every finding line
 in state refuted, skipped, declined, or filed>]`.
 
-It refuses a depth whose plan exceeds its cap and a seat past it. The
-return, and how a round is built, are in the workflow header and the
+Split the shard array into several launches and start them in one turn, as
+the [discovery reference](references/discovery.md#split-launches) describes:
+each launch takes a slice, and one carries the tree scout. Merge the returns
+by path before step 3 uses them: concatenate `units` (a path two launches
+name keeps both launches' findings, deduped by entry and lines);
+concatenate `unverified`, `uncovered`, and `securitySkipped`; sum `excluded`;
+and drop from the combined `refutedKeys` every key any launch's `units` still
+carries, so one launch's refutation never hides an item another launch
+confirmed. A shard under `uncovered` is rescanned next round. The workflow
+refuses a seat past its runaway backstop and a `mode` other than `discover`.
+The return, and how a round is built, are in the workflow header and the
 [discovery reference](references/discovery.md).
 
 ## Stop

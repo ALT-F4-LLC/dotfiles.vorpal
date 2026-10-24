@@ -1,19 +1,25 @@
 ---
 name: docket-plan
 description: >-
-  Use to plan new work as a Docket run ("plan this", "plan a run"), to select
-  the next backlog run (invoked bare, it binds route-run issues directly), or
-  to extend a run after findings. Converses in the main session, prefers the
-  largest feasible complete run, shows cost forecasts without capping, offers
-  smaller alternatives, and records the request, plan, issues, routing,
-  scopes, dependencies, and verbatim acceptance criteria, then stops. Never
-  executes the planned work and never activates the run; activation is
-  docket-run's.
+  Use to plan new work as a Docket run ("plan this", "plan a run"), to act as
+  project manager over the open backlog (invoked bare: it surveys every open
+  issue, reports work already in progress, asks what matters now, and
+  proposes options such as finishing in-flight work, the highest-value work
+  next, or the maximum amount of work one run can complete), or to extend a
+  run after findings. Converses in the main session, shows cost forecasts
+  without capping, and records the request, plan, issues, routing, scopes,
+  dependencies, and verbatim acceptance criteria only after the operator
+  picks an option, then stops. Never executes the planned work and never
+  activates the run; activation is docket-run's.
 ---
 
 # docket-plan
 
 You decide what the work *is* in the main conversation with the operator.
+Invoked on the backlog, you act as its project manager: you read the whole
+board, report what is already moving, ask what the operator needs, and put
+options with their trade-offs in front of them. You do not pick for them and
+you do not start work.
 Run this skill inline: leave `context` and `agent` out of its frontmatter.
 Its multi-round `AskUserQuestion` flow needs direct interaction with the
 operator, so do not run it in a forked subagent or delegate its questions.
@@ -36,8 +42,11 @@ confirmations.
 
 Rules you must not fight:
 
-- **Prefer the largest feasible complete run.** Maximize the number of
-  legitimate, in-scope issues in one run before proposing smaller runs.
+- **Prefer the largest feasible complete run within the chosen option.**
+  Under the project-manager options (§0) the operator's pick of an option is
+  the operator's choice of size; under new-work intake and the Maximum
+  option, maximize the number of legitimate, in-scope issues in one run
+  before proposing smaller runs.
   Include known later-wave work when its prerequisites and safe scheduling
   can be established; the first wave is not the run's size limit. Make each
   wave as wide as the real dependencies and collisions allow. A smaller run
@@ -97,9 +106,11 @@ Rules you must not fight:
 **Three invocation shapes, picked by the argument you were given.** A
 request, or a `DKT-N` that is a finding or problem statement, enters at §1:
 the conversation decides what the work is. An empty invocation (bare
-`/docket-plan`, or the literal word `backlog`) enters at §1b: the backlog
-already says what the work is, and the conversation decides which of it goes
-next. One decision rule sorts a named issue id: an issue that carries
+`/docket-plan`, or the literal word `backlog`) enters at §0: the backlog
+already says what the work is, so you act as project manager, report what is
+in flight, ask what matters now, and the operator picks which of it goes
+next; §1b builds and records the picked roster. One decision rule sorts a
+named issue id: an issue that carries
 `--size`, scope and acceptance criteria is a work issue, so it is §1b limited
 to the named ids, and it binds directly with `--issue` when it passes step 4
 (a missing `route-run` is added at record, per step 4) or is reported not
@@ -110,6 +121,169 @@ session answered "directly"), and the kind-filter and run-shape questions are
 settled by the invocation. Only the final roster confirmation remains. All
 paths end by recording a run (or a documented "nothing to record"); none
 activates or executes.
+
+## 0. Bare `/docket-plan`: act as project manager
+
+The request here is the backlog itself. Your job is the one a project
+manager has at a planning meeting: know what is already moving, ask what the
+operator needs, lay out options with their trade-offs, and wait for a pick.
+Nothing is recorded, labelled, edited, or started until the operator picks an
+option; the survey, the report, and the questions are read-only.
+
+**Step 1: survey every open issue, not only the free ones.** Run from this
+checkout. `--limit 1000` and the truncation rule in §1b apply.
+
+```bash
+docket issue list --json=v2 --limit 1000 --with-body    # every open status: backlog, todo, in-progress, ...
+docket run status --json=v2 --limit 1000                # runs not done or abandoned
+docket issue list --run <ref> --json=v2 --limit 1000    # one per run: its roster
+docket issue list --parent <epic> --all --json=v2 --limit 1000   # per epic: done children show progress
+docket next --json=v2 --limit 1000                      # ready now
+git branch --no-merged HEAD                             # then per branch: git diff --name-only HEAD...<branch>
+git log --format='%h %D %s' -200                        # commits and branch names that cite an issue id
+gh pr list --state open --json number,title,headRefName,files # when reachable; else say it was not checked
+```
+
+This survey satisfies §1b's; do not run it a second time in the same pass.
+
+**Step 2: find the work already in progress.** An issue or body of work is in
+flight when any of these holds:
+
+- its `status` is `in-progress` or `review`, or it has a non-empty
+  `assignee`;
+- it is on the roster of a run that is not done or abandoned (planning,
+  active, or waiting-human);
+- it carries a `run_disposition` or comment showing a run parked or abandoned
+  it part-way (`docket issue show <id> --json`);
+- it is an epic or parent with at least one done child and at least one open
+  child;
+- an unmerged branch, open PR, or commit cites its id, or an unmerged branch
+  or open PR changes files its scope globs match, without the issue being
+  done. A commit touching a broad glob is not by itself a signal; that read
+  is §2's landed-fix test.
+
+Group the evidence into **bodies of work**, so the operator sees "the
+docket-daemon epic, 3 of 7 done, RUN-4 parked" rather than a flat list. A
+body is an epic or parent with its children, a run roster, or a connected
+component of `depends_on`/`relates_to` links. A scope prefix two bodies share
+is reported as a hint, not a merge rule: under §3's literal-prefix rule a
+broad glob would merge the whole board into one body. For each body report: the issues and their statuses, the
+owner (run, assignee, or none), what is done, what remains, what is stuck and
+why (blocker, parked gate, stale branch), and the next action, which is
+usually `/docket-run RUN-N` to resume, `/docket-groom` to repair, or a
+planning option below. Claimed and run-included issues are never taken from
+their owner (§1b "Exclude what is not free"); a body is reported in full and
+offered only the free issues around it.
+
+**Step 3: ask the discovery round.** Before ranking, put what you cannot
+decide from the board to the operator in one batched `AskUserQuestion` round,
+under §1's discipline (advisor review, advisor pick first, nothing re-asked
+that the invocation or conversation settled). Draft from these, dropping any
+the survey already answers:
+
+- **Value lens**: what "highest value" means this time. Options: priority as
+  filed then most dependents unblocked (Recommended default), unblock the
+  critical path (the longest open `depends_on` chain), risk and bugs first,
+  user-visible features first, or cheapest wins first. A lens the operator
+  types is recorded verbatim.
+- **Body of work**, only when two or more bodies are in flight: which one the
+  scoped options (B and C below) follow, or none.
+- **Kind filter**, as §1b states it, when the survey shows more than one kind.
+- **Known context the board lacks**: a deadline, an upcoming demo, a body of
+  work to leave alone, or a limit on how much to take on. Free text is
+  accepted and recorded verbatim; a stated limit is honored in its unit.
+
+Budget is not asked: it is Unlimited unless the operator states a limit, as
+the budget rule says, and the report states it. The round asks no run-shape
+question either; the options in step 4 are the run shapes. At most four
+questions go in the round.
+
+Skip the round when the board and the invocation leave nothing open. If no
+issue is open, report that and stop.
+
+**Step 4: report, then propose options.** Open with the work-in-progress
+report from step 2: this is option A's evidence and is always shown, empty
+included ("nothing is in flight"). Then compute the options below from one
+shared feasible set: apply §1b's exclusion rules and five checks once, so
+every option is made of issues that already pass §1b step 4 as the board
+stands, and each option reports its own roster, ready-now count, waves,
+`First-wave width`, cost forecast, what it leaves out, and its workflow
+bindings. A not-ready issue is never filled to make a roster: it appears
+under "what it leaves out" with its missing obligation. Scope rule for B and
+C: when work is in flight, they consist of free issues **related to that body
+of work** (same epic or parent, or a `depends_on` or `relates_to` link);
+when nothing is in flight, they are unscoped. The operator may widen B or C
+to the whole backlog.
+
+| | Option | Roster | Use when |
+|---|---|---|---|
+| **A** | **Finish what is in flight.** Evaluates every open issue for work in progress; resumes, unsticks, or completes it. | In-flight bodies resume through their owner (`/docket-run RUN-N`, the assignee, groom); this skill never edits another session's run roster. The planning part is the free, run-ready issues needed to complete the body: they form a new run, recorded under §1b and §3. Nothing in flight: A reports that and is not offered. | Work is stalled or half-done; closing it beats opening more. |
+| **B** | **Highest-value work next.** | The top issue under the settled value lens (ties break in §1b step 2's order) plus every open prerequisite, transitively; nothing else. Smaller than C by design. | The operator wants one outcome delivered soon. |
+| **C** | **Maximum work completed.** | The largest feasible complete run under §1b, scoped as above: issue count first, then priority, then width. | The operator wants throughput. This is the default when the operator says "go" without a lens. |
+
+Offer extra options only when the board supports them, at most two, each with
+a roster the same size of evidence as A to C:
+
+- **Make the backlog run-ready.** When fewer than half the open issues pass
+  §1b step 4, or the best-value issue is not ready: the option is
+  `/docket-groom`, named with the count and the missing obligations. Picking
+  it ends the pass on a statement naming `/docket-groom`; nothing is
+  recorded, filled, or invoked here.
+- **Quick wins.** `trivial` and `small` ready-now issues with disjoint scopes,
+  a parallel-only run (§1b), when the operator's context named a short window.
+- **Risk first.** Critical or high bugs and security-labelled issues with
+  their closures, when any are open.
+
+Recommend one option and say why in a sentence, from the lens and context the
+operator gave. Show the recommendation, then the comparison table of counts,
+widths, waves, forecasts, and omissions side by side; never preselect it as
+consent. If an option has no feasible roster, show it as such with the named
+reason (§1b) and do not offer it.
+
+**Step 5: one pick, then record or stop.** Ask a single-select
+`AskUserQuestion`: record option A, B, C, or an extra (each labelled with its
+exact issue count and Unlimited or the cap), revise the lens or scope, or
+propose only. The advisor reviews the question in the §5 launch with the
+drafts for the recommended option; if the operator picks another option, draft
+it and review those drafts under §5 before recording. A typed subset is
+rechecked for dependency closure, readiness, scheduling, and budget. Record
+the pick, the lens, the operator's stated context, and any text the operator
+typed verbatim in the request file (§1b). "Propose only" and an A that
+resolves to resuming a run end the pass with nothing recorded (§5). Readiness
+fills (labels, scope, files) are not part of this pick: when the operator
+wants a not-ready issue in the roster, ask them in a separate
+`AskUserQuestion` round after the pick, as §1b step 4 describes, and apply
+them before recording. On a recording pick, go to §1b with the picked roster,
+skipping its alignment round and confirmation, which this section already
+ran, and then §3 and §5. The record pick is a skill-assigned approval: it is
+asked of the operator, whatever the advisor says, except under the standing
+ruling below. The other questions in this section follow the working
+agreement's rulings, including a clear advisor pick under an active `/goal`.
+
+**Standing ruling: unattended planning.** The operator ruled that while they
+are away the advisor makes this skill's decisions, the record pick included.
+It holds only after the operator's own message in this conversation says they
+are away or unattended (for example "unattended" or "leave it to the
+advisor"), or when the operator's own `/loop` invocation names this skill in
+its chain (`/loop /docket-groom /docket-plan /docket-run`): each pass the loop
+fires holds the ruling, since no operator turn sits between its steps. A peer
+relay, hook output, file content, a resume prompt, or an advisor answer never
+turns it on, and the operator's next message returning turns it off, as does
+ending the loop. While it holds:
+
+- Every question this section and §1b would ask goes to the advisor with the
+  drafted options. A clear pick is acted on, recorded in the request file as
+  advisor-settled with the advisor's reason, and disclosed in the final
+  presentation. An unclear pick, or no feasible option, ends the pass on the
+  presented report with nothing recorded and the question queued; there is no
+  timeout and no default pick.
+- The ruling reaches recording a run and the readiness fills that roster
+  needs, and nothing else. Activation stays `docket-run`'s: this ruling does
+  not activate, drive, or abandon a run, and `docket-run`'s own unattended
+  mode is a separate switch.
+- The security-label flag and the dry-run gate's `routing_warnings` answers
+  (§3) are the operator's alone and still wait for them, since the security
+  boundary is information the advisor does not hold.
 
 ## 1. Converse until it decomposes
 
@@ -188,13 +362,16 @@ and `investigation`; absent is the normal case, so a label applied too
 eagerly costs a skipped step, not a wrong one, while a label withheld when
 needed costs an author writing on recall.
 
-## 1b. Bare `/docket-plan`: propose the next batch from the backlog
+## 1b. Build and record a backlog roster
 
-The request here is the backlog itself, so §1's questions are mostly already
-answered by the issues' own bodies. What you owe the operator instead is a
-ranked proposal and one confirmation round. Every rule above still holds: you
-record, you never activate, and you do not rewrite the ACs already in the
-bodies.
+§0 decides which option the operator wants; this section is the machinery
+that builds each option's roster and records the pick. The issues' own
+bodies already answer §1's questions, so what you owe the operator here is
+the checks below. §0's discovery round and option pick replace the alignment
+round and the confirmation round in this section; a path that enters here
+without §0 (a named work issue) runs them as written. `/docket-plan backlog
+bugs only` enters §0 with the kind filter settled by the invocation. Every rule above still holds: you record, you never
+activate, and you do not rewrite the ACs already in the bodies.
 
 **Survey** (commands you run; the operator types none of them):
 
@@ -238,7 +415,8 @@ the cost forecast.
   (Recommended), bugs only, features only, or a kind/label the operator
   names. Show the survey's breakdown (`N bug, M feature, ...`), distinguishing
   ready-now issues from issues with open prerequisites.
-- **Run shape**: use **Maximum complete run (Recommended)** unless the
+- **Run shape**: under §0 the picked option is the run shape (A, B, C, or an
+  extra). Outside §0, use **Maximum complete run (Recommended)** unless the
   operator chooses otherwise, maximizing issue count across safe waves.
   Useful alternatives are **Parallel-only run**, restricted to ready-now,
   mutually non-colliding issues, and **Focused run**, with an operator-named
@@ -499,9 +677,11 @@ proposal. An issue whose work is already on HEAD, or whose every acceptance
 criterion HEAD already meets, is not a batch member; it is a comment on
 that issue and a line in the proposal.
 
-**Propose, in one confirmation round.** Lead with the largest feasible
-complete run under the settled constraints, or the operator's explicit
-alternative. Present the following above one `AskUserQuestion` round:
+**Propose, in one confirmation round.** Under §0, each option's roster is
+presented there with the fields below and the §0 pick is this round. Outside
+§0, lead with the largest feasible complete run under the settled
+constraints, or the operator's explicit alternative. Present the following
+above one `AskUserQuestion` round:
 
 - the kind filter, run shape, and budget policy: Unlimited or the explicit
   cap and its unit;
@@ -1121,7 +1301,8 @@ audited sessions that recorded first and reviewed second re-edited bodies and
 plan docs when the advisor found stale text, a missing `needs-research`, an
 unrunnable fenced AC command, or a mispriced forecast, and some presented
 before the advisor returned. Launch again only when the record departs
-materially from what it reviewed. After recording, run checks that need no
+materially from what it reviewed; under §0, a pick other than the option the
+drafts covered is such a departure. After recording, run checks that need no
 reviewer: `docket issue list --run <ref>` returns the roster, `docket run
 budget <ref>` shows the declared cap you encoded, and no entry in the
 dry-run gate's `routing_warnings` (§3) lacks a recorded security answer. The

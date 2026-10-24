@@ -95,11 +95,21 @@ Rules you must not fight:
   transient states that can make an AC assert something false.
 
 **Three invocation shapes, picked by the argument you were given.** A
-request or a `DKT-N` issue id enter at §1: the conversation decides what the
-work is. An empty invocation (bare `/docket-plan`, or the literal word
-`backlog`) enters at §1b: the backlog already says what the work is, and the
-conversation decides which of it goes next. Both paths end by recording a
-run (or a documented "nothing to record"); neither activates or executes.
+request, or a `DKT-N` that is a finding or problem statement, enters at §1:
+the conversation decides what the work is. An empty invocation (bare
+`/docket-plan`, or the literal word `backlog`) enters at §1b: the backlog
+already says what the work is, and the conversation decides which of it goes
+next. One decision rule sorts a named issue id: an issue that carries
+`--size`, scope and acceptance criteria is a work issue, so it is §1b limited
+to the named ids, and it binds directly with `--issue` when it passes step 4
+(a missing `route-run` is added at record, per step 4) or is reported not
+ready with the missing thing named, never silently decomposed. An id without
+size, scope and ACs is a finding and enters §1. For a work issue the intake
+question "bind directly or plan a fresh issue" is not asked (every audited
+session answered "directly"), and the kind-filter and run-shape questions are
+settled by the invocation. Only the final roster confirmation remains. All
+paths end by recording a run (or a documented "nothing to record"); none
+activates or executes.
 
 ## 1. Converse until it decomposes
 
@@ -121,7 +131,12 @@ that does not change the decomposition is not your problem to solve.
 
 Every round, and the final roster confirmation, passes the advisor's
 [question review](../../references/working-agreement.md#question-review)
-before it is asked. Your draft recommendation and the defaults this skill
+before it is asked. A round asked before any draft exists gets its own
+review; the final roster confirmation shares the one §5 launch with the
+drafts, and a routing-warning question the dry-run gate raises after
+recording gets its own. An operator answer that hands a question to the advisor is their
+ruling for it: record the advisor's clear pick and say so, and do not ask
+the question a second time. Your draft recommendation and the defaults this skill
 names below (every kind, Maximum complete run, the largest roster within a
 cap) are advisor input; the advisor's pick goes first, labelled
 "(Recommended)", for every round, including open-ended asks like acceptance
@@ -190,7 +205,9 @@ docket run status --json                              # runs that already own is
 docket issue list --run <ref> --json=v2 --limit 1000  # one per run above: its roster
 ```
 
-Project resolves from cwd's git identity. A `VALIDATION_ERROR` naming no
+Project resolves from cwd's git identity, so run every docket command from
+this checkout: a `workflow list` from another directory comes back empty
+and reads as an unactivated store. A `VALIDATION_ERROR` naming no
 project, or no store reachable, means this repo isn't bound: say so and
 stop. `--limit 1000` is not optional, for the
 reasons the docket skill's
@@ -226,9 +243,10 @@ the cost forecast.
   Useful alternatives are **Parallel-only run**, restricted to ready-now,
   mutually non-colliding issues, and **Focused run**, with an operator-named
   issue-count cap, priority floor, or subset. These are single-select
-  alternatives, not simultaneous preferences. State the default rather than
-  requiring a redundant question; present concrete alternatives with the
-  final proposal when their counts, costs, or urgency materially differ.
+  alternatives, not simultaneous preferences. Never put run shape in the
+  alignment round or bundle it into the confirmation as a second axis: state
+  the default, and present concrete alternatives with the final proposal
+  when their counts, costs, or urgency materially differ.
 - **Budget**: state **Unlimited (default)** when no limit is specified;
   do not ask a budget question. Preserve an explicit cap in its stated unit.
   Ask, in an `AskUserQuestion` round, only if a supplied limit is ambiguous
@@ -255,6 +273,12 @@ with `docket-groom`, and are applied here as written there:
   parallel rules below.
 - **Run-included or claimed.** As the reference defines them; an issue on
   a run's roster or with a non-empty `assignee` is never ranked here.
+- **Blocked or an epic.** `docket next` ignores the `blocked` label, but
+  every registered `[match]` lists it in `unless_labels`, so a `blocked`
+  issue can never bind: count it as not free with the label named, before
+  the alignment round, or the round offers a menu nothing can bind. An
+  epic (`kind` epic) is a container that carries no size, so it is context, not
+  a candidate; its open non-epic sub-issues are.
 - **Unrouted or routed elsewhere.** Only an issue carrying `route-run` is a
   candidate. An issue with no routing label is unrouted: count it, name the
   count in the proposal with a pointer to `/docket-groom`, and never rank
@@ -341,7 +365,10 @@ and parallel width decide between equally large feasible rosters.
    body carries
    acceptance criteria (at least one checkable item, not a restated title);
    `--scope` is set and every glob matches at least one file in this
-   checkout; the row's `files` list is non-empty, naming the concrete files
+   checkout (a glob or `-f` entry that matches nothing is accepted when an
+   acceptance criterion names that path as a file or package the change
+   creates; ask once for the whole batch when you cannot tell, not once per
+   issue); the row's `files` list is non-empty, naming the concrete files
    the change touches; plus the binding probe and the scope-vs-AC lint
    below. An issue that fails any of them is not run-ready: list it under
    "not ready" with the missing thing named. The operator may have you fill
@@ -372,20 +399,20 @@ and parallel width decide between equally large feasible rosters.
    precisely what refuses:
 
    ```bash
-   docket workflow list --json=v2 --limit 0   # every registered name@version; --limit 0
-                                              # because the default is 50 and this lists
-                                              # every VERSION of every name, not just the
-                                              # binding one
-   docket workflow show <name>                # per binding-eligible name: its [match] block
+   docket issue list --json=v2 --limit 1000 -s backlog -s todo \
+     | ~/.claude/skills/docket-plan/scripts/bind-probe.sh   # id, match count, name@version, cost facts
+   docket workflow show <name>                              # one name's [match] block, when a line surprises you
    ```
 
-   The bindable set is the highest registered version of each name whose row
-   carries no `deprecated_at_ms` (a retired version still resolves under
-   `show` and never binds), plus any `.docket/config/workflows/*.toml` this
-   repo carries, which activation auto-registers before it matches. Every
-   corpus `[match]` routes on labels alone (§2), so evaluate each candidate's
-   labels against `labels_any` / `labels_all` / `unless_labels`,
-   `unless_labels` last and winning, and count:
+   The script reads the registry (`docket workflow list --json=v2 --limit 0`,
+   `--limit 0` because the default page is 50) and keeps the highest
+   registered version of each name whose row carries no `deprecated_at_ms`
+   (the plain listing already hides retired versions; a retired version
+   still resolves under `show` and never binds). Add any `.docket/config/workflows/*.toml` this repo carries
+   by hand, which activation auto-registers before it matches. Every corpus
+   `[match]` routes on labels alone (§2), and the script evaluates
+   `labels_any` / `labels_all` / `unless_labels`, `unless_labels` winning.
+   Read its count column:
 
    - **Exactly one**: that is the workflow the issue binds. Carry the
      `<name>@<version>` into the proposal beside its labels, whether or not
@@ -397,9 +424,16 @@ and parallel width decide between equally large feasible rosters.
      route-by-omission tell, and an operator decision rather than yours.
      Not ready: `binds <wf>, ACs imply <other>`.
 
-   If `workflow list` comes back empty, this store has never activated and
-   nothing is registered yet (§2); say that in the proposal rather than
-   reporting a clean probe.
+   Check the bound workflow's gates against the repository too: every
+   `gate` line `docket workflow show <wf>` prints (`diff-scope-small` on
+   `small-change`, say) needs an entry in `docket trust list` for this
+   checkout. One planned run bound `small-change` in a repository that
+   neither supplied nor trusted that gate, and the advisor found it only after
+   recording. A gate with no trust entry is not ready: `gate <name> not
+   trusted`; the alternative binding is the operator's decision.
+
+   If the registry listing is empty from this checkout, nothing is registered
+   yet (§2): say that in the proposal rather than reporting a clean probe.
 
    **Scope covers what the ACs name.** Every file path an acceptance criterion
    names must be matched by one of the issue's scope globs. Whether an AC
@@ -412,13 +446,17 @@ and parallel width decide between equally large feasible rosters.
 
    Run docket-groom's scope lint on each candidate issue to check this
    mechanically, along with `files`: `docket issue show <id> --json |
-   ../docket-groom/scripts/scope-lint.sh --base <sha>` (the path is
-   relative to this skill's directory; `<sha>` is `git rev-parse HEAD` in
-   this checkout). It reports each AC-named path missing from `files` or
+   ~/.claude/skills/docket-groom/scripts/scope-lint.sh --base <sha>`
+   (`<sha>` is `git rev-parse HEAD` in this checkout; a path relative to this
+   skill's directory does not resolve from the checkout, and a pipe after the
+   script hides its exit code). It reports each AC-named path missing from `files` or
    outside every scope glob, and each listed Go file whose sibling
    `_test.go` exists but falls outside scope (§3 Scope's regression-test
    rule). Any line it prints is a not-ready reason, quoted as the reason;
-   only exit 0 passes. Rerun it after a fill the operator authorizes.
+   only exit 0 passes. The remedy is to add the path to `files` and `scope`,
+   never to delete the path from the body to quiet the lint. Rerun it after a
+   fill the operator authorizes, and rerun the size gate with it: a fill that
+   adds files can push an issue over the sizing cap.
 
    **Every AC is satisfiable inside the issue's scope.** An AC whose only
    remedy needs a change outside every scope glob, in another repository, or
@@ -495,8 +533,9 @@ invent a small default batch size to fill the table. If the operator already
 chose a focused or parallel-only run, recommend the best roster within that
 choice.
 
-The single-select confirmation, reviewed by the advisor before it is asked
-(the post-record advisor launch does not cover it), offers recording the
+The single-select confirmation is reviewed by the advisor before it is asked,
+in the one §5 launch that also reviews the drafts, so draft the bodies,
+request file and plan text before this round. It offers recording the
 recommended roster with
 its exact count and Unlimited or explicit cap, recording a named displayed
 alternative when one exists, or revising/proposing only. Keep revision/propose-only available even
@@ -643,14 +682,30 @@ docket run start --request-file <path> \
   --budget <declared-cap-or-0> --usage-budget <usage-cap-or-0> \
   --issue DKT-<n> --issue DKT-<m>  # request verbatim; issues must exist first
 docket doc create -T plan -t "<title>" --idempotency-key <key> -d @<path>  # the plan artifact
+docket run activate RUN-<n> --dry-run --json  # the dry-run gate below; the only activate form planning runs
 ```
 
-Write each body/request/doc-content field to a temp file before use.
+Write each body/request/doc-content field to a file under one absolute
+scratch directory (`$TMPDIR/plan`; the shell's working directory resets
+between calls, so a relative path lands the file somewhere `run start` cannot
+find it), with the Write tool. Change a drafted body with the Edit tool or
+`docket issue edit`, never `sed -i`: macOS `sed` rejects the GNU form.
 `issue create -d` takes a literal string (`-` reads stdin); the `@<path>`
 form belongs to `doc create` alone. Followed blindly, every issue body
 becomes the literal text "@/path/file", frozen at activation into every
 brief. Help-check each verb's flags on first use in a session; the CLI is
 the authority, not this file.
+
+Shapes and verbs that cost retries when guessed: every `--json=v2` result is
+`{ok, data}`; list verbs put rows in `.data.items[]`, `issue show` is `.data`
+with its edges in `.data.relations[]`, and `run start` returns `.data.run`
+(the run is created even when your `jq` fails, so re-read it rather than
+re-running `run start`). The label verbs are `issue label add|rm`, not
+`remove`; `docket run show` does not exist; `docket doc link add <doc>
+--issue <id>` links a plan doc to an issue only, never to a run, so the run
+record is the request and the plan doc's own title. An edit to an issue's
+`scope` or `files` replaces the whole list; set both together, and add the
+sibling `_test.go` to both.
 
 Issues first: `run start --issue` names them, so they must already exist.
 The set freezes at activation, not at `run start`: `docket run issue add
@@ -668,105 +723,54 @@ specified a limit for that dimension; omission can inherit `budget.default`
 or `budget.usage.default`. Map an explicit limit to the correct dimension
 and unit using `run budget --help`; do not copy one number into both
 dimensions. Declared workflow costs and measured usage are not
-interchangeable. After recording, read the run's effective limits and verify that
-they match the operator's policy, recorded separately from the cost
-forecast below. Do not change global settings or other runs. For a later
+interchangeable. After recording, `docket run budget RUN-N` reads the
+declared cap and verifies it matches the operator's policy. The
+measured-usage cap has no read-back (`run status` omits budget, `run budget`
+prints the declared cap), so report it as "set to 0 at `run start`, not read
+back" after one `run budget` call, not after further probes. Record both
+apart from the cost forecast below. Do not change global settings or other runs. For a later
 planning pass, preserve still-applicable operator-specified limits; a
 configured default or an earlier forecast is not an operator limit, so
 reconcile any mismatch with this policy in the run being planned.
 
-**Cost forecast, not an automatic cap.** Calculate the proposed run's
-declared-cost floor and normal rework allowance in both budget modes. With
-Unlimited, the total is informational. With an explicit declared-cost cap,
-it is also the admission check. A measured-usage cap remains separate,
-per above.
-
-The floor is the bound workflow's expected-cost sum with its when-gated
-steps included: a `when` you cannot evaluate at plan time is a step that may
-well run, and a floor that omits it is a floor for a run that did not
-happen. You read that sum, you never estimate it: `docket workflow show <wf>`
-prints each step's `cost=` and an `expected_cost total` line that is already
-fanout-expanded and includes when-gated and loop steps — read that total (or
-`definition.steps[].expected_cost` under `--json`) for the workflow's
-registered, bound version. Fall back to `grep -n expected_cost
-~/.docket/config/workflows/<wf>.toml`, summed over every line it returns,
-with each `fanout` step's cost multiplied by the length of its `fanout`
-list (`grep -n 'fanout =' ~/.docket/config/workflows/<wf>.toml` finds
-them), only when comparing against a
-candidate or unregistered source file `workflow show` cannot see.
-Standard-change's review is 0.60 × three judges = 1.80, security-change's and
-ui-change's are 0.60 × four, spec-doc's 0.60 × three, and spec-project's
-`spec-author` fans out seven ways at 1.00 apiece. The per-track total is the
-sum you read, never a figure copied from prose: `docket workflow show <wf>`
-reports the current registered version directly, and the toml fallback stays
-versioned (`grep version ~/.docket/config/workflows/<wf>.toml` gives the
-current number) so a total frozen into prose goes stale silently either way.
-If the read did not happen, the number is an estimate and the proposal must
-say so in those words.
-
-On top of the floor goes rework headroom, read the same way, never guessed:
-for every admitted issue, the cost of one rework round on its bound workflow
-× that workflow's own declared `max_fix_loops`, summed across the batch. Both
-factors are in the pinned definition. `grep -n max_fix_loops
-~/.docket/config/workflows/<wf>.toml` gives the bound: it lives on the step
-that owns the loop, which is `reconcile` on standard-change, ui-change,
-security-change, spec-doc and spec-project, `review` on small-change,
-`verify-ac` on disposition and trivial-change, and the
-`report-vote` vote on investigation. trivial-change is the one track that
-declares `max_fix_loops = 1`. The round is the `loop = true` step plus every
-step in its `after_loop` closure: the `after_loop` step and every step
-transitively `after` it, which the engine supersedes and re-instantiates
-together on each loop entry. That closure runs past the owning step: on the
-change tracks it includes verify-ac, its vote, and `drain-highs`, not only
-the fix, judges and synthesize-findings. Read the step names, not the costs
-alone: the fix step is called `revise-spec` on spec-project,
-`revise-investigation` on investigation and `revise-disposition` on
-disposition, and spec-doc's
-five `revise-*` variants are mutually exclusive `when`s: exactly one
-fires, so its round carries 1.50 once, not five times.
-
-The four tracks whose `drain-highs` runs after the final vote, round ×
-declared loops = reserved per issue: standard-change fix 1.0 + judges 1.80 +
-synthesize-findings 0.60 + verify-ac 0.50 + drain-highs 0.30 = 4.2 × 2 =
-8.4; ui-change 1.0 + 2.40 + 0.60 + design-qa 0.90 + 0.50 + 0.30 = 5.7 × 2 =
-11.4; spec-doc `revise-*` 1.50 + 1.80 + 0.60 + drain-highs 0.30 + record
-0.20 = 4.4 × 2 = 8.8; spec-project (`revise-spec` fans out seven ways at
-0.70) 4.90 + 1.80 + 0.60 + 0.30 = 7.6 × 2 = 15.2. Votes and `reconcile`
-cost nothing. For the other tracks (security-change, small-change,
-trivial-change, investigation, disposition), compute the round the same way
-from `docket workflow show <wf>` using the closure rule above, rather than
-from a remembered number:
-this is a worked example of the read, not a substitute for it, and every
-one of these files is versioned.
-
-The sizing rules below concern finite caps only, per the unlimited-budget
-rule above.
+**Cost forecast, not an automatic cap.** Read it from the registry, never
+estimate it: pipe the roster's issue rows (`docket issue list --json=v2 ...`
+or `docket issue show <id> --json`) into
+`~/.claude/skills/docket-plan/scripts/bind-probe.sh` from this checkout. Per
+issue it prints the bound `name@version` and, from that registered
+definition: the floor (`docket workflow show`'s `expected_cost total`, fanout
+expanded, `when`-gated and loop steps included once), `max_fix_loops`, the
+cost of one rework round, and the headroom. A round is the `loop = true` step
+plus the `after_loop` step and every step transitively after it, so it runs
+past the owning step: on the change tracks it includes the judges,
+synthesis, verify-ac and `drain-highs`, not only the fix. Headroom is
+`round × max_fix_loops` minus the loop step already inside the floor. Sum
+floor and headroom over the batch. For a candidate workflow that is not
+registered, sum `expected_cost` from its toml by hand, multiplying each
+`fanout` step by its list length.
 
 Two things are forbidden, both measured. Never budget a fixed number of
-rounds the workflow did not declare: size on the definition's own
-`max_fix_loops`, because sizing on fewer rounds under-forecasts the reserved headroom the definition already commits
-to. And never divide by issue count: every admitted issue reserves its own
-workflow's full `max_fix_loops`, because loops are per issue and the batch
-is what makes them concurrent, not what makes them share. A number that
-came from neither the pinned definition nor this arithmetic is not a
-substantiated cost forecast or justification for a raise; an explicit
-operator cap still applies. Price only the track's normal case into the
-cap: a round nobody could have planned, such as an operator's out-of-band
-commit needing independent review mid-run, is what the raise machinery is
-for, not a sizing failure. A cap that is short by arithmetic forces a
-mid-run raise panel and idle wall-clock time that a correct read would have
-avoided. Round the forecast up and say what the headroom is for; an unspent
-cap costs nothing (`docket run budget --set <n> --reason '<why>'` adjusts
-it later, with `--if-version` when a concurrent change would matter). Write
-this arithmetic, one line, into the plan doc's body as the forecast,
-alongside Unlimited or the operator's explicit cap. That line also states
-the forecast's unit, the declared-cost floor plus the max_fix_loops rework
-headroom, and that `docket run activate --dry-run`'s `expected_cost_total`
-reads lower because it excludes `loop = true` steps and that headroom, so
-an operator choosing a cap compares like with like. In unlimited mode, keep
-the encoded caps at `0` regardless of the forecast. If an explicit cap is
-too small, fit the roster without dropping agreed deliverables, or obtain
-agreement, through `AskUserQuestion`, to a concrete scope reduction or budget increase before
+rounds the workflow did not declare, because that under-forecasts the
+headroom the definition already commits to. Never divide by issue count:
+loops are per issue, and the batch makes them concurrent, not shared. A
+number that came from neither the probe nor this arithmetic is not a
+substantiated forecast; if the probe could not run, the proposal says the
+number is an estimate in those words. Votes and `reconcile` cost nothing.
+
+With Unlimited, the total is informational: keep every encoded cap at `0`
+whatever it reads. With an explicit declared-cost cap, it is the admission
+check, and a cap short by this arithmetic forces a mid-run raise panel and
+idle wall-clock a correct read avoids. Price only the track's normal case into
+a finite cap; an out-of-band round nobody could plan for is what
+`docket run budget --set <n> --reason '<why>'` is for (`--if-version` when a
+concurrent change would matter). Round a finite forecast up and say what the
+headroom is for. Write the arithmetic, one line, into the plan doc's body
+beside Unlimited or the cap: its unit, the floor plus the rework headroom,
+and that `docket run activate --dry-run`'s `expected_cost_total` reads lower
+because it excludes `loop = true` steps and that headroom, so an operator
+choosing a cap compares like with like. If an explicit cap is too small, fit
+the roster without dropping agreed deliverables, or obtain agreement through
+`AskUserQuestion` to a concrete scope reduction or budget increase before
 recording. Never silently replace the budget policy with the computed
 forecast.
 
@@ -1038,12 +1042,11 @@ releases one at a time. Count the edges you are about to record and check
 the resulting graph's width against the wave arithmetic above.
 
 **Planning from a single existing backlog issue** (`/docket-plan DKT-N`):
-four obligations, each checked independently before recording. This is the
-single-issue intake only: DKT-N here is a finding or a problem statement the
-run decomposes into fresh issues. The bare-`/docket-plan` batch (§1b) is the
-other case: its members have already passed the run-readiness check and
-are the units of work, so §1b binds them with `--issue` directly and none of
-the four obligations below apply to them:
+four obligations, each checked independently before recording. They apply
+only when DKT-N is a finding or a problem statement the run decomposes into
+fresh issues. An id that already passes §1b step 4 is a batch member, not a
+finding: it binds directly with `--issue` and none of the four obligations
+below apply, as they do not for the bare-`/docket-plan` batch (§1b):
 
 - DKT-N stays out of the run: pass only the fresh issues to
   `run start --issue`, never DKT-N.
@@ -1056,8 +1059,7 @@ the four obligations below apply to them:
   to it.
 
 **Dry-run gate: a routing warning needs a recorded security answer before
-you present.** After the recording commands and before the advisor review
-and the presentation, run `docket run activate <run> --dry-run --json`. It
+you present.** After the recording commands and before the presentation, run `docket run activate <run> --dry-run --json`. It
 computes the activation in one transaction and rolls it back, so it mints no
 conductor token; it is the one form of the activate verb a planning session
 runs, never without `--dry-run`. Read the `routing_warnings` array of its
@@ -1086,8 +1088,13 @@ skipped.
 
 Some requests cannot be planned to the end: "audit and then build what we
 find" has no knowable second half. Do not invent one. Record phase one
-fully, and record phase two as a single human-gate issue that says what will be
-decided and by whom.
+fully, and record phase two as a single placeholder issue that says what will
+be decided and by whom. No registered workflow has a `type = "human"` step,
+so a placeholder passed to `run start --issue` would bind a code workflow and
+get implemented. Create it with `blocked` (which every `[match]` declines,
+so nothing binds it), no `route-run`, and `relates_to` links to the phase-one
+issues; leave it out of `run start --issue`. A fresh invocation attaches it
+with `docket run issue add` once the operator has answered.
 
 The run activates on phase one. When phase one finishes, the operator answers
 the gate, and a *fresh* invocation of this skill reads the run record (steps,
@@ -1100,21 +1107,35 @@ command. Activation lints the extension like any other graph.
 
 If §1 or §1b concludes with nothing to record (the operator chose "propose
 only", or no feasible startable run remains after the full checks), present
-your reasoning as given and stop; run no further commands.
+your reasoning as given and stop; run no further commands and create no
+Docket artifact. The presented proposal is the pass's whole deliverable,
+including under a `/goal` Stop hook.
 
-When the session can launch agents, launch the `advisor` agent after the recording commands
-above have run and before the presentation, on the recorded run (or, when
-§1 or §1b recorded nothing, on that conclusion), and fold its input into the
-presentation.
+**One advisor launch covers the questions and the drafts.** When the session
+can launch agents, draft the request file, the issue bodies with their
+labels, scope, files and edges, and the plan text on disk first. Launch the
+`advisor` once on those drafts together with the confirmation question set,
+wait for its result, and fold its findings into the drafts before you ask or
+record. Recording from reviewed drafts leaves no edit to make afterwards. The
+audited sessions that recorded first and reviewed second re-edited bodies and
+plan docs when the advisor found stale text, a missing `needs-research`, an
+unrunnable fenced AC command, or a mispriced forecast, and some presented
+before the advisor returned. Launch again only when the record departs
+materially from what it reviewed. After recording, run checks that need no
+reviewer: `docket issue list --run <ref>` returns the roster, `docket run
+budget <ref>` shows the declared cap you encoded, and no entry in the
+dry-run gate's `routing_warnings` (§3) lacks a recorded security answer. The
+pre-record launch is the completion review of the deliverable.
 
-Once the recording commands above have run, present the recorded run:
-total issue count, the issues, their edges, scopes, Unlimited or explicit
-budget limits, the separate cost forecast, planned waves, and `First-wave
-width` accounting for both dependencies and collisions. State why any
-otherwise eligible work remains outside this run, and say plainly that
-activation is `docket-run`'s tribunal vote. Then stop; do not offer to
-activate it yourself as a convenience. Do not keep the plan in your head
-for later; it is in Docket now.
+Once the recording commands have run, present the recorded run: total issue
+count, the issues, their edges, scopes, Unlimited or explicit budget limits,
+the separate cost forecast, planned waves, and `First-wave width` accounting
+for both dependencies and collisions, plus one line for the dry-run gate's
+`routing_warnings` result, empty included. State why any otherwise eligible
+work remains outside this run. End on a statement, never a question or offer:
+activation is `docket-run`'s tribunal vote, and the run is ready for
+`/docket-run RUN-N`. Then stop. Do not keep the plan in your head for later;
+it is in Docket now.
 
 If the operator asks for activation in this session, that is a direct
 instruction that outranks the panel that would otherwise vote on it, but it

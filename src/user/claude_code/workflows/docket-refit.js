@@ -69,11 +69,11 @@ export const meta = {
 // Sweep and mining are counting work over greps and ledgers that
 // the design conversation re-reads, so they run on haiku; verify reads
 // engine source for a cited mechanism the design will lean on, so it gets
-// opus/medium, the variant policy.toml gives most of its judge-* executors.
+// fable/medium: a wrong citation propagates into the whole redesign.
 const AGENT_CONFIG = {
     sweep: { model: 'haiku', effort: 'high' },
     mine: { model: 'haiku', effort: 'high' },
-    verify: { model: 'opus', effort: 'medium' },
+    verify: { model: 'fable', effort: 'medium' },
 }
 
 const SURFACES = ['workflow', 'policy', 'contract', 'fragment', 'schema']

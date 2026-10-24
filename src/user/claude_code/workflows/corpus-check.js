@@ -17,7 +17,7 @@ const AGENT_CONFIG = {
   read: { model: 'sonnet', effort: 'high' },
   coverage: { model: 'opus', effort: 'medium' },
   refill: { model: 'sonnet', effort: 'high' },
-  crossBoundary: { model: 'opus', effort: 'medium' },
+  crossBoundary: { model: 'fable', effort: 'medium' },
   verify: { model: 'sonnet', effort: 'medium' },
 }
 

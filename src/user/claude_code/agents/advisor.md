@@ -5,7 +5,7 @@ description: >
   deliverable. Launch it with a brief that names the task, the evidence, the
   artifact to review, and the constraints; it sees nothing else. Returns advice
   as review input, never as authorization.
-model: opus
+model: fable
 effort: high
 tools: Read, Grep, Glob, Bash
 ---

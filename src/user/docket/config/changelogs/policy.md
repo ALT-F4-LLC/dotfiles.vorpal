@@ -3,6 +3,45 @@
 Version history of `policy.toml`, newest first. Each heading is the
 `[policy].version` the entry describes.
 
+## 44
+
+Eight executor rows move to Fable. `[variants]`, `[security]`,
+`[escalation]`, and every other row are byte-identical to version 43.
+
+Store audit, 2026-10-23, against `~/.docket/issues.db`: Fable seated 38
+of about 12,000 executor steps and 0.28M of 79M output tokens, because
+version 42 moved its rows to Opus on price and benchmark evidence. This
+version raises Fable use on purpose, at the operator's direction, and
+keeps research, where version 42's evidence is direct, on Opus.
+
+- investigate, prd-author, adr-author, tdd-author, ux-spec-author
+  `opus-high` -> `fable-high`; report `opus-medium` -> `fable-medium`.
+  Six of the seats that ran on Fable before version 42. Version 42's
+  note stands: the Fable authoring and investigation evidence was
+  measured against Opus 5 and Fable 5, not Opus 5.5, so this move buys
+  breadth of attempt, not a demonstrated gain. Expect about 2.5x the
+  Opus price per step ($10 / $50 against $4 / $20 per million tokens).
+  `fable-high` and `fable-medium` carry no `escalate_to`, so a
+  one-hop `on_failure` from these seats has no further Fable to climb to.
+- judge-architecture `opus-low` -> `fable-low`; tribunal-architecture
+  `opus-medium` -> `fable-medium`. These seats take the architecture
+  lens, where the corpus claims Fable's edge (`novel-architecture`).
+  The version 42 effort experiment on judge-architecture ends here:
+  its seat no longer runs Opus, so rows after this version are not
+  comparable to its `opus-low` baseline. `fable-low` retries on
+  `fable-medium` (`escalate_to`).
+- Rows that stay on Opus or Sonnet: research (version 42's verified-
+  figures result favors Opus 5.5), implement, fix, dispose,
+  judge-correctness, judge-simplicity, judge-design, verify-ac,
+  design-qa, spec-author-*, and every `never = ["fable"]` security
+  node. The fallback table still maps each Fable variant to an Opus
+  variant, so no chain gains a cycle.
+
+Residual: `seat_roster.py` reads the raw tables and ignores `never` and
+security labels, so a conversational gate on a security-labelled issue
+that seats tribunal-architecture would seat Fable. Route that gate
+through `docket policy resolve --label` to apply the pin.
+
 ## 43
 
 `[security].reason` states the current behavior only: it drops the

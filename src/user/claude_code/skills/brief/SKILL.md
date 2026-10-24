@@ -8,7 +8,7 @@ description: >-
   /goal, /peer, or another orchestration skill that runs the work under a
   goal, loop, or workflow. It never runs the work outside one of those.
 argument-hint: "<freeform work request or revision to an existing brief>"
-model: opus
+model: fable
 ---
 
 # brief

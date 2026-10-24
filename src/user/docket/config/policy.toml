@@ -1,5 +1,5 @@
 [policy]
-version = 43
+version = 44
 
 [variants]
 fable-high = { model = "fable", effort = "high" }
@@ -18,21 +18,21 @@ sonnet-low = { model = "sonnet", effort = "low", escalate_to = "sonnet-medium" }
 sonnet-medium = { model = "sonnet", effort = "medium", escalate_to = "opus-medium" }
 
 [executors]
-adr-author = { variant = "opus-high" }
+adr-author = { variant = "fable-high" }
 design-qa = { variant = "opus-medium" }
 dispose = { variant = "opus-medium" }
 drain-highs = { variant = "haiku-high" }
 fix = { variant = "opus-medium" }
 implement = { variant = "opus-medium" }
-investigate = { variant = "opus-high" }
-judge-architecture = { variant = "opus-low" }
+investigate = { variant = "fable-high" }
+judge-architecture = { variant = "fable-low" }
 judge-correctness = { variant = "opus-medium" }
 judge-design = { variant = "opus-medium" }
 judge-security = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
 judge-simplicity = { variant = "opus-medium" }
 judge-testing = { variant = "sonnet-high" }
-prd-author = { variant = "opus-high" }
-report = { variant = "opus-medium" }
+prd-author = { variant = "fable-high" }
+report = { variant = "fable-medium" }
 research = { variant = "opus-high" }
 revise-investigation = { variant = "fable-high" }
 spec-author-architecture = { variant = "opus-medium" }
@@ -43,14 +43,14 @@ spec-author-review-strategy = { variant = "opus-medium" }
 spec-author-security = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
 spec-author-testing = { variant = "opus-medium" }
 synthesize-findings = { variant = "sonnet-high" }
-tdd-author = { variant = "opus-high" }
+tdd-author = { variant = "fable-high" }
 tdd-author-security = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
 threat-model = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
-tribunal-architecture = { variant = "opus-medium" }
+tribunal-architecture = { variant = "fable-medium" }
 tribunal-correctness = { variant = "opus-medium" }
 tribunal-design = { variant = "sonnet-high" }
 tribunal-security = { variant = "opus-medium", never = ["fable"], reason = "security-classifier-reroute" }
-ux-spec-author = { variant = "opus-high" }
+ux-spec-author = { variant = "fable-high" }
 verify-ac = { variant = "opus-medium" }
 
 [security]

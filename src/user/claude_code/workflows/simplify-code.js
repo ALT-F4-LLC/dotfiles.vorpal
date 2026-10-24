@@ -45,7 +45,7 @@ export const meta = {
 // Pin models so the run never inherits the caller's quota-limited model.
 const AGENT_CONFIG = {
   scout: { model: 'opus', effort: 'medium' }, // reads widely and judges matches; changes nothing
-  refute: { model: 'opus', effort: 'high' }, // defaults to refuted, so it must read closely
+  refute: { model: 'fable', effort: 'high' }, // defaults to refuted, so it must read closely
 }
 
 // TEST-BEGIN simplify-code-decide — pure decision helpers, exercised by

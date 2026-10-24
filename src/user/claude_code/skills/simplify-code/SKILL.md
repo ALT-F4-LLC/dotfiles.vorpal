@@ -274,7 +274,7 @@ installed file means the corpus was never activated after this skill was
 added: report that, and do not launch the source copy. Never use the plain
 `Agent` tool for a seat: it carries no effort parameter. Every seat pins
 both `model` and `effort` explicitly; the workflow holds the pins, `opus` at
-`medium` for scouts and `high` for refuters.
+`medium` for scouts and `fable` at `high` for refuters.
 
 ```
 Workflow({ scriptPath: "<absolute installed path>", args: { repo: "<absolute repo path>", catalogPath: "<absolute installed catalog.md>", discoveryPath: "<absolute installed discovery.md>", depth: "<simple|standard|deep>", head: "<HEAD>", ledger: [<ledgered paths and the dirty paths from step 1>], baselineReports: "<diagnostics, or empty>" } })

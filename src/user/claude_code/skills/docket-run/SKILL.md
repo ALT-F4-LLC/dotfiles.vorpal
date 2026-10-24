@@ -334,7 +334,7 @@ than asking, as `docket-postmortem` and `docket-plan` do.
 **Seat model.** A conductor session runs on Sonnet 5.5 at medium effort.
 The loop makes no routing decisions, every reserved matter goes to the
 advisor first, and the measured cost of a conductor is context re-read
-per turn, not reasoning; the advisor stays on Opus (`model:` in
+per turn, not reasoning; the advisor runs on Fable (`model:` in
 `agents/advisor.md`). If the session is on another model, say so in the
 activation report and continue; switching models mid-run is the
 operator's call.

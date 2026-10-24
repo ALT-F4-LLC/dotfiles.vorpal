@@ -121,7 +121,7 @@ const AGENT_CONFIG = {
     install: { model: 'haiku', effort: 'medium' },
     prosecute: { model: 'sonnet', effort: 'medium' },
     defend: { model: 'sonnet', effort: 'medium' },
-    judge: { model: 'opus', effort: 'medium' },
+    judge: { model: 'fable', effort: 'medium' },
     refute: { model: 'sonnet', effort: 'medium' },
     record: { model: 'haiku', effort: 'medium' },
 }

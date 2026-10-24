@@ -161,11 +161,11 @@ const AGENT_CONFIG = {
     digest: { model: 'haiku', effort: 'low' },
     conductor: { model: 'opus', effort: 'medium' },
     layer: { model: 'opus', effort: 'medium' },
-    deepFlagged: { model: 'opus', effort: 'medium' },
+    deepFlagged: { model: 'fable', effort: 'medium' },
     deepClean: { model: 'sonnet', effort: 'medium' },
-    patterns: { model: 'opus', effort: 'medium' },
+    patterns: { model: 'fable', effort: 'medium' },
     refute: { model: 'sonnet', effort: 'medium' },
-    reconcile: { model: 'opus', effort: 'medium' },
+    reconcile: { model: 'fable', effort: 'medium' },
 }
 
 // TEST-BEGIN docket-postmortem-config — include before any pure test region.

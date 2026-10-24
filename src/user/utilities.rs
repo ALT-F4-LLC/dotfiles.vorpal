@@ -1,8 +1,8 @@
 use anyhow::Result;
 use vorpal_artifacts::artifact::{
-    awscli2::Awscli2, delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum,
-    herdr::Herdr, hunk::Hunk, jj::Jj, jq::Jq, just::Just, kubectl::Kubectl, lazygit::Lazygit,
-    nnn::Nnn, op::Op, pi::Pi, ripgrep::Ripgrep, sesh::Sesh, starship::Starship,
+    awscli2::Awscli2, azure_cli::AzureCli, delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd,
+    fzf::Fzf, gum::Gum, herdr::Herdr, hunk::Hunk, jj::Jj, jq::Jq, just::Just, kubectl::Kubectl,
+    lazygit::Lazygit, nnn::Nnn, op::Op, pi::Pi, ripgrep::Ripgrep, sesh::Sesh, starship::Starship,
     terraform::Terraform, tmux::Tmux, uv::Uv, yq::Yq, zoxide::Zoxide,
 };
 use vorpal_sdk::{
@@ -20,6 +20,7 @@ pub async fn build(context: &mut ConfigContext) -> Result<Vec<String>> {
 
     let providers = vec![
         Awscli2::new().build(context).await?,
+        AzureCli::new().build(context).await?,
         Doppler::new().build(context).await?,
         Gh::new().build(context).await?,
         Kubectl::new().build(context).await?,

@@ -25,6 +25,14 @@ digest = "b850f52138bd952312da5cb2edb589f3dcf0d5a57f69016c331462991eeebfce"
 platform = "aarch64-linux"
 
 [[sources]]
+name = "azure-cli"
+path = "https://github.com/Azure/azure-cli/releases/download/azure-cli-2.91.0/azure-cli-2.91.0-linux-arm64.tar.gz"
+includes = []
+excludes = []
+digest = "3c8cc464308328399f37c580ba5a9a1584547a539fcd9c47e8a35035aa6e953a"
+platform = "aarch64-linux"
+
+[[sources]]
 name = "bash"
 path = "https://sdk.vorpal.build/source/bash-5.3.tar.gz"
 includes = []
@@ -1118,6 +1126,14 @@ path = "https://sdk.vorpal.build/source/coreutils-9.7.tar.gz"
 includes = []
 excludes = []
 digest = "a7abdad032ae6c318dbb4c9b444d9031ab34d1308700005c4bd5eb5156cad523"
+platform = "aarch64-linux"
+
+[[sources]]
+name = "cpython"
+path = "https://sdk.vorpal.build/source/cpython-3.13.14-aarch64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "4c173c7e4aa8cd6a0d33ac0040085a6b241d238abdf4a805981ee10b38c36af1"
 platform = "aarch64-linux"
 
 [[sources]]

@@ -5,7 +5,7 @@ description: >-
   operator decisions", "which issues are still worth doing", or "make the
   backlog run-ready". Grooms the current Docket project's unrouted backlog
   by default, once the operator approves or changes the scope (routed
-  issues, other statuses, kinds, the engine project), or only issues named
+  issues, other statuses, kinds), or only issues named
   by id, until retained work is easy to consume: validates value, repairs
   acceptance criteria,
   sizes and splits, triages operator decisions, retires approved obsolete
@@ -27,9 +27,8 @@ until a pass routes them, or exactly the issues the
 invocation names (§1 sets the scope and its approval). The Docket engine
 project's open issues, including engine defects and capability gaps filed
 by other Docket skills, are judged only when the pass runs from the engine
-checkout, the word `engine` appears in `$ARGUMENTS`, the invocation names
-an engine issue, or the operator adds the engine at §1's scope approval; a
-pass from any other project surveys the engine project and reports what
+checkout, the word `engine` appears in `$ARGUMENTS`, or the invocation names
+an engine issue; a pass from any other project surveys the engine project and reports what
 awaits grooming there, so no consumer backlog pays to re-judge an engine backlog
 that has not changed. Close every grooming gap so retained work
 is valuable, clear, and consumable without reconstructing context or asking
@@ -170,11 +169,10 @@ Rules:
 Survey both the invoking project and the Docket engine project, then fix
 the judged scope: the projects whose issues §2 reads and judges and §3 and
 §4 edit. The invoking project is always in it. The engine project joins it
-in four cases only: the invoking project is the engine project in the
+in three cases only: the invoking project is the engine project in the
 same store (survey it once), the word `engine` appears anywhere in
-`$ARGUMENTS`, a named issue id resolves to an engine-project row under
-the id rules below, or the operator approves the engine override below.
-Otherwise the engine survey is count-only: record, over its
+`$ARGUMENTS`, or a named issue id resolves to an engine-project row under
+the id rules below. Otherwise the engine survey is count-only: record, over its
 non-epic rows, how many are open, how many are unrouted (none of
 `route-run`, `route-direct`, `route-loop`), and how many are
 unsized (`size` absent or `unknown`) for §5's report; seat no judge for
@@ -259,15 +257,11 @@ multi-select, each widening one with the number of issues it would add:
 
 - **Include routed issues:** drop the routing default.
 - **All open statuses:** drop the status default.
-- **Include engine:** put the engine project in the judged scope, as the
-  `engine` word does; offer it only when the engine survey was count-only.
 - **Narrow by kind or status:** the operator names kind or status words in
   the free-text answer, read as the filter words above.
 
-Approving with no override keeps the default. Apply the chosen overrides,
-and when one admits the engine project, resolve its checkout under the
-rules above, which stop the pass if it does not resolve. Record the
-approved scope in the ledger. When the approved scope admits no issue,
+Approving with no override keeps the default. Apply the chosen overrides
+and record the approved scope in the ledger. When the approved scope admits no issue,
 report the survey counts under §5 and stop.
 
 Epics arrive through the same survey: a row whose `kind` is `epic` is an
@@ -1288,8 +1282,8 @@ unresolved with the status or refusal `docket issue show` returned. Explicitly r
 engine coverage: when the engine project was judged, which engine needs
 remain, are resolved or superseded, or could not be verified; when its
 survey was count-only, its open, unrouted, and unsized non-epic counts and
-that engine judging waits for a pass from the engine checkout, with
-`engine`, or with the engine override; when its survey was unavailable,
+that engine judging waits for a pass from the engine checkout or
+with `engine`; when its survey was unavailable,
 say so. Present retained work grouped by epic, per project: each epic's
 ID, title, and its retained members with their readiness, followed by the
 retained issues that have no epic and the reason each stayed ungrouped.

@@ -34,6 +34,14 @@ platform = "aarch64-linux"
 
 [[sources]]
 name = "azure-cli"
+path = "https://github.com/Azure/azure-cli/releases/download/azure-cli-2.91.0/azure-cli-2.91.0-linux-x86_64.tar.gz"
+includes = []
+excludes = []
+digest = "a940d513e401955fcc635ac95f8767584104baf49547912ac1770a24178691e9"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "azure-cli"
 path = "https://github.com/Azure/azure-cli/releases/download/azure-cli-2.91.0/azure-cli-2.91.0-macos-arm64.tar.gz"
 includes = []
 excludes = []
@@ -1135,6 +1143,14 @@ includes = []
 excludes = []
 digest = "a7abdad032ae6c318dbb4c9b444d9031ab34d1308700005c4bd5eb5156cad523"
 platform = "aarch64-linux"
+
+[[sources]]
+name = "cpython"
+path = "https://sdk.vorpal.build/source/cpython-3.13.14-x86_64-unknown-linux-gnu.tar.gz"
+includes = []
+excludes = []
+digest = "3f612dd58d59942847adf5513d5236a91ce67d0bb7d4e0adb37d27d0d873d2e4"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "cpython"

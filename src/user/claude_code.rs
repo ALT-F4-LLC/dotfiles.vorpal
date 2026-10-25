@@ -297,31 +297,37 @@ const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
 /// Commands that need a network the sandbox cannot grant (the bulbasaur
 /// cluster, AWS, the Doppler API) run unsandboxed rather than through a
 /// per-call lift; the permission rules and the auto-mode classifier still
-/// gate what they do.
+/// gate what they do. `vorpal` is excluded on the operator's grounds: it is
+/// the org's trusted builder and executor with a sandbox of its own, and its
+/// client cannot reach registry.vorpal.lol from inside this sandbox even
+/// though the host is in the network allowlist. The cost is stated plainly:
+/// whatever an unsandboxed `vorpal run go test ./...` executes sees the host
+/// filesystem without the write allowlist, the read-deny list, or the
+/// network filter.
 ///
-/// MEASURED (2026-09-03, no dangerouslyDisableSandbox, ~/Desktop
-/// deny-read): the match is over TOP-LEVEL simple commands of the whole Bash
-/// call, not the call's first token — `cd /tmp/claude && git --version && ls
-/// ~/Desktop`, `ls ~/Desktop; git --version`, and `set -e; git --version; ls
-/// ~/Desktop` all ran the ENTIRE call unsandboxed (`ls ~/Desktop` succeeded)
-/// once `git *` was in this list, whichever position the excluded command
-/// sat in and whatever preceded or followed it. Excluded only when the
-/// matching command sits inside a control-flow construct instead of
-/// appearing as a top-level simple command: `cd /tmp/claude && set -e; for x
-/// in 1; do git --version; done; ls ~/Desktop` ran sandboxed (the loop hid
-/// `git` from the matcher). A `cd`/env-var PREFIX on the matching command
-/// itself, as opposed to a separate command joined by `&&`/`;`, was not
-/// probed. So: any entry in this list makes the WHOLE call run unsandboxed
-/// the moment that command appears anywhere at top level in it, including
-/// alongside unrelated commands this list was never meant to exempt — an
-/// executor whose sandbox lift was denied can run anything unsandboxed by
-/// appending `; git --version` (or any other listed command) to its call.
-/// `git` is absent for exactly this reason: local git needs no network
-/// (`github.com`/`api.github.com` are already in the network allowlist for
-/// what does), so nothing here needed the exclusion. The other entries were
-/// not re-probed and keep the same fail-open exclusion shape — narrowing this
-/// list further, or replacing it with a command-position-aware mechanism, is
-/// unassessed.
+/// MEASURED (2026-10-25, Claude Code 2.1.310, strict sandbox mode, auto
+/// permission mode; a sandboxed `vorpal run` prints "failed to connect to
+/// https://registry.vorpal.lol", an unsandboxed one reaches the registry):
+/// an entry takes a Bash call out of the sandbox only when the entries cover
+/// EVERY top-level command in the call, and nothing else keeps it inside.
+/// `vorpal run go version` and `vorpal --version && vorpal run go version`
+/// ran unsandboxed. Each of these ran SANDBOXED: `cd "$TMPDIR" && vorpal run
+/// go version` (a `cd` anywhere in the call), `GOCACHE=<dir> vorpal run go
+/// version` (an assignment prefix), `for x in 1; do vorpal run go version;
+/// done` (control flow), `vorpal run go version 2>&1 | tail -n 8` (a pipe
+/// into a command not listed here), and `vorpal run go version >"$TMPDIR/f"
+/// 2>&1` (a redirect other than a bare fd duplication). The documented list
+/// of shapes that stay sandboxed also names `pushd`/`popd`, command
+/// substitution, subshells, and `sudo`/`eval`/`xargs` prefixes. This
+/// replaces the 2026-09-03 measurement, under which one listed command
+/// anywhere at top level exempted the whole call; that fail-open shape is
+/// gone, so a corpus that wants a listed command unsandboxed has to spell it
+/// as the only command in the Bash call (the vorpal-toolchain fragment does).
+/// An excluded command still goes through the permission flow: an allow rule
+/// or, in auto mode, the classifier. `git` stays absent: local git needs no
+/// network (`github.com`/`api.github.com` are in the network allowlist for
+/// what does), and outside the sandbox git obeys config and hooks that a
+/// sandboxed command may have written into the checkout.
 const SANDBOX_EXCLUDED_COMMANDS: &[&str] = &[
     "aws *",
     "docker *",
@@ -899,7 +905,7 @@ mod tests {
         sandbox_just_tempdir, sandbox_scratch_roots, settings, settings_with, HostInputs,
         AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
         GIT_IDENTITY_EMAIL, GIT_IDENTITY_NAME, PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS,
-        SANDBOX_ALLOW_READ_PATHS, SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS,
+        SANDBOX_ALLOW_READ_PATHS, SANDBOX_EXCLUDED_COMMANDS, SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS,
         SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
         SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS, TRUST_STORE_PATHS,
     };
@@ -1183,7 +1189,10 @@ mod tests {
         // in one session and cost an operator gate. The `GOCACHE=` prefix
         // matches no allow rule and stays with the classifier on purpose: an
         // allow rule over an assignment would clear whatever the value
-        // expands.
+        // expands. The sandbox excludes `vorpal *`, and that exclusion covers
+        // a Bash call only when every command in it is excluded (see
+        // SANDBOX_EXCLUDED_COMMANDS): a `cd` prefix or an assignment prefix
+        // in the fragment's shell examples would keep vorpal sandboxed.
         let fragment = include_str!("docket/config/fragments/vorpal-toolchain.md");
         let alias = fragment
             .lines()
@@ -1199,8 +1208,14 @@ mod tests {
             );
         }
         assert!(
-            fragment.contains(&format!("vorpal run {alias} build ./...")),
-            "the fragment's build example uses the pinned alias"
+            fragment.contains(&format!(
+                "vorpal run {alias} build -C \"<repo-root>\" ./..."
+            )),
+            "the fragment's build example uses the pinned alias and names the root with -C"
+        );
+        assert!(
+            SANDBOX_EXCLUDED_COMMANDS.contains(&"vorpal *"),
+            "vorpal is excluded from the sandbox"
         );
         let mut in_sh_block = false;
         for line in fragment.lines() {
@@ -1211,8 +1226,15 @@ mod tests {
             if !in_sh_block {
                 continue;
             }
-            for segment in line.split("&&").map(str::trim) {
+            for segment in line.split(['&', ';']).map(str::trim) {
+                if segment.is_empty() {
+                    continue;
+                }
                 let name = segment.split('=').next().unwrap_or_default();
+                assert!(
+                    !matches!(segment.split(' ').next(), Some("cd" | "pushd" | "popd")),
+                    "the fragment's sh block changes directory, which keeps vorpal sandboxed: {segment}"
+                );
                 assert!(
                     !segment.contains('=')
                         || name.is_empty()

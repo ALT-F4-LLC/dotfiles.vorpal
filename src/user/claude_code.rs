@@ -341,6 +341,7 @@ const SANDBOX_NETWORK_ALLOWED_DOMAINS: &[&str] = &[
     "github.com",
     "proxy.golang.org",
     "pypi.org",
+    "registry.vorpal.lol",
     "static.crates.io",
     "sum.golang.org",
     "vuln.go.dev",
@@ -351,6 +352,7 @@ const SANDBOX_NETWORK_ALLOWED_DOMAINS: &[&str] = &[
 /// under their step directory run sandboxed; with only these two service
 /// sockets, every such bind was refused.
 const SANDBOX_UNIX_SOCKETS: &[&str] = &[
+    "/var/lib/vorpal/vorpal.sock",
     "~/.orbstack/run/docker.sock",
     "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock",
 ];

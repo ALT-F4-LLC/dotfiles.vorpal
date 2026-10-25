@@ -445,6 +445,16 @@ case_redirection_between_verb_words_denies() {
         "< between docket and trust"
     assert_verdict "docket>/dev/null trust add erik key" executor-write DENY \
         "> glued onto the docket word"
+    assert_verdict "docket>&2 trust add erik key" executor-write DENY \
+        ">& glued onto the docket word"
+    assert_verdict "docket&>/dev/null trust add erik key" executor-write DENY \
+        "&> glued onto the docket word"
+    assert_verdict "docket>|f trust add erik key" executor-write DENY \
+        ">| glued onto the docket word"
+    assert_verdict "docket<&0 trust add erik key" executor-write DENY \
+        "<& glued onto the docket word"
+    assert_verdict "true | python3 -c x; docket>&2 trust add erik key" executor-write DENY \
+        ">& glued onto the docket word behind a non-inert command"
     assert_verdict "docket trust > /dev/null add erik key" executor-write DENY \
         "spaced > and its target between trust and add"
     assert_verdict "docket trust 2>&1 add erik key" executor-write DENY \

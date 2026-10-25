@@ -214,6 +214,8 @@ const SANDBOX_TOOLCHAIN_CACHE_PATHS: &[&str] = &[
 /// roots: harness state and the checkouts.
 const SANDBOX_ALLOW_WRITE_PATHS: &[&str] = &[
     "/var/folders",
+    "/var/lib/vorpal/vorpal.lock",
+    "/private/var/lib/vorpal/vorpal.lock",
     "~/.claude/agent-memory",
     "~/.claude/cache/docs",
     "~/.claude/friction",
@@ -336,6 +338,7 @@ const SANDBOX_NETWORK_ALLOWED_DOMAINS: &[&str] = &[
     "api.anthropic.com",
     "api.github.com",
     "api.osv.dev",
+    "auth.vorpal.lol",
     "crates.io",
     "downloads.claude.ai",
     "files.pythonhosted.org",

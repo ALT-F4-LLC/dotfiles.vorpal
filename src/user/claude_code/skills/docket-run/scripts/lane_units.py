@@ -1,12 +1,22 @@
 """Split a kept manifest into wave launches, one per issue lane.
 
-Usage: python3 lane_units.py <rows-file> <out-dir> [--tribunal PATH]
-                              [--integrated FILE] [--in-flight LANES]
-                              [--write-cap N]
+Usage: python3 lane_units.py <rows-file> <out-dir> [--workflows FILE]
+                              [--tribunal PATH] [--integrated FILE]
+                              [--in-flight LANES] [--write-cap N]
 
 <rows-file> holds the rows the conductor kept after the kind filter, either
 as one JSON array or as one JSON object per line; a file holding a single
-object is that one row. --tribunal is the installed tribunal.js path;
+object is that one row. --workflows names the run's roster, the JSON file
+that says which workflow each bound issue runs under, so each launch names
+the lane script to launch: lane_roster.sh's output ([{issue, workflow}], the
+workflow as name@version), an activation's `--json` answer as a whole or its
+`.data.bound_issues` array in the same shape, or a plain object of lane to
+workflow name, where a lane is the issue id or row:<step> for a row without
+an issue. On an active run only lane_roster.sh is complete: an activation
+answer lists the issues that activation bound, not the run's. Every lane
+launched must resolve, or the script exits 1 before writing anything and
+names the lanes that did not. Without --workflows no launch names a script
+and stderr says so. --tribunal is the installed tribunal.js path;
 --integrated names a JSON file mapping each fix-round issue to its prior
 INTEGRATION sha. --in-flight is a comma-separated list of the lanes whose
 launches are still running: the issue id, or row:<step> for a row without
@@ -21,8 +31,11 @@ Run it from inside the run's git work tree: outside one it exits 1 and
 writes nothing. The script writes, under <out-dir>:
 
   launch-<i>.jsonl  launch i's rows, one per line, in manifest order
-  args-<i>.json     launch i's complete docket-workflow.js args (below)
-  launches.json     [{index, of, classCap, rows, lanes, harnessCap}] per launch
+  args-<i>.json     launch i's complete lane script args (below)
+  launches.json     [{index, of, classCap, rows, lanes, harnessCap, workflow,
+                    script}] per launch; `workflow` is the lane's workflow
+                    name and `script` the lane script's file name,
+                    <workflow>.js, both only when --workflows is given
   deferred.jsonl    rows of lanes past the free launch slots, one per line
                     (always written, empty when nothing is deferred)
 
@@ -30,24 +43,26 @@ and, under <toplevel>/.claude/docket-packets/ (`git rev-parse
 --show-toplevel`), one rows module per launch, rows-<sha256>.js, returning
 {v: 1, rows_sha256, rows}: launch i's rows, and the sha256 of
 launch-<i>.jsonl's bytes. A Workflow script cannot read files but loads a
-module under its working directory, as docket-workflow.js already loads packet modules
-from the same directory. The directory carries a `.gitignore` of `*`.
+module under its working directory, as the lane scripts already load packet
+modules from the same directory. The directory carries a `.gitignore` of `*`.
 
 It prints the launch count N alone on stdout, so `N=$(python3 lane_units.py
 rows.jsonl out)` works. Lanes and their launches go to stderr for the
 dispatch report. args-<i>.json is launch i's Workflow args, passed unedited:
 {rowsModule, rows_sha256, unit: {index, of, classCap}, harnessCap, cwd,
-tribunal, integrated}, where cwd is the git toplevel, `tribunal` is present
+workflow, tribunal, integrated}, where cwd is the git toplevel, `workflow`
+is the lane's workflow name when --workflows is given, `tribunal` is present
 when --tribunal is given, and `integrated` only when --integrated is given.
-docket-workflow.js compares the module's rows_sha256 with the args' before it claims
-anything. The rows themselves never ride in the args.
+The lane script compares the module's rows_sha256 with the args' before it
+claims anything, and refuses a `workflow` that is not its own. The rows
+themselves never ride in the args.
 
 The partition. Every issue lane is its own launch: one issue, one wave. A
 row without an issue is a lane of its own, keyed by its step. Lanes are
 never welded or packed together. Writer lanes the engine never co-staged
 therefore run in separate launches, and the engine's claim check keeps them
 in stage order: a writer claimed while another lane's uncertified writer
-holds its scope is refused, and docket-workflow.js settles that refusal as
+holds its scope is refused, and the lane script settles that refusal as
 skipped-not-ready, which a later refill relaunches. The free slots are the
 launch cap minus the lanes in flight, never below zero. Past them, the
 earliest lanes in manifest order launch and the rest go to deferred.jsonl,
@@ -66,7 +81,7 @@ launch's harnessCap arg. cpus is os.cpu_count(), or LANE_UNITS_CPUS when set.
 
 This file exists because an inline heredoc (`python3 - <<'PY'`) is an
 interpreter code argument the auto-mode deny rule refuses before it runs.
-LAUNCH_CAP and HARNESS_CAP mirror docket-workflow.js and must not drift from it.
+LAUNCH_CAP and HARNESS_CAP mirror lane_body.js and must not drift from it.
 """
 
 import hashlib
@@ -204,7 +219,7 @@ def git_toplevel():
 
 
 def write_module(packets, digest, rows):
-    """Write a launch's rows as a module docket-workflow.js loads by path; return the path."""
+    """Write a launch's rows as a module the lane script loads by path; return the path."""
     os.makedirs(packets, exist_ok=True)
     ignore = os.path.join(packets, ".gitignore")
     if not os.path.exists(ignore):
@@ -221,8 +236,43 @@ def write_module(packets, digest, rows):
     return path
 
 
-USAGE = ("usage: lane_units.py <rows-file> <out-dir> [--tribunal PATH] [--integrated FILE] "
-         "[--in-flight LANES] [--write-cap N]")
+USAGE = ("usage: lane_units.py <rows-file> <out-dir> [--workflows FILE] [--tribunal PATH] "
+         "[--integrated FILE] [--in-flight LANES] [--write-cap N]")
+
+
+def workflow_name(ref):
+    """A workflow reference's name: `name@version` without the version."""
+    return ref.split("@", 1)[0].strip()
+
+
+def load_workflows(path):
+    """--workflows as a dict of lane to workflow name, from lane_roster.sh's
+    array (the bound_issues shape), an activation envelope holding one, or a
+    plain lane to name object."""
+    with open(path, encoding="utf-8") as handle:
+        data = json.load(handle)
+    bound = data
+    if isinstance(bound, dict) and isinstance(bound.get("data"), dict):
+        bound = bound["data"]
+    if isinstance(bound, dict) and isinstance(bound.get("bound_issues"), list):
+        bound = bound["bound_issues"]
+    roster = {}
+    if isinstance(bound, list):
+        for item in bound:
+            if (isinstance(item, dict) and isinstance(item.get("issue"), str)
+                    and isinstance(item.get("workflow"), str) and item["workflow"]):
+                roster[item["issue"]] = workflow_name(item["workflow"])
+    elif isinstance(bound, dict):
+        for key, value in bound.items():
+            if isinstance(value, str) and value:
+                roster[str(key)] = workflow_name(value)
+    else:
+        raise SystemExit(f"lane_units: {path} holds neither a roster array (lane_roster.sh's "
+                         "output, or bound_issues), an activation envelope holding one, nor an "
+                         "object of lane to workflow")
+    if not roster:
+        raise SystemExit(f"lane_units: {path} names no issue to workflow binding")
+    return roster
 
 
 def lane_key(name):
@@ -244,7 +294,7 @@ def parse_args(argv):
     rest = list(argv[1:])
     while rest:
         arg = rest.pop(0)
-        if arg in ("--tribunal", "--integrated", "--in-flight", "--write-cap"):
+        if arg in ("--workflows", "--tribunal", "--integrated", "--in-flight", "--write-cap"):
             if not rest:
                 raise SystemExit(USAGE)
             options[arg[2:]] = rest.pop(0)
@@ -258,14 +308,16 @@ def parse_args(argv):
     launch_cap = LAUNCH_CAP
     if "write-cap" in options:
         launch_cap = min(LAUNCH_CAP, write_cap(options["write-cap"]))
-    return (positional[0], positional[1], options.get("tribunal"), options.get("integrated"),
-            in_flight, launch_cap)
+    return (positional[0], positional[1], options.get("workflows"), options.get("tribunal"),
+            options.get("integrated"), in_flight, launch_cap)
 
 
 def main(argv):
-    rows_file, out, tribunal, integrated_file, in_flight, launch_cap = parse_args(argv)
+    (rows_file, out, workflows_file, tribunal, integrated_file,
+     in_flight, launch_cap) = parse_args(argv)
     cap = harness_cap()
     rows = load_rows(rows_file)
+    roster = load_workflows(workflows_file) if workflows_file is not None else None
     integrated = None
     if integrated_file is not None:
         with open(integrated_file, encoding="utf-8") as handle:
@@ -274,8 +326,16 @@ def main(argv):
             raise SystemExit(f"lane_units: {integrated_file} holds no JSON object of issue -> sha")
     top = git_toplevel()
     packets = os.path.join(top, PACKET_DIR)
-    os.makedirs(out, exist_ok=True)
     launches, deferred_rows, deferred_lanes = split(rows, in_flight, launch_cap)
+    if roster is not None:
+        unresolved = [launch["lanes"][0] for launch in launches
+                      if launch["lanes"][0] not in roster]
+        if unresolved:
+            raise SystemExit("lane_units: no workflow in " + workflows_file + " for lane(s) "
+                             + ", ".join(unresolved) + "; re-derive the roster with "
+                             "`lane_roster.sh RUN-N`. A row:<step> lane (a row with no issue) has "
+                             "no binding and no lane script: stop and report it")
+    os.makedirs(out, exist_ok=True)
     summary = []
     for launch in launches:
         index = launch["index"]
@@ -283,6 +343,9 @@ def main(argv):
         digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
         entry = {k: (len(v) if k == "rows" else v) for k, v in launch.items()}
         entry["harnessCap"] = cap
+        if roster is not None:
+            entry["workflow"] = roster[launch["lanes"][0]]
+            entry["script"] = entry["workflow"] + ".js"
         summary.append(entry)
         args = {
             "rowsModule": write_module(packets, digest, launch["rows"]),
@@ -291,6 +354,8 @@ def main(argv):
             "harnessCap": cap,
             "cwd": top,
         }
+        if roster is not None:
+            args["workflow"] = entry["workflow"]
         if tribunal is not None:
             args["tribunal"] = tribunal
         if integrated is not None:
@@ -305,6 +370,9 @@ def main(argv):
     print(len(launches))
     for launch in launches:
         print(f"lane:{launch['lanes'][0]} -> launch {launch['index']}", file=sys.stderr)
+    if launches and roster is None:
+        print("lane_units: no --workflows given, so no launch names its lane script",
+              file=sys.stderr)
     if launches and tribunal is None:
         print("lane_units: no --tribunal given, so no args object carries tribunal",
               file=sys.stderr)

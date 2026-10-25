@@ -261,3 +261,12 @@ ac-commands:
 
 frozen-drift-check:
     .docket/bin/frozen-drift-check
+
+# One lane script per workflow definition. Each workflows/<pipeline>.js is a
+# rendered file: a header carrying the pipeline's name, then
+# skills/docket-run/scripts/lane_body.js verbatim. A Workflow script cannot
+# import a file, so the shared body is copied at render time; edit the body or
+# a workflow TOML, run this, and commit the result.
+# tests/docket-run-lane-scripts.test.sh fails on a hand edit or a stale copy.
+lanes:
+    python3 -I src/user/claude_code/skills/docket-run/scripts/lane_scripts.py

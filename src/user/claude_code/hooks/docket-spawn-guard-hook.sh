@@ -33,9 +33,9 @@
 # what "hooks are global to the session tree" requires.
 #
 # NO --rows, DELIBERATELY. The hook cannot supply rows honestly -- it sees the
-# harness's Workflow/Agent tool_input, not docket-workflow.js's canonical manifest bytes,
+# harness's Workflow/Agent tool_input, not the lane script's canonical manifest bytes,
 # and a re-serialization from tool_input would byte-mismatch a CORRECT dispatch
-# and deny every legit spawn. Row matching is docket-workflow.js's to assert at the point
+# and deny every legit spawn. Row matching is the lane body's to assert at the point
 # it holds the real bytes; the hook's job here is the reap half.
 #
 # Fail-toward-safety on engine-state uncertainty (03 §5) is the engine's own
@@ -87,11 +87,29 @@ set -uo pipefail
 # anything else does. Anything that is not a well-formed id is dropped and the
 # guard is asked the ordinary question, so a malformed launch is denied by the
 # engine rather than waved through here.
+#
+# A LANE LAUNCH IS RECOGNIZED BY ITS ARGS, NOT ITS FILE NAME. The lane scripts
+# are one per workflow definition (`~/.claude/workflows/<workflow>.js`, rendered
+# from one shared body), so no single basename names them. Every lane launch
+# carries the rows it runs in one of three top-level args no other Workflow
+# script takes: `rowsModule` (lane_units.py's generated args, a string path),
+# `rows` (an older inline-rows launch a resume may replay, an array), or
+# `unit` (the launch's share of the manifest, an object). LANE_LAUNCH is
+# "yes" when any is present, whatever the script is called; a launch with
+# none is not a lane launch and the checks below leave it alone.
 DECIDING_VOTE=""
+LANE_LAUNCH=""
 HOOK_INPUT=$(cat 2>/dev/null || true)
 if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
     SCRIPT=$(printf '%s' "$HOOK_INPUT" \
         | jq -r '.tool_input.scriptPath // "" | split("/") | last' 2>/dev/null)
+    if [ -n "$SCRIPT" ]; then
+        LANE_LAUNCH=$(printf '%s' "$HOOK_INPUT" | jq -r '
+            .tool_input.args
+            | if type == "string" then (try fromjson catch {}) else (. // {}) end
+            | if (.rowsModule | type) == "string" or (.rows | type) == "array" or (.unit | type) == "object"
+              then "yes" else "" end' 2>/dev/null)
+    fi
     if [ "$SCRIPT" = "tribunal.js" ]; then
         VOTE_ID=$(printf '%s' "$HOOK_INPUT" | jq -r '
             .tool_input.args
@@ -132,7 +150,7 @@ fi
 # A LAUNCH CWD THAT IS NOT THE CHECKOUT'S ROOT IS REFUSED HERE, BEFORE ANY AGENT.
 #
 # The conductor hand-types args.cwd, and a typo (`ALT-F-LLC` for `ALT-F4-LLC`)
-# died late: docket-workflow.js's first claim agent failed on `mkdir`, leaving an open
+# died late: the lane's first claim agent failed on `mkdir`, leaving an open
 # dispatch to reconcile and a step whose claim state was unknown. Workflow
 # scripts cannot stat a path, so the check lives in this hook. It is input
 # validation on one hand-typed argument, not run policy: it reads no run state
@@ -147,8 +165,8 @@ fi
 # before comparing. A launch with no args.cwd is not this check's business and
 # falls through unchanged.
 if [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
-    case "$SCRIPT" in
-    docket-workflow.js | tribunal.js)
+    case "${LANE_LAUNCH}:${SCRIPT}" in
+    yes:* | *:tribunal.js)
         LAUNCH_CWD=$(printf '%s' "$HOOK_INPUT" | jq -r '
             .tool_input.args
             | if type == "string" then (try fromjson catch {}) else (. // {}) end
@@ -181,30 +199,30 @@ fi
 
 # A LAUNCH WHOSE args.tribunal IS NOT tribunal.js IS REFUSED HERE, BEFORE ANY CLAIM.
 #
-# docket-workflow.js seats every in-wave panel by launching args.tribunal as a
+# A lane script seats every in-wave panel by launching args.tribunal as a
 # nested workflow, and the conductor hand-types the path. One launch carried
-# the installed docket-workflow.js there instead of tribunal.js: the lane
+# the installed lane script there instead of tribunal.js: the lane
 # claimed three steps before the conductor noticed, and recovery cost forced
 # reaps, three acknowledgment panels, and a relaunch. Workflow scripts cannot
-# stat a path, so the existence check lives in this hook; docket-workflow.js
+# stat a path, so the existence check lives in this hook; the lane body
 # repeats the basename check for a launch that never passed through it. Same
 # class of check as args.cwd above: input validation on one hand-typed
 # argument, reading no run state and asking the engine nothing. A launch with
 # no args.tribunal is not this check's business and falls through unchanged.
-if [ "${SCRIPT:-}" = "docket-workflow.js" ] && [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
+if [ "${LANE_LAUNCH:-}" = "yes" ] && [ -n "$HOOK_INPUT" ] && command -v jq >/dev/null 2>&1; then
     LAUNCH_TRIBUNAL=$(printf '%s' "$HOOK_INPUT" | jq -r '
         .tool_input.args
         | if type == "string" then (try fromjson catch {}) else (. // {}) end
         | .tribunal // "" | strings' 2>/dev/null)
     if [ -n "$LAUNCH_TRIBUNAL" ]; then
         if [ "${LAUNCH_TRIBUNAL##*/}" != "tribunal.js" ]; then
-            printf 'spawn-guard: docket-workflow.js args.tribunal is not a path to tribunal.js: %s\n' \
-                "$LAUNCH_TRIBUNAL" >&2
+            printf 'spawn-guard: %s args.tribunal is not a path to tribunal.js: %s\n' \
+                "$SCRIPT" "$LAUNCH_TRIBUNAL" >&2
             exit 2
         fi
         if [ ! -f "$LAUNCH_TRIBUNAL" ]; then
-            printf 'spawn-guard: docket-workflow.js args.tribunal does not exist: %s\n' \
-                "$LAUNCH_TRIBUNAL" >&2
+            printf 'spawn-guard: %s args.tribunal does not exist: %s\n' \
+                "$SCRIPT" "$LAUNCH_TRIBUNAL" >&2
             exit 2
         fi
     fi

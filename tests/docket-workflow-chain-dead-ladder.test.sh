@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's stage ladder — what a dead chain actually does
+# Behavior suite for the lane script's stage ladder — what a dead chain actually does
 # to the LATER rows of the same issue (DOT-559).
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
@@ -31,14 +31,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-chain-dead-ladder.XXXXXX") || fatal "mktemp failed"
@@ -82,7 +82,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so the lane script's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 // Every row the ladder decided to launch, in launch order, plus the canned
@@ -113,7 +113,7 @@ const probe = (_cmd, _label, _phase, step) => {
     PROBED.push(step)
     return Promise.resolve(PROBES.get(step) || '')
 }
-// stepShow() mirrors the schema envelope docket-workflow.js now reads at the pre-claim
+// stepShow() mirrors the schema envelope the lane script now reads at the pre-claim
 // site: null on a dead probe (matches probe()'s '' contract), {error} when
 // the fixture text carries no parseable status (unparseable prose fails
 // open exactly like the old regex-over-text path did), else the normalized
@@ -166,7 +166,7 @@ const run = async (theRows, results, probes) => {
     LOG.length = 0
     RESULTS = new Map(Object.entries(results || {}))
     PROBES = new Map(Object.entries(probes || {}))
-    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
+    // The lane script returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 

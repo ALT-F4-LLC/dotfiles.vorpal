@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's claim owner discriminator: the number
+# Behavior suite for the lane script's claim owner discriminator: the number
 # appended to `--owner wave:<step>:<n>` that distinguishes two claims of the
 # SAME step in one wave.
 #
@@ -27,21 +27,21 @@
 # claims of the SAME step still get distinct, incrementing discriminators (1,
 # then 2), so a second claim never presents the owner of an earlier one.
 #
-# HOW. It extracts docket-workflow.js's `packet` region (TEST-BEGIN/TEST-END markers)
+# HOW. It extracts the lane script's `packet` region (TEST-BEGIN/TEST-END markers)
 # into a fresh VM context per scenario and reads the discriminator back off
 # the `--owner wave:<step>:<n>` in the claim agent's rendered command.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 node - "$WAVE" <<'JS'

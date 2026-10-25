@@ -16,7 +16,7 @@
 # `classify`/`reduceRows` under node — the same path the live workflow takes,
 # minus the agents that relay the jq output.
 #
-# WHY THIS EXISTS. docket-workflow.js spawns read-only probes (`docket step show STEP-N
+# WHY THIS EXISTS. the lane script spawns read-only probes (`docket step show STEP-N
 # --json`) beside its executors, and the usage join once keyed on the first
 # STEP-N in a brief, so each probe back-filled its tokens onto the step it had
 # merely READ — one past wave put whole ledger rows on a pending step that was
@@ -51,7 +51,7 @@ set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 USAGE="${WAVE_USAGE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow-usage.js}"
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 TRIBUNAL="${TRIBUNAL_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/tribunal.js}"
 
 fatal() {
@@ -60,7 +60,7 @@ fatal() {
 }
 
 [ -f "$USAGE" ] || fatal "docket-workflow-usage.js not found at ${USAGE}"
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 [ -f "$TRIBUNAL" ] || fatal "tribunal.js not found at ${TRIBUNAL}"
 for tool in jq node awk; do
     command -v "$tool" >/dev/null 2>&1 || fatal "${tool} is required to run this test"
@@ -79,17 +79,17 @@ ok() { # <condition-already-evaluated: 0/1> <label>
     fi
 }
 
-# ---- The briefs this script keys on must still be the briefs docket-workflow.js writes.
-# Every marker is duplicated prose; if docket-workflow.js drops one, the join silently
+# ---- The briefs this script keys on must still be the briefs the lane script writes.
+# Every marker is duplicated prose; if the lane script drops one, the join silently
 # reclassifies a whole wave, so check the two directions that matter.
 grep -qF 'WAVE PROBE: not a step execution' "$WAVE"; ok $? \
-    'docket-workflow.js still declares its probe briefs with the marker docket-workflow-usage reads'
+    'The lane script still declares its probe briefs with the marker docket-workflow-usage reads'
 grep -qF 'Run exactly this one command:' "$WAVE"; ok $? \
-    'docket-workflow.js still opens a probe brief with the fixed one-command line'
+    'The lane script still opens a probe brief with the fixed one-command line'
 grep -qF 'You are executing one step of a Docket run' "$WAVE"; ok $? \
-    'docket-workflow.js still opens an executor brief with the line the drift guard reads'
+    'The lane script still opens an executor brief with the line the drift guard reads'
 grep -qF 'WAVE CLAIM: not a step execution' "$WAVE"; ok $? \
-    'docket-workflow.js still declares its claim agent with the marker docket-workflow-usage reads'
+    'The lane script still declares its claim agent with the marker docket-workflow-usage reads'
 grep -qE '^  \$\{cdPrefix\}docket vote cast \$\{voteId\} --voter ' "$TRIBUNAL"; ok $? \
     "tribunal.js still writes the seat's cast instruction as an indented line the cast join anchors on"
 grep -qF "'You are ONE SEAT of a tribunal" "$TRIBUNAL"; ok $? \
@@ -138,7 +138,7 @@ fs.mkdirSync(d, { recursive: true })
 
 const PROBE_MARKER = 'WAVE PROBE: not a step execution'
 
-// docket-workflow.js probeBrief(), verbatim in shape, serving the step it READS.
+// The lane script probeBrief(), verbatim in shape, serving the step it READS.
 const probe = `Run exactly this one command:
 
   docket step show STEP-3146 --json
@@ -285,7 +285,7 @@ fs.mkdirSync(relayDir, { recursive: true })
 write('agent-arelayexec.jsonl', executor.replace(/STEP-3156/g, 'STEP-3175'), relayDir, false, true)
 write('agent-arelayprobe.jsonl', probe.replace(/STEP-3146/g, 'STEP-3176'), relayDir, false, true)
 
-// The claim path, in its own directory: docket-workflow.js's claim agent (claimBrief()
+// The claim path, in its own directory: the lane script's claim agent (claimBrief()
 // in shape) and the executor it claims for, whose brief closes with a packet
 // that quotes another step's obligations.
 const claimDir = path.join(path.dirname(d), 'claim')
@@ -317,7 +317,7 @@ An old run's note: \`docket step record STEP-999 --artifact-file x\`.
 ----- END WORK PACKET STEP-3180 -----`, claimDir)
 
 // Cast quotes, in their own directory: step executors whose packets quote the
-// vote path's cast command (an issue about docket-workflow.js or tribunal.js carries it
+// vote path's cast command (an issue about the lane script or tribunal.js carries it
 // in its body, diff and excerpts), beside seat briefs in the shapes the cast
 // join must still read. A quoted cast must never seat an executor; only the
 // seat's own cast instruction seats an agent.
@@ -875,7 +875,7 @@ ok(JSON.stringify(seatsSelected.rows) === JSON.stringify(seatsAll.rows),
 
 // ---- A quoted cast seats nobody; the seat's own instruction still does ----
 // Executor packets quote the vote path's cast command whenever the work is on
-// docket-workflow.js, docket-workflow-usage.js or tribunal.js. The cast join reads only a cast
+// The lane script, docket-workflow-usage.js or tribunal.js. The cast join reads only a cast
 // instruction at the start of a line, in a brief that does not open as a step
 // executor, so the quote neither seats the executor nor selects it.
 const castSteps = reduceRows(castQuote, 'steps', [])
@@ -1060,7 +1060,7 @@ const quiet = reduceRows(silent, 'steps', [])
 ok(quiet.errors.length === 1 && quiet.errors[0].includes('carries no usage'),
     'a claimant whose transcript carries no usage is an error, not a zero row')
 // ---- ...unless a live transcript carries the same step: then it is a dead spawn ----
-// docket-workflow.js re-spawns a claimant whose first spawn died before its first
+// The lane script re-spawns a claimant whose first spawn died before its first
 // assistant turn; the dead transcript still opens with the step's brief and
 // carries no usage. One wave lost a whole shard's rows to that error.
 const live = by(wave, 'agent-aexec.jsonl')
@@ -1085,7 +1085,7 @@ ok(unreadResult.errors[0].includes('"bootstrap":false') && unreadResult.errors[0
     'the thrown error names the agent\'s raw structured answer beside the jq verdict, not just the file name')
 
 // ---- A relayed bootstrap:false, checked twice, is a misreport, not an error ----
-// docket-workflow.js never dispatches an agent without a bootstrap brief, so this is a
+// The lane script never dispatches an agent without a bootstrap brief, so this is a
 // case a script cannot rule out on its own — a second independent read
 // repeating the same answer is treated as a relay misreport and folded into
 // overhead (with its usage) rather than thrown, so it cannot sink the join.

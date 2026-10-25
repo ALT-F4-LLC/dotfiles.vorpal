@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's `packet` region: where a claim's packet module
+# Behavior suite for the lane script's `packet` region: where a claim's packet module
 # lands, how the claim agent is briefed, and which loaded modules the wave
 # accepts before it spawns an executor with the packet inline.
 #
@@ -18,14 +18,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-packet.XXXXXX") || fatal "mktemp failed"

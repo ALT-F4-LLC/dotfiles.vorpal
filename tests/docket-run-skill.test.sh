@@ -587,11 +587,11 @@ fi
 # step 2 must name the generated args as the source and carry no formula, CPU
 # probe, or literal of its own. The launch example passes args-<i>.json whole:
 # an inline object re-emits every row and hand-types cwd through model output.
-if paragraph 'docket-workflow.js uses `min(HARNESS_CAP, harnessCap)` as its own' "${WORK}/harness-cap"; then
+if paragraph 'The lane script uses `min(HARNESS_CAP, harnessCap)` as its own' "${WORK}/harness-cap"; then
     ok "harnessCap: exactly one paragraph rules on the cap"
     states "harnessCap: each launch passes the generated args figure" \
-        "${WORK}/harness-cap" "launch i's \`harnessCap\` reaches docket-workflow.js inside \`args-<i>.json\`"
-    if paragraph 'Workflow({ scriptPath: "<absolute installed path to docket-workflow.js>"' "${WORK}/launch-example"; then
+        "${WORK}/harness-cap" "launch i's \`harnessCap\` reaches the lane script inside \`args-<i>.json\`"
+    if paragraph 'Workflow({ scriptPath: "<absolute installed path to launches.json[0].script, under ~/.claude/workflows>"' "${WORK}/launch-example"; then
         states "launch example: launch 0 passes the generated args object" \
             "${WORK}/launch-example" 'args: <$LAUNCH_DIR/args-0.json, the generated args object, unedited>'
         states "launch example: launch 1 passes the generated args object" \
@@ -602,7 +602,7 @@ if paragraph 'docket-workflow.js uses `min(HARNESS_CAP, harnessCap)` as its own'
             ok "launch example: no inline rows: <launch-"
         fi
     else
-        bad "launch example: no single paragraph carries the docket-workflow.js Workflow launch example"
+        bad "launch example: no single paragraph carries the lane script Workflow launch example"
     fi
     awk '/^### 2\. /{on=1; next} /^### 3\. /{on=0} on' "$SKILL" > "${WORK}/step-2"
     if [ ! -s "${WORK}/step-2" ]; then
@@ -613,7 +613,7 @@ if paragraph 'docket-workflow.js uses `min(HARNESS_CAP, harnessCap)` as its own'
         ok "harnessCap: step 2 carries no formula, CPU probe, or literal cap"
     fi
 else
-    bad "harnessCap: no single paragraph carries 'docket-workflow.js uses \`min(HARNESS_CAP, harnessCap)\` as its own'"
+    bad "harnessCap: no single paragraph carries 'The lane script uses \`min(HARNESS_CAP, harnessCap)\` as its own'"
 fi
 
 # (e) Absence claim, run over SENTENCES rather than paragraphs: every
@@ -927,8 +927,8 @@ else
     drift_fixture() { # <name>: source and installed trees, identical, with harness dirs in source
         mkdir -p "${drift}/$1/src/workflows/.claude/.cc-writes" "${drift}/$1/src/hooks/.claude/.cc-writes" \
             "${drift}/$1/home/.claude/workflows" "${drift}/$1/home/.claude/hooks"
-        echo 'export default 1' > "${drift}/$1/src/workflows/docket-workflow.js"
-        echo 'export default 1' > "${drift}/$1/home/.claude/workflows/docket-workflow.js"
+        echo 'export default 1' > "${drift}/$1/src/workflows/standard-change.js"
+        echo 'export default 1' > "${drift}/$1/home/.claude/workflows/standard-change.js"
         echo 'exit 0' > "${drift}/$1/src/hooks/guard.sh"
         echo 'exit 0' > "${drift}/$1/home/.claude/hooks/guard.sh"
     }
@@ -952,12 +952,12 @@ else
         bad "install drift: an added new-hook.sh was not reported: $(head -c 300 "${drift}/hook.out")"
     fi
     drift_fixture workflow
-    echo 'export default 2' > "${drift}/workflow/src/workflows/docket-workflow.js"
+    echo 'export default 2' > "${drift}/workflow/src/workflows/standard-change.js"
     drift_run workflow "${drift}/workflow.out"
-    if grep -q '^Files .*docket-workflow\.js and .*docket-workflow\.js differ$' "${drift}/workflow.out"; then
+    if grep -q '^Files .*standard-change\.js and .*standard-change\.js differ$' "${drift}/workflow.out"; then
         ok "install drift: a byte-changed workflow is named in a Files differ line"
     else
-        bad "install drift: a changed docket-workflow.js was not reported: $(head -c 300 "${drift}/workflow.out")"
+        bad "install drift: a changed standard-change.js was not reported: $(head -c 300 "${drift}/workflow.out")"
     fi
 fi
 
@@ -1217,7 +1217,7 @@ if paragraph "$seated_anchor" "${WORK}/seated"; then
 else
     bad "events by kind: no single paragraph carries '${seated_anchor}'"
 fi
-roster_anchor='**Read the roster straight out of the dry-run JSON.**'
+roster_anchor='**At activation, read the roster straight out of the dry-run JSON.**'
 if paragraph "$roster_anchor" "${WORK}/roster"; then
     states "events by kind: the post-activation issue-promoted check filters by kind" \
         "${WORK}/roster" 'events list --run $RUN --kind issue-promoted'

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's fix-round base-ancestry guard (DOT-871).
+# Behavior suite for the lane script's fix-round base-ancestry guard (DOT-871).
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -39,14 +39,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-fix-round-ancestry.XXXXXX") || fatal "mktemp failed"
@@ -86,7 +86,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so the lane script's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -190,7 +190,7 @@ const run = async (theRows, integrated, ctx, git, self) => {
     CTX_PROBES = 0; GIT_PROBES = 0; SELF_PROBES = 0
     LOG.length = 0
     CTX = ctx || ''; GIT = git || ''; SELF = self || ''
-    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
+    // The lane script returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 

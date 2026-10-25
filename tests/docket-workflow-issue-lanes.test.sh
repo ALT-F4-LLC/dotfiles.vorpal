@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's per-issue stage lanes (DOT-1031).
+# Behavior suite for the lane script's per-issue stage lanes (DOT-1031).
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -50,14 +50,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-issue-lanes.XXXXXX") || fatal "mktemp failed"
@@ -94,7 +94,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so the lane script's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 // Every row the ladder launched, in launch order; gate rows land in GATES.
@@ -168,7 +168,7 @@ const start = (theRows, opts) => {
     RESULTS = new Map(Object.entries((opts && opts.results) || {}))
     HOLD = new Set((opts && opts.hold) || [])
     OPEN = new Map()
-    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
+    // The lane script returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 const ex = (step, issue, stage, cls, extra) => Object.assign(

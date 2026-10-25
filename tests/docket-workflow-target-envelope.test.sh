@@ -14,7 +14,7 @@
 # thinking read "since there's no output and no error, I should return
 # nothing", and its reply then carried a 40-hex sha that exists in no
 # repository and in no transcript except that reply and the three judge briefs
-# rendered from it. docket-workflow.js briefed all three security-vote seats with it as
+# rendered from it. the lane script briefed all three security-vote seats with it as
 # "TARGET SHA: … — the commit the diff under this gate stood at", and three
 # opus judges spent calls hunting a phantom commit. The same probe on the same
 # empty result behaved three different ways across three waves of that one run
@@ -37,12 +37,12 @@
 #      full 40-hex object id; otherwise the brief says "NO target ref" in as
 #      many words.
 #
-# HOW. docket-workflow.js fences the ancestry helpers in TEST-BEGIN/TEST-END
+# HOW. the lane script fences the ancestry helpers in TEST-BEGIN/TEST-END
 # `target-envelope` and the gate driver in `gate-vote`; the brief renderer
 # itself is tribunal.js's `seat-brief` region (DOT-1300 folded the seat
-# contract there — docket-workflow.js's `runGate` reaches it one workflow-nesting level
+# contract there — the lane script's `runGate` reaches it one workflow-nesting level
 # deep, via `workflow(args.tribunal, {..., step, target, heldCluster})`).
-# This suite extracts docket-workflow.js's two regions and tribunal.js's `seat-brief`,
+# This suite extracts the lane script's two regions and tribunal.js's `seat-brief`,
 # stubs `workflow` to CALL the real extracted `judgeBrief` per voter (so the
 # brief text captured is the genuine mid-wave render, not a stand-in) and the
 # agent per probe label, and asserts on the probes spent, the log, and the
@@ -50,14 +50,14 @@
 #
 # WHAT THIS SUITE CANNOT SEE: the real haiku probe (whether jq is installed on
 # the machine it runs on, and what a model does with an envelope once it HAS
-# one to relay) is outside docket-workflow.js. What docket-workflow.js controls, and what this pins,
+# one to relay) is outside the lane script. What the lane script controls, and what this pins,
 # is the command it asks for, what it will accept back, and what reaches a
 # judge.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 TRIBUNAL="${TRIBUNAL_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/tribunal.js}"
 
 fatal() {
@@ -65,7 +65,7 @@ fatal() {
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 [ -f "$TRIBUNAL" ] || fatal "tribunal.js not found at ${TRIBUNAL}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
@@ -86,8 +86,8 @@ extract() { # <file> <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$1"
 }
 
-extract "$WAVE" configuration > "${WORK}/configuration.js" || fatal "bad or missing TEST markers for configuration in docket-workflow.js"
-extract "$WAVE" classifier-retry > "${WORK}/classifier.js" || fatal "bad or missing TEST markers for classifier-retry in docket-workflow.js"
+extract "$WAVE" configuration > "${WORK}/configuration.js" || fatal "bad or missing TEST markers for configuration in the lane script"
+extract "$WAVE" classifier-retry > "${WORK}/classifier.js" || fatal "bad or missing TEST markers for classifier-retry in the lane script"
 extract "$TRIBUNAL" seat-brief   > "${WORK}/brief.js"      || fatal "bad or missing TEST markers for seat-brief in tribunal.js"
 extract "$WAVE" gate-vote        > "${WORK}/gate.js"       || fatal "bad or missing TEST markers for gate-vote"
 extract "$WAVE" target-envelope  > "${WORK}/envelope.js"   || fatal "bad or missing TEST markers for target-envelope"
@@ -104,11 +104,11 @@ const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 const voterToSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effort: 'low' })
 // The only global the brief renderer reaches for outside its own TEST fence.
-// docket-workflow.js's own gate-vote region declares its OWN TARGET_SHA_RE (gateTarget's
+// The lane script's own gate-vote region declares its OWN TARGET_SHA_RE (gateTarget's
 // envelope shape check) — tribunal.js's copy comes in with the seat-brief
 // region below, so neither needs restating here.
 const lensOf = (seat) => ({ role: 'stub', text: 'STUB LENS.' })
-// docket-workflow.js reads these off its own top-level `args` global.
+// The lane script reads these off its own top-level `args` global.
 const args = { tribunal: '/stub/tribunal.js', cwd: '/repo' }
 // Every brief handed to a seat, by spawn label — this is the surface a judge
 // actually reads. The panel is seated one workflow-nesting level into

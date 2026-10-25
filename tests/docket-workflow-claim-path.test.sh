@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's claim path (claimPacket and claimFailure):
+# Behavior suite for the lane script's claim path (claimPacket and claimFailure):
 # the gate between a dispatched executor row and the executor's spawn.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
@@ -22,7 +22,7 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 SKILL="${DOCKET_RUN_SKILL:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/SKILL.md}"
 
 fatal() {
@@ -30,7 +30,7 @@ fatal() {
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 [ -f "$SKILL" ] || fatal "SKILL.md not found at ${SKILL}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"

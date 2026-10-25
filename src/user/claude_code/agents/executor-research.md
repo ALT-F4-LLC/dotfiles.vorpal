@@ -1,7 +1,7 @@
 ---
 name: executor-research
 description: >
-  Executes one Docket research step dispatched by docket-workflow.js. Reads repository
+  Executes one Docket research step dispatched by a docket-run lane script. Reads repository
   content and named external sources, then records findings through the
   engine. The rendered brief supplies the task-specific contract.
 tools: Read, Grep, Glob, Bash, WebSearch, WebFetch

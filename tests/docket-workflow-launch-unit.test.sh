@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's per-unit LAUNCHES — one dispatch split into
+# Behavior suite for the lane script's per-unit LAUNCHES — one dispatch split into
 # one wave launch per issue, each launch holding only its own rows.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
@@ -28,14 +28,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-launch-unit.XXXXXX") || fatal "mktemp failed"
@@ -66,6 +66,13 @@ extract launch-rows        > "${WORK}/launch-rows.js"   || fatal "bad or missing
 grep -q 'function launchRows' "${WORK}/launch-rows.js" || fatal "launch-rows region does not contain launchRows()"
 
 {
+    cat <<'JS'
+// A rendered lane script declares `const LANE = { workflow }` above the body;
+// the body alone has none, and its fence reads LANE through typeof. The
+// lane-fence cases below set this; every other case runs with it undefined,
+// so the body's LANE_SCRIPT (computed once, here) is the fallback `lane.js`.
+let LANE = undefined
+JS
     cat "${WORK}/configuration.js"
     cat "${WORK}/packet.js"
     cat <<'JS'
@@ -88,7 +95,7 @@ JS
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so the lane script's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -128,6 +135,7 @@ const ladder = async () => {
 assertTribunalPath(input)
 rows = await launchRows(input)
 assertTribunalForVotes(input, rows)
+assertLane(input, rows)
 JS
     cat "${WORK}/park.js"
     cat "${WORK}/envelope.js"
@@ -167,7 +175,7 @@ const ex = (step, issue, stage, cls, extra) => Object.assign(
     { step, issue, stage, kind: 'executor', executor: cls === 'write' ? 'implement' : cls, class: cls },
     extra || {})
 const vote = (step, issue, stage) => ({ step, issue, stage, kind: 'vote', voters: ['judge-correctness'] })
-// docket-workflow.js returns {statuses, coordination}; `out` below is that object.
+// The lane script returns {statuses, coordination}; `out` below is that object.
 const statusOf = (out, step) => (out.statuses.find((r) => r.step === step) || {}).status
 const logged = (frag) => LOG.some((l) => l.includes(frag))
 
@@ -442,7 +450,7 @@ await refusesModule({ module: { path: MOD, sha: SHA, cwd: CWD } }, 'failed to lo
     'module: a module that does not load refuses')
 
 // ---- (9) args.tribunal must name tribunal.js, and is checked before any claim ----
-// One launch passed the installed docket-workflow.js as its tribunal path and
+// One launch passed the installed the lane script as its tribunal path and
 // the lane claimed three steps before a panel failed. The refusal comes before
 // the rows module loads and before any spawn.
 const INSTALLED = '/Users/op/.claude/workflows'
@@ -457,7 +465,7 @@ const refusesTribunal = async (tribunal, label) => {
            SPAWNED.length === 0 && LOADED.length === 0, label)
     }
 }
-await refusesTribunal(`${INSTALLED}/docket-workflow.js`, 'tribunal: this script\'s own installed path refuses before any spawn or module load')
+await refusesTribunal(`${INSTALLED}/standard-change.js`, 'tribunal: this script\'s own installed path refuses before any spawn or module load')
 await refusesTribunal(`${INSTALLED}/tribunal.js.bak`, 'tribunal: a lookalike basename refuses')
 await refusesTribunal(`${INSTALLED}/tribunal.js/`, 'tribunal: a trailing slash refuses')
 await refusesTribunal('', 'tribunal: an empty string refuses')
@@ -477,11 +485,58 @@ try {
         'tribunal: a launch holding a vote row and no args.tribunal refuses before any spawn')
 }
 
+// ---- (10) the lane fence: args.workflow must name this script's workflow ----
+// One lane script per workflow, and rows carry no workflow field, so the only
+// evidence that a launch landed on the right script is the `workflow`
+// lane_units.py wrote beside the `script` it named. A mismatch, or no field at
+// all (a hand-built args object), refuses before any claim; the name is
+// compared without its @version, since a paused run keeps the version it
+// pinned while the installed script moves on.
+const T = { tribunal: `${INSTALLED}/tribunal.js` }
+LANE = undefined
+out = await start(THREE(), T)
+ok(SPAWNED.length > 0 && statusOf(out, 'A-0') === 'returned' && !LOG.some((l) => l.includes('Refusing to route')),
+    'lane fence: the body alone (no LANE) applies no fence, so the extracted regions run as before')
+LANE = { workflow: 'standard-change' }
+// start() only forwards the keys it knows, and builds `input` synchronously
+// before ladder() reads it, so a workflow set right after the call is what
+// the fence sees. The message names the script through LANE_SCRIPT, which the
+// harness computed before LANE was set, so it reads `lane.js` here.
+const startWith = (opts) => { const p = start(THREE(), T); if ('workflow' in opts) input.workflow = opts.workflow; return p }
+const startLane = async (w, label) => {
+    out = await startWith({ workflow: w })
+    ok(SPAWNED.length > 0 && statusOf(out, 'A-0') === 'returned', label)
+}
+const refusesLaneWith = async (opts, needle, label) => {
+    MODULES = new Map()
+    try {
+        await startWith(opts)
+        ok(false, label)
+    } catch (e) {
+        const m = String(e.message)
+        ok(m.includes(needle) && m.includes('lane.js') && m.includes('nothing was claimed') &&
+           m.includes('Refusing to route') && SPAWNED.length === 0 && LOG.some((l) => l.includes('Refusing to route')), label)
+    }
+}
+await startLane('standard-change', 'lane fence: args.workflow equal to LANE.workflow launches the wave')
+await startLane('standard-change@55', 'lane fence: args.workflow with an @version launches (the name alone is compared)')
+await refusesLaneWith({ workflow: 'ui-change' }, "args.workflow \"ui-change\" is not this script's workflow standard-change",
+    'lane fence: another workflow\'s name refuses before any spawn and names the script to launch instead')
+await refusesLaneWith({ workflow: 'ui-change@7' }, 'not this script\'s workflow standard-change',
+    'lane fence: another workflow\'s name@version refuses')
+await refusesLaneWith({ workflow: undefined }, 'args carry no workflow',
+    'lane fence: a launch with no args.workflow refuses before any spawn (a hand-built args object)')
+await refusesLaneWith({ workflow: null }, 'args carry no workflow',
+    'lane fence: a null args.workflow refuses the same way')
+await refusesLaneWith({ workflow: 42 }, 'not this script\'s workflow standard-change',
+    'lane fence: a non-string args.workflow refuses')
+LANE = undefined
+
 // The production call sites sit outside the TEST region, so the harness above
 // cannot see them removed: pin their order in the source.
 const wave = (await import('node:fs')).readFileSync(process.env.WAVE_SRC, 'utf8')
-ok(/assertTribunalPath\(input\)\nconst rows = await launchRows\(input\)\nassertTribunalForVotes\(input, rows\)\n/.test(wave),
-    'tribunal: docket-workflow.js checks the path, then loads the rows, then checks the vote rows, before any claim')
+ok(/assertTribunalPath\(input\)\nconst rows = await launchRows\(input\)\nassertTribunalForVotes\(input, rows\)\nassertLane\(input, rows\)\n/.test(wave),
+    'tribunal: the lane script checks the path, then loads the rows, then checks the vote rows and the lane, before any claim')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)

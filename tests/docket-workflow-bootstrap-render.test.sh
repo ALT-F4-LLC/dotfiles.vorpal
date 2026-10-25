@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's executorBrief(): the brief an executor is
+# Behavior suite for the lane script's executorBrief(): the brief an executor is
 # spawned with, carrying its work packet verbatim.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
@@ -19,7 +19,7 @@
 # join read sits ahead of the packet, where no packet content can displace
 # it.
 #
-# HOW. docket-workflow.js fences the helpers in TEST-BEGIN/TEST-END `packet` and
+# HOW. the lane script fences the helpers in TEST-BEGIN/TEST-END `packet` and
 # `executor-brief` markers. This suite extracts both and renders the brief
 # for every isolation and class combination. It also asserts the
 # refused-write rule: take the recovery the refusal's own text names, once,
@@ -31,14 +31,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-bootstrap-render.XXXXXX") || fatal "mktemp failed"

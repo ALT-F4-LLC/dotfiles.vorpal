@@ -230,7 +230,7 @@ function sweepPrompt(target) {
 
 Target: ${target.path} (surface: ${target.surface}${target.name ? `, name: ${target.name}` : ''})
 Corpus root: ${corpusRoot} (workflows/*.toml, policy.toml, contracts/*.md, fragments/*.md, schemas/*.json, README.md)
-Harness scripts: ${harnessDir} (docket-workflow.js resolves policy rows to a variant and seat; tribunal.js holds the LENSES table)
+Harness scripts: ${harnessDir} (the lane scripts, <workflow>.js, resolve policy rows to a variant and seat; tribunal.js holds the LENSES table)
 
 ${READ_ONLY}
 
@@ -276,7 +276,7 @@ Load-bearing files (read the ones the question touches, whole enough to settle t
 - internal/workflow/expand.go — what expansion produces: fanout siblings, when-skipped rows, interposed threshold targets, loop-ordinal re-instantiation
 - internal/engine/loop.go, vote.go, human.go — fix-loop entry, supersede sweep, budgets and parks, vote tally and rule resolution
 - internal/workflow/packet.go — packet assembly: what packet_includes and step-level fragments become in the rendered packet
-Harness authorities for what the engine never sees: ${harnessDir}/docket-workflow.js resolves policy rows to a variant and seat; ${harnessDir}/tribunal.js holds the LENSES table vote-seat names resolve against.
+Harness authorities for what the engine never sees: ${harnessDir}/<workflow>.js (every lane script, rendered from skills/docket-run/scripts/lane_body.js) resolves policy rows to a variant and seat; ${harnessDir}/tribunal.js holds the LENSES table vote-seat names resolve against.
 
 ${READ_ONLY}
 

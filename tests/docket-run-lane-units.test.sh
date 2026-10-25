@@ -283,10 +283,10 @@ got=$(summary 'sorted({x["harnessCap"] for x in s})')
 ok $? "with LANE_UNITS_CPUS unset every launch has harnessCap min(16, max(1, $online - 2)) = $want (got '$out', caps $got)"
 
 # ---- Generated launch args: a rows module by reference, never inline rows ------
-# The conductor passes args-<i>.json to docket-workflow.js unedited, so the object is
+# The conductor passes args-<i>.json to the lane script unedited, so the object is
 # complete and small: the rows ride in a module under
-# <toplevel>/.claude/docket-packets/ that docket-workflow.js loads, and the module
-# exports rows_sha256, the sha256 of launch-<i>.jsonl's bytes, which docket-workflow.js
+# <toplevel>/.claude/docket-packets/ that the lane script loads, and the module
+# exports rows_sha256, the sha256 of launch-<i>.jsonl's bytes, which the lane script
 # compares with the args' rows_sha256.
 fat() { # <n> <issue> <stage> — a kept row with the fields the engine renders
     printf '{"step":"STEP-%s","issue":"%s","run":"RUN-125","kind":"executor","class":"read","executor":"review-correctness","instance":"review@0#%s","stage":%s,"attempt":0,"model":"sonnet","effort":"medium","variant":"judge-sonnet","scope":["src/user/claude_code/workflows/docket-workflow.js"]}' "$1" "$2" "$1" "$3"
@@ -342,6 +342,58 @@ rm -rf "$WORK/gen"
 [ "$rc" -ne 0 ] && grep -qi 'git work tree' "$WORK/err" && [ -z "$(ls "$WORK/gen"/args-*.json 2>/dev/null)" ] && [ ! -s "$WORK/out" ]
 ok $? "outside a git work tree it exits non-zero, names the problem, and writes no args object (rc=$rc: $(head -c 200 "$WORK/err"))"
 
+# ---- --workflows: each launch names its lane script from the run's roster -------
+# The lane scripts are one per workflow (~/.claude/workflows/<name>.js), so a
+# launch has to say which one to launch. The roster comes from lane_roster.sh
+# as [{issue, workflow}] with the workflow as name@version; an activation
+# envelope holding that array under .data.bound_issues and a plain
+# {lane: name} object are read the same. Every launched lane must resolve, or
+# nothing is written.
+two_rows="[$(w 1 A 0),$(r 2 B 0)]"
+printf '%s' "$two_rows" > "$WORK/rows.json"
+lanes_of() { jq -r '[.[] | "\(.lanes[0]) \(.workflow // "-") \(.script // "-")"] | join(";")' "$WORK/launch/launches.json"; }
+for shape in array envelope object; do
+    case "$shape" in
+        array)    printf '[{"issue":"A","workflow":"standard-change@55"},{"issue":"B","workflow":"ui-change@7"}]' ;;
+        envelope) printf '{"ok":true,"data":{"run":"RUN-9","bound_issues":[{"issue":"A","workflow":"standard-change@55"},{"issue":"B","workflow":"ui-change@7"}]}}' ;;
+        object)   printf '{"A":"standard-change","B":"ui-change@7"}' ;;
+    esac > "$WORK/roster.json"
+    rm -rf "$WORK/launch"
+    n=$(lu "$WORK/rows.json" "$WORK/launch" --workflows "$WORK/roster.json" --tribunal "$TRIBUNAL" 2> "$WORK/err"); rc=$?
+    [ "$rc" -eq 0 ] && [ "$n" = "2" ] && [ "$(lanes_of)" = "A standard-change standard-change.js;B ui-change ui-change.js" ]
+    ok $? "--workflows ($shape): each launch carries workflow (name, no @version) and script <name>.js (rc=$rc, got '$(lanes_of 2>/dev/null)': $(head -c 200 "$WORK/err"))"
+    [ "$(jq -r '.workflow' "$WORK/launch/args-0.json")" = "standard-change" ] && [ "$(jq -r '.workflow' "$WORK/launch/args-1.json")" = "ui-change" ]
+    ok $? "--workflows ($shape): each args-<i>.json carries its lane's workflow name"
+    ! grep -q 'no --workflows given' "$WORK/err"; ok $? "--workflows ($shape): stderr does not say the roster is missing"
+done
+# an unresolved lane exits 1 before anything is written
+printf '[{"issue":"A","workflow":"standard-change@55"}]' > "$WORK/roster.json"
+rm -rf "$WORK/launch"
+lu "$WORK/rows.json" "$WORK/launch" --workflows "$WORK/roster.json" --tribunal "$TRIBUNAL" > "$WORK/out" 2> "$WORK/err"; rc=$?
+[ "$rc" -eq 1 ] && grep -q 'no workflow in .*roster.json for lane(s) B' "$WORK/err" && grep -q 'lane_roster.sh' "$WORK/err" && [ ! -d "$WORK/launch" ] && [ ! -s "$WORK/out" ]
+ok $? "--workflows: a lane the roster does not name exits 1 naming it and the roster script, before the out dir exists (rc=$rc: $(head -c 200 "$WORK/err"))"
+# a row without an issue can never resolve: the message says so and says to stop
+printf '%s' '[{"step":"STEP-7","kind":"executor","class":"read","stage":0}]' > "$WORK/noissue.json"
+rm -rf "$WORK/launch"
+lu "$WORK/noissue.json" "$WORK/launch" --workflows "$WORK/roster.json" --tribunal "$TRIBUNAL" > "$WORK/out" 2> "$WORK/err"; rc=$?
+[ "$rc" -eq 1 ] && grep -q 'for lane(s) row:STEP-7' "$WORK/err" && grep -q 'stop and report' "$WORK/err" && [ ! -d "$WORK/launch" ]
+ok $? "--workflows: a row:<step> lane exits 1 and says to stop and report, never to map it by hand (rc=$rc: $(head -c 200 "$WORK/err"))"
+! grep -q 'by hand' "$WORK/err"; ok $? "--workflows: the message never offers a by-hand mapping"
+# bad roster files
+printf '42' > "$WORK/roster.json"
+lu "$WORK/rows.json" "$WORK/launch" --workflows "$WORK/roster.json" --tribunal "$TRIBUNAL" > /dev/null 2> "$WORK/err"; rc=$?
+[ "$rc" -eq 1 ] && grep -q 'holds neither a roster array' "$WORK/err"
+ok $? "--workflows: a scalar roster file exits 1 naming the accepted shapes (rc=$rc)"
+printf '[]' > "$WORK/roster.json"
+lu "$WORK/rows.json" "$WORK/launch" --workflows "$WORK/roster.json" --tribunal "$TRIBUNAL" > /dev/null 2> "$WORK/err"; rc=$?
+[ "$rc" -eq 1 ] && grep -q 'names no issue to workflow binding' "$WORK/err"
+ok $? "--workflows: an empty roster exits 1 (rc=$rc)"
+# without --workflows nothing names a script, and stderr says so
+rm -rf "$WORK/launch"
+n=$(lu "$WORK/rows.json" "$WORK/launch" --tribunal "$TRIBUNAL" 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "2" ] && [ "$(lanes_of)" = "A - -;B - -" ] && grep -q 'no --workflows given' "$WORK/err" && ! jq -e 'has("workflow")' "$WORK/launch/args-0.json" > /dev/null
+ok $? "without --workflows no launch carries workflow or script, no args carries workflow, and stderr says so (rc=$rc, got '$(lanes_of 2>/dev/null)')"
+
 # ---- Bad usage fails loudly -------------------------------------------------------
 python3 "$SCRIPT" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'no argument is a non-zero exit'
 python3 "$SCRIPT" "$WORK/rows.json" > /dev/null 2>&1; [ $? -ne 0 ]; ok $? 'a missing out-dir is a non-zero exit'
@@ -383,7 +435,7 @@ grep -qF 'python3 ~/.claude/skills/docket-run/scripts/seat_roster.py' "$SKILL"; 
     'SKILL.md carries no inline interpreter program (stdin heredoc or code argument) the deny rule refuses'
 
 # ---- SKILL.md's refill loop: the re-split form, the close, the pending filter ---
-grep -qF -- '"$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>"' "$SKILL"; ok $? \
+grep -qF -- '"$PENDING_FILE" "$LAUNCH_DIR" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>"' "$SKILL"; ok $? \
     'SKILL.md re-splits the pending rows with --in-flight at a launch return'
 # Prose pins match across line wraps.
 skill_text=$(tr -s ' \n' '  ' < "$SKILL")
@@ -509,20 +561,20 @@ got=$(jq -c --rawfile settled "$WORK/settled" --rawfile held "$WORK/held" "$filt
 [ -n "$filter" ] && [ "$got" = "STEP-5 STEP-123 " ]; ok $? \
     "SKILL.md's pending filter drops exactly the settled and held steps (got '$got')"
 
-# ---- the mirrored caps match docket-workflow.js --------------------------------------------
+# ---- the mirrored caps match lane_body.js --------------------------------------------
 # lane_units.py caps launches and reports harnessCap; a cap that drifts from
-# docket-workflow.js splits launches the wave then refuses or narrows.
-WAVE_JS="${WAVE_JS:-${ROOT}/src/user/claude_code/workflows/docket-workflow.js}"
+# The lane body splits launches the wave then refuses or narrows.
+WAVE_JS="${WAVE_JS:-${ROOT}/src/user/claude_code/skills/docket-run/scripts/lane_body.js}"
 for name in LAUNCH_CAP HARNESS_CAP; do
     js=$(sed -n "s/^const ${name} = \([0-9][0-9]*\).*/\1/p" "$WAVE_JS")
     py=$(sed -n "s/^${name} = \([0-9][0-9]*\).*/\1/p" "$SCRIPT")
-    [ -n "$js" ] && [ "$js" = "$py" ]; ok $? "lane_units.py's ${name} (${py:-missing}) mirrors docket-workflow.js (${js:-missing})"
+    [ -n "$js" ] && [ "$js" = "$py" ]; ok $? "lane_units.py's ${name} (${py:-missing}) mirrors lane_body.js (${js:-missing})"
 done
-# The rows module's field names are the ones docket-workflow.js reads; a rename on
+# The rows module's field names are the ones the lane body reads; a rename on
 # either side strands every launch.
 grep -q 'input\.rowsModule' "$WAVE_JS" && grep -q 'input\.rows_sha256' "$WAVE_JS" && grep -q 'mod\.rows_sha256' "$WAVE_JS" &&
     grep -q 'mod\.v !== 1' "$WAVE_JS" && grep -q "const PACKET_DIR = '.claude/docket-packets'" "$WAVE_JS"
-ok $? 'docket-workflow.js reads rowsModule, rows_sha256 and v under the names lane_units.py writes, from the same packet directory'
+ok $? 'lane_body.js reads rowsModule, rows_sha256 and v under the names lane_units.py writes, from the same packet directory'
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

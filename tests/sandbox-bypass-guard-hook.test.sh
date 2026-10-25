@@ -142,7 +142,7 @@ case_deny_reason_is_fixed() {
     esac
 }
 
-# DOT-1262: a Workflow-spawned seat (tribunal.js, docket-workflow.js) whose agent_type
+# DOT-1262: a Workflow-spawned seat (tribunal.js, a lane script) whose agent_type
 # arrives empty must still be caught, via its own transcript's first
 # message. build_input_with_transcript layers a transcript_path onto
 # build_input's payload; the fixture file under it stands in for that

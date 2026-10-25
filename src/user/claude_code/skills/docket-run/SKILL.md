@@ -21,7 +21,7 @@ argument-hint: "[RUN-N | pause [RUN-N] | unattended [RUN-N] | attended [RUN-N]]"
 # docket-run
 
 You are the conductor: a relay between the engine, the panel, and the
-operator. The engine decides what runs, `docket-workflow.js` decides what each step
+operator. The engine decides what runs, the lane script decides what each step
 routes to, a tribunal panel decides at gates, and what the panel could
 not or must not decide goes to the advisor first and to the operator when
 the advisor's answer is not clear.
@@ -42,7 +42,7 @@ journal lives, and it sanctions the launches below.
 artifact bodies. Every loop iteration asks the engine again.
 
 **You make no routing decisions.** Model, tier, effort, and executor
-choice belong to `docket-workflow.js`, in code. You may read `docket-workflow.js` (grep it for a
+choice belong to the lane script (`~/.claude/workflows/<workflow>.js`, one per workflow, every one rendered from `lane_body.js`), in code. You may read it (grep it for a
 quoted brief string to attach a file and line to an escalation) but never
 edit it or choose routes yourself.
 
@@ -410,7 +410,7 @@ first dispatch; `unable to open database file (14)` means the seat's
 write access, not the engine.
 
 **A clean write step proves nothing about a read step.** Isolated
-executors run docket-workflow.js's worktree bootstrap before any work, and deny
+executors run the lane script's worktree bootstrap before any work, and deny
 beats allow: a denied component (`git checkout --detach`, say) fails a
 fanout even after a clean write step and cannot be fixed with an allow
 rule. Read the deny list, not just the allow list, before the first
@@ -518,7 +518,7 @@ The classifier screens a rendered brief before any agent exists, so a
 block is a verdict on content and a retry re-renders the same content.
 It also stops a running agent's output mid-write; that stop is the same
 verdict on content, reached later. Reconcile and close as usual, then
-escalate once, quoting the refusal and the `docket-workflow.js` line it names; the
+escalate once, quoting the refusal and the lane script line it names; the
 question never offers or recommends an unchanged re-dispatch. Never
 retry, never reword the brief; the fix is a definition edit the operator
 installs outside this run. A step stopped a second time goes to
@@ -706,14 +706,43 @@ STEP-N` before dispatching that step.
 The roster of what was bound comes from the engine, never the run's
 request prose.
 
-**Read the roster straight out of the dry-run JSON.** `bound_issues[]`
-lists it by id, `promoted_issues[]` names what activation promotes, and
+**At activation, read the roster straight out of the dry-run JSON.**
+`bound_issues[]` lists what this activation binds by id,
+`promoted_issues[]` names what activation promotes, and
 `issues_bound` counts them. After activation, `docket next --run $RUN
 --json=v2` reports what is ready (pass no `--limit`, per **1. Ask what is
 ready** below); disagreement with what you presented is a stop-and-report.
 Also check `events list --run $RUN --kind issue-promoted`, since activation
 can promote a fix-issue at the last instant and its steps can surface
 first in `dispatch open` rather than `next`.
+
+**Keep the roster on disk as the workflows file.** The engine binds each
+issue to one workflow at activation, and that binding picks the issue's
+lane script (`~/.claude/workflows/<name>.js`). No docket verb reports the
+bindings of a run already active: `run activate --dry-run` lists only the
+issues the next activation would bind, so after the first activation its
+`bound_issues[]` is empty or holds only the issues added since. The store
+holds them, so `lane_roster.sh` reads them there, read-only, as
+`[{issue, workflow}]` with the workflow as `name@version`, and exits 1
+naming the run when it has no bound issue or an issue the engine never
+bound. Write its output to `<scratchpad>/conductor.d/$RUN.workflows.json`
+and hand that path to lane_units.py as `--workflows` on every split and
+refill. Derive it at every dispatch open, so an issue added at a
+re-activation is in the file before its first row is offered:
+
+```bash
+bash ~/.claude/skills/docket-run/scripts/lane_roster.sh "$RUN" > "<scratchpad>/conductor.d/$RUN.workflows.json.tmp" && mv "<scratchpad>/conductor.d/$RUN.workflows.json.tmp" "<scratchpad>/conductor.d/$RUN.workflows.json"
+```
+
+The script finds the store the way the engine does, through the
+`db_path` of `docket config --json`, and opens it read-only through
+`sqlite3`, so it holds
+no lock and migrates nothing. A lane whose issue the file does not name
+makes lane_units.py exit 1 before writing anything; that is a file older
+than the dispatch or a stop-and-report, never a script picked by hand. A
+row with no issue (a `row:<step>` lane) has no binding, so no lane script
+can take it: lane_units.py exits 1 naming the step, and that is a
+stop-and-report every time.
 
 **The roster can legally grow after activation.** `docket run issue add
 $RUN <ids>` binds and snapshots at the next `run activate`. `run issue
@@ -794,7 +823,7 @@ prints, since lanes beyond the free slots go to `deferred.jsonl`.
 
 Pass no `--limit` on the `--run` form, and read v2: only v2 carries the
 pre-cut `total` and an explicit `truncated`. `writers` is the wave-length
-lever, since docket-workflow.js serializes writers the engine never co-staged; flag
+lever, since the lane script serializes writers the engine never co-staged; flag
 a large number in your report rather than reordering the plan yourself.
 
 Read `next` as a summary, never as rows: the rows you launch are what
@@ -862,7 +891,7 @@ docket dispatch open --run $RUN --limit 240 --json
 **Always pass `--limit 240`.** The default `0` is unlimited, and a large
 ready set can exceed the `Read` tool's payload cap and the `Workflow`
 tool's practical inline-arg size; 240 rows stays under both. The cap
-governs payload size only. docket-workflow.js handles the harness's separate
+governs payload size only. The lane script handles the harness's separate
 1000-agent lifetime cap, reserving each row's projected agents against a
 900-agent budget and deferring the rest (`not-launched-agent-budget`,
 re-offered next dispatch), so hand it the whole manifest and never
@@ -880,7 +909,7 @@ reopen smaller. To inspect an oversized answer, pipe
 `offset`/`limit`, never reconstructing rows by hand.
 
 Rows never reach a launch through your context. **Split the launches**
-below writes each launch's rows into a rows module that docket-workflow.js loads
+below writes each launch's rows into a rows module that the lane script loads
 itself, and the launch's generated args object names that module and its
 hash. Never re-emit rows into a launch's `args`, probe byte offsets, or
 split a file by hand. To inspect a launch's rows, page its
@@ -925,30 +954,43 @@ worktree's base commit, not the live checkout, since the live checkout
 can be a false pass for targets that land after the worktree was cut. A
 target missing at the base is a pre-dispatch stop-and-report.
 
-Invoke the wave by scriptPath, always: the installed
-`~/.claude/workflows/docket-workflow.js`, as an absolute path with `~` expanded
-yourself (the Workflow tool does not expand it). This is the only
-launchable path: the tool accepts a scriptPath only under the session's
-cwd or `~/.claude/workflows` (added via
+Invoke each lane by scriptPath, always: the installed lane script of
+the issue's workflow, `~/.claude/workflows/<workflow>.js`, as an absolute
+path with `~` expanded yourself (the Workflow tool does not expand it).
+There is one lane script per workflow definition (`standard-change.js`,
+`ui-change.js`, `disposition.js`, and so on), every one rendered from the
+same lane body, and launch i's is named by `launches.json[i].script`,
+which lane_units.py derives from the roster you pass it as `--workflows`
+(**Split the launches** below). Never pick the script yourself from the
+issue's label or title: the roster is the engine's binding. This is the
+only launchable path: the tool accepts a scriptPath only under the
+session's cwd or `~/.claude/workflows` (added via
 `permissions.additionalDirectories`), so the dotfiles source tree is
 never a fallback, and a source file edited since the last `just activate`
 is bytes no session runs. A missing installed file is drift: stop and
-report it, never hunt for another copy.
+report it, never hunt for another copy or launch a different workflow's
+script in its place.
 
-**Pass the machine's own concurrency cap so docket-workflow.js does not have to guess
+**Pass the machine's own concurrency cap so the lane script does not have to guess
 it.** A wave script cannot read the CPU count itself. lane_units.py (Split the
 launches below) reads the CPU count itself (`os.cpu_count()`, overridable via
 `LANE_UNITS_CPUS`) and writes the cap, floored at 1, into every launches.json
 entry and every generated args object: launch i's `harnessCap` reaches
-docket-workflow.js inside `args-<i>.json`, as written, never a figure of your own.
-docket-workflow.js uses `min(HARNESS_CAP, harnessCap)` as its own admission bound and
+the lane script inside `args-<i>.json`, as written, never a figure of your own.
+The lane script uses `min(HARNESS_CAP, harnessCap)` as its own admission bound and
 logs which it used; omitting the field is never a refusal.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to docket-workflow.js>", args: <$LAUNCH_DIR/args-0.json, the generated args object, unedited> })
-Workflow({ scriptPath: "<absolute installed path to docket-workflow.js>", args: <$LAUNCH_DIR/args-1.json, the generated args object, unedited> })
+Workflow({ scriptPath: "<absolute installed path to launches.json[0].script, under ~/.claude/workflows>", args: <$LAUNCH_DIR/args-0.json, the generated args object, unedited> })
+Workflow({ scriptPath: "<absolute installed path to launches.json[1].script, under ~/.claude/workflows>", args: <$LAUNCH_DIR/args-1.json, the generated args object, unedited> })
 …one launch per index, 0 through N-1, all in this same turn
 ```
+
+Each generated args object carries `workflow`, the lane's workflow name,
+and the lane script refuses before any claim when that name is not its
+own, so a script launched for the wrong lane dies at once and claims
+nothing. Read `launches.json[i].script` from the file; a script name
+typed from memory is the drift that check exists to catch.
 
 **A dispatch is N wave launches, one per issue, N from Split the
 launches below.** One Workflow invocation runs at most 16 agents at once
@@ -958,7 +1000,7 @@ none refused or queued, measured). So each issue gets its own
 launch, 16 slots, and 1000-agent budget, and no issue's agents queue
 behind another's: a dispatch with six issues is six launches. Each launch
 gets only its issue's rows and its `unit`; never merge two issues into
-one launch, which docket-workflow.js refuses. Writers the engine never co-staged run
+one launch, which the lane script refuses. Writers the engine never co-staged run
 in separate launches, and the engine's claim check keeps them apart: the
 later claimant settles `skipped-not-ready`, and the refill relaunches it
 at the next return that is not a bounce (**Refill freed launch slots**
@@ -966,11 +1008,11 @@ below). Emit all N launches in ONE
 assistant message, as separate `Workflow` calls, never held back for a
 sibling's return: on past runs, launches spread over several messages
 started up to 17 minutes after the first, while one message put them
-about a minute apart. docket-workflow.js refuses `of` above 20 and the retired
+about a minute apart. The lane script refuses `of` above 20 and the retired
 `shard` arg.
 
 `tribunal` is the absolute installed path to `tribunal.js`, resolved the
-same way as docket-workflow.js's and handed to lane_units.py as `--tribunal`; docket-workflow.js
+same way as the lane script's and handed to lane_units.py as `--tribunal`; the lane script
 seats in-wave vote rows through it. `cwd` is the repo the run belongs to,
 and must be this session's working directory; lane_units.py writes the git
 toplevel of the directory it runs in, so run it from this session's working
@@ -985,13 +1027,13 @@ whose `cwd` is elsewhere stops claiming after its first unloadable module.
 `run_in_background`. Resuming a stopped workflow needs the same
 `args-<i>.json` object again, verbatim.
 
-**Never `Workflow({name: "docket-workflow"})`**: the name registry can serve a stale
+**Never `Workflow({name: "<workflow>"})`**, for any lane script: the name registry can serve a stale
 snapshot. `scriptPath` is the only invocation that provably runs the
 current file.
 
 Pass `args` as the generated args object lane_units.py writes for launch
 i, `$LAUNCH_DIR/args-<i>.json`, unedited: `{rowsModule, rows_sha256, unit,
-harnessCap, cwd, tribunal}`, plus `integrated` when the dispatch carries a
+harnessCap, cwd, workflow, tribunal}`, plus `integrated` when the dispatch carries a
 fix round's review fanout (instances `name@N#k` with N ≥ 2). lane_units.py
 puts that map in every launch's object when you give it `--integrated`.
 Read [references/fix-rounds.md](references/fix-rounds.md) in full before
@@ -999,7 +1041,7 @@ building the map: which sha each issue gets, the round off-by-one trap,
 and when an entry is omitted. Emit the object as a literal JSON value,
 never hand-stringified, and never add, drop, or re-type a field. The rows
 ride in the rows module the object names, with `model`/`effort`/`variant`
-intact, never in `args`; docket-workflow.js refuses the launch before any claim when
+intact, never in `args`; the lane script refuses the launch before any claim when
 the module's `rows_sha256` differs from the object's. There is no
 `policyPath`/`policyText`; routing is on the rows.
 
@@ -1054,13 +1096,13 @@ is left to the classifier, which refused it mid-run (measured: accepted
 at one conductor's activation, refused at its fourth dispatch):
 
 ```bash
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --write-cap "$WRITE_CAP"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --write-cap "$WRITE_CAP"
 # a dispatch carrying a fix round's review fanout adds its integrated map:
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --integrated "$INTEGRATED_FILE" --write-cap "$WRITE_CAP"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_DIR" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --integrated "$INTEGRATED_FILE" --write-cap "$WRITE_CAP"
 # a refill at a launch return splits the pending rows and names the lanes
 # still in flight, each by its key: the issue id, or row:<step> for a row
 # without an issue (add --integrated as above when the dispatch carries it):
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
 ```
 
 Run it as its own Bash call, with no `jq -c` or other `-c` flag in the same
@@ -1074,7 +1116,10 @@ argument ending in `c`, such as `launch-d10c`, matches no row; an argument
 starting with `-c`, or with a listed `-<letter>c`, does. Read the launch files
 in a second call.
 
-Always pass `--tribunal`; without it no generated object carries
+Always pass `--workflows`; `$WORKFLOWS_FILE` is the roster file from **Keep
+the roster on disk as the workflows file** above, and without it no
+launch names its lane script, so there is nothing to launch. Always pass
+`--tribunal`; without it no generated object carries
 `tribunal`, and the script says so on stderr. `$WRITE_CAP` is the write
 class's effective cap, `.data.limits.write` in this dispatch's
 `docket dispatch open --json` answer (`jq '.data.limits.write'` over the
@@ -1089,8 +1134,8 @@ exits 1 outside the run's git work tree and writes nothing. It reads the
 kept rows as one JSON array or as JSON lines (the kept rows file itself
 is JSON lines, per the kind filter), prints N alone on stdout,
 writes `launch-<i>.jsonl` (launch i's rows, one per line), `args-<i>.json`
-(launch i's complete docket-workflow.js args), `launches.json` (each launch's
-`index`, `of`, `classCap`, `harnessCap`, row count and its one lane) and
+(launch i's complete lane script args), `launches.json` (each launch's
+`index`, `of`, `classCap`, `harnessCap`, `workflow`, `script`, row count and its one lane) and
 `deferred.jsonl` (rows past the free slots, empty when none) under
 `$LAUNCH_DIR`, writes each launch's rows module under
 `<cwd>/.claude/docket-packets/`, and names each lane's launch on stderr for
@@ -1098,13 +1143,13 @@ the dispatch report. Use a fresh `$LAUNCH_DIR` per split under the
 session's scratchpad (for example `<scratchpad>/launch-DISPATCH-M` at the
 open and `<scratchpad>/launch-DISPATCH-M-R<k>` for its k-th refill). Pass
 launch i's `args` as the generated args object in `args-<i>.json`,
-unedited. docket-workflow.js does not re-derive the partition, and its hash check
+unedited. The lane script does not re-derive the partition, and its hash check
 proves only that the module matches the object's own `rows_sha256`, so
 pass each object whole to its own launch.
 
 Pass rows through unchanged beyond the kind filter, the refill's
 settled and held filter below, and the split, with no reordering,
-dropping, or adding, and never sequence or hold rows back otherwise; docket-workflow.js's own `stage` labels are one global schedule, and
+dropping, or adding, and never sequence or hold rows back otherwise; the lane script's own `stage` labels are one global schedule, and
 offering a `staged` row ahead of readiness is the mechanism, not a
 mistake.
 
@@ -1151,7 +1196,7 @@ launching its usage join (step 3), before waiting on the rest:
    `jq -r --slurpfile rows "$ROWS_FILE" "$WAITS"' | .[] | select(.waits | not) | .step' "$STATUSES_FILE" >> "$SETTLED_FILE"`.
    That settles every row except a `skipped-not-ready` row and the
    `skipped-chain-dead` rows of an issue that has one in this launch:
-   docket-workflow.js settles the later stages of a refused row's issue
+   the lane script settles the later stages of a refused row's issue
    `skipped-chain-dead`, and they wait on that row, so they stay pending
    with it. A `skipped-chain-dead` row of any other issue (a writer that
    recorded pending, a failed predecessor) settles beside another lane's
@@ -1210,7 +1255,7 @@ hand-run: write the returned launch's `statuses` array to `$STATUSES_FILE`,
 do step 3's reaps, then run, as its own Bash call from the run's work tree,
 
 ```bash
-bash ~/.claude/skills/docket-run/scripts/refill.sh --run "$RUN" --rows "$ROWS_FILE" --settled "$SETTLED_FILE" --held "$HELD_FILE" --pending "$PENDING_FILE" --launch-dir "$LAUNCH_DIR" --statuses "$STATUSES_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
+bash ~/.claude/skills/docket-run/scripts/refill.sh --run "$RUN" --rows "$ROWS_FILE" --settled "$SETTLED_FILE" --held "$HELD_FILE" --pending "$PENDING_FILE" --launch-dir "$LAUNCH_DIR" --statuses "$STATUSES_FILE" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
 ```
 
 adding `--reaped` when step 3 reaped a dead holder at this return (the
@@ -1467,7 +1512,7 @@ of writing a second; the engine misses a row behind a predecessor skipped
 before its claim, so keep filing every `chain` deferral. These facts are
 how a retro reading only the store counts them; the `coordination` counts
 stay as they are. One step can appear in several launches' `statuses`:
-docket-workflow.js reads `skipped-not-ready` as chain-dead, marks that row's issue
+the lane script reads `skipped-not-ready` as chain-dead, marks that row's issue
 dead and settles the issue's later rows `skipped-chain-dead`, and its
 `statuses` carries one entry per row the launch held; step 2 of **Refill
 freed launch slots each time a launch returns** leaves the
@@ -1580,7 +1625,7 @@ close, with one difference at the end:
 // 1. the join is a script (below); its stdout is the rows and you check the shape.
 // The join measures tokens only. A wave's coordination counts (rounds, gate passes,
 // re-seats, claim conflicts, ancestry parks, budget/chain deferrals) come from the
-// `coordination` field of that wave's own return, which docket-workflow.js computes; the join has none.
+// `coordination` field of that wave's own return, which the lane script computes; the join has none.
 bash ~/.claude/skills/docket-run/scripts/usage_join.sh "<transcript-dir>" --mode steps > "<scratchpad>/wave-<wfId>.tmp" && mv "<scratchpad>/wave-<wfId>.tmp" "<scratchpad>/wave-<wfId>.json"
 ```
 
@@ -1724,7 +1769,7 @@ claim it fresh (`docket step claim STEP-N --owner conduct:recovery
 --json`) and record against the new token; never redispatch a step whose
 complete parked payload you hold. On a write-class step, carry
 `--worktree <its checkout>` (it defaults to the invoking checkout
-otherwise). Once landed, sweep the parked dir as docket-workflow.js's executor
+otherwise). Once landed, sweep the parked dir as the lane script's executor
 cleanup does after a record: a later reader opens every path the recorded
 artifact cites, so remove only the uncited scratch, the spent token
 included, and keep the artifact and every file it cites. Only a step that
@@ -2213,7 +2258,7 @@ Workflow({ scriptPath: "<absolute installed path to tribunal.js>",
            args: {voteId, voters, context, gateKind, cwd} })
 ```
 
-Resolve the path exactly as docket-workflow.js's (step 2's installed-path rule); an
+Resolve the path exactly as a lane script's (step 2's installed-path rule); an
 absent installed file is stop-and-report. `context` is the decision's
 rendered evidence, verbatim; `cwd` is the repo the run belongs to. A
 conversational gate has no row, so each `voters` entry carries its own

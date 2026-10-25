@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's park and chain-dead signals (DOT-226).
+# Behavior suite for the lane script's park and chain-dead signals (DOT-226).
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it never runs a wave.
 #
 # WHY THIS EXISTS. A workflow script has no module resolution, so the
-# predicates cannot be imported. They are fenced in docket-workflow.js with
+# predicates cannot be imported. They are fenced in the lane script with
 # `// TEST-BEGIN <region>` / `// TEST-END <region>` and this suite extracts
 # those regions and evaluates them — the same extraction idiom
 # workflow-sync.test.sh uses for the duplicated regions, pointed at a
@@ -24,21 +24,21 @@
 #
 # WHAT THIS SUITE CANNOT SEE: it exercises the predicates, not the stage
 # ladder they drive. That a false park skips later stages, and that the engine
-# re-offers them, are docket-workflow.js and engine behavior respectively and are not
+# re-offers them, are the lane script and engine behavior respectively and are not
 # re-derived here. Nor does it check the readiness probe (DOT-226's other
 # half), which needs a live engine to answer.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-park-signals.XXXXXX") || fatal "mktemp failed"

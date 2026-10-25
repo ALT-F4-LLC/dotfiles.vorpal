@@ -1,14 +1,14 @@
 #!/bin/sh
-# docket-workflow-claim — claims one Docket step for docket-workflow.js and hands its work packet
+# docket-workflow-claim — claims one Docket step for a docket-run lane script and hands its work packet
 # back as a module the wave loads byte for byte.
 #
 # WHY IT EXISTS. A Workflow script can neither read a file nor run a command,
-# so docket-workflow.js cannot fetch a packet itself, and every channel an agent reads
+# so the lane script cannot fetch a packet itself, and every channel an agent reads
 # through is capped below a packet's size (a Bash result past 128,000
 # characters, a hook's additionalContext past 10,000, a Read past its token
 # limit). The one uncapped channel is the spawn prompt. A claim agent runs
 # this script; it claims the step and writes the packet into a JS module under
-# the session's working directory; docket-workflow.js loads that module through a nested
+# the session's working directory; the lane script loads that module through a nested
 # workflow({scriptPath}) and spawns the executor with the packet inline. The
 # harness reads the module from disk, so the executor's prompt carries the
 # module's bytes and no model ever copies them.

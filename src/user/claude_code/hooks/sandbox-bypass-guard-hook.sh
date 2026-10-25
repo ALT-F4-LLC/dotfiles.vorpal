@@ -31,7 +31,7 @@
 # Workflow-spawned seat or something else in the chain drops it (the
 # `agentType` option on a workflow's `agent()` call is documented to resolve
 # through the SAME subagent registry the Agent tool uses, so the mismatch is
-# not an obvious naming bug in tribunal.js/docket-workflow.js). Two changes below, both
+# not an obvious naming bug in tribunal.js or the lane scripts). Two changes below, both
 # from that uncertainty rather than a confirmed root cause:
 #   1. Every actual bypass DECISION (allow-by-default or deny) is now logged
 #      to ~/.claude/friction with the payload's key set and the agent_type
@@ -40,7 +40,7 @@
 #   2. When agent_type is absent or unrecognized, do not allow by default:
 #      fall back to the transcript's own first message, which for a
 #      Workflow-spawned seat is that seat's brief and carries markers no
-#      ordinary operator turn would — a docket-workflow.js executor brief instructs
+#      ordinary operator turn would — a lane script's executor brief instructs
 #      `docket step claim`, and a tribunal.js judge/checker brief opens with
 #      `THE PROPOSAL:` and instructs `docket vote cast`. A session whose
 #      first message carries none of those is treated exactly as before:
@@ -89,7 +89,7 @@ log_decision() {  # <decision> <detected-via>
 }
 
 # A Workflow-spawned seat's own brief is its transcript's first message.
-# `docket step claim` is docket-workflow.js's executor brief (own_id "--owner
+# `docket step claim` is the lane script's executor brief (own_id "--owner
 # wave:<step>" makes it wave-specific, but the bare verb is enough — this is
 # meant to be a wide net); `THE PROPOSAL:` and `docket vote cast` are
 # tribunal.js's judge/checker briefs. Bounded read (the transcript grows for

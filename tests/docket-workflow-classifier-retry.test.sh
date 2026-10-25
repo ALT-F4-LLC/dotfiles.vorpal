@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's transient-safety-classifier retry (DOT-558).
+# Behavior suite for the lane script's transient-safety-classifier retry (DOT-558).
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
@@ -11,7 +11,7 @@
 # across all three — STEP-1547 (judge-simplicity), STEP-1548 (judge-testing,
 # opus), STEP-1561 (synthesize-findings, sonnet): different issues, different
 # classes, different models, so the block was infra, not content. All three
-# recorded `done` on redispatch from the SAME brief bytes. docket-workflow.js now retries
+# recorded `done` on redispatch from the SAME brief bytes. the lane script now retries
 # such a spawn ONCE with identical bytes; this suite pins the signature match
 # that decides which blocks qualify, because that predicate is the whole
 # safety argument — a content-based refusal must never be resubmitted, and a
@@ -27,7 +27,7 @@
 # this was written (claude 2.1.241) a pre-spawn classifier block resolves
 # agent() to a BARE null — `if (await <preflight>(...)) return null` — and
 # the reason text is emitted only onto the progress stream as
-# workflowProgress[].error, which a workflow script cannot read. docket-workflow.js now
+# workflowProgress[].error, which a workflow script cannot read. the lane script now
 # covers that shape out-of-band: the null branch spawns a read-only probe
 # agent that recovers the harness's own persisted progress record for the
 # step's label from the wave state file, and probeRecovered() (second region
@@ -40,14 +40,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-classifier-retry.XXXXXX") || fatal "mktemp failed"
@@ -141,7 +141,7 @@ ok(!transientClassifierBlock({}), 'an object with no reason field is not a trans
 ok(!transientClassifierBlock([
     'Reviewed the DOT-558 retry.',
     '',
-    '- **F-1 (low)** docket-workflow.js gates the retry on "Stage 2 classifier error" and',
+    '- **F-1 (low)** the lane script gates the retry on "Stage 2 classifier error" and',
     '  "usually transient"; a reworded resubmission is never attempted.',
     '',
     'STEP-1600 recorded (done)',

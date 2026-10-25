@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's harness-slot weighting: how a vote row's
+# Behavior suite for the lane script's harness-slot weighting: how a vote row's
 # judge panel counts against the harness's own concurrency cap, alongside
 # executor rows.
 #
@@ -43,14 +43,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-vote-harness-weight.XXXXXX") || fatal "mktemp failed"
@@ -87,7 +87,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so the lane script's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -161,7 +161,7 @@ const start = (theRows, opts) => {
     RESULTS = new Map()
     HOLD = new Set(theRows.map((r) => r.step))   // every row holds until finish()
     OPEN = new Map()
-    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
+    // The lane script returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 const logged = (frag) => LOG.some((l) => l.includes(frag))

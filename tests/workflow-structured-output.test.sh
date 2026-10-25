@@ -11,7 +11,7 @@
 # acts on named fields. Free text breaks that at two seams. An agent() call
 # without a `schema` returns whatever prose the agent ended with, which the
 # script then parses or relays. And a return the harness cannot carry whole
-# loses data silently: docket-workflow.js once returned an array with a named
+# loses data silently: the lane body once returned an array with a named
 # `coordination` property, and the harness's JSON transport delivered the
 # elements without it.
 #
@@ -19,7 +19,10 @@
 #   1. Every agent(), countedAgent() and seat() call passes a schema: in its
 #      options literal, or in a `const` options object it spreads or passes.
 #      The ALLOW list below names the exceptions and why; each must match
-#      exactly one call, so a stale entry fails too.
+#      exactly one call per file, so a stale entry fails too. The nine lane
+#      scripts share one body (lane_body.js, rendered per workflow with the
+#      RENDERED FILE marker), so an entry keyed `<lane script>` matches once
+#      in each of them.
 #   2. Every schema a script defines or passes inline serializes to at most
 #      4096 characters. Past that bound the auto-mode classifier blocks the
 #      spawn whenever it cannot review it, and agent() returns null (claude
@@ -70,11 +73,13 @@ const ok = (cond, label) => {
 const BOUND = 4096
 
 // Calls that legitimately pass no schema, by file and whitespace-normalized
-// call text.
+// call text. A rendered lane script is keyed '<lane script>', whatever its name.
+const LANE = '<lane script>'
+const isLane = (src) => src.includes('// RENDERED FILE: lane_scripts.py wrote it from')
 const ALLOW = [
-    { file: 'docket-workflow.js', call: 'agent(brief, options)',
+    { file: LANE, call: 'agent(brief, options)',
       why: "countedAgent()'s pass-through; every countedAgent() call is checked instead" },
-    { file: 'docket-workflow.js', call: 'agent(settleBrief(row, owner, claim, settleNote(signal, text)))',
+    { file: LANE, call: 'agent(settleBrief(row, owner, claim, settleNote(signal, text)))',
       why: "settleStoppedReply()'s injected agent; its caller's countedAgent() call passes COMMAND_OUTPUT_SCHEMA and is checked instead" },
     { file: 'docket-postmortem.js', call: 'agent(prompt, opts)',
       why: "seat()'s pass-through; every seat() call is checked instead" },
@@ -217,10 +222,13 @@ function constants(src, code) {
 
 const CALL_RE = /(?<![\w$.])(agent|countedAgent|seat)\s*\(/g
 const allowHits = new Map(ALLOW.map((a) => [`${a.file}|${a.call}`, 0]))
+const keyFiles = new Map()
 
 for (const file of files) {
     const src = readFileSync(join(dir, file), 'utf8')
     const code = codeOnly(src)
+    const allowKey = isLane(src) ? LANE : file
+    keyFiles.set(allowKey, (keyFiles.get(allowKey) || 0) + 1)
     const { scope, failed } = constants(src, code)
     const schemaless = []
     const passed = new Set()
@@ -258,7 +266,7 @@ for (const file of files) {
             return /\bschema\b/.test(code.slice(at, closing(code, at)))
         })
         if (resolved) continue
-        const key = `${file}|${text}`
+        const key = `${allowKey}|${text}`
         if (allowHits.has(key)) { allowHits.set(key, allowHits.get(key) + 1); continue }
         schemaless.push(text.length > 160 ? `${text.slice(0, 160)}...` : text)
     }
@@ -298,7 +306,8 @@ for (const file of files) {
 
 for (const a of ALLOW) {
     const hits = allowHits.get(`${a.file}|${a.call}`)
-    ok(hits === 1, `allowed: ${a.file} ${a.call} matches exactly one call (${hits}) — ${a.why}`)
+    const want = keyFiles.get(a.file) || 1
+    ok(hits === want, `allowed: ${a.file} ${a.call} matches exactly one call per file (${hits} of ${want}) — ${a.why}`)
 }
 
 // The scanner itself: a prompt that names agent() or schema is text, not code.

@@ -69,7 +69,7 @@ build remains in use. Paginate with `--since` until `total` is reached.
 
 ## Workflow runtime evidence
 
-`Workflow` is a documented Claude Code feature; `docket-workflow.js`, `tribunal.js`,
+`Workflow` is a documented Claude Code feature; the lane scripts, `tribunal.js`,
 `docket-workflow-usage.js`, `session-census.js`, and `docket-postmortem.js` are
 local integrations. A completed workflow's journal directory holds
 `journal.jsonl` (`started` and `result` per agent, no usage, no step id),

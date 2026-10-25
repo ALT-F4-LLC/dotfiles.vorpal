@@ -32,7 +32,7 @@
 # Third, the usage join. docket-workflow-usage.js claims no step, so a launch of the
 # INSTALLED copy asks `guard spawn --active --usage-join` and the engine
 # admits it past a reap hold. The match is on the resolved path, never the
-# basename: a same-named copy elsewhere, or docket-workflow.js, asks the plain question.
+# basename: a same-named copy elsewhere, or standard-change.js, asks the plain question.
 # Production ~/.claude/workflows is a symlink into the vorpal store, so the
 # rows use fixture HOMEs, one real directory and one symlinked, and both the
 # symlinked and the resolved scriptPath must match.
@@ -247,6 +247,22 @@ workflow_payload_cwd() {
           args:({cwd:$c} | if $shape == "string" then tojson else . end)}}'
 }
 
+# A LANE launch carrying args.cwd: the same payload with lane_units.py's
+# `rowsModule`, one of the three top-level args by which the hook recognizes a
+# lane launch under any script name (`~/.claude/workflows/<workflow>.js`, one
+# per workflow). The other two are inline `rows` (an older launch a resume may
+# replay) and `unit`; lane_payload_cwd_with builds a payload carrying any one.
+lane_payload_cwd() {
+    jq -nc --arg p "$1" --arg c "$2" --arg shape "${3:-object}" --arg s "$REPO_ROOT" \
+        '{tool_name:"Workflow", cwd:$s, tool_input:{scriptPath:$p,
+          args:({cwd:$c, rowsModule:($s + "/.claude/docket-packets/rows-0.js")}
+                | if $shape == "string" then tojson else . end)}}'
+}
+lane_payload_cwd_with() { # <scriptPath> <cwd> <extra-args-json>: object args {cwd} + extra
+    jq -nc --arg p "$1" --arg c "$2" --argjson extra "$3" --arg s "$REPO_ROOT" \
+        '{tool_name:"Workflow", cwd:$s, tool_input:{scriptPath:$p, args:({cwd:$c} + $extra)}}'
+}
+
 asked() { # the argv of the last `docket` call the hook made, or empty
     [ -f "$MARKER" ] && tail -n 1 "$MARKER" || printf ''
 }
@@ -284,7 +300,7 @@ case_two_active_runs_older_holds() {
     export ACTIVE_RUNS="RUN-14 RUN-15"
     export HELD_RUNS="RUN-14"
     run_case "two active runs, only the OLDER holds a reap" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")"
+        "$(workflow_payload "$HOME/.claude/workflows/standard-change.js")"
     expect_argv "  ...asked over every active run" "guard spawn --active"
     if grep -q 'RUN-14' "$STDERR_FILE"; then
         pass "  ...and the denial names the older run"
@@ -296,7 +312,7 @@ case_two_active_runs_older_holds() {
 case_never_resolves_a_run() {
     one_held_run
     verdict_of "$PATH_WITH_DOCKET" \
-        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")" >/dev/null
+        "$(workflow_payload "$HOME/.claude/workflows/standard-change.js")" >/dev/null
     expect_never_asked "the hook never asks run status for a run id" "^run "
     expect_never_asked "  ...and never names a run on the plain path" "--run"
 }
@@ -390,8 +406,8 @@ case_tribunal_malformed_proposal_asks_plainly() {
 case_wave_still_denies() {
     one_held_run
     export ADMIT_VOTE="DKT-V46"
-    run_case "docket-workflow.js under the same hold" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js" DKT-V46)"
+    run_case "standard-change.js under the same hold" DENY \
+        "$(workflow_payload "$HOME/.claude/workflows/standard-change.js" DKT-V46)"
     expect_argv "  ...and a voteId on a NON-tribunal launch is ignored" \
         "guard spawn --active"
 }
@@ -415,14 +431,14 @@ case_lookalike_basename_still_denies() {
 case_tribunal_as_directory_still_denies() {
     one_held_run
     export ADMIT_VOTE="DKT-V46"
-    run_case "tribunal.js as a DIRECTORY component, docket-workflow.js as the script" DENY \
-        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js/docket-workflow.js" DKT-V46)"
+    run_case "tribunal.js as a DIRECTORY component, standard-change.js as the script" DENY \
+        "$(workflow_payload "$HOME/.claude/workflows/tribunal.js/standard-change.js" DKT-V46)"
 }
 
 case_denial_text_is_the_engines() {
     one_held_run
     verdict_of "$PATH_WITH_DOCKET" \
-        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")" >/dev/null
+        "$(workflow_payload "$HOME/.claude/workflows/standard-change.js")" >/dev/null
     if grep -q 'unacknowledged reaps in bounded classes hold headroom' "$STDERR_FILE"; then
         pass "deny forwards the engine's own reason on stderr"
     else
@@ -434,7 +450,7 @@ case_denial_text_is_the_engines() {
 case_no_active_run_allows() {
     reset_env
     run_case "no active run — the engine allows over an empty set" ALLOW \
-        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")"
+        "$(workflow_payload "$HOME/.claude/workflows/standard-change.js")"
     expect_argv "  ...and the hook still asked, rather than deciding" \
         "guard spawn --active"
 }
@@ -442,7 +458,7 @@ case_no_active_run_allows() {
 case_missing_docket_allows() {
     reset_env
     run_case "no docket binary on PATH (fail-OPEN on a tooling gap)" ALLOW \
-        "$(workflow_payload "$HOME/.claude/workflows/docket-workflow.js")" "$PATH_NO_DOCKET"
+        "$(workflow_payload "$HOME/.claude/workflows/standard-change.js")" "$PATH_NO_DOCKET"
 }
 
 case_missing_jq_still_guards() {
@@ -466,7 +482,7 @@ case_empty_stdin_still_guards() {
 }
 
 # ---- A launch cwd that is not the checkout's root is refused before spawn ----
-# A hand-typed cwd that misses the checkout died late, at docket-workflow.js's first claim
+# A hand-typed cwd that misses the checkout died late, at a lane's first claim
 # agent, leaving an open dispatch behind. The hook refuses it first: no engine
 # call, exit 2, the bad path verbatim on stderr.
 # The reason is asserted too: a nonexistent path can never equal the toplevel,
@@ -503,26 +519,59 @@ expect_cwd_passes_through() {
 
 case_wave_cwd_missing_refused() {
     local bad="${REPO_ROOT}-no-such-checkout"
-    expect_cwd_refused "docket-workflow.js with a nonexistent cwd (a sibling of the repo root)" "$bad" \
+    expect_cwd_refused "standard-change.js with a nonexistent cwd (a sibling of the repo root)" "$bad" \
         "not an existing directory" \
-        "$(workflow_payload_cwd "$HOME/.claude/workflows/docket-workflow.js" "$bad")"
+        "$(lane_payload_cwd "$HOME/.claude/workflows/standard-change.js" "$bad")"
 }
 
 case_wave_cwd_subdirectory_refused() {
     local bad="${REPO_ROOT}/tests"
-    expect_cwd_refused "docket-workflow.js with a cwd that is a subdirectory of the repo" "$bad" \
+    expect_cwd_refused "standard-change.js with a cwd that is a subdirectory of the repo" "$bad" \
         "not the git toplevel" \
-        "$(workflow_payload_cwd "$HOME/.claude/workflows/docket-workflow.js" "$bad")"
+        "$(lane_payload_cwd "$HOME/.claude/workflows/standard-change.js" "$bad")"
 }
 
 case_wave_cwd_toplevel_passes() {
-    expect_cwd_passes_through "docket-workflow.js with cwd equal to the repo root" \
-        "$(workflow_payload_cwd "$HOME/.claude/workflows/docket-workflow.js" "$REPO_ROOT")"
+    expect_cwd_passes_through "standard-change.js with cwd equal to the repo root" \
+        "$(lane_payload_cwd "$HOME/.claude/workflows/standard-change.js" "$REPO_ROOT")"
 }
 
 case_wave_cwd_toplevel_trailing_slash_passes() {
-    expect_cwd_passes_through "docket-workflow.js with cwd equal to the repo root plus a trailing slash" \
-        "$(workflow_payload_cwd "$HOME/.claude/workflows/docket-workflow.js" "${REPO_ROOT}/")"
+    expect_cwd_passes_through "standard-change.js with cwd equal to the repo root plus a trailing slash" \
+        "$(lane_payload_cwd "$HOME/.claude/workflows/standard-change.js" "${REPO_ROOT}/")"
+}
+
+# The lane scripts are one per workflow, so the cwd check keys on the args, not
+# the file name: any script carrying `rowsModule`, inline `rows`, or `unit` is
+# a lane launch, and a lane-named script with none of the three is some other
+# launch and asks the plain question.
+case_other_lane_script_cwd_missing_refused() {
+    local bad="${REPO_ROOT}-no-such-checkout"
+    expect_cwd_refused "ui-change.js (another lane script) with a nonexistent cwd" "$bad" \
+        "not an existing directory" \
+        "$(lane_payload_cwd "$HOME/.claude/workflows/ui-change.js" "$bad")"
+}
+
+case_inline_rows_launch_cwd_missing_refused() {
+    local bad="${REPO_ROOT}-no-such-checkout"
+    expect_cwd_refused "standard-change.js with inline rows (an older launch replayed) and a nonexistent cwd" "$bad" \
+        "not an existing directory" \
+        "$(lane_payload_cwd_with "$HOME/.claude/workflows/standard-change.js" "$bad" '{"rows":[{"step":"STEP-1","issue":"DOT-1","kind":"executor"}]}')"
+}
+
+case_unit_launch_cwd_missing_refused() {
+    local bad="${REPO_ROOT}-no-such-checkout"
+    expect_cwd_refused "standard-change.js with a unit object and a nonexistent cwd" "$bad" \
+        "not an existing directory" \
+        "$(lane_payload_cwd_with "$HOME/.claude/workflows/standard-change.js" "$bad" '{"unit":{"index":0,"of":1,"classCap":4}}')"
+}
+
+case_lane_name_without_lane_args_asks_plainly() {
+    local bad="${REPO_ROOT}-no-such-checkout"
+    expect_cwd_passes_through "standard-change.js with a bad cwd but no rowsModule, rows or unit is not a lane launch" \
+        "$(workflow_payload_cwd "$HOME/.claude/workflows/standard-change.js" "$bad")"
+    expect_cwd_passes_through "...nor is one whose rows is a string and unit a string (wrong shapes)" \
+        "$(lane_payload_cwd_with "$HOME/.claude/workflows/standard-change.js" "$bad" '{"rows":"none","unit":"none"}')"
 }
 
 # tribunal.js carries the same hand-typed cwd. A launch with no args.cwd keeps
@@ -572,7 +621,7 @@ ELSEWHERE_DIR="${SANDBOX}/elsewhere"
 mkdir -p "${USAGE_HOME}/.claude/workflows" "${LINK_HOME}/.claude" "$STORE_DIR" "$ELSEWHERE_DIR" \
     || fatal "cannot build usage-join fixtures"
 : >"${USAGE_HOME}/.claude/workflows/docket-workflow-usage.js"
-: >"${USAGE_HOME}/.claude/workflows/docket-workflow.js"
+: >"${USAGE_HOME}/.claude/workflows/standard-change.js"
 : >"${STORE_DIR}/docket-workflow-usage.js"
 : >"${ELSEWHERE_DIR}/docket-workflow-usage.js"
 ln -s "$STORE_DIR" "${LINK_HOME}/.claude/workflows" || fatal "cannot link the fixture workflows"
@@ -604,8 +653,8 @@ case_usage_join_installed_path() {
 }
 
 case_usage_join_not_for_wave() {
-    expect_usage_join_not_claimed "docket-workflow.js at the installed path under a hold" \
-        "$USAGE_HOME" "${USAGE_HOME}/.claude/workflows/docket-workflow.js"
+    expect_usage_join_not_claimed "standard-change.js at the installed path under a hold" \
+        "$USAGE_HOME" "${USAGE_HOME}/.claude/workflows/standard-change.js"
 }
 
 case_usage_join_not_for_foreign_path() {
@@ -638,17 +687,18 @@ case_tribunal_verdict_still_the_engines
 case_tribunal_under_no_hold_claims_nothing
 case_tribunal_without_proposal_asks_plainly
 # ---- A launch whose args.tribunal is not tribunal.js is refused before any claim ----
-# One launch carried the installed docket-workflow.js as its tribunal path; the
+# One launch carried the installed lane script as its tribunal path; the
 # lane claimed three steps before anyone noticed. The hook refuses such a launch
 # first: no engine call, exit 2, the path verbatim on stderr. A real tribunal.js
 # passes through to the engine's own verdict.
 workflow_payload_tribunal() { # <scriptPath> <tribunal> [string]
     jq -nc --arg p "$1" --arg t "$2" --arg shape "${3:-object}" --arg s "$REPO_ROOT" \
         '{tool_name:"Workflow", cwd:$s, tool_input:{scriptPath:$p,
-          args:({cwd:$s, tribunal:$t} | if $shape == "string" then tojson else . end)}}'
+          args:({cwd:$s, tribunal:$t, rowsModule:($s + "/.claude/docket-packets/rows-0.js")}
+                | if $shape == "string" then tojson else . end)}}'
 }
 
-WAVE_SCRIPT="$HOME/.claude/workflows/docket-workflow.js"
+WAVE_SCRIPT="$HOME/.claude/workflows/standard-change.js"
 TRIBUNAL_FIXTURE="${SANDBOX}/workflows/tribunal.js"
 mkdir -p "${SANDBOX}/workflows" && : >"$TRIBUNAL_FIXTURE"
 
@@ -657,7 +707,7 @@ expect_tribunal_refused() { # <label> <bad> <reason> <payload>
 }
 
 case_wave_tribunal_is_wave_script_refused() {
-    expect_tribunal_refused "docket-workflow.js launched with args.tribunal set to docket-workflow.js" \
+    expect_tribunal_refused "standard-change.js launched with args.tribunal set to standard-change.js" \
         "$WAVE_SCRIPT" "not a path to tribunal.js" \
         "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$WAVE_SCRIPT")"
 }
@@ -684,7 +734,7 @@ case_wave_tribunal_missing_refused() {
 }
 
 case_wave_tribunal_exists_passes() {
-    expect_cwd_passes_through "docket-workflow.js with args.tribunal an existing tribunal.js" \
+    expect_cwd_passes_through "standard-change.js with args.tribunal an existing tribunal.js" \
         "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$TRIBUNAL_FIXTURE")"
 }
 
@@ -694,8 +744,8 @@ case_wave_tribunal_exists_stringified_passes() {
 }
 
 case_wave_without_tribunal_passes() {
-    expect_cwd_passes_through "docket-workflow.js with no args.tribunal is not this check's business" \
-        "$(workflow_payload_cwd "$WAVE_SCRIPT" "$REPO_ROOT")"
+    expect_cwd_passes_through "standard-change.js with no args.tribunal is not this check's business" \
+        "$(lane_payload_cwd "$WAVE_SCRIPT" "$REPO_ROOT")"
 }
 
 case_tribunal_malformed_proposal_asks_plainly
@@ -712,6 +762,10 @@ case_wave_cwd_missing_refused
 case_wave_cwd_subdirectory_refused
 case_wave_cwd_toplevel_passes
 case_wave_cwd_toplevel_trailing_slash_passes
+case_other_lane_script_cwd_missing_refused
+case_inline_rows_launch_cwd_missing_refused
+case_unit_launch_cwd_missing_refused
+case_lane_name_without_lane_args_asks_plainly
 case_tribunal_cwd_missing_refused
 case_tribunal_cwd_missing_stringified_refused
 case_tribunal_cwd_subdirectory_refused

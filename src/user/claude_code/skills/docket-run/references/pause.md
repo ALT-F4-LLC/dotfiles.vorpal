@@ -141,15 +141,16 @@ every other path the prompt names from command output as well.
   --backfill-from`, or on a crashed-relay back-fill), and
   the worktree sweep set for that wave (`worktree-wf_<id>-*` branches)
   cannot be told apart from a foreign entry.
-- **The full original `Workflow` args** — each wave launch's generated
+- **The full original `Workflow` args and script** — each wave launch's lane
+  script (`launches.json[i].script`, the workflow's `<name>.js`) and its generated
   `args-<i>.json` object exactly as lane_units.py wrote it (`rowsModule`,
-  `rows_sha256`, `unit`, `harnessCap`, `cwd`, `tribunal`, any
+  `rows_sha256`, `unit`, `harnessCap`, `cwd`, `workflow`, `tribunal`, any
   `integrated` map), or the literal args of an older inline-rows launch,
   and each tribunal's args — for any wave or tribunal a later
   session may need to resume with `resumeFromRunId`. The harness does not
   restore these; an arg-less resume dies at startup, and a launch resumed
   with another launch's args runs a different lane set. A wave launched
-  before the split carries the retired `shard` arg, which docket-workflow.js now
+  before the split carries the retired `shard` arg, which the lane script now
   refuses: reconcile that dispatch instead of resuming it.
 - **Un-integrated writer shas**: any executor sha recorded but never
   cherry-picked into the shared checkout, with its worktree path and
@@ -348,3 +349,8 @@ seat with `docket run conduct RUN-N --json=v2` as the first seat-taking action
 without printing it), run `run resume` under that fresh token, then
 follow into `docket-run`'s own attach procedure — seat preflight and the
 stale-install diff happen there, not from anything carried in the prompt.
+The workflows file is session-private, so it is missing here: derive it
+again before the first split, running
+`bash ~/.claude/skills/docket-run/scripts/lane_roster.sh RUN-N` and
+writing its output to `<scratchpad>/conductor.d/RUN-N.workflows.json`
+(docket-run's **Keep the roster on disk as the workflows file**).

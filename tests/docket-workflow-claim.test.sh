@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for src/user/docket/bin/docket-workflow-claim, the script docket-workflow.js's
+# Behavior suite for src/user/docket/bin/docket-workflow-claim, the script the lane script's
 # claim agent runs to claim a step and write its work packet into a module the
 # wave loads with a nested workflow({scriptPath}).
 #
@@ -123,7 +123,7 @@ run_claim success success "${ARGS[@]}"
 check $? "success prints exactly one CLAIMED line naming the module"
 grep -qxF 'step claim STEP-7 --owner wave:STEP-7:2 --render --metadata {"variant":"std","model_requested":"opus"} --json=v2' "$C/stub.log"
 check $? "the claim carries the owner, --render, the metadata and --json=v2"
-[ -f "$MODULE" ]; check $? "the module lands at the path docket-workflow.js computed"
+[ -f "$MODULE" ]; check $? "the module lands at the path the lane script computed"
 [ "$(head -n 1 "$MODULE")" = "export const meta = { name: 'docket-packet', description: 'Docket work packet written by docket-workflow-claim' }" ]
 check $? "the module opens with a pure-literal meta"
 sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"

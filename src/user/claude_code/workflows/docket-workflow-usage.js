@@ -47,7 +47,7 @@ export const meta = {
 
 // scout/extract/recheck only relay a fixed command's output through a schema
 // (no judgment involved), so a cheap model is pinned rather than inherited —
-// the same reasoning docket-workflow.js:probe and tribunal.js:verify already apply to
+// the same reasoning lane_body.js:probe and tribunal.js:verify already apply to
 // read-only relay agents of this shape.
 const AGENT_CONFIG = {
     scout: { model: 'haiku', effort: 'low' },
@@ -85,7 +85,7 @@ const DEFAULT_MODE = 'steps'
 //    names its assignment in a `docket step claim/record STEP-N` command, the
 //    same string the claimant must pass, so the join cannot disagree with the
 //    record. A bare STEP-N search cannot tell "execute this step" from "read
-//    this step": docket-workflow.js probes a row before claiming it, and a first-match
+//    this step": the lane script probes a row before claiming it, and a first-match
 //    join back-filled ~17K tokens per probe onto pending and superseded steps
 //    no agent ever ran on a past wave.
 //
@@ -202,7 +202,7 @@ const DEFAULT_MODE = 'steps'
 // record, a steps-mode directory holding only usage-join agents (a lane
 // mismatch: args.dir names another join's workflow, so the run measured
 // nothing for the lane and is not the lane's join), and a dispatched agent that carries no usage. A bootstrap:false confirmed on that re-check is not an
-// error: it is folded into wave overhead instead, since docket-workflow.js never
+// error: it is folded into wave overhead instead, since the lane script never
 // dispatches an agent without a bootstrap brief.
 // ---------------------------------------------------------------------------
 
@@ -238,9 +238,9 @@ const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
 // searched past: the later user messages are tool results, and their output
 // can quote a `docket step record STEP-N` it merely read.
 //
-// probe is the four-way read test: the explicit declaration docket-workflow.js's
+// probe is the four-way read test: the explicit declaration the lane script's
 // probeBrief() closes with (via probeTrailer()), the block probe's opening sentence, the legacy
-// probe self-description (truncated on purpose: docket-workflow.js writes "what the
+// probe self-description (truncated on purpose: the lane script writes "what the
 // record currently says", tribunal.js "what the VOTE record currently says"),
 // and the READ JOB itself — the fixed opening line followed by one docket
 // read verb. Keying on the command keeps classification working when the
@@ -252,7 +252,7 @@ const exclude = Array.isArray(input.exclude) ? input.exclude.map(String) : []
 // is required to run. step_mention is NOT a join: it is the loose "which step
 // is this agent looking at" read that labels an overhead agent in the report.
 //
-// claim_agent is the declaration docket-workflow.js's claimBrief() closes with. The
+// claim_agent is the declaration the lane script's claimBrief() closes with. The
 // claim agent runs docket-workflow-claim for an executor and is wave overhead: its
 // brief never spells a claim or record of the step, so it never joins one.
 //
@@ -413,7 +413,7 @@ function classify(raw, mode, file) {
         // The relaying agent said jq found no first `type:"user"` line. Twice
         // in a row (bootstrapFallback set by the caller after a fresh retry
         // repeats the answer) is treated as a misreport rather than truth —
-        // docket-workflow.js never dispatches an agent without a bootstrap brief, so a
+        // the lane script never dispatches an agent without a bootstrap brief, so a
         // reproducible "no user message" is far more likely a relay error
         // than an actual bootstrap-free transcript. Reported here as
         // overhead (with its usage) rather than thrown, so one misreport
@@ -528,7 +528,7 @@ function reduceRows(results, mode, exclude) {
     const model_observations = []
     const excluded = new Set(exclude || [])
     // A claimant transcript with no usage is judged AFTER the whole batch is
-    // summed, not in line: docket-workflow.js re-spawns a claimant whose first spawn
+    // summed, not in line: the lane script re-spawns a claimant whose first spawn
     // died before its first assistant turn, and that dead transcript still
     // opens with the step's brief. Beside a live transcript for the same
     // key it is a dead spawn and is skipped; alone, silence is still an

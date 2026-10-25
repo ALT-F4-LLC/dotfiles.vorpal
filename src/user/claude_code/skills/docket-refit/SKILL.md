@@ -273,7 +273,7 @@ verifiers are pointed at:
   — registered schemas, doc-store verbs; `docket config get` for registered
   vote-rule thresholds
 
-The wave runner, `src/user/claude_code/workflows/docket-workflow.js`, is the authority
+The wave runner, `src/user/claude_code/skills/docket-run/scripts/lane_body.js` (rendered by `lane_scripts.py` into `src/user/claude_code/workflows/<workflow>.js`, one per workflow definition), is the authority
 for everything the engine never sees. The engine resolves policy rows to a
 variant and seat; the runner and `tribunal.js` consume the resolved triple.
 The runner pipes the packet out of the engine's claim envelope and assembles

@@ -1,15 +1,32 @@
 export const meta = {
-    name: 'docket-workflow',
-    description: 'Internal: launched through scriptPath by docket-run, once per issue, to run one issue lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes on the normal path (gate status before, the proposal body, gate status after), 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, argument and return contract in the header comment; the reply-tail contract is THE REPLY-TAIL CONTRACT comment beside the park signals.',
-    whenToUse: 'Never by name. Pass lane_units.py\'s generated args-<i>.json unedited; the argument contract is in the header comment.',
+    name: 'disposition',
+    description: 'Internal: the disposition lane. Launched through scriptPath by docket-run, once per issue the run bound to disposition, to run that issue\'s lane of a dispatched manifest end to end (executors, vote panels, staged rows). Per executor row it spends 1 haiku claim agent, which claims the step and writes the packet the executor then receives verbatim in its brief. Per vote row it spends 3 read-only haiku probes on the normal path (gate status before, the proposal body, gate status after), 1 on a gate that was already decided, and 4 when a re-seat is needed. Budget, launch, lane, argument and return contract in the header comment; the reply-tail contract is THE REPLY-TAIL CONTRACT comment beside the park signals.',
+    whenToUse: 'Never by name. Launch it for the issue lane whose launches.json entry names disposition.js, passing lane_units.py\'s generated args-<i>.json unedited; the argument contract is in the header comment.',
 }
 
+// RENDERED FILE: lane_scripts.py wrote it from
+// src/user/docket/config/workflows/disposition.toml and src/user/claude_code/skills/docket-run/scripts/lane_body.js.
+// Edit the body and run `just lanes`; tests/docket-run-lane-scripts.test.sh fails on a
+// hand edit here. The header ends at LANE; the body follows verbatim.
+const LANE = { workflow: 'disposition' }
+
 // ---------------------------------------------------------------------------
+// THE LANE BODY, shared by every lane script. lane_scripts.py (beside this
+// file) renders one script per workflow definition under
+// src/user/docket/config/workflows: a header carrying `meta` and `LANE`
+// ({workflow}, the pipeline's name and nothing else, so a TOML edit never
+// re-renders), then this file verbatim. The rendered scripts live in
+// src/user/claude_code/workflows/<workflow>.js and are what the conductor
+// launches; this file is never launched itself. Edit it, or add or rename a
+// workflow, run `just lanes`, and commit the rendered scripts beside it;
+// tests/docket-run-lane-scripts.test.sh fails on drift between the two.
+//
 // CONTRACT FOR CALLERS (meta.description is a short summary; this block is
 // the single copy of the argument and return contract).
 //
 // What it does:
-// Run one dispatched manifest end to end: spawn one executor per executor row
+// Run one issue's lane of a dispatched manifest end to end, for an issue the
+// run bound to this script's workflow: spawn one executor per executor row
 // at the model/effort the engine rendered on it, seat a judge panel on each
 // vote row from its routed roster, and skip action rows (engine-run at record
 // time). Each executor row is claimed first by a claim agent running
@@ -62,9 +79,16 @@ export const meta = {
 // When and how it is invoked:
 // Invoked by the docket-run skill on an open dispatch, always as
 // Workflow({scriptPath}) — never by name, and once per issue, every
-// launch in the same conductor turn. args is lane_units.py's args-<i>.json,
-// passed unedited: {rowsModule, rows_sha256, unit?, harnessCap?, cwd,
-// tribunal (required when the rows include a vote row), integrated?}. rowsModule is a module under
+// launch in the same conductor turn. The script is the one named for the
+// issue's bound workflow: lane_units.py reads the run's roster (--workflows)
+// and writes `script: "<workflow>.js"` into launches.json, and the conductor
+// launches that file from ~/.claude/workflows. args is lane_units.py's
+// args-<i>.json, passed unedited: {rowsModule, rows_sha256, unit?,
+// harnessCap?, cwd, workflow, tribunal (required when the rows include a vote
+// row), integrated?}. `workflow` is the bound workflow's name and is
+// required: a launch whose args name another workflow landed on the wrong
+// script, and one without the field was split without the roster, so both
+// are refused before any claim (assertLane). rowsModule is a module under
 // <cwd>/.claude/docket-packets returning {v: 1, rows_sha256, rows}; the wave
 // loads it and refuses the launch, before any claim, when the module's
 // rows_sha256 differs from the args'. The older inline form, which carries
@@ -110,6 +134,10 @@ export const meta = {
 // ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
+// The script's own file name, for every refusal and log line. The rendered
+// header defines LANE; an extracted test region runs without one and reads
+// as `lane.js`.
+const LANE_SCRIPT = `${typeof LANE === 'object' && LANE !== null && typeof LANE.workflow === 'string' ? LANE.workflow : 'lane'}.js`
 // Only helper probes and the claim agent use these defaults. Executors and
 // panel seats retain the model/effort the engine resolved from the run's
 // pinned policy.
@@ -204,7 +232,7 @@ function resolve(row) {
                 'rejected directly, and they stay with the conductor',
         }[row.kind] || 'only kind:"executor" rows are spawnable'
         throw new Error(
-            `docket-workflow.js: step ${row.step} is kind:${JSON.stringify(row.kind)} — ${why}. ` +
+            `${LANE_SCRIPT}: step ${row.step} is kind:${JSON.stringify(row.kind)} — ${why}. ` +
             `Refusing to route.`
         )
     }
@@ -624,16 +652,16 @@ let input = args
 if (typeof input === 'string') {
     try {
         input = JSON.parse(input)
-        log('docket-workflow.js: decoded args from the harness JSON-encoded transport (normal)')
+        log(`${LANE_SCRIPT}: decoded args from the harness JSON-encoded transport (normal)`)
     } catch (e) {
         throw new Error(
-            `docket-workflow.js: args arrived as a STRING that is not valid JSON (${e.message}). ` +
+            `${LANE_SCRIPT}: args arrived as a STRING that is not valid JSON (${e.message}). ` +
             `Refusing to route.`
         )
     }
 }
 if (!input || typeof input !== 'object') throw new Error(
-    `docket-workflow.js: args is ${typeof input}, expected {rows}. Refusing to route.`
+    `${LANE_SCRIPT}: args is ${typeof input}, expected {rows}. Refusing to route.`
 )
 
 // TEST-BEGIN launch-rows — extracted and exercised by
@@ -650,7 +678,7 @@ async function launchRows(input) {
     const ref = input.rowsModule
     if (ref === undefined || ref === null) return input.rows || []
     const refuse = (why) => {
-        const text = `docket-workflow.js: launch rows module ${JSON.stringify(ref)} REFUSED — ${why}; ` +
+        const text = `${LANE_SCRIPT}: launch rows module ${JSON.stringify(ref)} REFUSED — ${why}; ` +
             `nothing was claimed. Re-run lane_units.py and relaunch. Refusing to route.`
         log(text)
         return new Error(text)
@@ -693,7 +721,7 @@ function assertTribunalPath(input) {
     const path = input.tribunal
     if (path === undefined || path === null) return
     if (typeof path === 'string' && path.split('/').pop() === 'tribunal.js') return
-    const text = `docket-workflow.js: args.tribunal ${JSON.stringify(path)} is not a path to ` +
+    const text = `${LANE_SCRIPT}: args.tribunal ${JSON.stringify(path)} is not a path to ` +
         `tribunal.js; nothing was claimed. Pass lane_units.py's args unedited. Refusing to route.`
     log(text)
     throw new Error(text)
@@ -705,8 +733,37 @@ function assertTribunalPath(input) {
 function assertTribunalForVotes(input, rows) {
     if (input.tribunal !== undefined && input.tribunal !== null) return
     if (!Array.isArray(rows) || !rows.some((row) => row && row.kind === 'vote')) return
-    const text = `docket-workflow.js: the launch holds a vote row but args carries no tribunal; ` +
+    const text = `${LANE_SCRIPT}: the launch holds a vote row but args carries no tribunal; ` +
         `nothing was claimed. Pass lane_units.py's args with --tribunal. Refusing to route.`
+    log(text)
+    throw new Error(text)
+}
+
+// The lane fence. Rows carry no workflow field, so the conductor's choice of
+// script is checked against args.workflow, which lane_units.py writes from
+// the run's roster (--workflows) beside the `script` it names in
+// launches.json. A launch whose args name another workflow landed on the
+// wrong script; one with no field was split without the roster, and would
+// run under any lane script, which is the mistake the fence exists to
+// catch. Both are refused before any claim. The fence checks the name only:
+// a paused run keeps the workflow version it pinned while the installed
+// script moves on, and the engine's claim check stays the authority on what
+// each row is. Only a rendered script declares LANE; the body alone (as the
+// extracted test regions load it) has no fence to apply.
+function assertLane(input, rows) {
+    const lane = (typeof LANE === 'object' && LANE !== null && typeof LANE.workflow === 'string') ? LANE : null
+    if (!lane) return
+    const want = input.workflow
+    const name = typeof want === 'string' ? want.split('@')[0] : want
+    if (name === lane.workflow) return
+    const text = (want === undefined || want === null)
+        ? `${LANE_SCRIPT}: args carry no workflow, so nothing shows these ${Array.isArray(rows) ? rows.length : 0} ` +
+          `row(s) belong to ${lane.workflow}; nothing was claimed. Split with lane_units.py --workflows ` +
+          `<roster file> and pass its args-<i>.json unedited. Refusing to route.`
+        : `${LANE_SCRIPT}: args.workflow ${JSON.stringify(want)} is not this script's ` +
+          `workflow ${lane.workflow}; nothing was claimed. Launch the script launches.json ` +
+          `names for this lane (~/.claude/workflows/${typeof name === 'string' ? name : '<workflow>'}.js) ` +
+          `with this args object. Refusing to route.`
     log(text)
     throw new Error(text)
 }
@@ -715,6 +772,7 @@ function assertTribunalForVotes(input, rows) {
 assertTribunalPath(input)
 const rows = await launchRows(input)
 assertTribunalForVotes(input, rows)
+assertLane(input, rows)
 
 // An agent's reply is PROSE. Read only the shapes the brief mandates, never
 // a substring of the body: a judge reviewing park handling quotes the very
@@ -1099,7 +1157,7 @@ const PROBE_SCHEMA = {
 
 function blockProbeBrief(label) {
     return [
-        'You are a DIAGNOSTIC PROBE inside a running Docket wave (docket-workflow.js). A',
+        `You are a DIAGNOSTIC PROBE inside a running Docket wave (${LANE_SCRIPT}). A`,
         'step\'s agent launch resolved to null, and the harness recorded why in',
         'its own wave state file. Your ONLY job is to recover that record',
         'VERBATIM. Change nothing, rephrase nothing.',
@@ -1568,7 +1626,7 @@ function assertRouted(who, entry, refusal) {
     for (const k of ['model', 'effort', 'variant']) {
         if (!entry || typeof entry[k] !== 'string' || entry[k] === '') {
             throw new Error(
-                `docket-workflow.js: ${who} carries no ${k} (got ${JSON.stringify(entry && entry[k])}) — ` +
+                `${LANE_SCRIPT}: ${who} carries no ${k} (got ${JSON.stringify(entry && entry[k])}) — ` +
                 `the engine renders model/effort/variant from the run's pinned ` +
                 `policy.toml, so this was never routed or was re-typed without ` +
                 `its fields. ${refusal}`
@@ -1580,7 +1638,7 @@ function assertRouted(who, entry, refusal) {
 function voterToSeat(voter, routing) {
     if (typeof voter !== 'string' || voter === '') {
         throw new Error(
-            `docket-workflow.js: a voter_assignments entry carries no voter name (got ${JSON.stringify(voter)}). ` +
+            `${LANE_SCRIPT}: a voter_assignments entry carries no voter name (got ${JSON.stringify(voter)}). ` +
             `Refusing to seat the panel.`
         )
     }
@@ -2625,7 +2683,7 @@ const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
 function launchUnit(spec) {
     if (spec === undefined || spec === null) return { index: 0, of: 1, classCap: null }
     const bad = (why) => new Error(
-        `docket-workflow.js: args.unit must be {index, of, classCap?} with integers ` +
+        `${LANE_SCRIPT}: args.unit must be {index, of, classCap?} with integers ` +
         `0 <= index < of <= ${LAUNCH_CAP}; got ${JSON.stringify(spec)} (${why}). Refusing to route.`)
     if (typeof spec !== 'object') throw bad('not an object')
     const { index, of, classCap } = spec
@@ -2640,7 +2698,7 @@ function launchUnit(spec) {
     return { index, of, classCap }
 }
 if (input.shard !== undefined) throw new Error(
-    'docket-workflow.js: args.shard is retired — a launch now receives only its own rows ' +
+    `${LANE_SCRIPT}: args.shard is retired — a launch now receives only its own rows ` +
     'and args.unit {index, of, classCap}, both from lane_units.py. Re-split the ' +
     'dispatch and relaunch; never resume a pre-split wave. Refusing to route.')
 const unit = launchUnit(input.unit)
@@ -2659,7 +2717,7 @@ if (unit.of > 1) {
 const lanes = groupRows(rows, laneOf)
 // One issue, one wave: a conductor launch carries exactly one lane.
 if (input.unit != null && lanes.size > 1) throw new Error(
-    `docket-workflow.js: a launch with args.unit must hold exactly one issue lane; got ` +
+    `${LANE_SCRIPT}: a launch with args.unit must hold exactly one issue lane; got ` +
     `${lanes.size} (${[...lanes.keys()].join(', ')}). Re-split the dispatch with ` +
     `lane_units.py, which gives every issue its own launch. Refusing to route.`)
 log(`wave: ${lanes.size} issue lane(s): ` + [...lanes.entries()].map(([name, laneRows]) => {

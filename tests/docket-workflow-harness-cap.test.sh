@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's effective harness concurrency cap:
+# Behavior suite for the lane script's effective harness concurrency cap:
 # `args.harnessCap`, and how it interacts with the loose HARNESS_CAP=16
 # ceiling admission was previously bound to unconditionally.
 #
@@ -15,7 +15,7 @@
 # and admission()'s own header comment names the failure this causes: judge
 # agents queuing behind a harness slot the wave believed was still open. The
 # fix lets the conductor pass the harnessCap that lane_units.py wrote into
-# launches.json as `args.harnessCap`; docket-workflow.js takes min(HARNESS_CAP, that
+# launches.json as `args.harnessCap`; the lane script takes min(HARNESS_CAP, that
 # value) as the effective admission bound, and falls back to the loose 16-agent
 # ceiling when the field is absent — a caller that omits it (an older SKILL.md,
 # a direct scriptPath launch, a resumed run whose original args predate this
@@ -39,14 +39,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-harness-cap.XXXXXX") || fatal "mktemp failed"
@@ -82,7 +82,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // budget: no target set by default (matches an ordinary turn with no
-// "+500k"-style directive) — budget.remaining() is Infinity, so docket-workflow.js's
+// "+500k"-style directive) — budget.remaining() is Infinity, so the lane script's
 // token-budget check never fires unless a case below overrides it.
 const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
@@ -150,7 +150,7 @@ const start = (theRows, harnessCap) => {
     RESULTS = new Map()
     HOLD = new Set(theRows.map((r) => r.step))   // every row holds until finish()
     OPEN = new Map()
-    // docket-workflow.js returns {statuses, coordination}; these cases read the statuses.
+    // The lane script returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
 // N issue-less singleton rows, each its own lane, no class/writer coupling —

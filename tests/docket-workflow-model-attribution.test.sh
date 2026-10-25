@@ -6,7 +6,7 @@
 set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-model-attribution.XXXXXX")
 trap 'rm -rf "$WORK"' EXIT
 

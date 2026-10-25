@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's vote-gate path: what a vote row costs in
+# Behavior suite for the lane script's vote-gate path: what a vote row costs in
 # read-only probes, and how the wave reports the noise it absorbed.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
@@ -28,14 +28,14 @@
 # of it in one envelope under 1 KB, returned through a StructuredOutput
 # schema the harness validates, so the gate path holds NO regex over relayed
 # engine JSON at all. The counts this suite measures are the authority, and
-# `meta.description` in docket-workflow.js must state them; the postscript below
+# `meta.description` in the lane script must state them; the postscript below
 # cross-checks the prose against the cases so the two cannot drift:
 #   1 probe on a gate already decided when the wave reaches it (case C),
 #   3 on the normal path — one before the panel seats, one projection of
 #     the proposal body every seat brief renders, one after (case E),
 #   4 when a re-seat forces a re-read (case A's healthy re-seat).
 #
-# HOW. docket-workflow.js fences the gate machinery (probeBrief, probe, gateStatus,
+# HOW. the lane script fences the gate machinery (probeBrief, probe, gateStatus,
 # gateTarget, heldCluster, gateSuccess, runGate) in TEST-BEGIN/TEST-END
 # `gate-vote` markers. This suite extracts that region, prepends the
 # classifier-retry region (reasonText and the block regexes the probe retry
@@ -49,30 +49,30 @@
 # THE PANEL ITSELF IS TRIBUNAL.JS'S: runGate calls `workflow(args.tribunal,
 # {...})` one level deep rather than rendering and spawning a seat brief
 # in-process (DOT-1300 folded the seat contract into tribunal.js, reached
-# from docket-workflow.js exactly this way). This suite stubs `workflow` to return
+# from the lane script exactly this way). This suite stubs `workflow` to return
 # {absorbed: [...]} shaped like tribunal.js's mid-wave reply, so it pins
-# what docket-workflow.js does with that reply — the probe/seat/retry accounting, the
+# what the lane script does with that reply — the probe/seat/retry accounting, the
 # log lines, the folded absorbed-error notes — without re-deriving
 # tribunal.js's own seat-spawn logic, which tests/tribunal-seat-brief.test.sh
 # and tests/docket-workflow-target-envelope.test.sh pin directly against tribunal.js.
 #
 # WHAT THIS SUITE CANNOT SEE: the harness's own per-agent failure accounting
 # in the completion notification (agents_error and the "[label] failed: ..."
-# lines) is harness behavior, out of docket-workflow.js's hands — what docket-workflow.js controls,
+# lines) is harness behavior, out of the lane script's hands — what the lane script controls,
 # and what this suite pins, is the wave's returned result for the step: the
 # surface the conductor reads the gate's outcome from.
 
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-vote-retry-report.XXXXXX") || fatal "mktemp failed"
@@ -110,7 +110,7 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const parallel = (fns) => Promise.all(fns.map((f) => f()))
 const voterToSeat = (seat) => ({ seat, variant: 'std', model: 'stub-model', effort: 'low' })
-// The real docket-workflow.js reads `args.tribunal` (the installed tribunal.js path) and
+// The real the lane script reads `args.tribunal` (the installed tribunal.js path) and
 // `args.cwd` off its own top-level `args` global — the workflow's own input.
 const args = { tribunal: '/stub/tribunal.js', cwd: '/repo' }
 // The scripted agent: SCRIPT maps a spawn label to one response or an array
@@ -140,7 +140,7 @@ const agent = (brief, opts) => {
 // WORKFLOW_SCRIPT makes the whole workflow() call reject, modeling an
 // unreadable tribunal.js path or one of its own arg refusals. Every call is
 // recorded in WORKFLOW_CALLS as {voters, isRespawn, context} so the suite can assert
-// on what docket-workflow.js asked tribunal.js to seat.
+// on what the lane script asked tribunal.js to seat.
 let WORKFLOW_SCRIPT = {}
 let WORKFLOW_CALLS = []
 const workflow = (path, a) => {
@@ -545,7 +545,7 @@ else
 fi
 
 # ---- the per-vote-row probe cost is DOCUMENTED ----
-# The counts above are measured; this asserts docket-workflow.js's own meta.description
+# The counts above are measured; this asserts the lane script's own meta.description
 # states them, so a conductor sizing a dispatch sees the gate overhead without
 # reading the gate path. Numbers are matched literally against the cases:
 #   C = 1 probe (already-decided), E = 3 (normal), A2 = 4 (re-seat).
@@ -556,7 +556,7 @@ dok() { # <cond-exit> <label>
     if [ "$1" -eq 0 ]; then dpass=$((dpass + 1)); printf 'PASS: %s\n' "$2"
     else dfail=$((dfail + 1)); printf 'FAIL: %s\n' "$2" >&2; fi
 }
-[ -n "$DESC" ]; dok $? 'docket-workflow.js meta.description line is readable'
+[ -n "$DESC" ]; dok $? 'the lane script meta.description line is readable'
 printf '%s' "$DESC" | grep -qi 'probe'; dok $? \
     'meta.description mentions the probe cost per vote row at all'
 printf '%s' "$DESC" | grep -q '3 read-only haiku probes'; dok $? \

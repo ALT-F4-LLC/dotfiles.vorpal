@@ -6,7 +6,7 @@
 #
 # Usage: refill.sh --run RUN-N --rows FILE --settled FILE --held FILE
 #                  --pending FILE --launch-dir DIR
-#                  [--statuses FILE] [--reaped] [--tribunal PATH]
+#                  [--statuses FILE] [--reaped] [--workflows FILE] [--tribunal PATH]
 #                  [--integrated FILE] [--in-flight LANES] [--write-cap N]
 #
 # This is docket-run's refill loop (the skill's steps 1, 2, 4 and 5) as one
@@ -31,7 +31,7 @@
 #   4. Rebuilds --pending: every row of --rows whose step is in neither
 #      --settled nor --held.
 #   5. Runs lane_units.py (the sibling file) over --pending into
-#      --launch-dir with --tribunal, --integrated, --in-flight and
+#      --launch-dir with --workflows, --tribunal, --integrated, --in-flight and
 #      --write-cap as given. The launch count N is the only stdout.
 #
 # The reap itself (the skill's step 3) stays the conductor's: it needs the
@@ -56,12 +56,12 @@
 set -euo pipefail
 
 usage() {
-    printf 'usage: refill.sh --run RUN-N --rows FILE --settled FILE --held FILE --pending FILE --launch-dir DIR [--statuses FILE] [--reaped] [--tribunal PATH] [--integrated FILE] [--in-flight LANES] [--write-cap N]\n' >&2
+    printf 'usage: refill.sh --run RUN-N --rows FILE --settled FILE --held FILE --pending FILE --launch-dir DIR [--statuses FILE] [--reaped] [--workflows FILE] [--tribunal PATH] [--integrated FILE] [--in-flight LANES] [--write-cap N]\n' >&2
     exit 2
 }
 
 run="" rows="" settled="" held="" pending="" launch_dir=""
-statuses="" reaped=0 tribunal="" integrated="" in_flight="" write_cap=""
+statuses="" reaped=0 workflows="" tribunal="" integrated="" in_flight="" write_cap=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --run) [ $# -ge 2 ] || usage; run="$2"; shift 2 ;;
@@ -72,6 +72,7 @@ while [ $# -gt 0 ]; do
         --launch-dir) [ $# -ge 2 ] || usage; launch_dir="$2"; shift 2 ;;
         --statuses) [ $# -ge 2 ] || usage; statuses="$2"; shift 2 ;;
         --reaped) reaped=1; shift ;;
+        --workflows) [ $# -ge 2 ] || usage; workflows="$2"; shift 2 ;;
         --tribunal) [ $# -ge 2 ] || usage; tribunal="$2"; shift 2 ;;
         --integrated) [ $# -ge 2 ] || usage; integrated="$2"; shift 2 ;;
         --in-flight) [ $# -ge 2 ] || usage; in_flight="$2"; shift 2 ;;
@@ -149,6 +150,7 @@ jq -c --rawfile settled "$settled" --rawfile held "$held" 'select(.step as $id |
 
 # 5. Re-split the pending rows.
 args=("$pending" "$launch_dir")
+[ -z "$workflows" ] || args+=(--workflows "$workflows")
 [ -z "$tribunal" ] || args+=(--tribunal "$tribunal")
 [ -z "$integrated" ] || args+=(--integrated "$integrated")
 [ -z "$in_flight" ] || args+=(--in-flight "$in_flight")

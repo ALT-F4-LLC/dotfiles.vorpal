@@ -1,19 +1,19 @@
 #!/bin/bash
 
-# Behavior suite for docket-workflow.js's agentsLaunched accounting across the nested
+# Behavior suite for the lane script's agentsLaunched accounting across the nested
 # tribunal.js workflow() boundary.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` enumerates test files by name
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it spawns no agent.
 #
-# WHY THIS EXISTS. docket-workflow.js seats a vote row's judge panel by calling
+# WHY THIS EXISTS. the lane script seats a vote row's judge panel by calling
 # `workflow({scriptPath: args.tribunal}, ...)`, one level of nesting deep. The
 # Workflow tool documents that a nested workflow() shares its parent's agent
 # counter and concurrency cap, so every seat tribunal.js spawns is a real
 # agent() call against THIS wave invocation's 1000-call lifetime cap — but
-# docket-workflow.js's own `countedAgent()` never runs for those calls, since they
-# happen inside the child. Before this fix, docket-workflow.js's `agentsLaunched` total
+# The lane script's own `countedAgent()` never runs for those calls, since they
+# happen inside the child. Before this fix, the lane script's `agentsLaunched` total
 # (the number the invocation logs at close, and the number AgentCapError
 # compares against) counted only its OWN probe/executor agent() calls and
 # silently undercounted by every seat and seat re-spawn any vote row seated.
@@ -40,14 +40,14 @@
 set -uo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/docket-workflow.js}"
+WAVE="${WAVE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/standard-change.js}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
     exit 2
 }
 
-[ -f "$WAVE" ] || fatal "docket-workflow.js not found at ${WAVE}"
+[ -f "$WAVE" ] || fatal "standard-change.js (a rendered lane script) not found at ${WAVE}"
 command -v node >/dev/null 2>&1 || fatal "node is required to run this test"
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/wave-tribunal-agent-count.XXXXXX") || fatal "mktemp failed"
@@ -143,7 +143,7 @@ const APPROVED = envelope('done', 'approved', [])
 
 // Runs one case and returns the SEAT-ONLY contribution to agentsLaunched:
 // (total rise) minus (real countedAgent probe calls this case made, read off
-// CALLS — the same stub `agent()` every countedAgent() call in docket-workflow.js goes
+// CALLS — the same stub `agent()` every countedAgent() call in the lane script goes
 // through). Isolating it this way makes each assertion independent of how
 // many probes a given gate path happens to spend, which is pinned
 // separately by tests/docket-workflow-vote-retry-report.test.sh and is not this
@@ -208,7 +208,7 @@ const run = async (script, wfScript, baseline) => {
 }
 
 // ---- 4: a reply missing seatsSpawned (a malformed or pre-contract mid-wave
-// reply) falls back to the panel size docket-workflow.js asked tribunal to seat, never
+// reply) falls back to the panel size the lane script asked tribunal to seat, never
 // to zero — the same fail-open assumption the pre-fix code made implicitly
 // for every call.
 {

@@ -194,7 +194,7 @@ recalled**, the same rule the close report's pasted output carries. For
 ls ~/.claude/projects/<cwd-slug>/<session-id>/workflows/*.json | wc -l
 ```
 
-**A panel seated inside a wave is not a launch:** docket-workflow.js seats every
+**A panel seated inside a wave is not a launch:** the lane script seats every
 engine vote row itself with a proposal id but no `workflows/` entry;
 only a panel you convened through a separate `Workflow({scriptPath:
 …tribunal.js})` call is a launch.

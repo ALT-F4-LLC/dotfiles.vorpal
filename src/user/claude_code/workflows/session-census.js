@@ -39,7 +39,7 @@ export const meta = {
 // TEST-BEGIN session-census-config — include before either pure test region.
 // scout/extract only relay a fixed shell command's output through a schema
 // (no judgment involved), so a cheap model is pinned rather than inherited —
-// the same reasoning docket-workflow.js:probe and tribunal.js:verify apply to read-only
+// the same reasoning lane_body.js:probe and tribunal.js:verify apply to read-only
 // relay agents of this shape.
 const AGENT_CONFIG = {
     scout: { model: 'haiku', effort: 'low' },
@@ -711,7 +711,7 @@ Return the JSON object jq printed, field for field, unchanged: no rounding, no r
 }
 
 // TEST-BEGIN census-retry-pipeline — include session-census-config. Exercised
-// directly (not through docket-workflow.js's ladder-style marker convention, but the
+// directly (not through the lane body's ladder-style marker convention, but the
 // same idea): a test sets `files` and `cutoff`, stubs `agent`, `phase`,
 // `log`, `extractPrompt`, `EXTRACT_SCHEMA`, `AGENT_CONFIG`, `COUNT_FIELDS`,
 // `ERROR_TEXT_CHARS`, and a no-barrier `pipeline` matching the real one's

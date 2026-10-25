@@ -325,6 +325,7 @@ const SANDBOX_EXCLUDED_COMMANDS: &[&str] = &[
     "docker *",
     "doppler *",
     "gh *",
+    "just *",
     "kubectl *",
     "terraform *",
     "vorpal *",

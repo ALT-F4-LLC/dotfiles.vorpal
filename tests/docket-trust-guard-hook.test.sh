@@ -605,6 +605,24 @@ case_backslash_continuation() {
         "backslash ending a quoted heredoc body line joins nothing"
     assert_verdict "cat > f <<'EOF' \\${nl}; sh -s <<< '${inv}'${nl}body${nl}EOF" executor-write DENY \
         "continued heredoc operator line"
+    # A `#` that starts a continuation line follows the word before the
+    # backslash once bash joins the lines, so it opens no comment there.
+    assert_verdict "echo x\\${nl}#y; sh -s <<< '${inv}'" executor-write DENY \
+        "hash glued to a word across a continuation opens no comment"
+    assert_verdict "echo x\\\\\\${nl}#y; sh -s <<< '${inv}'" executor-write DENY \
+        "hash after an odd backslash run opens no comment"
+    assert_verdict "echo \$(true)\\${nl}#y; sh -s <<< '${inv}'" executor-write DENY \
+        "hash glued to a substitution across a continuation opens no comment"
+    assert_verdict "echo x\\${nl}#y|sh <<< '${inv}'" executor-write DENY \
+        "hash glued across a continuation before a pipe opens no comment"
+    assert_verdict "echo x\\${nl}#a\\${nl}#b; sh -s <<< '${inv}'" executor-write DENY \
+        "hash glued across two chained continuations opens no comment"
+    assert_verdict "echo x\\\\${nl}#y; sh -s <<< '${inv}'" executor-write ALLOW \
+        "hash after an escaped backslash at a line end starts a comment"
+    assert_verdict "echo x \\${nl}#y; sh -s <<< '${inv}'" executor-write ALLOW \
+        "hash after a blank and a continuation starts a comment"
+    assert_verdict "echo hi # x\\${nl}#y; sh -s <<< '${inv}'" executor-write ALLOW \
+        "hash line after a comment ending in a backslash is a comment"
 }
 
 # ---- MUST NOT CATCH: a brace bash never expands ---------------------------

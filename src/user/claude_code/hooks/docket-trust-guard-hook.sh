@@ -315,16 +315,29 @@ LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
 # byte of a multibyte character, so it runs in the C locale. A pass that
 # fails (a program awk cannot parse) leaves the next stage no command to
 # read, so the hook refuses rather than allowing.
-CODE_TEXT=$(printf '%s' "$COMMAND" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK") || \
+#
+# Line selection opens a comment at a `#` that starts a line, but bash joins
+# a continuation first, so `echo x\` then `#y; sh` is `echo x#y; sh`, where
+# the `#` is part of a word. Every backslash-newline directly before a `#`
+# joins ahead of line selection, under the odd-run rule the join below
+# states. Where bash would not join it (inside a comment, a quote or a
+# quoted heredoc body), the next line already starts with `#`, so the merged
+# text stays comment, quote or body; an unmatched heredoc terminator keeps
+# the whole text as code. A continuation before any other byte must wait
+# for the later join: joined early, a comment ending in a backslash
+# (`echo hi # \`) would swallow the command on the next line.
+CODE_TEXT=$(printf '%s' "$COMMAND" | LC_ALL=C awk 'BEGIN { RS = "\001"; ORS = "" } { t = $0; out = ""; while (match(t, /\\+\n#/)) { run = RLENGTH - 2; out = out substr(t, 1, RSTART - 1) substr(t, RSTART, run - run % 2) (run % 2 ? "" : "\n"); t = substr(t, RSTART + RLENGTH - 1) } print out t }' 2>/dev/null) || \
+    deny "$REASON_PREFIX the trust-guard hook's comment-continuation pass failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+CODE_TEXT=$(printf '%s' "$CODE_TEXT" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK") || \
     deny "$REASON_PREFIX the trust-guard hook's line-selection program failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 # The shell removes a backslash-newline and joins the two lines into one, so
 # both passes below read logical lines: a continuation line is an argument,
 # not a command (`jq -n \` then `--arg a b`), and a verb split across lines
 # (`doc\` then `ket trust add`) is one word again. A backslash escaped by
 # another (`\\` at the end of a line) is a literal, so only the last of an
-# odd run joins. The join runs after line selection, which has already
-# dropped comments and quoted-delimiter heredoc bodies, where a trailing
-# backslash joins nothing.
+# odd run joins. Apart from a continuation before `#`, joined above, this
+# join runs after line selection, which has already dropped comments and
+# quoted-delimiter heredoc bodies, where a trailing backslash joins nothing.
 CODE_TEXT=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk 'BEGIN { RS = "\001"; ORS = "" } { t = $0; out = ""; while (match(t, /\\+\n/)) { run = RLENGTH - 1; out = out substr(t, 1, RSTART - 1) substr(t, RSTART, run - run % 2) (run % 2 ? "" : "\n"); t = substr(t, RSTART + RLENGTH) } print out t }' 2>/dev/null) || \
     deny "$REASON_PREFIX the trust-guard hook's line-joining pass failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 MARKED=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) || \

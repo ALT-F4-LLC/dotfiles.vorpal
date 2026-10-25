@@ -656,7 +656,21 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
         hquoted = decode(words[i])
         hgroup = D_GROUP
         w = D_WORD
-        hw = w
+        # The redirection operators that carry & or | (>&, <&, &>, >|) are
+        # not command separators, so they are rewritten to their bare
+        # redirection character before the cut below: the cut would
+        # otherwise drop the brace word glued ahead of them ({a,b}>&2). The
+        # bare character stays, so a redirection glued to a head word is
+        # still trimmed off it. mawk has no backreference in a replacement,
+        # hence one gsub per operator.
+        cut = w
+        if (!hquoted) {
+            gsub(/>&/, ">", cut)
+            gsub(/<&/, "<", cut)
+            gsub(/&>/, ">", cut)
+            gsub(/>[|]/, ">", cut)
+        }
+        hw = cut
         # Keep the text after the last glued operator. One leftmost match
         # of a one-byte class per pass: mawk does not take the longest
         # match of a greedy prefix before an alternation.
@@ -668,9 +682,9 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
         # unquoted whole text (anypos) every word is read as if in command
         # position, since quote removal has already lost that boundary.
         if (!hquoted) {
-            at_command = cmdpos || hw != w || anypos
+            at_command = cmdpos || hw != cut || anypos
             # A glued or standalone operator ends the repeat command.
-            if (hw != w) after_repeat = 0
+            if (hw != cut) after_repeat = 0
             if (at_command && hw == "repeat") {
                 after_repeat = 1
                 cmdpos = 1

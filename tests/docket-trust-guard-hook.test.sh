@@ -370,7 +370,8 @@ case_command_position_brace_denies() {
 
 # A redirection may stand anywhere in a simple command, so one between the
 # brace word and the verb leaves the verb in the same command. Operators that
-# carry & or | (2>&1, &>, >|) are redirections too, not command separators.
+# carry & or | (2>&1, &>, >|) are redirections too, not command separators,
+# including when glued to the brace word itself ({docket,trust}>&2).
 case_brace_redirection_before_verb_denies() {
     assert_verdict "{docket,trust} >/dev/null add erik key" executor-write DENY \
         "redirection between the brace word and add"
@@ -392,6 +393,20 @@ case_brace_redirection_before_verb_denies() {
         "here-string between the brace word and add"
     assert_verdict "bash -c '{docket,trust} >/dev/null add erik key'" executor-write DENY \
         "bash -c running a brace word with a redirection before add"
+    # A redirection glued to the brace word ends the word there, so bash
+    # brace-expands it and drops the redirection from argv.
+    assert_verdict "{docket,trust}>&2 add erik key" executor-write DENY \
+        ">& glued to the brace word"
+    assert_verdict "{docket,trust}<&0 add erik key" executor-write DENY \
+        "<& glued to the brace word"
+    assert_verdict "{docket,trust}&>/dev/null add erik key" executor-write DENY \
+        "&> glued to the brace word"
+    assert_verdict "bash -c '{docket,trust}>&2 add erik key'" executor-write DENY \
+        "bash -c running a brace word with a glued >&"
+    # Accepted false DENY: the fd-number form is harmless in bash (the word
+    # becomes {docket,trust}2) but reads as the glued >& form.
+    assert_verdict "{docket,trust}2>&1 rm erik" executor-write DENY \
+        "accepted false DENY: fd number glued before >&"
 }
 
 # The span still ends where the command does, so letters after a ; or | are
@@ -403,6 +418,8 @@ case_brace_redirection_command_end_allows() {
         "verb letters in the next command after ;"
     assert_verdict "{docket,trust} 2>/dev/null|cat" executor-write ALLOW \
         "a pipe after the redirection ends the command"
+    assert_verdict "{echo,A}>&2 B C" executor-write ALLOW \
+        "a glued >& after a brace word that cannot spell the verb"
 }
 
 # ---- MUST DENY: a redirection between the invocation words ----------------

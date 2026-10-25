@@ -1,6 +1,6 @@
 ---
 node: threat-model
-version: 12
+version: 13
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -69,6 +69,19 @@ security-review-dimensions to check relevant coverage, recording examined
 paths and material limits. Scale depth and length to security impact; retain
 supported low-severity concerns without inventing threats to fill categories.
 
+Record each adversarial input at the resolution the fix and its tests need.
+For a control that parses or filters text (a guard hook, an allowlist, a
+lexer), name the input class by the structural feature the parser
+mishandles: the token, operator, quoting, or position, and the enforcement
+line that mishandles it. Give one minimal instance per abuse case, and
+prefer a harmless analogue that exercises the same parse (the guarded
+command word replaced by one that performs nothing) when it demonstrates
+the mechanism as well as the live form does. Cite the issue's acceptance
+rows, suite rows, or probe ids for the pinned live inputs instead of
+restating them, and do not enumerate wrapper or variant spellings
+(launchers, interpreters, quoting forms) beyond the one each boundary
+crossing needs. The full input set belongs in the implementer's tests.
+
 **Specify responses.** Give each abuse case a control response or explicit
 unresolved risk. Apply the method fragment's requirements for enforcement,
 prerequisites, bypass paths, compensating controls, and control removal; for
@@ -114,10 +127,11 @@ a missing verification specification leaves the control row unfinished.
 - **Required controls:** one row per control, naming existing or proposed
   status, required behavior, enforcement point, prerequisites/bypass limits,
   linked abuse-case IDs, the responses weighed and why this one won, and
-  verification. Include adversarial and benign inputs/sequences, expected
-  outcomes, intended verification location, and actual result and scope when
-  run; mark checks passed, failed, or not run. Longer verification details
-  may live under the linked case. A proposed chokepoint names the
+  verification. Include the adversarial and benign input classes with one
+  minimal instance each, as Method requires, expected outcomes, intended
+  verification location, and actual result and scope when run; mark checks
+  passed, failed, or not run. Longer verification details may live under
+  the linked case. A proposed chokepoint names the
   component/operation and enforcement timing without pretending the
   implementation exists.
 - **Inherited exclusions:** for derived controls, the source tool/version,
@@ -146,7 +160,8 @@ Use concrete IDs only for declared cases and their references, not
 illustrative examples in the emitted model.
 
 Write for the implementer. Keep each row actionable, put shared evidence in
-one cited location, and omit repeated methodology and boilerplate.
+one cited location, and omit repeated methodology and boilerplate. The
+pinned live inputs appear once, in the acceptance or suite rows the model cites.
 
 # Stuck
 After permitted inspection, record a `gap` when missing or conflicting

@@ -9,6 +9,7 @@ description: >-
   pruning to docket-prune, and backlog grooming to docket-groom. Inspecting
   a run never starts or advances it, and recording an issue never authorizes
   the work.
+argument-hint: "[question or request about issues, runs, gates, or votes]"
 ---
 
 # Docket

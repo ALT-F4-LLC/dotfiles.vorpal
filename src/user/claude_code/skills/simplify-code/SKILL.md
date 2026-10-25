@@ -14,6 +14,7 @@ description: >-
   creates a run. Distinct from the built-in simplify skill (reviews the
   current diff once), code-review (hunts bugs), and simplify-corpus (files
   issues for shrinking this repo's skills and Docket config).
+argument-hint: "[unattended] [drain]"
 ---
 
 # simplify-code

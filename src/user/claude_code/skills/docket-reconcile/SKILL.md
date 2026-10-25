@@ -12,6 +12,7 @@ description: >-
   and dangling payload, fragment, or packet references it must not fix.
   Read-only until it prints a plan and the operator approves. Registry
   only; corpus authoring belongs to docket-refit.
+argument-hint: "[checkout path | --all-projects [--summary]]"
 ---
 
 # docket-reconcile

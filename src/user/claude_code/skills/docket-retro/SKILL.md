@@ -7,6 +7,7 @@ description: >-
   proposes versioned edits to the shared docket corpus and a repo's optional
   .docket/config additions, and files each approved proposal as a Docket
   issue; approved trust is handed over as a command. Edits nothing itself.
+argument-hint: "[runs or window to read, e.g. RUN-12 RUN-15]"
 ---
 
 # docket-retro

@@ -14,6 +14,7 @@ description: >-
   engine issues, and commits. Bare invocation asks which definition to
   refit; sweeping the corpus for cuts belongs to docket-prune. Runs in the
   main session so its gates are real questions.
+argument-hint: "[definition to refit, e.g. standard-change | policy.toml | a contract, fragment, or schema]"
 ---
 
 # docket-refit

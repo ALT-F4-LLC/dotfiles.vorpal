@@ -1,9 +1,10 @@
 use anyhow::Result;
 use vorpal_artifacts::artifact::{
-    awscli2::Awscli2, azure_cli::AzureCli, delta::Delta, direnv::Direnv, doppler::Doppler, fd::Fd,
-    fzf::Fzf, gum::Gum, herdr::Herdr, hunk::Hunk, jj::Jj, jq::Jq, just::Just, kubectl::Kubectl,
-    lazygit::Lazygit, nnn::Nnn, op::Op, pi::Pi, ripgrep::Ripgrep, sesh::Sesh, starship::Starship,
-    terraform::Terraform, tmux::Tmux, uv::Uv, yq::Yq, zoxide::Zoxide,
+    awscli2::Awscli2, azure_cli::AzureCli, bottom::Bottom, delta::Delta, direnv::Direnv,
+    doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr, hunk::Hunk, jj::Jj, jq::Jq,
+    just::Just, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, op::Op, pi::Pi, ripgrep::Ripgrep,
+    sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux, uv::Uv, yq::Yq,
+    zoxide::Zoxide,
 };
 use vorpal_sdk::{
     artifact::{gh::Gh, git::Git, nodejs::NodeJS},
@@ -29,6 +30,7 @@ pub async fn build(context: &mut ConfigContext) -> Result<Vec<String>> {
     ];
 
     let utilities = vec![
+        Bottom::new().build(context).await?,
         Delta::new().build(context).await?,
         Direnv::new().build(context).await?,
         Fd::new().build(context).await?,

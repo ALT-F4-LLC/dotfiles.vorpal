@@ -196,6 +196,18 @@ lint "- [ ] AC-1: docs/guide.md explains the flag." \
     "src/**"
 expect_line "outside scope: docs/guide.md" "an AC path outside every scope glob"
 
+# A repaired envelope: docket-groom's judge replaces a criterion with its
+# repair and lints the result, so a repair naming a path that neither `files`
+# nor `scope` holds must fail before the caller applies it.
+lint "- [ ] AC-1: src/pkg/y.go returns the error and docs/notes.txt records it." \
+    "src/pkg/y.go" \
+    "src/pkg/y.go"
+if [ "$RC" -ne 0 ] && printf '%s\n' "$OUT" | grep -qF -- "docs/notes.txt"; then
+    pass "a repaired criterion naming a path absent from files and scope (exit ${RC} names docs/notes.txt)"
+else
+    fail "a repaired criterion naming a path absent from files and scope (want non-zero exit naming docs/notes.txt, got exit ${RC}: ${OUT})"
+fi
+
 # AC-3: braces are literal in a git pathspec, so this glob matches nothing.
 lint "- [ ] AC-1: src/pkg/y.go and docs/guide.md agree." \
     "$(printf 'src/pkg/y.go\ndocs/guide.md')" \

@@ -353,6 +353,7 @@ const SANDBOX_NETWORK_ALLOWED_DOMAINS: &[&str] = &[
 /// sockets, every such bind was refused.
 const SANDBOX_UNIX_SOCKETS: &[&str] = &[
     "/var/lib/vorpal/vorpal.sock",
+    "/private/var/lib/vorpal/vorpal.sock",
     "~/.orbstack/run/docker.sock",
     "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock",
 ];

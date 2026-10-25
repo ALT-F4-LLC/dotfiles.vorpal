@@ -151,13 +151,12 @@
 # control flow. The recourse is in the deny text: the Write tool, or a
 # Bash call that holds only inert commands.
 #
-# THE MATCH step below — is "docket trust add" or "docket trust rm" present
-# as three separately-resolved words versus one prose span, and is a bare
-# -h/--help present right after a clean verb — is unchanged from the
-# pre-redesign hook: that logic was never implicated in any finding, which
-# were all about what is data versus code BEFORE that step ever runs. The
-# same awk program decides inertness, in `mode=inert`, from the same
-# command-position tracking the brace rule already needed.
+# THE MATCH step below asks whether "docket trust add" or "docket trust rm"
+# is present as three separately-resolved words (a redirection between them
+# is skipped, as the shell drops it) versus one prose span, and whether a
+# bare -h/--help stands right after a clean verb. The same awk program
+# decides inertness, in `mode=inert`, from the same command-position
+# tracking the brace rule already needed.
 
 set -uo pipefail
 
@@ -344,7 +343,9 @@ MARKED=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) 
 # `docket` the same way commit-guard normalizes `git` (closes a delimiter
 # or subshell glued directly onto the front with no whitespace), and
 # quote-group-aware on all three words so real prose stays allowed while a
-# trick built from separately-quoted tokens still denies.
+# trick built from separately-quoted tokens still denies. Consecutive as the
+# shell dispatches them: a redirection between two of the words, or glued
+# onto `docket`, is not one of them (argument_at).
 #
 # THE ONE EXEMPTION: `docket trust add --help` (or `-h`, or `rm`) opens
 # nothing -- it is the read a judge seat needs to evaluate a trust entry's
@@ -464,6 +465,42 @@ function may_spell_trust_verb(from, first,   k, rest, piece, p) {
         rest = rest piece
     }
     return rest ~ /d.*o.*c.*k.*e.*t/ && rest ~ /t.*r.*u.*s.*t/ && rest ~ /a.*d.*d|r.*m/
+}
+# An unquoted word that opens with a redirection operator, behind an optional
+# fd number or {name}: `>f`, `2>&1`, `&>f`, `<<<x`, `>|f`, or a bare `>`.
+# `<(` and `>(` are process substitutions, which are arguments.
+function is_redirection(word,   rest) {
+    if (substr(word, 1, 1) == MARK) return 0
+    rest = word
+    if (match(rest, /^[0-9]+/) || match(rest, /^[{][A-Za-z_][A-Za-z0-9_]*[}]/)) rest = substr(rest, RLENGTH + 1)
+    if (match(rest, /^&>>?/) || match(rest, /^<<[<-]?/) || match(rest, /^[<>][<>&|]?/)) rest = substr(rest, RLENGTH + 1)
+    else return 0
+    return substr(rest, 1, 1) != "("
+}
+# The index of the word the shell passes as the argument at words[k]. The
+# shell drops a redirection from the word list, and where its target ends is
+# not recoverable here: the pre-pass splits a quoted target into several
+# words and glues none of them back, and unquoted whole text has lost its
+# quotes. So past a redirection the argument is the first later word of the
+# same command that reads as want or holds an expandable brace, and 0 when
+# none does. The command ends at the first unquoted ; | & or backtick that is
+# not part of a redirection operator.
+function argument_at(k, want,   w, piece) {
+    if (k > n || !is_redirection(words[k])) return k
+    for (; k <= n; k++) {
+        if (!is_redirection(words[k])) {
+            decode(words[k])
+            w = D_WORD
+            if (has_brace(w) && may_brace_expand(k)) return k
+            sub(/[^A-Za-z0-9_-].*$/, "", w)
+            if (w ~ want) return k
+        }
+        piece = words[k]
+        if (substr(piece, 1, 1) == MARK) continue
+        gsub(/[<>]&|&>|>[|]/, "", piece)
+        if (piece ~ /[;|&\140]/) return 0
+    }
+    return 0
 }
 # A word bash reads in command position without making it the command name:
 # an assignment, a reserved word or a zsh precommand modifier. A lone { is the
@@ -635,21 +672,29 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
         }
         # On unquoted whole text an assignment value is glued to its name
         # (`C=docket trust add ...`), and the value runs once expanded.
-        if (anypos && hw ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=docket$/) hw = "docket"
-        if (hw == "docket" || hw ~ /\/docket$/) {
+        # A redirection glued onto the head word (`docket>/dev/null`) is not
+        # part of the command name.
+        hd = hw
+        if (!hquoted) sub(/[<>].*$/, "", hd)
+        if (anypos && hd ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=docket$/) hd = "docket"
+        if (hd == "docket" || hd ~ /\/docket$/) {
             if (i + 2 > n) continue
-            tquoted = decode(words[i + 1])
+            t = argument_at(i + 1, "^trust$")
+            if (!t || t + 1 > n) continue
+            tquoted = decode(words[t])
             tgroup = D_GROUP
             tw = D_WORD
             texact = tw
-            if (has_brace(tw) && !(hquoted && tquoted && hgroup == tgroup) && may_brace_expand(i + 1)) { print "MATCH"; exit }
+            if (has_brace(tw) && !(hquoted && tquoted && hgroup == tgroup) && may_brace_expand(t)) { print "MATCH"; exit }
             sub(/[^A-Za-z0-9_-].*$/, "", tw)
             if (tw != "trust") continue
-            vquoted = decode(words[i + 2])
+            v = argument_at(t + 1, "^(add|rm)$")
+            if (!v) continue
+            vquoted = decode(words[v])
             vgroup = D_GROUP
             vw = D_WORD
             vexact = vw
-            if (has_brace(vw) && !(hquoted && tquoted && vquoted && hgroup == tgroup && tgroup == vgroup) && may_brace_expand(i + 2)) { print "MATCH"; exit }
+            if (has_brace(vw) && !(hquoted && tquoted && vquoted && hgroup == tgroup && tgroup == vgroup) && may_brace_expand(v)) { print "MATCH"; exit }
             sub(/[^A-Za-z0-9_-].*$/, "", vw)
             if (vw != "add" && vw != "rm") continue
             if (hquoted && tquoted && vquoted && hgroup == tgroup && tgroup == vgroup) continue
@@ -657,8 +702,8 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
             # verb. Only a glued trailing shell operator is stripped from the
             # flag (it ends the segment); any other suffix is a different
             # argument and keeps the deny. See the comment above the block.
-            if (texact == tw && vexact == vw && i + 3 <= n) {
-                pquoted = decode(words[i + 3])
+            if (texact == tw && vexact == vw && v + 1 <= n) {
+                pquoted = decode(words[v + 1])
                 pw = D_WORD
                 sub(/[|&;()<>].*$/, "", pw)
                 if (!strict && !pquoted && (pw == "-h" || pw == "--help")) continue

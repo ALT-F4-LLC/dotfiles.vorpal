@@ -405,6 +405,88 @@ case_brace_redirection_command_end_allows() {
         "a pipe after the redirection ends the command"
 }
 
+# ---- MUST DENY: a redirection between the invocation words ----------------
+#
+# The shell drops a redirection from the word list, so `docket trust
+# >/dev/null add erik key` runs `docket trust add erik key`. A redirection
+# may sit between any two of the three words, glued to its target or spaced
+# from it, and a quoted target may hold blanks or carry text glued after it.
+case_redirection_between_verb_words_denies() {
+    assert_verdict "docket trust >/dev/null add erik key" executor-write DENY \
+        "> between trust and add"
+    assert_verdict "docket trust add >/dev/null erik key" executor-write DENY \
+        "> after add"
+    assert_verdict "docket trust 2>/dev/null add erik key" executor-write DENY \
+        "2> between trust and add"
+    assert_verdict "docket trust <in add erik key" executor-write DENY \
+        "< between trust and add"
+    assert_verdict "docket >/dev/null trust add erik key" executor-write DENY \
+        "> between docket and trust"
+    assert_verdict "docket 2>/dev/null trust rm erik" executor-write DENY \
+        "2> between docket and trust, rm verb"
+    assert_verdict "docket <in trust add erik key" executor-write DENY \
+        "< between docket and trust"
+    assert_verdict "docket>/dev/null trust add erik key" executor-write DENY \
+        "> glued onto the docket word"
+    assert_verdict "docket trust > /dev/null add erik key" executor-write DENY \
+        "spaced > and its target between trust and add"
+    assert_verdict "docket trust 2>&1 add erik key" executor-write DENY \
+        "fd duplication between trust and add"
+    assert_verdict "docket trust &>/dev/null add erik key" executor-write DENY \
+        "&> between trust and add"
+    assert_verdict "docket trust <<<x rm erik" executor-write DENY \
+        "here-string between trust and rm"
+    assert_verdict "docket trust >a >b add erik key" executor-write DENY \
+        "two redirections between trust and add"
+    assert_verdict 'docket trust > "a b" add erik key' executor-write DENY \
+        "quoted target holding a blank"
+    assert_verdict 'docket trust >"a b"c add erik key' executor-write DENY \
+        "quoted target with text glued after it"
+    assert_verdict 'docket trust >a" b" add erik key' executor-write DENY \
+        "target with a quoted tail holding a blank"
+    assert_verdict "docket trust {fd}>/dev/null add erik key" executor-write DENY \
+        "named-fd redirection between trust and add"
+    assert_verdict "docket >/dev/null {trust,} add erik key" executor-write DENY \
+        "brace trust word after a redirection"
+    assert_verdict 'true | python3 -c x; docket trust > "a b" add erik key' executor-write DENY \
+        "read unquoted: quoted target holding a blank"
+    assert_verdict "true | python3 -c x; docket >/dev/null trust add erik key" executor-write DENY \
+        "read unquoted: > between docket and trust"
+    assert_verdict "docket trust >/dev/null add erik key" docket-conductor-RUN-1 DENY \
+        "conductor: > between trust and add"
+    assert_verdict "docket trust >/dev/null add --help" docket-conductor-RUN-1 DENY \
+        "conductor: help read past a redirection is denied too"
+    assert_deny_reason "docket trust >/dev/null add erik key" executor-write \
+        "> between trust and add"
+}
+
+# A redirection target is not a help flag: `--help` there is a file name and
+# the call writes. A redirection after `trust` ends nothing, so verb letters
+# count only within the same command, and a process substitution is an
+# argument, not a redirection.
+case_redirection_between_verb_words_edges() {
+    assert_verdict "docket trust add > --help erik key" executor-read DENY \
+        "--help as the target of a spaced > after add"
+    assert_verdict "docket trust add 2> --help erik key" executor-read DENY \
+        "--help as the target of a spaced 2> after add"
+    assert_verdict "docket trust add >--help erik key" executor-read DENY \
+        "--help glued to > after add"
+    assert_verdict "docket trust >/dev/null add --help" executor-read ALLOW \
+        "help read with a redirection before the verb"
+    assert_verdict "docket trust >/dev/null list" executor-write ALLOW \
+        "redirection before a read verb"
+    assert_verdict "docket trust list >/dev/null" executor-write ALLOW \
+        "redirection after a read verb"
+    assert_verdict "docket trust list | grep add" executor-write ALLOW \
+        "verb letters after a pipe"
+    assert_verdict "docket trust 2>/dev/null list; echo add" executor-write ALLOW \
+        "verb letters in the next command after a redirection"
+    assert_verdict "docket trust <(true) add erik key" executor-write ALLOW \
+        "process substitution is an argument: trust's subcommand is its path"
+    assert_verdict "docket trust >/dev/null add erik key" "" ALLOW \
+        "no agent_type (main conversation): > between trust and add"
+}
+
 # zsh, the Bash tool's shell here, runs `noglob`, `nocorrect`, `-` and
 # `repeat N` as precommand modifiers and still brace-expands the word after
 # them, so that word keeps command position. The plain spellings deny through
@@ -1739,6 +1821,8 @@ case_brace_split_verb_denies
 case_command_position_brace_denies
 case_brace_redirection_before_verb_denies
 case_brace_redirection_command_end_allows
+case_redirection_between_verb_words_denies
+case_redirection_between_verb_words_edges
 case_command_position_brace_allows
 case_backslash_continuation
 case_zsh_modifier_brace_denies

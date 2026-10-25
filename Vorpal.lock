@@ -1089,6 +1089,14 @@ digest = "87aef67daf81ae9424be6c88204b18c0fd7bd9b4920d8a45c3667c481b6a47a1"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "bottom"
+path = "https://github.com/ClementTsang/bottom/releases/download/0.14.9/bottom_x86_64-unknown-linux-musl.tar.gz"
+includes = []
+excludes = []
+digest = "d3c19c1c1677f5d15ddf819b568ae045272410233d5abf96f3acc73d05a6989c"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "cargo"
 path = "https://sdk.vorpal.build/source/cargo-1.93.1-x86_64-unknown-linux-gnu.tar.gz"
 includes = []

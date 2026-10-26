@@ -1178,6 +1178,262 @@ mod tests {
         }
     }
 
+    /// True when `text` runs `vorpal` as a command, as opposed to naming it
+    /// as an argument (`--project vorpal`) or inside a rule (`Bash(vorpal`).
+    fn invokes_vorpal(text: &str) -> bool {
+        let mut command_position = true;
+        let mut after_prefix = false;
+        for raw in text.split_whitespace() {
+            // A prefix such as `timeout 60` or `nice -n 5` keeps the next
+            // non-option, non-numeric word in command position.
+            if after_prefix
+                && (raw.starts_with('-') || raw.chars().all(|c| c.is_ascii_digit() || c == '.'))
+            {
+                continue;
+            }
+            let word = raw.trim_start_matches("$(").trim_start_matches('(');
+            let opens_command = word.len() != raw.len();
+            if (command_position || opens_command)
+                && word.trim_end_matches([';', ')', '`']) == "vorpal"
+            {
+                return true;
+            }
+            let assignment = word.split_once('=').is_some_and(|(name, _)| {
+                !name.is_empty()
+                    && !name.starts_with(|c: char| c.is_ascii_digit())
+                    && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+            });
+            let prefix = command_position
+                && matches!(
+                    word,
+                    "sudo"
+                        | "env"
+                        | "exec"
+                        | "command"
+                        | "time"
+                        | "xargs"
+                        | "eval"
+                        | "nohup"
+                        | "nice"
+                        | "timeout"
+                );
+            after_prefix = prefix;
+            command_position = prefix
+                || matches!(
+                    word,
+                    "&&" | "||"
+                        | ";"
+                        | "|"
+                        | "!"
+                        | "{"
+                        | "do"
+                        | "then"
+                        | "else"
+                        | "elif"
+                        | "if"
+                        | "while"
+                        | "until"
+                )
+                || word.ends_with(';')
+                || (command_position && assignment);
+        }
+        false
+    }
+
+    /// True when `call` is one bare `vorpal` command: the only shape the
+    /// `vorpal *` exclusion takes out of the sandbox (see
+    /// SANDBOX_EXCLUDED_COMMANDS). `<name>` placeholders and a `2>&1` fd
+    /// duplication are allowed; any other redirect, a pipe, a list, a
+    /// subshell, a substitution, or a prefix keeps the call sandboxed.
+    fn is_bare_vorpal_call(call: &str) -> bool {
+        let call = call.trim();
+        if call != "vorpal" && !call.starts_with("vorpal ") {
+            return false;
+        }
+        let mut rest = call.replace("2>&1", "");
+        while let Some(open) = rest.find('<') {
+            let Some(len) = rest[open..].find('>') else {
+                break;
+            };
+            let inner = &rest[open + 1..open + len];
+            if inner.is_empty() || inner.contains(char::is_whitespace) {
+                break;
+            }
+            rest.replace_range(open..=open + len, "");
+        }
+        !["&", ";", "|", "$(", "`", "(", ")", "<", ">"]
+            .iter()
+            .any(|token| rest.contains(token))
+    }
+
+    #[test]
+    fn bare_vorpal_check_rejects_every_sandboxed_shape() {
+        for bare in [
+            "vorpal run go:1.26.0 build -C \"<repo-root>\" ./...",
+            "vorpal run go:1.26.0 <args>",
+            "vorpal run go:1.26.0 version 2>&1",
+            "vorpal --version",
+        ] {
+            assert!(invokes_vorpal(bare), "not seen as a call: {bare}");
+            assert!(is_bare_vorpal_call(bare), "bare call rejected: {bare}");
+        }
+        for sandboxed in [
+            "cd \"<repo-root>\" && vorpal run go:1.26.0 build ./...",
+            "GOCACHE=/tmp/x vorpal run go:1.26.0 build ./...",
+            "vorpal run go:1.26.0 version | tail -n 8",
+            "vorpal run go:1.26.0 version > out.txt",
+            "for x in 1; do vorpal run go:1.26.0 version; done",
+            "(vorpal run go:1.26.0 version)",
+            "echo $(vorpal run go:1.26.0 version)",
+            "vorpal --version && vorpal run go:1.26.0 version",
+            "if vorpal run go:1.26.0 vet ./...; then echo ok; fi",
+            "timeout 60 vorpal run go:1.26.0 version",
+        ] {
+            assert!(invokes_vorpal(sandboxed), "not seen as a call: {sandboxed}");
+            assert!(
+                !is_bare_vorpal_call(sandboxed),
+                "sandboxed shape accepted as bare: {sandboxed}"
+            );
+        }
+        for not_a_call in [
+            "docket issue move DKT-1 --project vorpal --json=v2",
+            "Bash(vorpal run:*)",
+            "registry.vorpal.lol",
+        ] {
+            assert!(!invokes_vorpal(not_a_call), "seen as a call: {not_a_call}");
+        }
+    }
+
+    #[test]
+    fn corpus_vorpal_calls_are_bare() {
+        // The `vorpal *` exclusion lifts a Bash call only when vorpal is its
+        // only command, so every vorpal call the corpus hands an agent to
+        // copy must be spelled bare. Agents copy calls from Markdown (skills,
+        // references, agents, fragments, contracts) and from workflow
+        // scripts' brief text. Markdown is scanned for inline code spans and
+        // for every line of a shell or untyped fence; a workflow script is
+        // scanned for inline spans and for every line, since its briefs are
+        // multi-line template literals. Lines ending in `\` are joined first.
+        //
+        // One shape is exempt on purpose. The vorpal-toolchain fragment tells
+        // a shared executor running a tool with no directory flag to run
+        // `cd "<repo-root>" && vorpal run <alias> ...` once, sandboxed: no
+        // bare form both changes directory and runs that tool, the fragment
+        // labels the call sandboxed, and making non-bare calls unsandboxed
+        // would need per-call lifts, which stay off.
+        const EXEMPT: &[(&str, &str)] = &[(
+            "src/user/docket/config/fragments/vorpal-toolchain.md",
+            "cd \"<repo-root>\" && vorpal run <alias> ...",
+        )];
+
+        fn collect(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+            let mut entries: Vec<_> = std::fs::read_dir(dir)
+                .unwrap_or_else(|error| panic!("read {}: {error}", dir.display()))
+                .map(|entry| entry.expect("directory entry").path())
+                .collect();
+            entries.sort();
+            for path in entries {
+                if path.is_dir() {
+                    collect(&path, out);
+                } else if matches!(
+                    path.extension().and_then(|ext| ext.to_str()),
+                    Some("md" | "js")
+                ) {
+                    out.push(path);
+                }
+            }
+        }
+
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+        let mut files = Vec::new();
+        for tree in ["src/user/claude_code", "src/user/docket/config"] {
+            collect(&root.join(tree), &mut files);
+        }
+
+        let mut calls = 0;
+        let mut exempt_seen = vec![false; EXEMPT.len()];
+        let mut offenders = Vec::new();
+        for path in &files {
+            let relative = path
+                .strip_prefix(root)
+                .expect("corpus file under the crate root")
+                .to_string_lossy()
+                .into_owned();
+            let text = std::fs::read_to_string(path)
+                .unwrap_or_else(|error| panic!("read {relative}: {error}"));
+            let markdown = relative.ends_with(".md");
+            let mut lines: Vec<(usize, String)> = Vec::new();
+            for (number, line) in text.lines().enumerate() {
+                match lines.last_mut() {
+                    Some((_, previous)) if previous.ends_with('\\') => {
+                        previous.pop();
+                        previous.push(' ');
+                        previous.push_str(line.trim());
+                    }
+                    _ => lines.push((number, line.to_string())),
+                }
+            }
+            let mut in_fence = false;
+            let mut shell_fence = false;
+            for (number, line) in &lines {
+                let trimmed = line.trim();
+                if markdown && trimmed.starts_with("```") {
+                    if in_fence {
+                        in_fence = false;
+                    } else {
+                        in_fence = true;
+                        let info = trimmed.trim_start_matches('`').trim();
+                        shell_fence =
+                            matches!(info, "" | "sh" | "bash" | "shell" | "zsh" | "console");
+                    }
+                    continue;
+                }
+                let mut candidates: Vec<&str> = Vec::new();
+                let whole_line = if markdown {
+                    in_fence && shell_fence
+                } else {
+                    true
+                };
+                if whole_line && !trimmed.starts_with('#') && !trimmed.starts_with("//") {
+                    candidates.push(trimmed.trim_start_matches("$ "));
+                }
+                if !(markdown && in_fence) {
+                    candidates.extend(line.split('`').skip(1).step_by(2));
+                }
+                for call in candidates.into_iter().filter(|call| invokes_vorpal(call)) {
+                    calls += 1;
+                    if let Some(index) = EXEMPT
+                        .iter()
+                        .position(|(file, shape)| *file == relative && *shape == call.trim())
+                    {
+                        exempt_seen[index] = true;
+                        continue;
+                    }
+                    if !is_bare_vorpal_call(call) {
+                        offenders.push(format!("{relative}:{}: {call}", number + 1));
+                    }
+                }
+            }
+        }
+
+        assert!(
+            calls > 0,
+            "the scan found no vorpal calls, so it checked nothing"
+        );
+        for (index, seen) in exempt_seen.iter().enumerate() {
+            assert!(
+                *seen,
+                "stale exemption, the corpus no longer spells it: {:?}",
+                EXEMPT[index]
+            );
+        }
+        assert!(
+            offenders.is_empty(),
+            "vorpal calls that stay sandboxed because they are not bare:\n{}",
+            offenders.join("\n")
+        );
+    }
+
     #[test]
     fn permission_allow_rules_cover_the_corpus_hygiene_shapes() {
         // The vorpal-toolchain fragment prescribes `vorpal run go:<alias>

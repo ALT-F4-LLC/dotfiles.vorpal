@@ -8,7 +8,7 @@
 #   simplify-check.sh <kind> <original> <candidate>
 #
 # kind is the workflow's classification: prose, contract, javascript,
-# python, shell, rust, toml, or workflow-toml. A contract (a docket contract
+# python, shell, rust, toml, workflow-toml, or json. A contract (a docket contract
 # or fragment) and a workflow-toml are versioned.
 #
 # It runs the kind's syntax gate on the candidate. For Markdown it runs
@@ -35,14 +35,14 @@ export LC_ALL=C
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 usage() {
-    echo "usage: simplify-check.sh prose|contract|javascript|python|shell|rust|toml|workflow-toml <original> <candidate>" >&2
+    echo "usage: simplify-check.sh prose|contract|javascript|python|shell|rust|toml|workflow-toml|json <original> <candidate>" >&2
     exit 2
 }
 
 [ $# -eq 3 ] || usage
 kind=$1 original=$2 candidate=$3
 case "$kind" in
-    prose | contract | javascript | python | shell | rust | toml | workflow-toml) ;;
+    prose | contract | javascript | python | shell | rust | toml | workflow-toml | json) ;;
     *) usage ;;
 esac
 for f in "$original" "$candidate"; do
@@ -99,6 +99,7 @@ case "$kind" in
     # yq is laxer than a strict TOML parser: a duplicate key and a duplicate
     # [table] both pass this gate.
     toml | workflow-toml) gate toml toml_check "$candidate" ;;
+    json) gate json jq empty "$candidate" ;;
     *) echo "gate none" ;;
 esac
 

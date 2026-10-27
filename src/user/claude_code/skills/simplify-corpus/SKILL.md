@@ -5,15 +5,16 @@ description: >-
   skills", "simplify every workflow", "tighten", "tighten the prose", "make
   this more concise", "cut the filler", or to keep the corpus simple under
   /loop (for example `/loop /simplify-corpus tighten`). Bare, applies the
-  built-in simplify review to every tracked file under src/user/claude_code
-  and src/user/docket; `tighten` rewrites Markdown prose for concision, never
-  code. A workflow verifies each candidate mechanically and adversarially,
+  built-in simplify review to every tracked file in the repository whose
+  kind it can check; `tighten` rewrites every tracked Markdown file for
+  concision, never code. Paths or globs narrow either mode. A workflow
+  verifies each candidate mechanically and adversarially,
   then this session files each survivor as a worker-ready Docket issue with
   the diff and evidence. Never edits the checkout or commits; under /loop it
   rests when nothing new is left to file. Distinct from the built-in simplify
   (current diff once), simplify-code (code cruft), corpus-check (coherence),
   and docket-prune (trials definitions).
-argument-hint: "[tighten] [paths or globs, default: src/user/claude_code src/user/docket; tighten: skills/**/*.md agents/*.md]"
+argument-hint: "[tighten] [paths or globs, default: every tracked file the mode can check]"
 ---
 
 # simplify-corpus
@@ -45,27 +46,40 @@ wake-up, and each firing re-enters this skill from §1. Invoked outside
 
 ### Simplify mode
 
-Bare invocation targets every tracked file under `src/user/claude_code` and
-`src/user/docket`, both trees always. That includes skill, agent, and
-reference Markdown, `workflows/*.js`, `skills/*/scripts`, `statusline.sh`, `settings.rs`, and
-under docket `bin/doc-record`, `config/README.md`, `config/policy.toml`,
-contracts, fragments, and workflow TOML.
+Bare invocation targets every tracked file in the repository whose kind the
+workflow's `classify()` accepts: Markdown prose, `.js`, `.py`, `.sh`, `.rs`
+and `.toml` anywhere in the checkout, every extensionless script under
+`.docket/bin/` and `src/user/docket/bin/`, and the registered JSON schemas.
+That reaches the corpus (skill, agent and reference Markdown,
+`workflows/*.js`, `skills/*/scripts`, `statusline.sh`, `settings.rs`,
+`hooks/*.sh`, and under docket `bin/doc-record`,
+`bin/docket-workflow-claim`, `config/README.md`, `config/policy.toml`,
+contracts, fragments, workflow TOML and `config/schemas/*.json`) and
+everything outside it that `classify()` has a kind for: `tests/*.test.sh`,
+the gate scripts under `.docket/bin/`, the repository `README.md`,
+`Cargo.toml`, `Vorpal.toml`.
 
-Never target, and drop from any argument that matches:
+Skipped, because the review cannot apply to them: files `classify()`
+returns as `data` (`allowed_signers`, `*.lock`, `*.jq`, `*.awk`, the
+`justfile`, `renovate.json`, and every `*.json` that is not a registered
+schema: fixtures, evals, inventories, the cut ledger), since they are
+neither code the syntax gates can check nor prose the protected-span check
+can guard. The workflow rejects any that reach it. Nothing else is skipped.
+
+Never target with a filed issue; read, review, and report only, as §3's
+report-only step says. Drop from no argument, since each is still read:
 
 - `src/user/claude_code/CLAUDE.md` and
   `src/user/claude_code/references/working-agreement.md`: the operator's
   own working agreement, owned outside this corpus's style authority. Tighten
-  mode excludes them too.
+  mode treats them the same way.
 - `src/user/claude_code/hooks/`, every file: the guard hooks are a
   permission and sandbox boundary that changes only by the operator's
   hand.
 - `src/user/docket/config/schemas/`: every `<name>@<version>.json` is
   frozen bytes once registered, and the legitimate change is a new
-  version file, which is design work for `docket-refit`.
-- Data files, which are neither code nor prose: `allowed_signers`, and
-  every `*.json` under the trees (fixtures, evals, inventories). The
-  workflow rejects any that reach it.
+  version file, which is design work for `docket-refit`; the candidate is
+  reported as a refit proposal, never filed as a diff against the file.
 
 Two target classes carry filing rules of their own, both in §3:
 `settings.rs` is filed with a security gate line, and versioned docket files
@@ -74,20 +88,29 @@ Two target classes carry filing rules of their own, both in §3:
 
 ### Tighten mode
 
-Without paths, tighten mode targets the default corpus under
-`src/user/claude_code`: `skills/**/*.md` and `agents/*.md`.
+Without paths, tighten mode targets every tracked Markdown file in the
+repository: `skills/**/*.md`, `agents/*.md`, `references/*.md`, the
+repository `README.md`, and `src/user/docket/config/README.md`.
 
-Only Markdown prose is ever rewritten. Never target, and drop from any
-argument that matches:
+Only Markdown prose is ever rewritten, so every other kind is skipped
+because the mode cannot apply to it: code and configuration
+(`workflows/*.js`, `hooks/`, `settings.rs`, `statusline.sh`, TOML, JSON,
+shell) and data (`allowed_signers`, lockfiles); simplify mode covers the
+code. Two Markdown sets are skipped too, each for a reason: contracts and
+fragments under `src/user/docket/config`, because the equal-mode
+protected-span check demands byte-identical frontmatter while a body change
+there demands a `version` bump, so a tighten candidate could never land
+(simplify mode reviews them with its bump rule); and
+`src/user/docket/config/changelogs/*.md`, which record landed versions
+rather than instruct anyone.
+
+Never target with a filed issue; read, rewrite, and report only, as §3's
+report-only step says:
 
 - `src/user/claude_code/CLAUDE.md` and
   `src/user/claude_code/references/working-agreement.md`: the operator's
   own working agreement, owned outside this corpus's style authority, and
   the source of the rules this mode enforces.
-- Code and configuration: `workflows/*.js`, `hooks/`, `settings.rs`,
-  `statusline.sh`, `allowed_signers`, and everything under
-  `src/user/docket`. Frozen contracts and fragments carry versions and
-  belong to `docket-refit`.
 
 Inside a file, `scripts/protected-spans.sh` compares frontmatter, fenced
 blocks at any indentation, indented code blocks, headings, and HTML
@@ -100,11 +123,14 @@ quote mark inside a code snippet never locks the prose after it.
 ## 1. Each pass
 
 1. Resolve targets. Run `git ls-files -- <paths>` from the repository root
-   over the mode's paths (or its default targets), keep only `.md` files in
-   tighten mode, and apply the mode's Scope exclusions. Only tracked files
-   are ever candidates, so every candidate has a committed state to diff
-   against. No files means nothing to do: report it and stop (under
-   self-paced `/loop`, arm the idle wakeup in §4 first).
+   over the mode's paths (`git ls-files` alone with none: the whole
+   repository is the default, and paths only narrow it), keep only `.md`
+   files in tighten mode, and apply the mode's Scope skips. Keep the
+   report-only files in the list; §3 reports their candidates instead of
+   filing them. Only tracked files are ever candidates, so every candidate
+   has a committed state to diff against. No files means nothing to do:
+   report it and stop (under self-paced `/loop`, arm the idle wakeup in §4
+   first).
 2. Require unmodified targets. Run `git status --porcelain` and stop if a
    target is modified or staged; in simplify mode stop if any tracked file
    is, target or not. Candidates are built from the working-tree bytes and
@@ -234,6 +260,20 @@ type is `chore`, the priority is `low`, and the description follows the
 structure below. The issue is unrouted: no routing label, no assignee, no
 size label. `docket-groom` triages it and `docket-plan` or direct work
 drains it.
+
+**Report-only files never reach the CLI.** Before step 1, set aside every
+accepted candidate whose file is `src/user/claude_code/CLAUDE.md`,
+`src/user/claude_code/references/working-agreement.md`, anything under
+`src/user/claude_code/hooks/`, or (simplify mode) a schema under
+`src/user/docket/config/schemas/`. Run step 1's check on each so the
+report carries real evidence, keep the scratch candidate path, and carry
+the file, the entry's summary, the bytes and lines removed, and the diff's
+scratch location to the Report as an operator decision: the charter changes
+by the operator's hand, a hook is a permission boundary, and a schema
+candidate is a `docket-refit` proposal for a new version, never a diff
+against frozen bytes. Add `<path><TAB><blob><TAB>reported` to the session
+memo so a later pass does not rerun the workflow on the same bytes. File
+nothing for them.
 
 1. **Check the candidate yourself.** The workflow read the check's report
    through a runner agent, so run the check again on the scratch candidate
@@ -379,7 +419,9 @@ edit to the corpus, gives the next tick new bytes to simplify or tighten.
 
 State the mode and pass number, the issues filed with their ids and files,
 replays and filings superseded (with any left open and why), candidates held
-for size, files rejected with their reasons, files unchanged, files skipped
+for size, every report-only candidate (file, summary, bytes and lines
+removed, scratch diff path) as an operator decision with nothing filed,
+files rejected with their reasons, files unchanged, files skipped
 as settled or declined, and failed rows with the CLI's error. Say that no
 fixes were applied: filed issues drain through `docket-groom` routing into a
 `docket-plan` and `docket-run` execution or direct work, and a landed

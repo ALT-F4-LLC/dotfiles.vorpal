@@ -14,8 +14,9 @@ export const meta = {
 //
 // args: {
 //   files: string[]      repo-relative paths to simplify, one simplifier each;
-//                        any file type the skill admits (Markdown, JS, Python,
-//                        shell, Rust, TOML, extensionless scripts)
+//                        any tracked path in the repository whose kind classify()
+//                        accepts (Markdown, JS, Python, shell, Rust, TOML,
+//                        extensionless scripts, registered JSON schemas)
 //   scratchDir: string   absolute, writable, empty per pass; candidates are written at
 //                        `${scratchDir}/${file}`; the repo file is never written here
 //   pass: number         1-based pass counter, informational for labels and prompts
@@ -27,7 +28,9 @@ export const meta = {
 // `candidate` against `file` and files the diff. An entry with `confirm: true`
 // (settings.rs) is filed with the security gate line; an entry with `versioned: true`
 // (docket contracts, fragments, workflow TOML) carries the version bump the
-// frozen-drift-check gate demands. Nothing in the repository changes inside
+// frozen-drift-check gate demands; an entry with `reportOnly: true` (CLAUDE.md,
+// the working agreement, hooks/, schemas/) is reported as an operator decision
+// and never filed. Nothing in the repository changes inside
 // this workflow.
 //
 // How the simplify skill is used. The built-in simplify skill reviews changed
@@ -72,23 +75,30 @@ const AGENT_CONFIG = {
 const UPHOLD_MIN = 2
 
 // One kind per file decides which prompt, which mechanical check, and which
-// filing rule apply. `data` files (JSON fixtures, signing keys) are never
-// targets; the skill drops them before launching, and the script rejects any
-// that arrive.
+// filing rule apply, for any tracked path in the repository. `data` files
+// (JSON fixtures, signing keys, lockfiles, jq and awk programs, the justfile)
+// are never targets; the skill drops them before launching, and the script
+// rejects any that arrive. A registered schema is the one JSON kind reviewed:
+// the skill reports its candidate as a refit proposal and never files it,
+// like the charter files and the hooks (`reportOnly`).
 function classify(file) {
   const base = file.slice(file.lastIndexOf('/') + 1)
   const ext = base.includes('.') ? base.slice(base.lastIndexOf('.') + 1) : ''
   const docketConfig = file.startsWith('src/user/docket/config/')
-  if (file === 'src/user/claude_code/settings.rs') return { kind: 'rust', confirm: true, versioned: false }
-  if (docketConfig && (file.includes('/contracts/') || file.includes('/fragments/')) && ext === 'md') return { kind: 'contract', confirm: false, versioned: true }
-  if (docketConfig && file.includes('/workflows/') && ext === 'toml') return { kind: 'workflow-toml', confirm: false, versioned: true }
-  if (ext === 'md') return { kind: 'prose', confirm: false, versioned: false }
-  if (ext === 'js') return { kind: 'javascript', confirm: false, versioned: false }
-  if (ext === 'py') return { kind: 'python', confirm: false, versioned: false }
-  if (ext === 'sh' || base === 'doc-record') return { kind: 'shell', confirm: false, versioned: false }
-  if (ext === 'rs') return { kind: 'rust', confirm: false, versioned: false }
-  if (ext === 'toml') return { kind: 'toml', confirm: false, versioned: false }
-  return { kind: 'data', confirm: false, versioned: false }
+  const reportOnly = file === 'src/user/claude_code/CLAUDE.md'
+    || file === 'src/user/claude_code/references/working-agreement.md'
+    || file.startsWith('src/user/claude_code/hooks/')
+  if (file === 'src/user/claude_code/settings.rs') return { kind: 'rust', confirm: true, versioned: false, reportOnly: false }
+  if (docketConfig && file.includes('/schemas/') && ext === 'json') return { kind: 'json', confirm: false, versioned: false, reportOnly: true }
+  if (docketConfig && (file.includes('/contracts/') || file.includes('/fragments/')) && ext === 'md') return { kind: 'contract', confirm: false, versioned: true, reportOnly }
+  if (docketConfig && file.includes('/workflows/') && ext === 'toml') return { kind: 'workflow-toml', confirm: false, versioned: true, reportOnly }
+  if (ext === 'md') return { kind: 'prose', confirm: false, versioned: false, reportOnly }
+  if (ext === 'js') return { kind: 'javascript', confirm: false, versioned: false, reportOnly }
+  if (ext === 'py') return { kind: 'python', confirm: false, versioned: false, reportOnly }
+  if (ext === 'sh' || file.startsWith('.docket/bin/') || file.startsWith('src/user/docket/bin/')) return { kind: 'shell', confirm: false, versioned: false, reportOnly }
+  if (ext === 'rs') return { kind: 'rust', confirm: false, versioned: false, reportOnly }
+  if (ext === 'toml') return { kind: 'toml', confirm: false, versioned: false, reportOnly }
+  return { kind: 'data', confirm: false, versioned: false, reportOnly: false }
 }
 
 // A candidate that is not strictly smaller is rejected in code, so a pass over
@@ -170,7 +180,7 @@ function parseCheck(stdout) {
 }
 // TEST-END simplify-corpus-decide
 
-const CODE_KINDS = new Set(['javascript', 'python', 'shell', 'rust', 'toml', 'workflow-toml'])
+const CODE_KINDS = new Set(['javascript', 'python', 'shell', 'rust', 'toml', 'workflow-toml', 'json'])
 
 // Three refuters on one identical prompt are three correlated votes. Each
 // refuter leads from a different angle; a majority is then agreement across
@@ -313,6 +323,14 @@ model and environment settings. Simplify only construction, duplication,
 and indirection. The candidate must keep \`cargo fmt --check\`,
 \`cargo clippy -D warnings\`, and \`cargo test\` green; the caller runs
 them and reverts otherwise.`
+    case 'json':
+      return `This is a registered docket JSON schema: frozen bytes once
+registered, so the candidate is a proposal for the next version that the
+caller reports and never files as a diff. Remove a description that
+repeats its property name, a constraint a sibling already implies, or a
+definition nothing references; never change a property name, a required
+list, a type, or an enum value, since emitters and threshold predicates
+read them. The candidate must parse with \`jq empty\`.`
     case 'toml':
       return `This is TOML configuration. Remove a key that restates a default
 or a comment that repeats the key it sits on; never change a value the
@@ -418,7 +436,7 @@ const results = await pipeline(
   work,
   (t) => agent(simplifyPrompt(t.file, candidatePath(scratchDir, t.file), t.kind, pass), { phase: 'Simplify', label: `simplify:${t.file}`, schema: SIMPLIFY_SCHEMA, ...AGENT_CONFIG.simplify }),
   async (simplified, t) => {
-    const base = { file: t.file, kind: t.kind }
+    const base = { file: t.file, kind: t.kind, reportOnly: Boolean(t.reportOnly) }
     if (!simplified) return { ...base, status: 'rejected', reason: 'the simplifier returned nothing' }
     if (!simplified.changed) return { ...base, status: 'unchanged', summary: simplified.summary }
     const candidate = simplified.candidate || candidatePath(scratchDir, t.file)
@@ -430,7 +448,7 @@ const results = await pipeline(
   },
   async (checked, t) => {
     if (!checked || checked.status !== 'checked') return checked
-    const base = { file: t.file, kind: t.kind }
+    const base = { file: t.file, kind: t.kind, reportOnly: Boolean(t.reportOnly) }
     const framings = CODE_KINDS.has(t.kind) ? CODE_FRAMINGS : PROSE_FRAMINGS
     const returns = await parallel(framings.map((framing) => () =>
       agent(verifyPrompt(t.file, checked.candidate, t.kind, framing), { phase: 'Verify', label: `verify:${t.file}:${framing.key}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.verify })

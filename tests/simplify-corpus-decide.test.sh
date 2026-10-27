@@ -107,6 +107,8 @@ out.workflowJs = classify('src/user/claude_code/workflows/tighten.js')
 out.script = classify('src/user/claude_code/skills/docket/scripts/evaluate.py')
 out.statusline = classify('src/user/claude_code/statusline.sh')
 out.docRecord = classify('src/user/docket/bin/doc-record')
+out.claimScript = classify('src/user/docket/bin/docket-workflow-claim')
+out.gateScript = classify('.docket/bin/crossref-check')
 out.contract = classify('src/user/docket/config/contracts/implement.md')
 out.fragment = classify('src/user/docket/config/fragments/copy-discipline.md')
 out.docketWorkflow = classify('src/user/docket/config/workflows/small-change.toml')
@@ -114,6 +116,14 @@ out.policy = classify('src/user/docket/config/policy.toml')
 out.docketReadme = classify('src/user/docket/config/README.md')
 out.fixture = classify('src/user/claude_code/skills/docket/evals/cases.json')
 out.signers = classify('src/user/claude_code/allowed_signers')
+out.schema = classify('src/user/docket/config/schemas/findings@13.json')
+out.hook = classify('src/user/claude_code/hooks/docket-run-guard-hook.sh')
+out.charter = classify('src/user/claude_code/CLAUDE.md')
+out.agreement = classify('src/user/claude_code/references/working-agreement.md')
+out.repoTest = classify('tests/simplify-corpus-decide.test.sh')
+out.repoReadme = classify('README.md')
+out.jqProgram = classify('src/user/claude_code/hooks/docket-driven-runs.jq')
+out.lockfile = classify('Cargo.lock')
 out.smaller = shrank({ bytesBefore: 100, bytesAfter: 99 })
 out.equal = shrank({ bytesBefore: 100, bytesAfter: 100 })
 out.larger = shrank({ bytesBefore: 100, bytesAfter: 101 })
@@ -142,6 +152,7 @@ get() { node -e "const o=require('${WORK}/out.json'); process.stdout.write(Strin
 [ "$(get 'o.script.kind')" = "python" ]; ok $? 'a skill script is python'
 [ "$(get 'o.statusline.kind')" = "shell" ]; ok $? 'statusline.sh is shell'
 [ "$(get 'o.docRecord.kind')" = "shell" ]; ok $? 'the extensionless doc-record is shell'
+[ "$(get 'o.claimScript.kind')" = "shell" ] && [ "$(get 'o.gateScript.kind')" = "shell" ] && [ "$(get 'o.gateScript.reportOnly')" = "false" ]; ok $? 'extensionless scripts under src/user/docket/bin and .docket/bin are shell and filed'
 [ "$(get 'o.contract.kind')" = "contract" ] && [ "$(get 'o.contract.versioned')" = "true" ]; ok $? 'a docket contract is versioned'
 [ "$(get 'o.fragment.kind')" = "contract" ] && [ "$(get 'o.fragment.versioned')" = "true" ]; ok $? 'a docket fragment is versioned'
 [ "$(get 'o.docketWorkflow.kind')" = "workflow-toml" ] && [ "$(get 'o.docketWorkflow.versioned')" = "true" ]; ok $? 'a docket workflow definition is versioned TOML'
@@ -149,6 +160,14 @@ get() { node -e "const o=require('${WORK}/out.json'); process.stdout.write(Strin
 [ "$(get 'o.docketReadme.kind')" = "prose" ] && [ "$(get 'o.docketReadme.versioned')" = "false" ]; ok $? 'the docket README is unversioned prose'
 [ "$(get 'o.fixture.kind')" = "data" ]; ok $? 'a JSON fixture is data'
 [ "$(get 'o.signers.kind')" = "data" ]; ok $? 'allowed_signers is data'
+[ "$(get 'o.schema.kind')" = "json" ] && [ "$(get 'o.schema.reportOnly')" = "true" ] && [ "$(get 'o.schema.versioned')" = "false" ]; ok $? 'a registered schema is json and report-only'
+[ "$(get 'o.hook.kind')" = "shell" ] && [ "$(get 'o.hook.reportOnly')" = "true" ]; ok $? 'a hook is shell and report-only'
+[ "$(get 'o.charter.kind')" = "prose" ] && [ "$(get 'o.charter.reportOnly')" = "true" ]; ok $? 'CLAUDE.md is prose and report-only'
+[ "$(get 'o.agreement.kind')" = "prose" ] && [ "$(get 'o.agreement.reportOnly')" = "true" ]; ok $? 'the working agreement is prose and report-only'
+[ "$(get 'o.repoTest.kind')" = "shell" ] && [ "$(get 'o.repoTest.reportOnly')" = "false" ]; ok $? 'a test suite outside src/user is shell and filed'
+[ "$(get 'o.repoReadme.kind')" = "prose" ]; ok $? 'the repository README is prose'
+[ "$(get 'o.skill.reportOnly')" = "false" ] && [ "$(get 'o.settings.reportOnly')" = "false" ]; ok $? 'a skill file and settings.rs are filed, not report-only'
+[ "$(get 'o.jqProgram.kind')" = "data" ] && [ "$(get 'o.lockfile.kind')" = "data" ]; ok $? 'a jq program and a lockfile are data'
 
 [ "$(get 'o.smaller')" = "true" ]; ok $? 'a strictly smaller candidate shrank'
 [ "$(get 'o.equal')" = "false" ]; ok $? 'an equal-size candidate did not shrink (a restyling cannot be filed)'

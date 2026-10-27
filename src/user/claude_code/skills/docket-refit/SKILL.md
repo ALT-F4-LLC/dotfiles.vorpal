@@ -104,9 +104,10 @@ engine checkout (§3) — the script cannot inspect files or run commands
 itself. Every agent it spawns is an `executor-read` agent, which keeps the
 checkout unchanged and writes only scratch files and authorized engine
 records; it cannot edit the checkout, change trust, or ask the operator.
-Sweeps grep the corpus and the harness scripts, mining analysts run
-`docket` read verbs from each project's checkout root, verifiers read
-engine source. Nothing in it edits, mutates a store, or asks
+Sweeps grep every tracked file in the checkout (the corpus, the harness
+scripts, `skills/**`, `agents/`, `hooks/`, `tests/`, `.docket/bin`, the
+`justfile`), mining analysts run `docket` read verbs from each project's
+checkout root, verifiers read engine source. Nothing in it edits, mutates a store, or asks
 the operator anything. Each return carries a `summary` line and an
 `uncovered` list naming every agent that returned nothing, every project
 whose checkout could not be entered; report those as uncovered, never as clean. If the workflow throws
@@ -154,11 +155,20 @@ its siblings.
 
 **Sweep the blast radius before proposing anything.** Every surface except
 a workflow is shared, and a workflow shares its executors. Launch the script with `stage: "evidence"` and the resolved target: its
-sweep agent greps the corpus and the harness scripts and returns every
+sweep agent greps every tracked file in the checkout and returns every
 consumer with the `file:line` of the reference, plus the siblings that
 serve as precedent, while its mining analysts (§2) run in the same launch.
-Carry the consumer list through every later section. What the sweep
-enumerates, per surface:
+The sweep is the one discovery stage this skill has, and it covers the
+whole repository by default: consumers of a definition live in the corpus
+and the harness scripts, and also in `skills/**/*.md` and `agents/*.md`
+(quoted executor, seat, gate, and schema names), `hooks/` (parsed payload
+shapes), `tests/*.test.sh` (pinned contract text, versions, and workflow
+fields), `.docket/bin` (`frozen-drift-check` reads versions and schema
+files), and the `justfile` (gate names). The one argument is the target;
+nothing narrows the sweep, since a consumer left unread is a change that
+lands broken. Carry the consumer list through every later section. What
+the sweep enumerates, per surface, on the corpus side; every file outside
+the corpus that names the target is a consumer besides:
 
 - **Contract** → every workflow step naming that executor, plus the policy
   row that routes it and the fragments its `packet_includes` pulls.

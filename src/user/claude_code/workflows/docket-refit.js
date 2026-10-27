@@ -36,8 +36,11 @@ export const meta = {
 // args: {stage, checkoutRoot, projects, target, engineRoot, capabilities}
 //   stage        — "evidence" | "verify".
 //   checkoutRoot — absolute path of the dotfiles checkout; the corpus is read
-//                  at <checkoutRoot>/src/user/docket/config and the harness
-//                  scripts at <checkoutRoot>/src/user/claude_code/workflows.
+//                  at <checkoutRoot>/src/user/docket/config, the harness
+//                  scripts at <checkoutRoot>/src/user/claude_code/workflows,
+//                  and the consumer sweep greps every tracked file under
+//                  the checkout (skills, agents, hooks, tests, .docket/bin,
+//                  justfile), not only those two directories.
 //   projects     — [{name, prefix, root}] from `docket project list --json`
 //                  (root is the listing's identity path). Mining runs docket
 //                  verbs from each root, so an unreadable root is reported by
@@ -231,10 +234,11 @@ function sweepPrompt(target) {
 Target: ${target.path} (surface: ${target.surface}${target.name ? `, name: ${target.name}` : ''})
 Corpus root: ${corpusRoot} (workflows/*.toml, policy.toml, contracts/*.md, fragments/*.md, schemas/*.json, README.md)
 Harness scripts: ${harnessDir} (the lane scripts, <workflow>.js, resolve policy rows to a variant and seat; tribunal.js holds the LENSES table)
+Sweep root: ${checkoutRoot}, every tracked file (\`git ls-files\` from there). Consumers live outside the corpus root and the harness scripts too: skills/**/*.md and agents/*.md quote executor, seat, gate, and schema names; hooks/* parse payload shapes; tests/*.test.sh pin contract text, versions, and workflow fields; .docket/bin/* (frozen-drift-check among them) read versions and schema files; the justfile names gates. Grep all of them.
 
 ${READ_ONLY}
 
-Read the target whole. Then, with greps over the corpus root and the harness scripts, list every consumer. For a ${target.surface} that means: ${SWEEP_RULES[target.surface]}
+Read the target whole. Then, with greps over every tracked file under the sweep root, list every consumer. For a ${target.surface} the corpus-side consumers are: ${SWEEP_RULES[target.surface]} Add every file outside the corpus root that names the target, its name, a step, row, field, or version of it, with the same file:line citation.
 
 For each consumer return its repo-relative path, kind, what it takes from the target in one sentence, and the file:line of the reference. Do not infer a consumer from memory of what the corpus usually contains; every entry needs a grep or read hit you can cite. An empty consumer list is a valid answer for a definition nothing references, and you say so in notes.
 

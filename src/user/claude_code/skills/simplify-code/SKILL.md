@@ -14,7 +14,7 @@ description: >-
   creates a run. Distinct from the built-in simplify skill (reviews the
   current diff once), code-review (hunts bugs), and simplify-corpus (files
   issues for shrinking this repo's skills and Docket config).
-argument-hint: "[unattended] [drain]"
+argument-hint: "[unattended] [drain] [paths or globs, default: every tracked source file]"
 ---
 
 # simplify-code
@@ -48,11 +48,21 @@ behavior is a decision an operator makes on a
 
 ## Invocation
 
-`/simplify-code [unattended] [drain]`
+`/simplify-code [unattended] [drain] [paths or globs]`
 
-- **Coverage** is fixed: every shard of the source is scanned, every ranked
-  unit is refuted, and no setting trims either. The
-  [discovery reference](references/discovery.md#scope) holds the rule.
+- **Coverage** is the whole repository by default: every tracked source
+  file `references/shard.sh` lists is scanned, every ranked unit is
+  refuted, and no setting trims either. The
+  [discovery reference](references/discovery.md#scope) holds the rule and
+  names the only files left out, each with its reason: test files, which
+  the [frozen contracts](references/gates.md#frozen-contracts) forbid the
+  worker to edit, so a cleanup there cannot land; generated, vendored and
+  lock files, which are not this repository's code; and files whose
+  extension the sharder does not recognize as source (prose, data, and
+  extensionless scripts, which `simplify-corpus` covers), which the catalog
+  has no cruft class for. Paths or globs after the mode words only narrow:
+  they are passed to the sharder as pathspecs, and the round scans the
+  tracked source files under them.
 - **Unattended** means no one is at the keyboard: the argument, or any
   firing of `/loop` after its first. An unattended run never calls
   `AskUserQuestion`. Filing needs no answer from anyone.
@@ -86,8 +96,9 @@ supplies the recurring wake-up; each firing re-enters this skill from §1.
 3. **Discover.** Keep the queue from this tick's last round while its units
    pass the queued-units staleness check; launch a new round (§4) when there
    is no queue or when step 5 sends it back. A round scans every shard of the
-   source: run `~/.claude/skills/simplify-code/references/shard.sh <repo>`
-   (expanding `~` yourself) and pass its array as `shards`. After the first
+   source: run `~/.claude/skills/simplify-code/references/shard.sh <repo> 4000 [paths or globs]`
+   (expanding `~` yourself; the pathspecs are the operator's narrowing, none
+   for the whole repository) and pass its array as `shards`. After the first
    survey, `simplify-state.md` holds the HEAD it covered, and a later round
    scans only the shards whose files appear in `git diff --name-only
    <surveyed-head> HEAD`, plus the shards the last round returned `uncovered`

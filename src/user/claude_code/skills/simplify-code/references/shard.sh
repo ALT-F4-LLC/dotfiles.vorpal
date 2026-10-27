@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 # Split a repository's source files into disjoint shards for the simplify-code
 # discovery round, highest priority first. Usage: shard.sh <repo> [lines per
-# shard, default 4000]. Prints a JSON array [{ name, files, lines }] on stdout.
+# shard, default 4000] [pathspec...]. Prints a JSON array [{ name, files,
+# lines }] on stdout.
 #
 # Shards pack files that sit together in the tree, so a scout reads one
 # neighbourhood. Priority is churn per line over the last six months: cruft in
-# a hotspot is read most. Tests, generated and vendored paths are left out, the
-# same set the workflow excludes. Needs git, awk, grep, xargs, and jq.
+# a hotspot is read most. Every tracked file with a recognized source
+# extension is in, repository-wide, and pathspecs only narrow that to the
+# tracked files under them. Left out, for the reasons the discovery
+# reference states: test files, which the frozen contracts forbid a worker to
+# edit (the TEST pattern, the same set the workflow's exclusionReason uses);
+# generated, vendored and lock files, which are not the repository's code (the
+# GEN pattern). Needs git, awk, grep, xargs, and jq.
 set -euo pipefail
 
-repo=${1:?usage: shard.sh <repo> [lines per shard]}
+repo=${1:?usage: shard.sh <repo> [lines per shard] [pathspec...]}
 target=${2:-4000}
+shift $(( $# >= 2 ? 2 : $# ))
 cd "$repo"
 
 EXT='go|rs|py|pyi|js|jsx|mjs|cjs|ts|tsx|mts|cts|vue|svelte|rb|java|kt|kts|groovy|scala|cs|php|c|cc|cxx|cpp|h|hh|hpp|m|mm|swift|dart|sh|bash|ex|exs|erl|hs|ml|clj|pl|lua|zig'
@@ -20,7 +27,7 @@ GEN='(^|/)(node_modules|vendor|target|dist|build|\.git)/|(^|/)(package-lock\.jso
 work=$(mktemp -d "${TMPDIR:-/tmp}/simplify-shard.XXXXXX")
 trap 'rm -rf "$work"' EXIT
 
-git ls-files -z | tr '\0' '\n' | grep -E "\.(${EXT})\$" | grep -Ev "$TEST" | grep -Ev "$GEN" | sort > "$work/files" || true
+git ls-files -z -- "$@" | tr '\0' '\n' | grep -E "\.(${EXT})\$" | grep -Ev "$TEST" | grep -Ev "$GEN" | sort > "$work/files" || true
 [ -s "$work/files" ] || { echo '[]'; exit 0; }
 
 tr '\n' '\0' < "$work/files" | xargs -0 wc -l | grep -v ' total$' | awk '{ n = $1; $1 = ""; sub(/^ /, ""); print n "\t" $0 }' > "$work/lines"

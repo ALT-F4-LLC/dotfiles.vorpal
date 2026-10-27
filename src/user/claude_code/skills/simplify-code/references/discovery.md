@@ -89,3 +89,26 @@ A sweep looks at everything: every shard of the source is scanned, every
 proposal a scout makes is refuted, and every unit that survives is a candidate
 to file as an issue. No setting trims the shard list or the unit list. `MAX_AGENTS` in the
 workflow is a runaway backstop on agents per launch, not a coverage limit.
+
+The source is every tracked file in the repository whose extension
+`shard.sh` recognizes as code, minus three sets the sweep cannot act on,
+each left out for a stated reason and nothing else:
+
+- **Test files** (`tests/`, `__tests__/`, `spec/`, `testdata/`,
+  `fixtures/`, `*.test.*`, `*_test.*`, `test_*.py`, `conftest.py`): the
+  [frozen contracts](gates.md#frozen-contracts) let a worker change a test
+  only to delete one for removed dead code or fix an import, so a cleanup
+  scouted there could never land. The workflow's `exclusionReason` and the
+  sharder's `TEST` pattern implement the same rule.
+- **Generated, vendored and lock files** (`node_modules/`, `vendor/`,
+  `target/`, `dist/`, `build/`, lockfiles, `*.min.*`, `*.generated.*`): not
+  this repository's code.
+- **Files with no recognized source extension** (Markdown, TOML, JSON,
+  YAML, data, and extensionless scripts such as `.docket/bin/*` and
+  `src/user/docket/bin/*`): the sharder recognizes code by extension, the
+  catalog has no cruft class for the rest, and `simplify-corpus` covers
+  the prose, configuration and extensionless scripts of this repository.
+
+Paths or globs the operator passes reach `shard.sh` as git pathspecs and
+narrow the sweep to the tracked source files under them. Nothing widens
+it past the repository.

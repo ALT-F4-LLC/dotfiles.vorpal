@@ -30,7 +30,7 @@ export const meta = {
 // with no evidence in any class that applies to its kind is removed, not
 // kept. The classes, and which apply per unit kind, are in UNIT_CLASSES.
 //
-// args: {checkoutRoot, definitions, ledger, all, projects, engineRoot,
+// args: {checkoutRoot, definitions, ledger, all, only, projects, engineRoot,
 //        transcriptDirs, frictionDir, installedConfigDir, installedClaudeDir,
 //        scratchDir, pass, nowIso}
 //   checkoutRoot       — absolute path of the dotfiles checkout.
@@ -49,6 +49,11 @@ export const meta = {
 //                        issue body from it. Carried entries land in the
 //                        shards as given, and the skill restores the full
 //                        entries from the committed ledger before landing.
+//   only               — [glob] relative to the corpus root, or null: narrows
+//                        the trial to matching definitions; a definition
+//                        outside it carries its ledgered verdicts forward
+//                        even when stale and is listed under plan.skipped
+//                        and uncovered. Null or empty is the whole corpus.
 //   all                — true re-judges every definition; false judges only
 //                        definitions whose hash changed or that carry no
 //                        verdict, and carries the rest forward.
@@ -71,7 +76,7 @@ export const meta = {
 //
 // return:
 //   pass       — this pass's number, echoed from args.
-//   plan       — {judged:[path], carried:[path], dropped:[path], deferred:[path]}
+//   plan       — {judged:[path], carried:[path], dropped:[path], deferred:[path], skipped:[path]}
 //   rest       — true when the pass judged nothing, dropped nothing, and
 //                every carried cut already has an issue: the caller's loop
 //                rests.
@@ -402,12 +407,42 @@ const REFUTE_SCHEMA = {
 // TEST-BEGIN docket-prune-decide — include docket-prune-config. Pure decision
 // helpers, exercised by tests/docket-prune-decide.test.sh without a run.
 
+// One glob, relative to the corpus root, as a regular expression: `*` and
+// `?` stay inside one path segment, `**` crosses segments. A corpus-root
+// prefix and a trailing slash are tolerated so a path copied from the
+// repository root still matches.
+function globToRegExp(glob) {
+    const g = String(glob).replace(/^src\/user\/docket\/config\//, '').replace(/\/$/, '')
+    let re = ''
+    for (let i = 0; i < g.length; i++) {
+        const c = g[i]
+        if (c === '*' && g[i + 1] === '*') {
+            re += '.*'
+            i++
+            if (g[i + 1] === '/') i++
+        } else if (c === '*') re += '[^/]*'
+        else if (c === '?') re += '[^/]'
+        else re += c.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    }
+    return new RegExp(`^${re}(/.*)?$`)
+}
+
+// Whether a definition path is inside the caller's `only` globs; an empty or
+// missing list is the whole corpus.
+function inScope(path, only) {
+    if (!Array.isArray(only) || only.length === 0) return true
+    return only.some((glob) => globToRegExp(glob).test(path))
+}
+
 // Which definitions this pass judges. A definition is judged when the
 // operator asked for everything, when it carries no ledgered verdict, or
 // when its hash differs from the one its verdicts were judged against.
 // Every other definition carries its ledgered verdicts forward. A ledgered
-// path with no definition on disk any more is dropped.
-function planPass(definitions, ledger, all) {
+// path with no definition on disk any more is dropped. `only` narrows the
+// trial to the matching paths: a definition outside it carries its ledgered
+// verdicts forward even when stale and is listed under `skipped`, so the
+// next unscoped pass tries it and no path reads as gone from disk.
+function planPass(definitions, ledger, all, only) {
     const verdicts = (ledger && Array.isArray(ledger.verdicts)) ? ledger.verdicts : []
     const byPath = new Map()
     for (const v of verdicts) {
@@ -416,15 +451,19 @@ function planPass(definitions, ledger, all) {
     }
     const judge = []
     const carried = []
+    const skipped = []
     for (const d of definitions) {
         const prior = byPath.get(d.path) || []
         const current = prior.length > 0 && prior.every((v) => v.hash === d.hash)
-        if (all || !current) judge.push(d)
+        if (!inScope(d.path, only)) {
+            if (all || !current) skipped.push(d.path)
+            carried.push(...prior)
+        } else if (all || !current) judge.push(d)
         else carried.push(...prior)
     }
     const onDisk = new Set(definitions.map((d) => d.path))
     const dropped = [...byPath.keys()].filter((p) => !onDisk.has(p))
-    return { judge, carried, dropped }
+    return { judge, carried, dropped, skipped }
 }
 
 // How many definitions one launch can judge after the evidence barrier.
@@ -593,13 +632,16 @@ const missing = (what) => uncovered.push({ what, why: 'agent returned nothing' }
 
 // ---- Plan ------------------------------------------------------------------
 
-const plan = planPass(input.definitions, input.ledger || null, Boolean(input.all))
+const only = Array.isArray(input.only) ? input.only.filter(Boolean) : []
+const plan = planPass(input.definitions, input.ledger || null, Boolean(input.all), only)
 const evidenceAgents = 4 + projects.length + transcriptDirs.length
 const budget = judgeBudget(evidenceAgents)
 const toJudge = plan.judge.slice(0, budget)
 const deferred = plan.judge.slice(budget).map((d) => d.path)
 for (const path of deferred) uncovered.push({ what: `judging ${path}`, why: `beyond the judge bound of ${budget} definitions for this launch` })
+for (const path of plan.skipped) uncovered.push({ what: `judging ${path}`, why: `outside this pass's scope (${only.join(' ')}); a pass without paths tries it` })
 if (deferred.length) log(`docket-prune: judge bound is ${budget} definition(s); ${deferred.length} deferred to the next pass`)
+if (only.length) log(`docket-prune: scoped to ${only.join(' ')}; ${plan.skipped.length} stale or unjudged definition(s) outside it carried unchanged`)
 log(`Pass ${pass}: ${input.definitions.length} definition(s); ${toJudge.length} to judge, ${plan.carried.length} verdict(s) carried, ${plan.dropped.length} ledgered path(s) gone from disk`)
 
 
@@ -683,14 +725,14 @@ async function emptyPass() {
     const recorded = rest ? { ledger: null, issues: null, unfiled: [] } : await recordPass(mergeVerdicts([...plan.carried, ...unsettledEntries(input.ledger || null, plan, [])], []))
     return {
         pass,
-        plan: { judged: [], carried: plan.carried.map((v) => v.path), dropped: plan.dropped, deferred },
+        plan: { judged: [], carried: plan.carried.map((v) => v.path), dropped: plan.dropped, deferred, skipped: plan.skipped },
         rest,
         verdicts: [],
         ...recorded,
         superseded: [],
         evidence: null,
         uncovered,
-        summary: `Pass ${pass}: nothing to judge; ${plan.carried.length} verdict(s) carried forward, ${plan.dropped.length} dropped, ${recorded.unfiled.length} cut(s) to file; ${rest ? 'the pass rests' : 'the caller files the cuts'}.`,
+        summary: `Pass ${pass}: nothing to judge; ${plan.carried.length} verdict(s) carried forward, ${plan.dropped.length} dropped, ${plan.skipped.length} outside the pass's scope, ${recorded.unfiled.length} cut(s) to file; ${rest ? 'the pass rests' : 'the caller files the cuts'}.`,
     }
 }
 
@@ -1029,12 +1071,12 @@ async function trialPass() {
     const recorded = await recordPass(mergeVerdicts([...plan.carried, ...unsettledEntries(input.ledger || null, plan, verdicts)], verdicts))
 
     const unverified = verdicts.filter((v) => v.disposition === 'unverified').length
-    const summary = `Pass ${pass}: ${toJudge.length} definition(s) tried, ${settled.length} settled (${verdicts.length} unit verdict(s): ${count('stay')} stay, ${count('refactor')} refactor, ${count('remove')} remove; ${overridden} overridden by refuters, ${unverified} unverified by fewer than two seats), ${plan.carried.length} verdict(s) carried, ${deferred.length} deferred, ${recorded.unfiled.length} cut(s) to file, ${uncovered.length} gap(s).`
+    const summary = `Pass ${pass}: ${toJudge.length} definition(s) tried, ${settled.length} settled (${verdicts.length} unit verdict(s): ${count('stay')} stay, ${count('refactor')} refactor, ${count('remove')} remove; ${overridden} overridden by refuters, ${unverified} unverified by fewer than two seats), ${plan.carried.length} verdict(s) carried, ${deferred.length} deferred, ${plan.skipped.length} outside the pass's scope, ${recorded.unfiled.length} cut(s) to file, ${uncovered.length} gap(s).`
     log(summary)
 
     return {
         pass,
-        plan: { judged: settled.map((o) => o.d.path), carried: plan.carried.map((v) => v.path), dropped: plan.dropped, deferred },
+        plan: { judged: settled.map((o) => o.d.path), carried: plan.carried.map((v) => v.path), dropped: plan.dropped, deferred, skipped: plan.skipped },
         rest: false,
         verdicts,
         ...recorded,

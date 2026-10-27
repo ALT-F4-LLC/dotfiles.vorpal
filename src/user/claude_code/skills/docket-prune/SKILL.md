@@ -10,13 +10,14 @@ description: >-
   refactor (with the cut named), or remove for each file and each section,
   with the burden of proof on the definition; this session records the
   verdicts in the committed ledger and files one issue per cut for
-  docket-refit to land. Bare invocation is one pass over what changed since
-  the ledger; `all` re-tries everything; under /loop it passes until the
+  docket-refit to land. A bare pass covers every definition (changed ones
+  tried, settled ones carried); `all` re-tries all; paths narrow it;
+  under /loop it passes until the
   corpus is unchanged and every cut is filed, then rests. Never executes a
   cut. Distinct from corpus-check (coherence audit), simplify-corpus (files
   shortening issues), simplify-code (files code cleanups), and
   docket-refit (redesigns one named definition).
-argument-hint: "[all]"
+argument-hint: "[all] [paths or globs under src/user/docket/config, default: every definition]"
 ---
 
 # docket-prune
@@ -55,14 +56,22 @@ supplies the recurring wake-up, and each firing re-enters this skill from
 
 ## Scope
 
-The corpus is every tracked file under `src/user/docket/config` except
-the two non-definition surfaces, the ledger
-(`src/user/docket/config/cut-ledger.json`) and `changelogs/*.md`:
-`policy.toml`,
+The whole corpus by default: every tracked file under
+`src/user/docket/config` is a definition on trial (`policy.toml`,
 `README.md`, `contracts/*.md`, `fragments/*.md`, `workflows/*.toml`,
-`schemas/*.json`. Every one receives a verdict each pass, fresh or carried
-from the ledger; a definition the trial could not settle is reported as
-unjudged, never silently omitted.
+`schemas/*.json`), and every one receives a verdict each pass, fresh or
+carried from the ledger. A bare pass covers every definition: one whose
+bytes match the hash its ledgered verdicts were judged against carries
+those verdicts forward, and every other one is tried, so the ledger is a
+cache of settled verdicts, never a scope filter. A definition the trial
+could not settle is reported as unjudged, never silently omitted.
+
+Skipped, because a cut trial cannot apply to them: the ledger
+(`src/user/docket/config/cut-ledger.json`), which records the trial, and
+`changelogs/*.md`, which record landed versions; neither defines anything
+a run reads. Files outside `src/user/docket/config` are not definitions,
+so the trial has no unit for them; `simplify-corpus` and `corpus-check`
+cover those.
 
 Evidence, all read-only: the corpus text; the static consumer census over
 the corpus, the harness scripts, and the skill tree; the docket registry
@@ -76,9 +85,20 @@ Out of scope: executing any cut (that is `docket-refit`), definitions under
 `src/user/claude_code`, anything under `~/.claude` or `~/.docket` (read, never edited),
 `just activate`, pushing.
 
-`$ARGUMENTS` is empty or `all`. Empty judges only definitions whose hash
-differs from the ledger's or that carry no verdict, and carries every
-other verdict forward. `all` re-tries every definition.
+`$ARGUMENTS` only narrows or retries; nothing widens past the corpus.
+Empty tries every definition whose hash differs from the ledger's or that
+carries no verdict, and carries every other verdict forward. `all` re-tries
+every definition, settled or not. Paths or globs relative to
+`src/user/docket/config` (for example `contracts/*.md` or
+`workflows/small-change.toml`), after `all` when both are given, limit the
+trial to the matching definitions: the pass is passed every definition as
+usual (so no ledgered path reads as gone from disk), and the workflow's
+`only` arg carries the globs; a definition outside them carries its
+ledgered verdicts forward unchanged, even when its hash moved, and is
+listed under `uncovered` as outside the pass's scope so the next bare pass
+tries it. A `*` matches within one path segment and `**` crosses them, so
+`*.md` alone matches nothing under `contracts/`; write `contracts/*.md` or
+`**/*.md`.
 
 ## 1. Each pass
 
@@ -132,7 +152,7 @@ jq -c '.verdicts |= map(if (.verdict != "stay" and .issue == null) then . else {
 ```
 
 ```
-Workflow({ scriptPath: "<absolute installed path to docket-prune.js>", args: { checkoutRoot: "<repo root>", definitions: <contents of definitions.json>, ledger: <contents of ledger-slim.json, or null on the first pass>, all: <true when $ARGUMENTS is all>, projects: [{name, prefix, root}], engineRoot: <path or null>, transcriptDirs: [<absolute paths>], frictionDir: <path or null>, installedConfigDir: <path or null>, installedClaudeDir: <path or null>, scratchDir: "<absolute scratch path>", pass: <n>, nowIso: "<timestamp>" } })
+Workflow({ scriptPath: "<absolute installed path to docket-prune.js>", args: { checkoutRoot: "<repo root>", definitions: <contents of definitions.json>, ledger: <contents of ledger-slim.json, or null on the first pass>, all: <true when $ARGUMENTS carries all>, only: [<the path globs from $ARGUMENTS, relative to src/user/docket/config>] | null, projects: [{name, prefix, root}], engineRoot: <path or null>, transcriptDirs: [<absolute paths>], frictionDir: <path or null>, installedConfigDir: <path or null>, installedClaudeDir: <path or null>, scratchDir: "<absolute scratch path>", pass: <n>, nowIso: "<timestamp>" } })
 ```
 
 The workflow plans the pass in code, gathers the evidence in one barrier,
@@ -287,8 +307,10 @@ logs digested, engine available or not).
 
 ## 5. Next pass
 
-A pass rests when the corpus is unchanged since the ledger and every cut
-has an issue; refit landing a cut changes the corpus, which gives the next
+A pass rests when every definition in its scope is unchanged since the
+ledger and every cut has an issue; a scoped pass rests on its scope alone,
+and the definitions it skipped stay listed under `uncovered` for the next
+bare pass. Refit landing a cut changes the corpus, which gives the next
 pass new bytes to try.
 
 - **Bare invocation:** one pass. Say the pass is done and stop.

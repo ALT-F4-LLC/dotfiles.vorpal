@@ -81,6 +81,12 @@ out.planCarried = p1.carried.map((v) => `${v.path}#${v.unit}`)
 out.planDropped = p1.dropped
 out.planAllJudge = planPass(defs, ledger, true).judge.length
 out.planNoLedgerJudge = planPass(defs, null, false).judge.length
+const scoped = planPass(defs, ledger, true, ['contracts/*.md'])
+out.planOnlyJudge = scoped.judge.map((d) => d.path)
+out.planOnlySkipped = scoped.skipped
+out.planOnlyCarried = scoped.carried.map((v) => `${v.path}#${v.unit}`)
+out.planOnlyGlobDeep = planPass(defs, null, false, ['src/user/docket/config/**/*.md']).judge.map((d) => d.path)
+out.planOnlyEmpty = planPass(defs, ledger, false, []).judge.length === planPass(defs, ledger, false).judge.length
 
 // judge budget
 out.budgetSmall = judgeBudget(30)
@@ -201,6 +207,11 @@ get() { node -e "const o=require('${WORK}/out.json'); process.stdout.write(Strin
 [ "$(get 'o.planCarried.join()')" = "contracts/fix.md#file,contracts/fix.md#section:Emit" ]; ok $? 'every ledgered verdict of an unchanged definition is carried'
 [ "$(get 'o.planDropped.join()')" = "contracts/gone.md" ]; ok $? 'a ledgered path gone from disk is dropped'
 [ "$(get 'o.planAllJudge')" = "3" ]; ok $? 'all=true judges every definition'
+[ "$(get 'o.planOnlyJudge.join()')" = "contracts/fix.md" ]; ok $? 'only narrows the judged set to the matching paths'
+[ "$(get 'o.planOnlySkipped.join()')" = "fragments/truth-first.md,schemas/findings@13.json" ]; ok $? 'definitions outside only that would have been judged are listed as skipped'
+[ "$(get 'o.planOnlyCarried.join()')" = "fragments/truth-first.md#file" ]; ok $? 'a skipped definition carries its stale ledgered verdicts forward'
+[ "$(get 'o.planOnlyGlobDeep.join()')" = "contracts/fix.md,fragments/truth-first.md" ]; ok $? 'a corpus-root-prefixed ** glob matches across segments'
+[ "$(get 'o.planOnlyEmpty')" = "true" ]; ok $? 'an empty only list is the whole corpus'
 [ "$(get 'o.planNoLedgerJudge')" = "3" ]; ok $? 'no ledger judges every definition'
 
 [ "$(get 'o.budgetSmall')" = "153" ]; ok $? 'the judge budget leaves the cap margin, the record writers, and the evidence agents'

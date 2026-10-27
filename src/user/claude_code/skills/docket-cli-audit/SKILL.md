@@ -5,12 +5,13 @@ description: >-
   "is the docket prose still right", "did the docket upgrade break the docs",
   or "check src/user against the installed docket". Probes the installed
   binary's help surface and, against a throwaway store, every command's exit
-  codes, messages and both JSON dialects, then audits every file under src/user
-  that names a docket command against that evidence through a multi-agent
-  workflow. Files the drift as Docket issues, one per file plus one for the
-  refreshed evidence; never edits the checkout. Distinct from corpus-check,
-  which checks the corpus against itself and never consults the binary.
-argument-hint: "[--no-sweep to reuse the recorded fixtures]"
+  codes, messages and both JSON dialects, then audits every tracked file in
+  the repository that names a docket command against that evidence through a
+  multi-agent workflow. Files the drift as Docket issues, one per file plus
+  one for the refreshed evidence; never edits the checkout. Paths or globs
+  narrow the audit. Distinct from corpus-check, which checks the corpus
+  against itself and never consults the binary.
+argument-hint: "[--no-sweep] [paths or globs, default: every tracked file naming a docket command]"
 ---
 
 # docket-cli-audit
@@ -52,21 +53,33 @@ produce it, both read-only against the operator's own state:
   A hook runs without them and sees `✔ allowed`, so a fixture's missing glyph
   is not evidence against prose that quotes one.
 
-Prose in scope is every file under `src/user` that names a docket command,
-found by grep at run time (step 4), not a fixed list. Comments and strings in
-`.rs`, `.js`, `.sh` and `.toml` files count: a permission row naming a verb, a
-hook parsing an output shape, a script passing a flag.
+Prose in scope is every tracked file in the repository that names a docket
+command, found by grep at run time (step 4) over the whole checkout, not a
+fixed list or a tree. Comments and strings in `.rs`, `.js`, `.sh`, `.jq`,
+`.awk` and `.toml` files count: a permission row naming a verb, a hook
+parsing an output shape, a script passing a flag. `tests/*.test.sh` and
+`.docket/bin/*` are prose in scope like any other file, since a test that
+asserts a removed flag or a gate script that calls one is exactly the drift
+the audit exists to catch; a repository-wide grep reads about half again as
+many files as a `src/user` grep did, and that cost is the coverage.
 
-Report-only, never filed as a remedy: `src/user/claude_code/CLAUDE.md` and
+Skipped, because the audit cannot apply to them: the generated
+`cli-inventory.json` and `cli-fixtures.json` and the hand-authored
+`sweep-scenario.json`, which are the evidence itself, not prose about it.
+Nothing else is skipped.
+
+Report-only, read and audited but never filed as a remedy:
+`src/user/claude_code/CLAUDE.md` and
 `src/user/claude_code/references/working-agreement.md` (the operator's own
-charter). The generated `cli-inventory.json` and `cli-fixtures.json`, and the
-hand-authored `sweep-scenario.json`, are evidence, not prose, and are excluded
-from the audit. Never run `just activate`. Never point a probe at
-`~/.docket` or `~/.config/docket`.
+charter) and every file under `src/user/claude_code/hooks/` (a permission and
+sandbox boundary that changes only by the operator's hand). Never run
+`just activate`. Never point a probe at `~/.docket` or `~/.config/docket`.
 
-`$ARGUMENTS` may carry `--no-sweep`: skip step 2 and audit against the
-fixtures already committed. Use it only when the committed fixtures carry the
-installed binary's version; the report must say the sweep was skipped.
+`$ARGUMENTS` only narrows. Repo-relative paths or globs limit step 4's grep
+to the tracked files under them; with none, the grep covers every tracked
+file. `--no-sweep` skips step 2 and audits against the fixtures already
+committed. Use it only when the committed fixtures carry the installed
+binary's version; the report must say the sweep was skipped.
 
 Confirm the Docket project bound to this checkout before step 1, since cwd
 picks the project. If no project answers, stop and say so; do not register
@@ -173,10 +186,11 @@ record they need.
 
 ## 4. Discover the files
 
-From the repository root:
+From the repository root, over every tracked file (or the tracked files
+under the paths `$ARGUMENTS` named, passed after `--`):
 
 ```bash
-grep -rlE '(^|[^A-Za-z0-9_/.-])docket (--|[a-z])' src/user
+git ls-files -z -- . | xargs -0 grep -lE '(^|[^A-Za-z0-9_/.-])docket (--|[a-z])'
 ```
 
 Drop the three evidence files. Every remaining path is in scope, however
@@ -207,7 +221,7 @@ Workflow({
       binaryVersion: "<docket --version line>",
       previousVersion: "<binary_version the committed inventory held>"
     },
-    protectedFiles: ["src/user/claude_code/CLAUDE.md", "src/user/claude_code/references/working-agreement.md"]
+    protectedFiles: ["src/user/claude_code/CLAUDE.md", "src/user/claude_code/references/working-agreement.md", <every step 4 path under src/user/claude_code/hooks/>]
   }
 })
 ```

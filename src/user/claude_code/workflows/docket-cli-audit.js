@@ -1,6 +1,6 @@
 export const meta = {
   name: 'docket-cli-audit',
-  description: 'Audit every file under src/user that names a docket command against the installed binary: per-file reads over the refreshed inventory and runtime fixtures, a completeness sweep, then adversarial verification',
+  description: 'Audit every tracked file in the repository (or under the paths the caller names) that names a docket command against the installed binary: per-file reads over the refreshed inventory and runtime fixtures, a completeness sweep, then adversarial verification',
   phases: [
     { title: 'Read' },
     { title: 'Completeness' },
@@ -11,7 +11,7 @@ export const meta = {
 // Called by skills/docket-cli-audit/SKILL.md, which refreshes the evidence,
 // discovers the files, and files the findings as Docket issues. The workflow reads nothing itself.
 // args: {
-//   files: string[]            repo-relative files that name a docket command
+//   files: string[]            repo-relative tracked files that name a docket command; the skill greps the whole repository, or the paths the operator passed
 //   evidence: {
 //     digest: string           path to the Markdown digest of the fixtures
 //     inventoryDiff: string    path to the unified diff of cli-inventory.json (old -> installed), or ''

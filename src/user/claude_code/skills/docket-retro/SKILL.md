@@ -7,7 +7,7 @@ description: >-
   proposes versioned edits to the shared docket corpus and a repo's optional
   .docket/config additions, and files each approved proposal as a Docket
   issue; approved trust is handed over as a command. Edits nothing itself.
-argument-hint: "[runs or window to read, e.g. RUN-12 RUN-15]"
+argument-hint: "[runs to read, e.g. RUN-12 RUN-15; default: every run since the last retro, or every run in the store]"
 ---
 
 # docket-retro
@@ -49,6 +49,16 @@ edit bumps `[pipeline].version`; every schema edit is a new
 `name@N+1.json`. Not a style preference — the only way the edit activates.
 Every file-edit proposal and its issue carries its bump; store state has no
 file and carries none.
+
+## Scope
+
+The unit is a run, not a file, so there is no path argument. The default
+window is every completed run since the last docket-retro across every
+project in the store; with no prior retro, it is every run in the store
+(§1). `$ARGUMENTS` only narrows: run ids (`RUN-12 RUN-15`) limit the window
+to those runs, and the report names the runs left outside it. Nothing is
+skipped inside the window: a run whose report or events cannot be read is
+a coverage gap in the report, never a clean run.
 
 ## 1. Gather
 

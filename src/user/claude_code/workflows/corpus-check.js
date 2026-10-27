@@ -1,6 +1,6 @@
 export const meta = {
   name: 'corpus-check',
-  description: 'Audit src/user/claude_code and src/user/docket/config for coherence: per-file reads, a completeness sweep, cross-boundary pairing, then adversarial verification',
+  description: 'Audit every tracked file in the repository (or the paths the caller names) for coherence with the src/user corpus: per-file reads, a completeness sweep, cross-boundary pairing, then adversarial verification',
   phases: [
     { title: 'Discover' },
     { title: 'Read' },
@@ -51,7 +51,7 @@ const VERIFY_BATCH_MAX = 12
 // verification allowance. Every reserve is a count of agent() calls.
 const AGENT_CAP = 1000
 const AGENT_CAP_MARGIN = 10
-const DISCOVERY_AGENTS = 3
+const DISCOVERY_AGENTS = 2 // the tracked-file listing and the size check
 const COMPLETENESS_RESERVE = 1 + 8 // the critic plus at most eight gap refills
 
 const CROSS_PAIRS = [
@@ -85,10 +85,34 @@ const CROSS_PAIRS = [
     a: 'agents/executor-*.md',
     b: 'the contracts and fragments they execute (contracts/*.md archetype: field matches)',
   },
+  {
+    key: 'hook-claims',
+    a: 'every skills/**/*.md and CLAUDE.md sentence describing what a hook does, blocks, or prints',
+    b: 'src/user/claude_code/hooks/* (each hook\'s matcher, message text, and exit behavior) and the hook wiring in src/user/claude_code/settings.rs',
+  },
+  {
+    key: 'gate-recipes',
+    a: 'every gate, recipe, or check name a skill or docket contract tells a worker to run (just <recipe>, bash tests/<suite>, .docket/bin/<check>)',
+    b: 'the justfile recipes, .docket/bin/* scripts, and tests/*.test.sh files that exist on disk',
+  },
+  {
+    key: 'test-pins',
+    a: 'tests/*.test.sh assertions that pin a sentence, path, label, or argument of a skill, agent, or docket config file',
+    b: 'the skill, agent, and docket config text those assertions quote',
+  },
+  {
+    key: 'permission-rows',
+    a: 'src/user/claude_code/settings.rs permission rules naming commands, paths, or docket verbs',
+    b: 'the commands, paths, and docket verbs skills/**/*.md and hooks/* tell a session to run',
+  },
 ]
 
 // Called by skills/corpus-check/SKILL.md, which defines scope and files the findings as Docket issues.
-// args: { sinceRef: string | null } supplies context without narrowing the audit.
+// args: { sinceRef: string | null, paths: string[] | null }
+//   sinceRef supplies context without narrowing the audit.
+//   paths are the caller's repo-relative paths or globs: the file list is
+//   `git ls-files -- <paths>` (every tracked file when null) minus the data,
+//   generated-evidence, and binary files SKIP_RULES names. paths only narrow.
 // Returns {findings, unverified, filesAudited, readPlanSize, coverage,
 // rawFindingCount, verifiedCount, survivedCount, unverifiedCount,
 // verificationPartial, summary}; `coverage` is {complete, gapsFound,
@@ -253,10 +277,13 @@ function buildReadPlan(files, lineCounts) {
 function readPrompt(file, rangeNote, sinceRefNote) {
   return `Read ${file}${rangeNote} in full.
 ${sinceRefNote}
-Audit this file for coherence within these cross-referenced trees:
-src/user/claude_code (CLAUDE.md, skills/**/*.md, agents/*.md, workflows/*.js)
-src/user/docket/config (contracts/*.md, fragments/*.md, workflows/*.toml,
-policy.toml, schemas/*.json, README.md).
+Audit this file for coherence with the corpus it belongs to or refers to:
+src/user/claude_code (CLAUDE.md, skills/**, agents/*.md, workflows/*.js,
+hooks/*, settings.rs, statusline.sh), src/user/docket (config/** and bin/),
+and the rest of the checkout that makes claims about them (tests/*.test.sh,
+.docket/bin/*, justfile, README.md, Cargo.toml, Vorpal.toml). A test, hook,
+script, or manifest is read for the claims it makes about the corpus (paths,
+names, quoted sentences, gate and recipe names), not for its own style.
 
 Check for:
 1. Internal contradictions: conflicting rules, examples that violate their
@@ -274,6 +301,9 @@ Check for:
 
 Do not flag "user" versus "operator" in src/user/claude_code/references/working-agreement.md
 or CLAUDE.md: they are the operator's own charter, outside this corpus's style authority.
+Findings in CLAUDE.md, references/working-agreement.md, or any file under
+src/user/claude_code/hooks/ are report-only: set needsOperatorDecision=true
+and proposedFix to "report only"; the caller never files a remedy against them.
 Do not invent defects. Return empty findings and a one-line note for a clean file.
 Set needsOperatorDecision=true for fixes touching schemas/*.json, conflicting
 defensible rules with no clear dominant answer, or unexplained deliberate-looking
@@ -363,24 +393,29 @@ const sinceRefNote = sinceRef
 if (sinceRef) log(`Staleness hint passed to readers: sinceRef=${sinceRef} (informational only — every file is still read in full)`)
 
 phase('Discover')
-// The two trees are independent discovery targets with no shared state, so
-// they fan out together instead of paying two sequential agent hops.
-const [claudeFileList, docketFileList] = await parallel([
-  () => agent(
-    'List every file under src/user/claude_code matching: CLAUDE.md itself, skills/**/*.md, agents/*.md, workflows/*.js. Return every path in `files`, repo-relative.',
-    { phase: 'Discover', label: 'discover:claude_code', schema: FILE_LIST_SCHEMA, ...AGENT_CONFIG.discovery }
-  ),
-  () => agent(
-    'List every file under src/user/docket/config matching: contracts/*.md, fragments/*.md, workflows/*.toml, policy.toml, schemas/*.json, README.md. Return every path in `files`, repo-relative.',
-    { phase: 'Discover', label: 'discover:docket_config', schema: FILE_LIST_SCHEMA, ...AGENT_CONFIG.discovery }
-  ),
-])
-// Both trees, always: a tree whose listing never came back is not an empty tree.
-const undiscovered = [[claudeFileList, 'src/user/claude_code'], [docketFileList, 'src/user/docket/config']]
-  .filter(([list]) => !list).map(([, tree]) => tree)
-if (undiscovered.length) throw new Error(`corpus-check: discovery returned nothing for ${undiscovered.join(' and ')}; the file list is unknown`)
-const files = [...claudeFileList.files, ...docketFileList.files]
-log(`Discovered ${files.length} files across both trees`)
+// The caller's paths only narrow: the list is what git tracks under them
+// (everything, with none), minus the files a coherence read cannot apply to.
+// The skips are a fixed rule, not a setting; an operator who wants fewer
+// files passes paths.
+const SKIP_RULES = [
+  'files with no prose or code: allowed_signers, LICENSE, any *.lock, renovate.json',
+  'generated evidence: cli-inventory.json, cli-fixtures.json, cut-ledger.json',
+  'any file `git diff --no-index --numstat /dev/null <file>` reports as binary ("-\t-")',
+]
+const paths = Array.isArray(args?.paths) ? args.paths.filter(Boolean) : []
+const lsFiles = paths.length ? `git ls-files -- ${paths.map((p) => `'${p.replace(/'/g, `'\\''`)}'`).join(' ')}` : 'git ls-files'
+const fileList = await agent(
+  `From the repository root run: ${lsFiles}
+Drop only these, and nothing else:
+${SKIP_RULES.map((rule) => `- ${rule}`).join('\n')}
+Return every remaining path in \`files\`, repo-relative, in the order git printed them. An empty list is only valid when git printed nothing.`,
+  { phase: 'Discover', label: 'discover:tracked-files', schema: FILE_LIST_SCHEMA, ...AGENT_CONFIG.discovery }
+)
+// Whole repository, always: a listing that never came back is not an empty repository.
+if (!fileList) throw new Error(`corpus-check: discovery returned nothing for ${paths.length ? paths.join(' ') : 'the repository'}; the file list is unknown`)
+const files = fileList.files
+if (!files.length) throw new Error(`corpus-check: git ls-files printed nothing for ${paths.length ? paths.join(' ') : 'the repository'}; nothing to audit`)
+log(`Discovered ${files.length} tracked file(s) ${paths.length ? `under ${paths.join(' ')}` : 'across the repository'}`)
 
 // The workflow cannot inspect files directly.
 const sizeReport = await agent(

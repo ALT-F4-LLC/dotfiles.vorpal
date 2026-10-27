@@ -4,11 +4,12 @@ description: >-
   Use after a batch of prose changes to src/user/claude_code or
   src/user/docket/config, or on "audit the corpus", "check corpus coherence",
   "/corpus-check", "did my prose edits break anything", or "is the
-  skill/docket config still consistent". Audits both trees for mechanical
-  reference breakage (runs crossref-check first) and semantic drift
-  (contradictions, terminology, staleness) through a multi-agent workflow,
-  then files the findings as Docket issues; never edits the checkout.
-argument-hint: "[since ref, e.g. main or a commit sha]"
+  skill/docket config still consistent". Audits every tracked file in the
+  repository for mechanical reference breakage (runs crossref-check first)
+  and semantic drift (contradictions, terminology, staleness) through a
+  multi-agent workflow, then files the findings as Docket issues; never
+  edits the checkout. Paths or globs narrow the audit.
+argument-hint: "[--since <ref>] [paths or globs, default: every tracked file]"
 ---
 
 # corpus-check
@@ -26,28 +27,41 @@ audit needs fewer judgment calls. An issue names that rung in its Remedy.
 
 ## Scope
 
-Two trees, always both, whole-corpus (not diff-scoped — drift can predate
-the working tree, the same reasoning `frozen-drift-check` uses):
+The whole repository by default: every file `git ls-files` prints, read
+whole, never diff-scoped (drift can predate the working tree, the same
+reasoning `frozen-drift-check` uses). The corpus proper is
+`src/user/claude_code` (`CLAUDE.md`, `skills/**`, `agents/*.md`,
+`workflows/*.js`, `hooks/`, `settings.rs`, `statusline.sh`) and
+`src/user/docket` (`config/**`, `bin/`), and the rest of the checkout is
+read because it makes claims about the corpus: `tests/*.test.sh` pin its
+sentences and paths, `.docket/bin` and the `justfile` define the gates it
+names, and `README.md`, `Cargo.toml` and `Vorpal.toml` describe its layout
+and build.
 
-- `src/user/claude_code`: `CLAUDE.md`, `skills/**/*.md`, `agents/*.md`,
-  `workflows/*.js`.
-- `src/user/docket/config`: `contracts/*.md`, `fragments/*.md`,
-  `workflows/*.toml`, `policy.toml`, `schemas/*.json`, `README.md`.
+Skipped, because a coherence read cannot apply to them: files with no
+prose or code (`allowed_signers`, `LICENSE`, `*.lock`, `renovate.json`),
+generated evidence (`cli-inventory.json`, `cli-fixtures.json`,
+`cut-ledger.json`), and any file git marks binary. Nothing else is
+skipped, and no exclusion list widens: an operator who wants fewer files
+passes paths.
 
-Out of scope unless the operator explicitly widens it: `hooks/`,
-`settings.rs`, `statusline.sh`, `allowed_signers`, `src/user/docket/bin`.
-Never file a remedy that edits `src/user/claude_code/references/working-agreement.md`
-or `src/user/claude_code/CLAUDE.md` — the operator's own working agreement,
-owned outside this corpus's style authority; report drift there as an
+Protected, read and checked but never filed as a remedy:
+`src/user/claude_code/CLAUDE.md` and
+`src/user/claude_code/references/working-agreement.md` (the operator's own
+working agreement, owned outside this corpus's style authority) and
+`src/user/claude_code/hooks/` (a permission and sandbox boundary that
+changes only by the operator's hand). Drift there is reported as an
 operator decision, never as an issue to work. Never run `just activate`.
 
-`$ARGUMENTS` optionally names a git ref (branch or SHA). Pass it through as
-the workflow's `sinceRef` arg (step 2) when given, else pass `null`. It is
-informational context only, passed to every reading agent as a note about
-what changed recently: it never skips or deprioritizes a file. The workflow
-reads every file in full and runs every cross-boundary check regardless,
-since drift a stale reference introduces is not confined to files the diff
-touched.
+`$ARGUMENTS` only narrows. Repo-relative paths or globs select the files
+to read (`git ls-files -- <paths>` from the repository root, then the
+skips above); with none, every tracked file is read. `--since <ref>`
+names a git ref (branch or SHA) passed through as the workflow's
+`sinceRef` arg (step 2), else `null`. It is informational context only,
+passed to every reading agent as a note about what changed recently: it
+never skips or deprioritizes a file. The workflow reads every selected
+file in full and runs every cross-boundary check regardless, since drift
+a stale reference introduces is not confined to files the diff touched.
 
 Confirm the Docket project bound to this checkout before step 1, since cwd
 picks the project. If no project answers, stop and say so; do not register
@@ -85,10 +99,13 @@ was never activated after this skill was added: report that, don't launch
 the source copy instead.
 
 ```
-Workflow({ scriptPath: "<absolute installed path to corpus-check.js>", args: {sinceRef: "<value or null>"} })
+Workflow({ scriptPath: "<absolute installed path to corpus-check.js>", args: {sinceRef: "<value or null>", paths: [<the repo-relative paths or globs from $ARGUMENTS>] | null} })
 ```
 
-This fans out one agent per file over both trees (sharded by line range for
+`paths` is the operator's narrowing, or `null` for the whole repository;
+the workflow runs `git ls-files` over it and applies the Scope skips
+itself, so the list it audits is the list the skill describes. This fans
+out one agent per file (sharded by line range for
 any file over 1500 lines, for example `docket-run/SKILL.md` and
 the nine rendered `workflows/<workflow>.js` lane scripts; the workflow measures sizes at run time), runs a
 completeness pass that re-dispatches any file or range nothing covered,
@@ -128,8 +145,8 @@ substitute a smaller manual read as if it satisfied the step.
   any finding with `needsOperatorDecision` true): file it as its own issue
   titled for the decision, with the options and a recommendation in the
   body, so the executing worker does not guess.
-- **Protected file** (`CLAUDE.md`, `working-agreement.md`): carried to the
-  report as an operator decision; never filed.
+- **Protected file** (`CLAUDE.md`, `working-agreement.md`, anything under
+  `hooks/`): carried to the report as an operator decision; never filed.
 
 Frozen-file fixes need a version bump, decided by the file changed. The
 issue's Remedy names it so the executing worker applies it:

@@ -539,6 +539,51 @@ Record these findings alongside the value decision:
   independently valuable outcomes bundled together. Distinguish a true
   prerequisite from a merely related issue. Propose relation corrections
   through §4; missing context is not permission to remove a blocker.
+- **Cross-route prerequisite:** a retained `route-run` issue whose open
+  `depends_on` target does not carry `route-run`: the target carries
+  `route-direct` or `route-loop`, is unrouted, is an epic, or carries
+  `blocked` beside any label. A run plans only `route-run` issues, so
+  docket-plan defers the dependent on every pass until someone finishes
+  the target outside a run, and without this finding nothing in the
+  backlog says so. Read the edge with docket-plan's input test: name the
+  file, artifact, or decision the target produces and the dependent
+  reads. No such input means the edge is an ordering, not a dependency,
+  and its removal is a relation correction through §4b. A real edge is
+  settled in this pass, never left as a silent wait, by the first of
+  these that applies:
+  - the target is an epic: the edge is a §4b relation correction that
+    removes it and adds one edge per child that produces the input;
+  - the target holds an open decision, which is what `route-direct`
+    means under the routing rule below, or what `blocked` on a non-epic
+    target names: that decision is a §4a question, asked with the
+    dependents it unblocks named. An answer that settles it makes the
+    target run work; an answer that keeps it on its route puts each
+    dependent in §5's **Waiting on direct work** state;
+  - the routing rule keeps the target on its route for a reason other
+    than an open decision (a documentation-only scope, a `route-loop`
+    cadence the body states, a `blocked` whose body names a condition no
+    issue can carry): no question is asked; the ledger records that rule
+    or condition as the decision and each dependent takes Waiting on
+    direct work;
+  - otherwise the target's contract is one-shot work a worker can finish
+    without a question: its routing label is stale under the routing
+    rule and is corrected to `route-run`, so both issues plan into one
+    run in order.
+
+  Either way the report lists the target with its dependents so the
+  operator can finish it through its own route. Never move the dependent
+  to `route-direct` to clear the edge: its own contract sets its route. A
+  target outside the judged scope is context under §1, so its relabel is
+  left out and reported: the dependent takes Waiting on direct work, and
+  the report's direct prerequisites table names the target and the pass
+  that can reroute it (`routed`, or the target's id). The edge itself
+  belongs to the judged dependent, so a false edge is still corrected.
+  Under hands-off grooming a §4a question the advisor cannot settle, or a
+  §4b proposal left pending, is this pass's decision for the edge: the
+  dependent takes Blocked on the operator with the question or proposal
+  number, and the target still appears in the direct prerequisites table.
+  The §5 gate finds these edges mechanically from
+  `scripts/open-deps.sh`, which prints each open target's route.
 - **Stale-binding label:** a label that no longer matches the issue's
   current content and, in doing so, narrows or zeroes its workflow
   bindings. Check with the same probe `docket-plan`'s bare mode uses:
@@ -846,7 +891,10 @@ first: the others `depends_on` it, applied as a relation correction under
 §4b. Which issue owns it is a §4a question only when the evidence does not
 settle it. A `route-run` label on an issue waiting on a prerequisite is
 correct once its contract is complete; the `depends_on` relation, not the
-label, holds the issue back.
+label, holds the issue back. That holds only while the prerequisite
+carries `route-run`, which a run can plan in order; a
+prerequisite on any other route is §2b's cross-route finding and is settled
+there, not left for docket-plan to defer.
 
 A stored size that disagrees with the sizing reference's measures is
 corrected the same way an absent one is filled: directly under this
@@ -936,7 +984,8 @@ concrete choice the operator can answer without rereading the backlog. Do
 not ask a generic "what should we do with this issue?"
 
 Every operator decision a judge or the clustering analyst surfaced is in
-scope here, including relation corrections, prerequisites flagged as
+scope here, including relation corrections, §2b cross-route prerequisites
+whose target holds an open decision, prerequisites flagged as
 unneeded, and a check that belongs on another issue. Decide each from
 evidence, or ask it; never keep it by inertia ("matches its siblings") or
 hand it back in the report as "your call". Ask all of them up front, before
@@ -1255,11 +1304,25 @@ pass back to §3 or §4:
   completion, holds here, so a criterion HEAD does not yet satisfy is the
   run's work, while one that cites a path, line, or current behavior HEAD
   does not have is a §2c defect. Every `depends_on` target is done.
-- **Waiting on a named prerequisite:** complete contract, and a `depends_on`
-  target that is not done, or a condition the body names that no issue
-  can carry (an external capability, a measurement window), stated as such:
-  the ledger quotes the body's condition, and the report words it "waiting
-  on <condition>" and says no relation holds the issue back.
+- **Waiting on a run prerequisite:** complete contract, and every open
+  `depends_on` target carries `route-run`, so docket-plan can
+  plan the target and the dependent into one run in order. The report
+  words it "waiting on <id> (route-run)", one `(route-run)` per id when
+  several targets are open.
+- **Waiting on direct work:** complete contract, and an open `depends_on`
+  target on another route (`route-direct`, `route-loop`, unrouted, an
+  epic, or `blocked`), after §2b's cross-route rule settled that the edge
+  is real and the target stays on that route. No run can reach the
+  dependent until the target is done outside a run. The report words it
+  "waiting on direct work: <id> (<route>)", docket-plan's form, and lists
+  the target under the direct
+  prerequisites table below. An open target whose route this pass changed
+  or whose edge it removed is re-read before the state is assigned.
+- **Waiting on a named condition:** complete contract, and a condition the
+  body names that no issue can carry (an external capability, a
+  measurement window), stated as such: the ledger quotes the body's
+  condition, and the report words it "waiting on <condition>" and says no
+  relation holds the issue back.
 - **Blocked on the operator:** a decision asked this pass and deferred,
   declined, or unanswered, or, under hands-off grooming, a decision or §4b
   proposal not asked, with the exact input or proposal number recorded.
@@ -1272,13 +1335,21 @@ pass back to §3 or §4:
   mutation failed or uncertain, or evidence unavailable, with the exact
   blocker recorded.
 
-Compute the split between Run-ready and Waiting mechanically, not from the
-judges' readiness: pipe every retained id through `scripts/open-deps.sh
---checkout <dir>` (one flag per judged checkout) and read each line it
-prints as that row's Waiting detail. A row it prints nothing for is
-Run-ready on this axis unless the ledger records a body-named condition
-for it; a row it marks `unresolved`, or a target it marks `(missing)`, is
-a Reported limit.
+Compute the split between Run-ready and the Waiting states mechanically,
+not from the judges' readiness: pipe every retained id through
+`scripts/open-deps.sh --checkout <dir>` (one flag per judged checkout) and
+read each line it prints as that row's Waiting detail. Each open target
+prints as `<id>(<status>,<route>)`: a row whose every open target shows
+`route-run` is Waiting on a run prerequisite; a row with any target on
+another route (`route-direct`, `route-loop`, `unrouted`, `epic`, or a
+`+blocked` suffix) is Waiting on direct work, and that target must already
+have a §2b cross-route decision in the ledger, else the pass goes back to
+§2b and §4 for it. A row it prints nothing for is Run-ready on this axis
+unless the ledger records a body-named condition for it; a row it marks
+`unresolved`, or a target whose status it marks `missing`, is a Reported
+limit. Run this once before §4's proposals are drafted as well, so every
+cross-route edge reaches §2b's rule inside the pass, and again here on the
+final stored relations.
 
 Run `scripts/report-lint.sh` on the draft report before sending it. A hit
 is a hand-back: a decision left as "your call", a check "not re-judged", a
@@ -1297,7 +1368,7 @@ children) must leave every one of them run-ready or in one of those states.
 
 Grooming is complete only when every judged issue has a verified
 disposition and retained work has no unresolved grooming gaps. Distinguish
-a complete work contract waiting on a named implementation prerequisite
+a complete work contract waiting on a prerequisite or a body-named condition
 from work still needing clarification; a real dependency need not be
 implemented during grooming. Claimed or run-included work is not free to
 consume even when its contract is complete. Pending decisions, unavailable
@@ -1333,9 +1404,19 @@ its gate state and the detail that state requires (the prerequisite, the
 question, the proposal number, or the blocker), with the surveyed issues
 left outside scope counted separately. Report automatic edits, proposals, operator
 decisions, and confirmed applications separately, by kind and issue ID;
-list parent edits and epic creations under their own kinds. State whether
-grooming is complete, which gaps were closed, and which remain with the
-specific input or action needed to close each one.
+list parent edits and epic creations under their own kinds. Then a
+**direct prerequisites** table, one row per open target that holds a
+retained `route-run` issue in the Waiting on direct work state, or Blocked
+on the operator for a §2b cross-route edge: the
+target's id, route, and status, the dependents it unblocks, and the §2b
+decision that kept it on that route, or the pending question or proposal
+number. Say plainly that docket-plan will
+defer every listed dependent until its target is done outside a run, and
+that the target's own route (`/goal` for `route-direct`, its loop for
+`route-loop`, `/docket-groom` for an unrouted or `blocked` target) is what
+finishes it. An empty table is stated as such. State whether grooming is
+complete, which gaps were closed, and which remain with the specific input
+or action needed to close each one.
 
 Name the most consequential opportunities to reduce wasted work: redundant
 outcomes, unnecessary scope, obsolete assumptions, or blockers needing a

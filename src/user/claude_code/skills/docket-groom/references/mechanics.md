@@ -116,10 +116,15 @@ post-apply lint is a confirmation, not a second drafting round.
   ran zero times and the script exited 0 having checked nothing. Both
   scripts now read loop input from files under TMPDIR. Treat "cannot
   create temp file" in any lint output as a lint that did not run.
-- The gate split between Run-ready and Waiting comes from
+- The gate split between Run-ready and the Waiting states comes from
   `scripts/open-deps.sh`, which reads each issue's `depends_on` relations
-  and the live status of every target; a judge's readiness does not see
-  dependency status.
+  and the live status and route of every target, printed as
+  `<target>(<status>,<route>)`; a judge's readiness does not see
+  dependency status. One pass certified eight `route-run` issues as
+  waiting on a prerequisite that carried `route-direct`: a run never does
+  that work, so docket-plan would have deferred all eight on every pass.
+  Any route other than `route-run` on an open target is §2b's cross-route
+  finding, settled inside the pass.
 - Judges return placeholder criterion drafts ("drafted for an uncovered
   requirement", "not linted") marked lint 0. The workflow logs them and
   returns them under `undraftedCriteria`; the pass drafts those criteria

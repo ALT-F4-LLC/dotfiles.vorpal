@@ -44,6 +44,7 @@ jobs:
 
       - run: bash tests/docket-groom-scope-lint.test.sh
 
+      - run: bash tests/docket-groom-open-deps.test.sh
       - run: bash tests/docket-groom-report-lint.test.sh
 
       - run: bash tests/docket-plan-bind-probe.test.sh

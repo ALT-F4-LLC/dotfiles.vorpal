@@ -286,7 +286,7 @@ const LEDGER_SCHEMA = {
                         },
                     },
                 },
-                relationDefects: { type: 'array', items: { type: 'string' }, description: 'Cycles, obsolete prerequisites, bundled outcomes, each with the relation and the evidence' },
+                relationDefects: { type: 'array', items: { type: 'string' }, description: 'Cycles, obsolete prerequisites, cross-route prerequisites (a depends_on target that is not route-run: route-direct, route-loop, unrouted, an epic, or blocked), bundled outcomes, each with the relation and the evidence' },
                 priority: {
                     type: 'object',
                     properties: {

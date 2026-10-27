@@ -10,9 +10,12 @@
 # A line is a hand-back when it holds, in any case, one of: "still open",
 # "still to do", "open items", "remaining items", "your call",
 # "up to you", "not re-judged", "did not re-judge", "not yet proposed", "matches
-# its siblings", "check belongs with", "re-run to", "want me to", "let me know".
+# its siblings", "check belongs with", "re-run to", "want me to", "let me know";
+# or "waiting on <PREFIX-N>" with no route in parentheses after the id, since
+# a prerequisite named without its route hides one no run can reach.
 # Gate states name their own gap instead: "blocked on the operator: <input
-# needed>", "waiting on <id or named condition>", "declined #<n>", "held by protection", or
+# needed>", "waiting on <id> (route-run)", "waiting on direct work: <id>
+# (<route>)", "waiting on <named condition>", "declined #<n>", "held by protection", or
 # "reported limit: <blocker>".
 #
 # Read-only. Exit 0 with no output when the draft holds no hand-back, 1 with
@@ -30,7 +33,7 @@ if [ $# -eq 1 ] && [ ! -r "$1" ]; then
     exit 2
 fi
 
-pattern='still open|still to do|\bopen items|remaining items|your call|up to you|not re-judged|did not re-judge|not yet proposed|(check|criterion|criteria) (that )?belongs? (with|on)|match(es|ing) (its )?siblings|re-run to|want me to|let me know'
+pattern='waiting on [a-z]+-[0-9]+([^ (0-9]|$| [^(])|still open|still to do|\bopen items|remaining items|your call|up to you|not re-judged|did not re-judge|not yet proposed|(check|criterion|criteria) (that )?belongs? (with|on)|match(es|ing) (its )?siblings|re-run to|want me to|let me know'
 
 # grep exits 1 on no match; that is the clean case.
 if hits=$(grep -n -i -E -- "$pattern" "${1:--}"); then

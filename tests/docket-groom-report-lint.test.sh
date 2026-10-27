@@ -56,6 +56,12 @@ expect "reopen is not open items" 0 "Reopen items after the split."
 expect "matches-siblings hand-back fails" 1 "Kept because it matches its siblings."
 expect "check-belongs hand-back fails" 1 "That check belongs with the stream issue."
 expect "closing offer fails" 1 'Want me to continue with the criteria?'
+expect "bare waiting-on id fails" 1 'HRN-1818: waiting on HRN-2691.' "line 1:"
+expect "bare waiting-on id at line end fails" 1 'waiting on HRN-2691'
+expect "waiting-on id with route passes" 0 'HRN-1818: waiting on HRN-2691 (route-run).'
+expect "direct-work form passes" 0 'HRN-1818: waiting on direct work: HRN-2691 (route-direct), do it through /goal.'
+expect "waiting on a named condition passes" 0 'HRN-1818: waiting on the measurement window the body names.'
+expect "two-digit id with route passes" 0 'waiting on HRN-12 (route-run)'
 
 out=$(printf 'Still open: x\n' | "$LINT" 2>&1); rc=$?
 [ "$rc" -eq 1 ] && pass "reads stdin without a file" || fail "stdin: exit ${rc}, want 1"

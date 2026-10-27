@@ -237,10 +237,21 @@ a roster the same size of evidence as A to C:
   `/docket-groom`, named with the count and the missing obligations. Picking
   it ends the pass on a statement naming `/docket-groom`; nothing is
   recorded, filled, or invoked here.
+- **Finish the direct prerequisites.** When `route-run` issues wait on
+  targets that are not run work (§1b step 1's direct prerequisites): the
+  option names each target with its route and the dependents it unblocks,
+  and picking it ends the pass on a statement naming the target's own
+  route (`/goal` for `route-direct`, its loop for `route-loop`,
+  `/docket-groom` for the rest); nothing is recorded or invoked here.
 - **Quick wins.** `trivial` and `small` ready-now issues with disjoint scopes,
   a parallel-only run (§1b), when the operator's context named a short window.
 - **Risk first.** Critical or high bugs and security-labelled issues with
   their closures, when any are open.
+
+When more than two of these hold, the two that unblock the most issues
+win, with make-the-backlog-run-ready and direct prerequisites ahead of
+quick wins and risk first at a tie; the others are named in a sentence
+under the table.
 
 Recommend one option and say why in a sentence, from the lens and context the
 operator gave. Show the recommendation, then the comparison table of counts,
@@ -514,7 +525,18 @@ and parallel width decide between equally large feasible rosters.
    the links; do not invent an edge or assume another run will finish in
    time. Count shared prerequisites once. An excluded prerequisite excludes
    its dependent too: name the missing chain, including external blockers,
-   off-scope work, claimed work, and cycles. Offer a scope expansion as an
+   off-scope work, claimed work, and cycles, and say why the prerequisite
+   is excluded. A prerequisite on another route is the case to name
+   loudest: a target carrying `route-direct` or `route-loop`, an unrouted
+   target, an epic, or a `blocked` issue is never run work, so no run,
+   this one or a later one, can reach its dependent until the target is
+   done outside a run. Such a dependent is deferred as "waiting on direct
+   work: <target> (<route>)", never as a bare unavailable prerequisite,
+   and every such target is collected into the proposal's **direct
+   prerequisites** list below so the operator can finish it through its
+   own route (`/goal` for `route-direct`, its loop for `route-loop`,
+   `/docket-groom` to route or split the rest) before the next plan.
+   Offer a scope expansion as an
    option when useful; never silently widen the kind filter to include a
    prerequisite. The final graph must be acyclic with a startable first wave.
 2. **Maximum count, then priority.** Compare feasible rosters by issue count
@@ -714,7 +736,10 @@ above one `AskUserQuestion` round:
   member, not only the surprising ones), scope globs, expected cost, and
   the one-line reason for inclusion and wave placement; the forecast total,
   compared with the cap only when a relevant finite cap exists;
-- deferred, with the reason each time: unavailable prerequisite DKT-N,
+- deferred, with the reason each time: unavailable prerequisite DKT-N
+  with why it is unavailable (not free, off-scope, not ready, cyclic, or
+  waiting on direct work: DKT-N (`<route>`) when the prerequisite is on
+  another route, per step 1),
   collision with DKT-N on `<prefix>` that cannot be safely scheduled,
   later-wave work excluded by parallel-only choice, not free (run RUN-N, or
   assignee), off-scope (kind filter), not ready (which obligation from step
@@ -724,7 +749,16 @@ above one `AskUserQuestion` round:
   unrouted (no routing label; `/docket-groom` sets one), routed elsewhere
   (`route-direct` or `route-loop`), or unsized or oversized
   (`size` null or `unknown`, or over the cap; `/docket-groom` sizes and
-  splits).
+  splits);
+- **direct prerequisites**: one row per open issue that is not run work
+  (`route-direct`, `route-loop`, unrouted, an epic, or `blocked`) and
+  holds at least one `route-run` candidate through a `depends_on` edge:
+  its id, route, status, and the dependents it unblocks. State that no
+  run can plan those dependents until each target is done through its own
+  route, and name that route. A target whose only hold is a false edge is
+  not this skill's to fix: say that `/docket-groom` judges the edge. An
+  empty list is stated as such, so a reader can tell "none" from "not
+  checked".
 
 When useful, compare two or three concrete alternatives in a compact table:
 the maximum complete run first and recommended, a parallel-only or
@@ -750,7 +784,10 @@ unavailable prerequisites, cycles, everything claimed or run-included,
 nothing run-ready, or no complete bundle within an explicit cap) and stop.
 `/docket-groom` is the skill for a backlog that is full but not ready; name
 it rather than grooming here. An empty ready-now set calls for inspecting
-the blockers, not reporting those issues as merely absent from the backlog.
+the blockers, not reporting those issues as merely absent from the backlog:
+when the blockers are direct prerequisites, the stop names each target, its
+route, and the dependents it holds, since no later plan can admit them
+until that work is done outside a run.
 
 **On "record", go to §3 with the batch as the roster.** The differences from
 request intake are exactly these, and nothing else in §3 relaxes:

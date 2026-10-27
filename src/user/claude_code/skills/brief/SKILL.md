@@ -323,28 +323,29 @@ only the operator can type it, and the `Skill` tool cannot start it. Once
 typed, it keeps this conversation taking turns until an evaluator clears
 its condition. The condition is also the directive for the work, and the
 evaluator reads the conversation only; it cannot run commands or read
-files. The route therefore converts the brief into a goal: before
-confirmation, prepare a single `/goal <condition>` line as the handoff.
-Most conditions exceed 800 characters, so the operator enters it by
-typing `/goal ` and pasting the condition (see §5). The condition states the Goal as the done-state, keeps each acceptance
-criterion's wording, carries the scope, exclusions, and constraints, and
-names the evidence that must appear in the conversation to show each
-criterion met, such as a check's command and its passing output. The
-condition also carries these duties:
+files. Before confirmation, convert the brief into a single
+`/goal <condition>` line as the handoff. Most conditions exceed 800
+characters, so the operator types `/goal ` and pastes the condition (§5).
 
-- The work creates no docket issues, plan artifacts, schedules, or teams.
-- Each acceptance criterion is verified with a check suited to it, and the
-  check's output appears in the conversation.
-- For an issue routed `route-direct`, the issue is closed once the
-  criteria are verified, and the output of
+Write the condition tersely: one clause per item, except acceptance
+criteria, which keep their wording. Omit Motivation and any
+working-agreement rule beyond the duties below. It opens with the brief's
+Role as `As a <role>,` (nothing when Role is `none`), then states the Goal
+as the done-state, keeps each acceptance criterion's wording, carries the scope,
+exclusions, and constraints, and names the evidence that must appear in
+the conversation to show each criterion met, such as a check's command and
+its passing output. It also carries these duties:
+
+- Create no docket issues, plan artifacts, schedules, or teams.
+- Verify each criterion with a suited check and show its output.
+- For a `route-direct` issue, after verification show the output of
   `docket issue comment add <id> -m "<what landed and where>"` and then
-  `docket issue close <id>` appears in the conversation.
-- When the work leaves open a decision the brief does not record as
-  delegated, it is asked through `AskUserQuestion` unless the working
-  agreement's evidence-decided ruling settles it (Settled, Delegated, or
-  Under /goal). The goal is met only when the assessment, its evidence, and
-  either the operator's recorded answer or the advisor-settled disclosure
-  line appear in the conversation.
+  `docket issue close <id>`.
+- Ask a decision the brief does not record as delegated through
+  `AskUserQuestion` unless the working agreement's evidence-decided ruling
+  settles it (Settled, Delegated, or Under /goal). The goal is met only
+  when the assessment, its evidence, and either the operator's recorded
+  answer or the advisor-settled disclosure line appear in the conversation.
 
 The evaluator checks that the named evidence is present, not whether the
 work is good, so a cleared goal is not a quality review. If the brief does
@@ -443,8 +444,9 @@ where a route bullet below says so.
   placeholder, and a pasted `/goal` prefix may not run as a command: the
   line can run as an ordinary prompt with no goal set. Tell the operator
   to type `/goal ` and paste only the condition after it (a 1,126-character
-  condition registered in full this way), and to check that `Goal set:` shows the full condition, not
-  a placeholder, before treating the work as started. When several lines were prepared,
+  condition registered in full this way), and to check that `Goal set:`
+  shows the full condition, not a placeholder, before treating the work as
+  started. When several lines were prepared,
   print them all in order and tell the operator to type each one only
   after the previous goal clears.
 - **`/peer`:** Invoke `peer` with `dispatch <session>` and the confirmed

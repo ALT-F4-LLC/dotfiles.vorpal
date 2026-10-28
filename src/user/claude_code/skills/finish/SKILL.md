@@ -19,7 +19,7 @@ that makes ending safe.
 
 **The session being finished runs this skill.** What this session spawned,
 scheduled, watched, and created is known only here; no list surface
-reconstructs it, and a forked subagent cannot see it. Run the sweep here.
+reconstructs it, and a forked subagent cannot see it.
 
 **Walking away, not parking.** If the operator means to come back to a
 driven run, that is docket-run's pause mode, not this. Finish still handles
@@ -61,8 +61,6 @@ Once the pause completes, remove the run's conductor files so no later
 session inherits the capability: `rm <scratchpad>/conductor.d/RUN-N.token
 <scratchpad>/conductor.d/RUN-N.mode <scratchpad>/conductor.d/RUN-N.queue`,
 plus the run's verbs file. Pause keeps them; finish owns their removal.
-
-Then continue the sweep.
 
 ## Sweep
 
@@ -168,8 +166,7 @@ or explicitly marked not applicable, never silently dropped:
 - anything whose ownership could not be established
 - next steps for the operator or a successor session, or none
 
-This is the same sweep as above, checked as a gate rather than trusted as
-memory. A row you cannot answer is reported as unanswered: a valid outcome,
+A row you cannot answer is reported as unanswered: a valid outcome,
 unlike a silent gap.
 
 ## The closing report

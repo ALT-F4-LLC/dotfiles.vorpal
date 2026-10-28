@@ -256,11 +256,13 @@ that it has been satisfied.
 
 Apply these rules in order:
 
-1. **Security-sensitive `yes`:** `/docket-plan` is required, whatever
+1. **Security-sensitive `yes`:** unless the harness rule below applies,
+   `/docket-plan` is required, whatever
    routing label the issue carries; report the label as a conflict. A label
    other than `route-run` binds no workflow (every workflow's
    `unless_labels` excludes `route-direct` and `route-loop`),
-   so note that the issue must be relabeled `route-run` — by hand or through
+   so note that a non-harness issue must be relabeled `route-run` — by hand
+   or through
    `/docket-groom` — before `/docket-plan` can bind it. The same relabel
    need applies when rule 4 recommends `/docket-plan` for a `route-loop`
    issue.

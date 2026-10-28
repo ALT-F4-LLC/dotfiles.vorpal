@@ -14,10 +14,10 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket gate`](#gate-commands) — 24 lines
-  - [`gate status STEP-N`](#gate-status) — 20 lines
+- [`docket gate`](#gate-commands) — 23 lines
+  - [`gate status STEP-N`](#gate-status) — 19 lines
 - [`docket policy`](#policy-commands) — 26 lines
-- [`docket registry`](#registry-commands) — 20 lines
+- [`docket registry`](#registry-commands) — 19 lines
 
 <a id="gate-commands"></a>
 
@@ -27,8 +27,7 @@ examples reflect the swept commands as of that build.
 
 #### `docket gate status STEP-N`
 
-One gate step's whole decision state in one small envelope. READ-ONLY;
-writes nothing.
+One gate step's whole decision state in one small envelope. READ-ONLY.
 STEP-N must be a `type="human"` or `type="vote"` step — any other kind is
 `VALIDATION_ERROR`.
 
@@ -86,6 +85,5 @@ orphaned.
 | `orphaned` | No scanned file declares the registered name. Review before deciding to deprecate a workflow: a name defined only in a repository's `.docket/config` is never scanned and always reads as orphaned. |
 
 The corpus is scanned once from the shared store root's `config/` directory,
-reported in `roots`. The audit never reads a repository's `.docket/config`,
-so no checkout's local additions are scanned. An orphan report alone does not authorize deletion
-or prove a different project's local workflow is obsolete.
+reported in `roots`. An orphan report alone does not authorize deletion or
+prove a different project's local workflow is obsolete.

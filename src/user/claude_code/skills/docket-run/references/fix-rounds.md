@@ -8,8 +8,7 @@ composing that dispatch's launches.
 `integrated`.** For instances `name@N#k` with N ≥ 2, map each such issue
 to the sha of the integration commit of the write step the judged tree
 was built on: round N-1's integration (fix@(N-1)'s, or the implement
-round's when N-1 is the implement round), never fix@N's own, since fix@N
-produced the tree the judges are about to read. The lane script asserts the
+round's when N-1 is the implement round). The lane script asserts the
 judged tree descends from that commit (`git merge-base --is-ancestor
 <integrated sha> <target sha>`) and parks the round `parked-base-ancestry`
 when it does not. The sha must be the integrated one; the writer's sha is

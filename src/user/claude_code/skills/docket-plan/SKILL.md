@@ -501,6 +501,11 @@ with `docket-groom`, and are applied here as written there:
   scope is a documentation edit is routed elsewhere: list it with
   `route-direct`, never rank it, and never plan it into a run. Design
   documents authored through `spec-doc` are a separate track and stay.
+- **Harness work.** Work under `src/user/claude_code/` never goes through a
+  run, per [brief](../brief/SKILL.md)'s harness rule: an issue with any
+  `files` or `scope` entry under that prefix is routed elsewhere whatever
+  label it carries. List it with `route-direct`, never rank it, and never
+  plan it into a run.
 - **Unsized or oversized.** An issue whose `size` is null or `unknown`,
   or whose criteria describe two or more independent outcomes under the
   [sizing reference](../docket/references/sizing.md)'s cap, has not
@@ -606,7 +611,10 @@ and parallel width decide between equally large feasible rosters.
    the operator relabel it (by hand or through `/docket-groom`) before it
    can bind, since every registered workflow lists those two in
    `unless_labels` and activation would refuse it too. An issue the
-   operator named that carries no routing label gets `route-run` when the
+   operator named with any `files` or `scope` entry under
+   `src/user/claude_code/` is harness work, not run work: refuse it with
+   the path named and point at `/goal`, whatever label it carries. An issue
+   the operator named that carries no routing label gets `route-run` when the
    run is recorded (`docket issue label add <id> route-run`), so the label
    states the route the record already made.
 

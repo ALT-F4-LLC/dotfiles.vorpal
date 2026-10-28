@@ -293,6 +293,18 @@ documentation edit, rules 3 through 6 never recommend `/docket-plan`: recommend
 `/docket-groom`. Design documents authored through `spec-doc` are a separate
 track.
 
+**Harness work never goes through a run.** When any `files` or `scope`
+entry lies under `src/user/claude_code/` (the agents, hooks, skills,
+workflows, references, and settings the docket chain runs on), rules 1
+through 6 never recommend `/docket-plan`: recommend `/goal`, or `/loop`
+under rule 4 when Shape is `iterative`. A run that edits its own machinery
+is slower than the operator's session and its result is confounded by the
+change under test, so the harness is improved directly. This rule precedes
+rule 1: a security-sensitive harness issue keeps its `security-change`
+label so the direct session routes its review through the advisor or a
+peer. An issue that tracks the work gets `route-direct` through
+`/docket-groom`; a `route-run` label on it is stale, not a conflict.
+
 Resolve an unknown Shape before recommending execution. Investigative
 uncertainty may travel with a docket brief; an unresolved operator decision
 needed to authorize the work may not.

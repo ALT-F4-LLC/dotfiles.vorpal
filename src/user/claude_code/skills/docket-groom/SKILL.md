@@ -641,7 +641,11 @@ Record these findings alongside the value decision:
   documentation edit, or that carries the retired `docs-only` label, gets
   `route-direct` whatever its size, and loses `route-run` and `docs-only`
   if it has them. Design documents authored through `spec-doc` are a
-  separate track and stay `route-run`. Otherwise `route-run`
+  separate track and stay `route-run`. Harness work never goes through a
+  run either: an issue with any `files` or `scope` entry under
+  `src/user/claude_code/` gets `route-direct` whatever its size or
+  security boundary, loses `route-run`, and keeps `security-change`, per
+  brief's harness rule. Otherwise `route-run`
   for one-shot work a worker can finish without a question, whatever its
   size or security boundary, including trivial work that leaves no
   decision open; `route-direct` when it is trivial but leaves a decision

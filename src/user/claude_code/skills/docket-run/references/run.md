@@ -15,20 +15,20 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket run`](#run-commands) — 890 lines
-  - [`run start`](#run-start) — 49 lines
+- [`docket run`](#run-commands) — 880 lines
+  - [`run start`](#run-start) — 45 lines
   - [`run issue add|remove RUN-N DKT-N...`](#run-issue) — 38 lines
   - [`run note add|list`](#run-note) — 32 lines
   - [`run refresh-scope`](#run-refresh-scope) — 33 lines
   - [`run refresh-body RUN-N --issue <ID> --reason R`](#run-refresh-body) — 27 lines
   - [`run refresh-files RUN-N --issue <ID> --reason R`](#run-refresh-files) — 28 lines
   - [`run report RUN-N`](#run-report) — 105 lines
-  - [`run activate RUN-N`](#run-activate) — 236 lines
-  - [`run conduct RUN-N`](#run-conduct) — 47 lines
+  - [`run activate RUN-N`](#run-activate) — 234 lines
+  - [`run conduct RUN-N`](#run-conduct) — 46 lines
   - [`run pause|resume|abandon RUN-N`](#run-lifecycle) — 92 lines
   - [`run repin RUN-N --reason R`](#run-repin) — 69 lines
   - [`pin show RUN-N PATH`](#pin-show) — 15 lines
-  - [`run budget RUN-N [--set N]`](#run-budget) — 71 lines
+  - [`run budget RUN-N [--set N]`](#run-budget) — 68 lines
   - [`run status [RUN-N]`](#run-status) — 40 lines
 
 <a id="run-commands"></a>
@@ -81,12 +81,8 @@ didn't it stop?" is answered by a read verb.
 
 **A breached run is un-wedged with `docket run budget RUN-N --set N`.**
 `run resume` alone clears nothing — the cap has not moved, so the next claim
-breaches again — which is why raising the cap and resuming are two commands:
-
-```bash
-docket run budget RUN-3 --set 50 --reason "estimate was low"
-docket run resume RUN-3 < <scratchpad>/conductor.d/RUN-3.token
-```
+breaches again — which is why raising the cap and resuming are two commands
+(see `run budget` below).
 
 <a id="run-issue"></a>
 
@@ -441,10 +437,9 @@ Docket never auto-bumps a version, never overwrites a registered one, and
 never silently uses the old bytes. Identical bytes re-register freely and
 change nothing.
 
-**A re-activation does not re-scan.** It inherits its pin set, so a config
-file edited while a run is under way is invisible to that run and cannot
-trigger the refusal above. The one exception is a `policy.toml` the run did
-not start under (see re-activation below).
+**A re-activation does not re-scan.** It inherits its pin set (see
+re-activation below), so a config file edited while a run is under way
+cannot trigger the refusal above.
 
 **A repo with no `.docket/config/` is untouched by any of this**: the
 directory is checked once, and an absent one skips the scan entirely.
@@ -537,8 +532,7 @@ anchored entry clears the issue. A scope may name files the work will
 CREATE, so the lint deliberately under-reports rather than flagging
 greenfield new-file scopes. A run with no recorded exec root skips it
 entirely. The message names the root it resolved against and the way out —
-`docket issue move --project`, or fix the scope. The security-routing lint
-below is a separate check.
+`docket issue move --project`, or fix the scope.
 
 **The security-routing lint.** Distinct from the exec-root routing lint
 above, `run activate --dry-run` also reports a security-routing lint in a
@@ -619,8 +613,7 @@ included, is `AUTH_ERROR` (exit 5). Both messages name `run conduct` and
 never echo the presented token. Every run this binary activates is bound at
 birth (`run activate` above); a run activated before the capability existed
 asks for nothing until it is conducted, and conducting it binds it. A
-`planning` run is conductable (`run abandon` applies to one), and its first
-activation then keeps the capability rather than minting a second.
+`planning` run is conductable (`run abandon` applies to one).
 
 The verb is **deliberately token-free**: nothing authenticates a caller, and
 a run whose conductor session died must stay pausable and abandonable. That
@@ -877,9 +870,6 @@ The change is **event-logged** as `run-budget-set` carrying `from` and
 retired reason string). `row_version` is bumped whether or not
 `--if-version` was passed. Refused on a terminal run (`CONFLICT`, exit 4): a
 finished run's cap is a record of what it was allowed to spend.
-
-Clearing the record still does not change the run's **status** — a
-breached run stays `waiting-human` until `run resume`.
 
 <a id="run-status"></a>
 

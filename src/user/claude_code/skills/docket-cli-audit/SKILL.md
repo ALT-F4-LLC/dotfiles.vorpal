@@ -76,8 +76,7 @@ sandbox boundary that changes only by the operator's hand). Never run
 `just activate`. Never point a probe at `~/.docket` or `~/.config/docket`.
 
 `$ARGUMENTS` only narrows. Repo-relative paths or globs limit step 4's grep
-to the tracked files under them; with none, the grep covers every tracked
-file. `--no-sweep` skips step 2 and audits against the fixtures already
+to the tracked files under them. `--no-sweep` skips step 2 and audits against the fixtures already
 committed. Use it only when the committed fixtures carry the installed
 binary's version; the report must say the sweep was skipped.
 
@@ -193,9 +192,8 @@ under the paths `$ARGUMENTS` named, passed after `--`):
 git ls-files -z -- . | xargs -0 grep -lE '(^|[^A-Za-z0-9_/.-])docket (--|[a-z])'
 ```
 
-Drop the three evidence files. Every remaining path is in scope, however
-small its mention. Do not narrow the list by judgment; a one-line permission
-row that names a removed verb is exactly what the audit exists to catch.
+Drop the three evidence files. Do not narrow the rest by judgment, however
+small a path's mention.
 
 ## 5. Audit the prose
 
@@ -269,8 +267,7 @@ fix may do:
 
 - **Mechanical** (`kind: mechanical`): a command, flag, alias or default that
   the inventory renamed, removed or added. The remedy is a one-for-one
-  rewrite. A mechanical finding in a protected file is reported in the
-  summary, never filed.
+  rewrite.
 - **Semantic** (`kind: semantic`): a described behavior, exit code, message,
   JSON field or shape that the fixtures contradict, or a wording change the
   fix implies. The remedy states the before and after and cites the fixture

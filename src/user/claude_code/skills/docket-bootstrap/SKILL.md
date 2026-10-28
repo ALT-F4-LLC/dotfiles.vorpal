@@ -205,7 +205,7 @@ The smoke issue:
 
 - carries `route-run` and no other `route-*` label, following the corpus
   routing-label convention, and touches nothing under
-  `src/user/claude_code/`, which [brief](../brief/SKILL.md)'s harness rule
+  `src/user/claude_code/` or `src/user/claude_code.rs`, which [brief](../brief/SKILL.md)'s harness rule
   keeps out of every run;
 - measures within the cap in the docket skill's
   [sizing reference](../docket/references/sizing.md), with its tier stored

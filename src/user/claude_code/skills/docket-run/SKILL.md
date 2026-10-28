@@ -806,7 +806,7 @@ the retired `docs-only` label or its whole scope is a documentation edit, do
 not launch a wave for it: report it to the operator as a direct-route issue
 (`route-direct`) and continue with the rest. The same holds for harness
 work: a dispatched issue with any `files` or `scope` entry under
-`src/user/claude_code/` gets no wave, per brief's harness rule.
+`src/user/claude_code/` or `src/user/claude_code.rs` gets no wave, per brief's harness rule.
 
 ```bash
 docket next --run $RUN --json=v2 | jq '{

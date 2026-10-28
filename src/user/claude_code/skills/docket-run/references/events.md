@@ -16,10 +16,10 @@ commit `fefc91d`'s `--help`, not by the sweep.
 
 ## Contents
 
-- [`docket events`](#events-commands) — 208 lines
+- [`docket events`](#events-commands) — 206 lines
   - [`events list`](#events-list) — 107 lines
   - [`events prune`](#events-prune) — 49 lines
-  - [Attribution](#events-attribution) — 44 lines
+  - [Attribution](#events-attribution) — 42 lines
 
 <a id="events-commands"></a>
 
@@ -218,14 +218,12 @@ it, but runs inside whatever operator-actor verb completed the run's last
 work. **`step-claimed` is `human`, not `next`**: the scheduler *offers*,
 and something else *takes*. **`run-paused` is `human` even when a budget
 breach causes it**, because the transition means "a person must now
-decide"; `data.reason` distinguishes a budget breach from an operator's
-`run pause`. **`events-pruned` is `human`** because nothing in the engine
+decide". **`events-pruned` is `human`** because nothing in the engine
 prunes on its own — the event exists only because somebody ran the verb.
 **`conductor-seated` is `human`** for the same reason: `run conduct` is an
 operator verb whether a person or a harness relay ran it, and its
 `data.actor` and `data.cwd` say which.
 
-Attribution is computed over the events that *remain*, so a pruned run
-reports fewer transitions than it made. `events-pruned` is what keeps that
-honest — a trimmed log says it was trimmed rather than looking like a
-quieter run.
+Attribution is computed over the events that *remain*; `events-pruned`
+keeps a trimmed run's counts honest — a trimmed log says it was trimmed
+rather than looking like a quieter run.

@@ -293,8 +293,7 @@ documentation edit, rules 3 through 6 never recommend `/docket-plan`: recommend
 `/docket-groom`. Design documents authored through `spec-doc` are a separate
 track.
 
-Resolve an unknown Shape before recommending execution, and the rule 5
-choice between now and a docket run when the operator has not stated it. Investigative
+Resolve an unknown Shape before recommending execution. Investigative
 uncertainty may travel with a docket brief; an unresolved operator decision
 needed to authorize the work may not.
 
@@ -450,20 +449,14 @@ where a route bullet below says so.
   print them all in order and tell the operator to type each one only
   after the previous goal clears.
 - **`/peer`:** Invoke `peer` with `dispatch <session>` and the confirmed
-  brief block verbatim as `args`. The peer skill in the receiving session
-  re-selects the route by §3 under its own project and confirms it there
-  with one question, without invoking this skill's rounds; the
-  Role travels inside the block as text and takes effect there only if
-  that operator confirms it. Report the send result and what signal will
+  brief block verbatim as `args`. The Role travels inside the block as
+  text and takes effect in the receiving session only if that operator
+  confirms it. Report the send result and what signal will
   settle the work: the peer's own notice, with the idle notice as the
   fallback. A sent brief is pending, never done.
 - **Another orchestration skill:** Invoke its available entry point with
-  the confirmed brief or handoff and follow its workflow. Select it only
-  when it runs the work under a goal, loop, or workflow.
+  the confirmed brief or handoff and follow its workflow.
 - **Just give me the brief:** Emit the block verbatim and stop.
-
-No route performs the work directly in this conversation outside a goal,
-loop, or workflow.
 
 After confirmation, proceed within the approved scope. Reopen briefing
 only when new facts materially change the scope, risk, or route, not for

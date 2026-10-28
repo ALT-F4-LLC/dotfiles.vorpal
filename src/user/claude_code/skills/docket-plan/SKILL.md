@@ -467,8 +467,7 @@ the cost forecast.
 Skip a question here only when the operator's own invocation or a
 still-applicable answer in this conversation already answered it
 (`/docket-plan backlog bugs only` needs no kind-filter question; a prior
-answer for a re-proposed batch is not re-asked). Batch unresolved alignment
-questions together. State the operator's kind filter, run shape, and budget
+answer for a re-proposed batch is not re-asked). State the operator's kind filter, run shape, and budget
 choice at the top of the eventual proposal, plainly, so the
 "not ready"/"deferred" reasoning below reads against what was actually
 asked for.
@@ -808,7 +807,6 @@ request intake are exactly these, and nothing else in §3 relaxes:
   planned waves and evidence for collision serialization, the deferred list
   with its reasons, and the budget arithmetic, written for the person who reads
   this run in three months and wonders why DKT-N waited.
-- The run's budget is Unlimited unless the operator specified a cap.
 
 Then present the recorded run per §5 and stop. A later invocation surveys
 the deferred work again; earlier blockers may have cleared, but neither
@@ -1105,9 +1103,7 @@ any of these guarded paths and whose labels include none of `security`,
 Put each flagged issue to the operator through `AskUserQuestion`, naming the missing
 label before you record it. Never add the label yourself. Record the
 operator's answer: a security label they apply, or their decision to keep
-the lighter binding, in the issue body and the plan artifact. An issue
-that already carries one of the three security labels is not flagged, and
-neither is an issue whose files and scope match no guarded path.
+the lighter binding, in the issue body and the plan artifact.
 
 **Size labels are yours to apply at filing, and their absence is the same
 tell.** A one- or two-file issue that adds no file and whose acceptance
@@ -1285,7 +1281,7 @@ four obligations, each checked independently before recording. They apply
 only when DKT-N is a finding or a problem statement the run decomposes into
 fresh issues. An id that already passes §1b step 4 is a batch member, not a
 finding: it binds directly with `--issue` and none of the four obligations
-below apply, as they do not for the bare-`/docket-plan` batch (§1b):
+below apply:
 
 - DKT-N stays out of the run: pass only the fresh issues to
   `run start --issue`, never DKT-N.

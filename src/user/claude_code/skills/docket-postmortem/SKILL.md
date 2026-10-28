@@ -55,8 +55,7 @@ needs this session. A forked subagent has none of those.
   [filing](references/filing.md) and one `retro-input` document per
   instance-policy referral to docket-retro, created in the dotfiles project
   per that reference. One coordinator, this conversation, owns
-  the filing ledger; agents never file. Every confirmed finding gets a
-  disposition: candidate, file-ready, tracked, resolved, referral, or filed.
+  the filing ledger; agents never file.
 - The audit is complete only when every inventoried log has a digest and a
   full read, or its gap is named. A log the agent cap could not reach is
   deferred to a continuation launch (§4), never dropped.

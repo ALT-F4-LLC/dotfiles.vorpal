@@ -17,7 +17,7 @@ current source, and existing issue state. Use this disposition:
 | Confirmed and unresolved | File, or attach recurrence to an existing issue. |
 | Already tracked | Name the owning project and issue. Add new material evidence only; do not repeat the same comment each audit. |
 | Fixed during the run's arc or since | Record the resolving artifact or commit and its verification. No new fix issue; a remaining install problem needs its own evidence. |
-| Instance policy choice | Refer to `docket-retro` with evidence; do not file it as a shipped-definition defect. |
+| Instance policy choice | Refer to `docket-retro` with evidence by recording a `retro-input` document (see [Referrals to docket-retro](#referrals-to-docket-retro)); do not file it as a shipped-definition defect. |
 | Uncertain, refuted, or only an expected guard firing | Retain as a limitation or control observation; no defect filing. |
 | Owning checkout or store unavailable, or the issue command blocked | Mark filing pending and deliver the worker-ready writeup. |
 
@@ -159,11 +159,36 @@ use this allowance to edit other issue content or re-home unrelated work. A
 wrong-project receipt is a filing error to surface, not a successful item to
 count.
 
+## Referrals to docket-retro
+
+A referral is evidence for the next docket-retro, not work, so it is a
+document rather than an issue and never enters the groomed backlog. Create
+one per referral from the dotfiles checkout, resolved per [Route by owner
+and store](#route-by-owner-and-store), since documents are project-scoped
+and docket-retro reads them there. The coordinator conversation creates
+it; agents never do.
+
+```bash
+docket doc create --json=v2 -T retro-input -t "<policy choice, one line>" \
+  --idempotency-key '<audited project>/retro-input/<RUN-N>/<fingerprint>' -d - <<'RETRO_INPUT'
+Run: <RUN-N> in <audited project>
+Policy surface: <policy.toml table, vote rule, lease class, or variant>
+Observed: <the evidence, with step, vote, or event references>
+Why policy, not defect: <one sentence>
+RETRO_INPUT
+```
+
+Read the receipt back with `docket doc show <id> --json=v2`. When the
+dotfiles checkout or store is unavailable, treat the referral like the
+unavailable-owner row above: deliver its body in the review and say no
+document was recorded.
+
 ## Review and closure
 
 Every confirmed finding must have a project-qualified issue id or a reason
-it was not filed. Preserve instance-policy referrals and findings resolved
-during the run without counting them as open defects. Name affected trust
+it was not filed. Preserve instance-policy referrals, each with its
+`retro-input` document id, and findings resolved during the run without
+counting them as open defects. Name affected trust
 boundaries separately when relevant. Include the evidence coverage,
 unresolved limitations, the absolute audit log path, and the condition the
 next postmortem of a run should look at first.

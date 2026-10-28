@@ -946,7 +946,7 @@ const DRAFT = {
         securityGate: { type: 'string', description: 'The categories the remedy touches, or "" when none' },
         body: { type: 'string', description: 'The filing.md description structure, filled, verbatim-ready' },
         existingCandidates: { type: 'array', items: { type: 'string' }, description: 'Issue ids in the owning project that may already track this defect, with the reason each may match' },
-        referral: { type: 'string', description: 'Set when this is an instance-policy referral to docket-retro rather than a filing; "" otherwise' },
+        referral: { type: 'string', description: 'Set when this is an instance-policy referral to docket-retro rather than a filing; the coordinator records it as a retro-input document, never an issue. "" otherwise' },
     },
     required: ['fingerprint', 'severity', 'owner', 'members', 'title', 'type', 'priority', 'files', 'scope', 'size', 'remedyRung', 'vitalCondition', 'securityGate', 'body', 'existingCandidates', 'referral'],
 }

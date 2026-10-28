@@ -27,8 +27,7 @@ the trial, file the issues, land the ledger, and commit. The workflow never
 writes to the repository; the ledger candidate and every issue body land
 under scratch. The ledger commit is this skill's one write to the checkout,
 by the operator's decision: the ledger drives the next pass, so filing it as
-an issue would re-try the same definitions until a worker landed it. Every
-cut is filed as an issue and never applied here.
+an issue would re-try the same definitions until a worker landed it.
 
 **Automation first is the primary goal of every verdict.** Per the docket
 skill's [automation reference](../docket/references/automation.md), an
@@ -86,8 +85,7 @@ Out of scope: executing any cut (that is `docket-refit`), definitions under
 `just activate`, pushing.
 
 `$ARGUMENTS` only narrows or retries; nothing widens past the corpus.
-Empty tries every definition whose hash differs from the ledger's or that
-carries no verdict, and carries every other verdict forward. `all` re-tries
+Empty runs the bare pass above. `all` re-tries
 every definition, settled or not. Paths or globs relative to
 `src/user/docket/config` (for example `contracts/*.md` or
 `workflows/small-change.toml`), after `all` when both are given, limit the

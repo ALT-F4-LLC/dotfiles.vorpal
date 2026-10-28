@@ -14,15 +14,15 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket step`](#step-commands) — 561 lines
+- [`docket step`](#step-commands) — 557 lines
   - [`step artifacts`](#step-artifacts) — 41 lines
   - [`step claim`](#step-claim) — 45 lines
   - [`step reap`](#step-reap) — 36 lines
-  - [`step complete`](#step-complete) — 70 lines
+  - [`step complete`](#step-complete) — 69 lines
   - [`step fail`](#step-fail) — 23 lines
   - [`step annotate`](#step-annotate) — 69 lines
   - [`step resolve`](#step-resolve) — 117 lines
-  - [`step approve|reject`](#step-approve-reject) — 42 lines
+  - [`step approve|reject`](#step-approve-reject) — 39 lines
   - [`step context`](#step-context) — 52 lines
 
 <a id="step-commands"></a>
@@ -243,12 +243,11 @@ completion. If the recording call times out, use `step show`, `step artifacts`,
 and `step gates` to establish whether the artifact recorded before retrying;
 an uncertain call is not evidence that the token remains usable.
 
-**Gaps need no workflow declaration.** Each `--gap-file` records an
-auxiliary artifact and a related backlog issue in the same transaction.
-The body is retained verbatim and the first nonblank line supplies the
-title (leading `#` stripped, capped at 120 characters). Immediately
-following it, consecutive `Key: value` lines form an optional header
-block, ending at the first non-header line, including a blank line:
+**Gaps need no workflow declaration.** The body is retained verbatim and
+the first nonblank line supplies the title (leading `#` stripped, capped at
+120 characters). Immediately following it, consecutive `Key: value` lines
+form an optional header block, ending at the first non-header line,
+including a blank line:
 
 ```text
 Clean-checkout tests cannot find the required fixture
@@ -528,11 +527,8 @@ travels with it as `operator_note` — see [held-cluster rules](../../docket/ref
 On a declared human gate, or alongside `reject`, it is a `VALIDATION_ERROR`.
 
 Deciding a **held cluster** with either verb carries the same resolve-time
-stale-target advisory `step resolve` documents above: when the
-decision un-blocks downstream steps whose packets render from a recorded target
-sha the shared checkout's HEAD no longer carries, the divergence is named on
-stderr (human mode) and in a `stale_targets` field beside the row (JSON).
-Declared human gates never carry the field.
+stale-target advisory `step resolve` documents above. Declared human gates
+never carry the field.
 
 <a id="step-context"></a>
 

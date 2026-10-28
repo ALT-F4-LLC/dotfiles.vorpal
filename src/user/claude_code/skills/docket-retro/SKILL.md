@@ -111,9 +111,7 @@ docket doc list -T retro-report --sort created_at:desc --limit 1 --with-body --j
 
 Never drop a current-cohort run because a prior retro read it: until its
 proposals land, it is still the evidence for today's corpus. Trust drift and config churn
-stay store-wide whatever the cohort. A run still active or waiting on a
-human is outside the window and named as such; it never holds the retro
-open.
+stay store-wide whatever the cohort.
 
 `$ARGUMENTS` only narrows: run ids limit the window to those runs, and the
 report names what was left outside. Nothing inside the window is skipped: a
@@ -133,8 +131,8 @@ docket events list --json --all-projects --kind run-abandoned --limit 100000
 
 Check that each `data.total` equals the length of its `data.events`. Then
 read one `docket run report RUN-N --json` per terminal run, which resolves
-a run wherever it lives, keep the reports in scratch, and classify each by
-`pinned_version` against `current_version` per Scope. This is cheap and
+a run wherever it lives, keep the reports in scratch, and classify each
+per Scope. This is cheap and
 decides what the analysts read.
 
 Seat analysts by evidence row, not by time slice, so each analyst sees the
@@ -551,8 +549,8 @@ move <id> --project <target>`.
 
 ## 6. Close
 
-Write the report once, after every other write of the retro. Record it
-first, from the dotfiles checkout, as the retro's last write:
+Write the report once, as the retro's last write. Record it first, from
+the dotfiles checkout:
 
 ```bash
 docket doc create --json=v2 -T retro-report -t "Retro <window end run>, <date>" \

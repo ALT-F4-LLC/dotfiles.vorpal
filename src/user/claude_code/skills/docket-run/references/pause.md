@@ -4,8 +4,7 @@ The procedure behind `/docket-run pause` and its **Pause mode** section in
 [SKILL.md](../SKILL.md): halts a driven run mid-progress and leaves a resume
 prompt sufficient for a new session to pick it up without this transcript.
 
-You halt a run `docket-run` is driving and leave a trail a stranger session
-can follow. `docket run pause RUN-N` alone parks the run; it does nothing
+`docket run pause RUN-N` alone parks the run; it does nothing
 about what lives only in this session's head. This mode makes a pause
 resumable rather than just stopped.
 
@@ -35,8 +34,8 @@ don't wait" — selects hard. An ambiguous "pause the run" is graceful; do
 not infer hard from tone alone, and say which mode you use before you act.
 
 Either mode also resets an unattended run to attended once the run is
-paused: write `attended` to `<scratchpad>/conductor.d/RUN-N.mode` and
-record the note described under **Resuming**.
+paused: write `attended` to `<scratchpad>/conductor.d/RUN-N.mode`, then
+record the note docket-run's **Standing ruling: unattended mode** names.
 
 ## Graceful halt
 
@@ -324,10 +323,6 @@ disposition from the resuming session — investigate, file as an issue,
 or decline with a stated reason — and none may be left unanswered.
 
 ## Resuming
-
-**A pause resets an unattended run to attended**: write `attended` to
-`<scratchpad>/conductor.d/RUN-N.mode`, then record the note docket-run's
-**Standing ruling: unattended mode** names.
 
 **In the same session** (operator says resume, no new session involved):
 run `docket run resume RUN-N --reason '<why>' <

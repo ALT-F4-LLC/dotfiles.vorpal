@@ -129,8 +129,7 @@ docket issue link remove DKT-1 --json=v2 blocks DKT-2
 docket issue link list DKT-1 --json=v2
 ```
 
-Valid `<relation>` values (`model.RelationType`): `blocks`, `depends_on`,
-`relates_to`, `duplicates`.
+Valid `<relation>` values are in the Enum Reference table below.
 
 ---
 
@@ -238,7 +237,7 @@ Transcribed from `internal/model/issue.go`, `relation.go`, `proposal.go`
 | Issue status | `backlog`, `todo`, `in-progress`, `review`, `done` |
 | Issue priority | `none`, `low`, `medium`, `high`, `critical` |
 | Issue type/kind | `task`, `bug`, `feature`, `epic`, `chore` |
-| Relation type | `blocks`, `depends_on`, `relates_to`, `duplicates` |
+| Relation type (`model.RelationType`) | `blocks`, `depends_on`, `relates_to`, `duplicates` |
 | Proposal criticality | `low`, `medium`, `high`, `critical` |
 | Proposal status | `open`, `approved`, `rejected`, `committed`, `closed` |
 | Vote verdict | `approve`, `approve-with-concerns`, `reject` |

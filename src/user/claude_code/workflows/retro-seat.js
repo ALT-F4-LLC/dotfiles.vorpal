@@ -1,9 +1,9 @@
 export const meta = {
     name: 'retro-seat',
     description: 'Internal: launched through scriptPath by docket-retro; seats one or more executor-read analysts that gather and analyze run evidence and return one structured report each. Args, return, and cost in the header comment.',
-    whenToUse: 'Never by name. The caller composes each analyst brief (contract, §2 table, assigned run window) and passes {model, effort} per analyst, since retro-analyst carries no policy.toml row for this script to read.',
+    whenToUse: 'Never by name. The caller composes each analyst brief (contract, its §2 rows, the cohort and baseline runs) and passes {model, effort} per analyst, since retro-analyst carries no policy.toml row for this script to read.',
     phases: [
-        { title: 'Analyze', detail: 'one executor-read analyst per assigned run window, each returning its findings and gaps through a schema' },
+        { title: 'Analyze', detail: 'one executor-read analyst per assigned group of §2 rows, each returning its findings and gaps through a schema' },
     ],
 }
 
@@ -12,8 +12,8 @@ export const meta = {
 //
 // What it does:
 // Seats one or more `retro-analyst` agents in parallel, each briefed by the
-// caller with the retro-analyst contract, the docket-retro skill's §2
-// evidence table, and its own assigned run window. Each analyst runs
+// caller with the retro-analyst contract, its group of the docket-retro
+// skill's §2 evidence rows, and the cohort and baseline run lists. Each analyst runs
 // read-only docket verbs and returns its findings and gaps through
 // REPORT_SCHEMA; this script neither reads policy nor interprets the
 // findings — it only spawns the seats and hands each report back unchanged.
@@ -43,7 +43,7 @@ export const meta = {
 const REPORT_SCHEMA = {
     type: 'object',
     properties: {
-        window: { type: 'string', description: 'The analysis window, once: last-retro boundary, collection cutoff, runs and projects covered' },
+        window: { type: 'string', description: 'The assigned runs, once: cohort and baseline run ids and the projects they span' },
         coverage: { type: 'string', description: 'Evidence coverage, once: what was read and what was unavailable' },
         findings: {
             type: 'array',
@@ -65,11 +65,13 @@ const REPORT_SCHEMA = {
             items: {
                 type: 'object',
                 properties: {
+                    row: { type: 'string', description: 'The docket-retro §2 row the gap blocks' },
                     available: { type: 'string', description: 'What evidence was available' },
+                    observed: { type: 'string', description: 'Directly observed counts or rates that bear on the row, each with its unit, population, and run IDs; "" when none. docket-retro mines this field for proposals' },
                     blocked: { type: 'string', description: 'The claims the gap blocks' },
                     missing: { type: 'string', description: 'The smallest missing input or observation that would resolve it' },
                 },
-                required: ['available', 'blocked', 'missing'],
+                required: ['row', 'available', 'observed', 'blocked', 'missing'],
             },
         },
     },

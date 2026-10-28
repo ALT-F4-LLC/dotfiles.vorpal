@@ -31,7 +31,7 @@ subcommand:
 | `--json` | — | string | `""` | Switch to machine-readable JSON envelope on stdout. Bare `--json` selects v1; `--json=v2` selects the uniform envelope. See below. |
 | `--format` | — | string | `""` | `json` is an alias for `--json=v2`; check command-local uses such as `export --format` before assuming the global meaning. |
 | `--quiet` | `-q` | bool | `false` | Suppress non-essential human-mode info/warning lines on stderr. JSON still uses stdout for the envelope; operational diagnostics can appear on stderr. |
-| `--watch` | `-w` | bool | `false` | Re-run the command on an interval and refresh output. Accepted only on the exact allowlist below; every other command — read-only or not — rejects it with a `VALIDATION_ERROR`. |
+| `--watch` | `-w` | bool | `false` | Re-run the command on an interval and refresh output. Accepted only on the exact allowlist below. |
 | `--interval` | — | duration | `2s` | Poll interval for `--watch` **and** `events list --follow`. Minimum `500ms`; anything lower is a `VALIDATION_ERROR`. |
 
 ### `--watch` eligibility
@@ -282,8 +282,6 @@ Refusals:
 | Token does not hold the lease, or issue unclaimed | `AUTH_ERROR` | 5 |
 | Token is correct but the lease expired | `STALE_LEASE` | 6 |
 | Claiming an issue whose lease is live | `CONFLICT` | 4 |
-
-`STALE_LEASE` means re-claim.
 
 Expiry is the liveness mechanism. A lease that lapses without release returns
 the issue to the unclaimed pool: the next claim wins, and `attempt` records

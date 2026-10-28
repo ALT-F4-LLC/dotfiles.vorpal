@@ -55,7 +55,6 @@ Engine defaults live in the database, read by the claim machinery:
 | `routing.security_label` | label name | `security` | the label that marks an issue security-sensitive for routing warnings: an issue lacking it whose scope overlaps a security-labelled issue in the run appears in `run activate`'s `routing_warnings` |
 | `routing.security_lexicon` | comma-separated terms or `""` | `""` | terms whose match in an issue's title, scope or body raises a routing warning. Each term must be printable ASCII without whitespace (`config set` refuses otherwise with `VALIDATION_ERROR`). Empty (the default) means no term is matched; with no comparable scope either, `run activate --dry-run` warns that the security-routing lint checked nothing |
 
-A step without an explicit `class` uses its executor hint as the class.
 Declare `class = "read"` or `class = "write"` to configure those keys;
 setting `lease.ttl.read` cannot affect an unrelated class. A finite `[limits] max`, not the word "write," activates reap
 acknowledgments and class headroom holds. Reaping fences database authority
@@ -144,8 +143,7 @@ docket workflow show standard-dev --json=v2
 
 Registration stores, validates, and makes a workflow inspectable; it runs
 nothing. `run activate` registers any definition not yet registered when
-`registration.auto` is true (the default). A definition that is never
-registered or activated runs nothing.
+`registration.auto` is true (the default).
 
 ### Shipped templates
 
@@ -559,9 +557,7 @@ schema** when a step declares a `payload` — see [register-time
 checks](schemas.md#register-schemas-before-the-workflows-that-name-them). A
 step with a `threshold` and **no** `payload` is legal: equality has never
 needed an order, and an ordered comparison over such a field parks the step
-`waiting-human` rather than docket guessing one. The reserved `diff.lines`
-and `diff.files` counts are the exception: the engine measured them, knows
-their order, and never parks on them.
+`waiting-human` rather than docket guessing one.
 
 **Executor hints are opaque.** `executor`, `fanout` entries, `voters`, and
 `class` are strings docket stores, echoes back, and uses as map keys. The

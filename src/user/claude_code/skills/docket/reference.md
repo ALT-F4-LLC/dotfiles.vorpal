@@ -48,9 +48,9 @@ length to read. The engine families live in docket-run's references:
 [gate, policy and registry](../docket-run/references/gate-policy.md),
 [report and doctor](../docket-run/references/report-doctor.md).
 
-- [JSON envelope](#json-output) — 69 lines
+- [JSON envelope](#json-output) — 68 lines
 - [Command & Flag Reference](#command-reference) — 9 lines
-- [`docket issue` (alias `i`)](#issue-commands) — 273 lines
+- [`docket issue` (alias `i`)](#issue-commands) — 271 lines
   - [`issue create`](#issue-create) — 19 lines
   - [`issue edit [id]`](#issue-edit) — 29 lines
   - [`issue show [id]`](#issue-show) — 19 lines
@@ -61,14 +61,14 @@ length to read. The engine families live in docket-run's references:
   - [`issue release <id>`](#issue-release) — 8 lines
   - [`issue move <id> <status>`](#issue-move) — 35 lines
   - [`issue reopen [id]`](#issue-reopen) — 10 lines
-  - [`issue delete <id>`](#issue-delete) — 14 lines
+  - [`issue delete <id>`](#issue-delete) — 12 lines
   - [`issue log [id]`](#issue-log) — 10 lines
   - [`issue comment add [id]`](#issue-comment) — 11 lines
   - [`issue file add/remove/list`](#issue-file) — 8 lines
   - [`issue link add/remove/list`](#issue-link) — 7 lines
   - [`issue label add/rm/list/delete`](#issue-label) — 11 lines
   - [`issue graph [id]`](#issue-graph) — 12 lines
-- [`docket plan`](#plan-commands) — 28 lines
+- [`docket plan`](#plan-commands) — 26 lines
 - [`docket next`](#next-commands) — 22 lines
 - [`docket workflow` (alias `wf`)](#workflow-commands) — 128 lines
   - [`workflow register <file.toml>`](#workflow-register) — 22 lines
@@ -122,10 +122,9 @@ Every `--json` response except `docket export` is `{"ok": <bool>, "data":
 `{"ok": false, "error": "...", "code": "..."}` with no `data` key, except a
 failed registry fan-out, which keeps its report under `data`. The
 envelope is stable; the shape of `data` is NOT, and guessing it is what crashes
-hand-rolled parsers. The table below is checked against the docket-cli-audit
-sweep's fixtures for the covered verbs (see the header above); probe the
-relevant read response when adapting a parser to a different binary. These are
-core shapes, not exhaustive field lists; additive fields can appear.
+hand-rolled parsers. Probe the relevant read response when adapting a parser
+to a different binary. These are core shapes, not exhaustive field lists;
+additive fields can appear.
 
 | Verb | `data` under `--json` (v1) | `data` under `--json=v2` / `--format json` |
 | --- | --- | --- |
@@ -401,9 +400,7 @@ Only transitions if currently `done`, sets status to `backlog`.
 | `--yes` | `-y` | bool | `false` | alias for `--force` |
 | `--orphan` | — | bool | `false` | promote sub-issues to root; mutually exclusive with `--force` |
 
-`--yes` is an ALIAS for `--force`, not a third behavior; scripted cleanup
-uses either spelling. An issue with no sub-issues never asks anything and
-needs neither flag.
+An issue with no sub-issues never asks anything and needs neither flag.
 
 <a id="issue-log"></a>
 
@@ -488,9 +485,7 @@ Human/plain rendering distinguishes a same-level file-collision split
 ("Phase N (same dependency level as Phase N-1, split by file collision):")
 from a genuine new dependency level ("Phase N (parallel, after Phase N-1):").
 
-JSON issue rows omit descriptions by default and include `description_bytes`.
-Use `--with-body` to include full descriptions, or `issue show` to inspect
-selected IDs.
+For full descriptions of selected IDs, use `issue show`.
 
 <a id="next-commands"></a>
 

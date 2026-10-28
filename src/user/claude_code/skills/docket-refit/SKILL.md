@@ -104,9 +104,7 @@ engine checkout (§3) — the script cannot inspect files or run commands
 itself. Every agent it spawns is an `executor-read` agent, which keeps the
 checkout unchanged and writes only scratch files and authorized engine
 records; it cannot edit the checkout, change trust, or ask the operator.
-Sweeps grep every tracked file in the checkout (the corpus, the harness
-scripts, `skills/**`, `agents/`, `hooks/`, `tests/`, `.docket/bin`, the
-`justfile`), mining analysts run `docket` read verbs from each project's
+Sweeps grep every tracked file in the checkout (§1), mining analysts run `docket` read verbs from each project's
 checkout root, verifiers read engine source. Nothing in it edits, mutates a store, or asks
 the operator anything. Each return carries a `summary` line and an
 `uncovered` list naming every agent that returned nothing, every project
@@ -397,7 +395,7 @@ consumers routinely share files and a parallel writer would race.
 - **Vote-seat lenses** — a seat's lens is the last hyphen-token of its name,
   resolved against the `LENSES` table in
   `src/user/claude_code/workflows/tribunal.js`; a new lens key needs an
-  entry there or the seat judges generically. `node --check` after editing.
+  entry there or the seat judges generically.
 - **Vote rules** — reuse a registered rule when its threshold matches (rules
   are thresholds; voters are orthogonal). A genuinely new rule is a store
   registration (`docket config set --global vote.rule.<name>.threshold`)

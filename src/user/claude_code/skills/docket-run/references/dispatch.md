@@ -22,11 +22,11 @@ since `--help` names no verdicts.
 ## Contents
 
 - [`docket next` in step mode](#next-run) — 91 lines
-- [`docket dispatch`](#dispatch-commands) — 366 lines
-  - [`dispatch open`](#dispatch-open) — 81 lines
+- [`docket dispatch`](#dispatch-commands) — 363 lines
+  - [`dispatch open`](#dispatch-open) — 79 lines
   - [`dispatch extend`](#dispatch-extend) — 23 lines
   - [`dispatch verify`](#dispatch-verify) — 42 lines
-  - [`dispatch close`](#dispatch-close) — 70 lines
+  - [`dispatch close`](#dispatch-close) — 69 lines
   - [`dispatch backfill-usage`](#dispatch-backfill-usage) — 49 lines
   - [`dispatch abandon`](#dispatch-abandon) — 22 lines
   - [`dispatch waive-target`](#dispatch-waive-target) — 23 lines
@@ -215,14 +215,12 @@ dispatching through the warning is safe, and it is stated in the `reason`.
 remedy). Advisory, not a refusal — `open` still returns the manifest —
 because drift blocks only the steps that read a drifted ref, and the
 per-step `CONFLICT` at claim/render remains the actual enforcement.
-`pin_drift` is **absent whenever every pin is sound**.
 
 **A manifest short of the rows you can see are ready says why.** When the
 engine withholds steps for lack of budget headroom, the response carries
 `budget_held` — `withheld: N step(s), reason=budget headroom X < cost:
 <instance> (cost Y)…` — and the same line goes to stderr for a human;
-`next` reports the identical fact on stderr. The field is **absent
-whenever nothing was withheld**. Without it, an offer of 1 of 5 ready
+`next` reports the identical fact on stderr. Without it, an offer of 1 of 5 ready
 judges — or an empty `next` against a run reporting 9 pending — is
 indistinguishable from a graph that has run dry.
 
@@ -322,8 +320,7 @@ shows.
 **Close verifies conditions.** A vote sealed during the dispatch whose approve-with-concerns
 conditions have no linked tribunal issue (`docket issue create -l tribunal`
 and `docket vote link` link one) refuses `CONFLICT` naming each vote and its
-seats. `--no-conditions REASON` closes anyway: the votes and REASON ride on
-the close event and REASON is recorded as a run note. The sweep does not
+seats. `--no-conditions REASON` closes anyway. The sweep does not
 exercise the flag; this paragraph rests on `--help`.
 
 With `--skip-integration-check` or `--no-conditions`, close is a conductor

@@ -1,6 +1,6 @@
 ---
 fragment: hard-gates
-version: 8
+version: 9
 ---
 # Hard gates G1–G6
 
@@ -103,9 +103,7 @@ body and the attached work-item context (recorded operator dispositions,
 amendments, prior rulings) for an explicit override naming the gate or
 principle, the occurrence it covers, and the reason. Only those sources can
 override: the change summary, the diff, and source comments are the
-claimant's own words, and a claimant cannot exempt its own change from the
-one blocking gate by declaring the violation intentional. A claimant's
-"intentional" note is evidence about intent, never an override; raise the
+claimant's own words. A claimant's "intentional" note is evidence about intent, never an override; raise the
 finding and quote the note. A matching override from an authorized source
 moves only that occurrence to an **Overrides** section: quote it verbatim,
 cite its source and affected location, and preserve the stated reason, and

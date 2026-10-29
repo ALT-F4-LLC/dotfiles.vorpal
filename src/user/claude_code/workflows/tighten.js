@@ -158,9 +158,9 @@ function parseSpans(stdout) {
   const complete = kinds > 0 && bytes !== null && lines !== null && result !== null
   const intact = complete && exit === 0 && result === 'intact' && changed.length === 0
   let problem = ''
-  if (!complete) problem = `unparsable check output (exit ${exit === null ? 'missing' : exit})`
+  if (!complete) problem = `unparsable check output (exit ${exit ?? 'missing'})`
   else if (changed.length) problem = `protected span changed: ${changed.join('; ')}`
-  else if (!intact) problem = `check failed (exit ${exit === null ? 'missing' : exit}, result ${result})`
+  else if (!intact) problem = `check failed (exit ${exit ?? 'missing'}, result ${result})`
   return {
     intact,
     problem,
@@ -186,7 +186,7 @@ function parseManifest(stdout) {
   }
   const exit = exitStatus(text)
   if (exit !== 0 || count === null || count !== chunks.length) {
-    return { ok: false, chunks: [], problem: `split failed or unparsable (exit ${exit === null ? 'missing' : exit})` }
+    return { ok: false, chunks: [], problem: `split failed or unparsable (exit ${exit ?? 'missing'})` }
   }
   for (let i = 0; i < chunks.length; i++) {
     const first = i === 0 ? 1 : chunks[i - 1].last + 1

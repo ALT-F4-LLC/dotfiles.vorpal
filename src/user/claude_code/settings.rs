@@ -474,11 +474,7 @@ pub struct ClaudeCodeSettings {
     model_overrides: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     available_models: Vec<String>,
-    #[serde(
-        rename = "fallbackModel",
-        skip_serializing_if = "Vec::is_empty",
-        default
-    )]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     fallback_model: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     output_style: Option<String>,
@@ -936,6 +932,47 @@ pub struct ClaudeCodeSettings {
 }
 
 impl ClaudeCodeSettings {
+    fn permissions_mut(&mut self) -> &mut Permissions {
+        self.permissions.get_or_insert_with(Default::default)
+    }
+
+    fn sandbox_mut(&mut self) -> &mut Sandbox {
+        self.sandbox.get_or_insert_with(Default::default)
+    }
+
+    fn sandbox_filesystem_mut(&mut self) -> &mut SandboxFilesystem {
+        self.sandbox_mut()
+            .filesystem
+            .get_or_insert_with(Default::default)
+    }
+
+    fn sandbox_network_mut(&mut self) -> &mut SandboxNetwork {
+        self.sandbox_mut()
+            .network
+            .get_or_insert_with(Default::default)
+    }
+
+    fn push_hook(
+        &mut self,
+        hook_name: &str,
+        matcher: Option<&str>,
+        command: &str,
+        hook_type: &str,
+        timeout: Option<u32>,
+    ) {
+        self.hooks
+            .entry(hook_name.to_string())
+            .or_default()
+            .push(HookConfig {
+                matcher: matcher.map(str::to_string),
+                hooks: vec![HookCommand {
+                    command: command.to_string(),
+                    hook_type: hook_type.to_string(),
+                    timeout,
+                }],
+            });
+    }
+
     // =====================================================================
     // Core settings
     // =====================================================================
@@ -1147,66 +1184,51 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_permission_allow(mut self, rule: &str) -> Self {
-        let mut perms = self.permissions.unwrap_or_default();
-        perms.allow.push(rule.to_string());
-        self.permissions = Some(perms);
+        self.permissions_mut().allow.push(rule.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_permission_ask(mut self, rule: &str) -> Self {
-        let mut perms = self.permissions.unwrap_or_default();
-        perms.ask.push(rule.to_string());
-        self.permissions = Some(perms);
+        self.permissions_mut().ask.push(rule.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_permission_deny(mut self, rule: &str) -> Self {
-        let mut perms = self.permissions.unwrap_or_default();
-        perms.deny.push(rule.to_string());
-        self.permissions = Some(perms);
+        self.permissions_mut().deny.push(rule.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_permission_additional_directories(mut self, dirs: Vec<String>) -> Self {
-        let mut perms = self.permissions.unwrap_or_default();
-        perms.additional_directories = dirs;
-        self.permissions = Some(perms);
+        self.permissions_mut().additional_directories = dirs;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_permission_default_mode(mut self, mode: &str) -> Self {
-        let mut perms = self.permissions.unwrap_or_default();
-        perms.default_mode = Some(mode.to_string());
-        self.permissions = Some(perms);
+        self.permissions_mut().default_mode = Some(mode.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_permission_disable_bypass_permissions_mode(mut self, value: &str) -> Self {
-        let mut perms = self.permissions.unwrap_or_default();
-        perms.disable_bypass_permissions_mode = Some(value.to_string());
-        self.permissions = Some(perms);
+        self.permissions_mut().disable_bypass_permissions_mode = Some(value.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_permission_block_reads_outside_working_directories(mut self, block: bool) -> Self {
-        let mut perms = self.permissions.unwrap_or_default();
-        perms.block_reads_outside_working_directories = Some(block);
-        self.permissions = Some(perms);
+        self.permissions_mut()
+            .block_reads_outside_working_directories = Some(block);
         self
     }
 
     /// The nested form of `disableAutoMode`; `value` is `"disable"`.
     #[allow(dead_code)]
     pub fn with_permission_disable_auto_mode(mut self, value: &str) -> Self {
-        let mut perms = self.permissions.unwrap_or_default();
-        perms.disable_auto_mode = Some(value.to_string());
-        self.permissions = Some(perms);
+        self.permissions_mut().disable_auto_mode = Some(value.to_string());
         self
     }
 
@@ -1229,219 +1251,143 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_sandbox_enabled(mut self, enabled: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.enabled = Some(enabled);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().enabled = Some(enabled);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_fail_if_unavailable(mut self, fail: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.fail_if_unavailable = Some(fail);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().fail_if_unavailable = Some(fail);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_auto_allow_bash(mut self, auto_allow: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.auto_allow_bash_if_sandboxed = Some(auto_allow);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().auto_allow_bash_if_sandboxed = Some(auto_allow);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_allow_unsandboxed_commands(mut self, allow: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.allow_unsandboxed_commands = Some(allow);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().allow_unsandboxed_commands = Some(allow);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_excluded_commands(mut self, commands: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.excluded_commands = commands;
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().excluded_commands = commands;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_filesystem(mut self, filesystem: SandboxFilesystem) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.filesystem = Some(filesystem);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().filesystem = Some(filesystem);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_filesystem_allow_write(mut self, paths: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut fs = sandbox.filesystem.unwrap_or_default();
-        fs.allow_write = paths;
-        sandbox.filesystem = Some(fs);
-        self.sandbox = Some(sandbox);
+        self.sandbox_filesystem_mut().allow_write = paths;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_filesystem_deny_write(mut self, paths: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut fs = sandbox.filesystem.unwrap_or_default();
-        fs.deny_write = paths;
-        sandbox.filesystem = Some(fs);
-        self.sandbox = Some(sandbox);
+        self.sandbox_filesystem_mut().deny_write = paths;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_filesystem_deny_read(mut self, paths: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut fs = sandbox.filesystem.unwrap_or_default();
-        fs.deny_read = paths;
-        sandbox.filesystem = Some(fs);
-        self.sandbox = Some(sandbox);
+        self.sandbox_filesystem_mut().deny_read = paths;
         self
     }
 
     pub fn with_sandbox_filesystem_allow_read(mut self, paths: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut fs = sandbox.filesystem.unwrap_or_default();
-        fs.allow_read = paths;
-        sandbox.filesystem = Some(fs);
-        self.sandbox = Some(sandbox);
+        self.sandbox_filesystem_mut().allow_read = paths;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_filesystem_allow_managed_read_paths_only(mut self, only: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut fs = sandbox.filesystem.unwrap_or_default();
-        fs.allow_managed_read_paths_only = Some(only);
-        sandbox.filesystem = Some(fs);
-        self.sandbox = Some(sandbox);
+        self.sandbox_filesystem_mut().allow_managed_read_paths_only = Some(only);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_allowed_domains(mut self, domains: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.allowed_domains = domains;
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().allowed_domains = domains;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_denied_domains(mut self, domains: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.denied_domains = domains;
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().denied_domains = domains;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_allow_managed_domains_only(mut self, only: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.allow_managed_domains_only = Some(only);
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().allow_managed_domains_only = Some(only);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_allow_unix_sockets(mut self, sockets: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.allow_unix_sockets = Some(sockets);
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().allow_unix_sockets = Some(sockets);
         self
     }
 
     pub fn with_sandbox_network_allow_all_unix_sockets(mut self, allow: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.allow_all_unix_sockets = Some(allow);
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().allow_all_unix_sockets = Some(allow);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_allow_mach_lookup(mut self, names: Vec<String>) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.allow_mach_lookup = names;
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().allow_mach_lookup = names;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_allow_local_binding(mut self, allow: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.allow_local_binding = Some(allow);
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().allow_local_binding = Some(allow);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_http_proxy_port(mut self, port: u32) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.http_proxy_port = Some(port);
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().http_proxy_port = Some(port);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_socks_proxy_port(mut self, port: u32) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.socks_proxy_port = Some(port);
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().socks_proxy_port = Some(port);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_enable_weaker_nested_sandbox(mut self, enable: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.enable_weaker_nested_sandbox = Some(enable);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().enable_weaker_nested_sandbox = Some(enable);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_enable_weaker_network_isolation(mut self, enable: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.enable_weaker_network_isolation = Some(enable);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().enable_weaker_network_isolation = Some(enable);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_bwrap_path(mut self, path: &str) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.bwrap_path = Some(path.to_string());
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().bwrap_path = Some(path.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_socat_path(mut self, path: &str) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.socat_path = Some(path.to_string());
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().socat_path = Some(path.to_string());
         self
     }
 
@@ -1457,17 +1403,13 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_attribution_commit(mut self, commit: &str) -> Self {
-        let mut attr = self.attribution.unwrap_or_default();
-        attr.commit = Some(commit.to_string());
-        self.attribution = Some(attr);
+        self.attribution.get_or_insert_with(Default::default).commit = Some(commit.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_attribution_pr(mut self, pr: &str) -> Self {
-        let mut attr = self.attribution.unwrap_or_default();
-        attr.pr = Some(pr.to_string());
-        self.attribution = Some(attr);
+        self.attribution.get_or_insert_with(Default::default).pr = Some(pr.to_string());
         self
     }
 
@@ -1535,19 +1477,7 @@ impl ClaudeCodeSettings {
         command: &str,
         hook_type: &str,
     ) -> Self {
-        let hook_command = HookCommand {
-            command: command.to_string(),
-            hook_type: hook_type.to_string(),
-            timeout: None,
-        };
-        let hook_config = HookConfig {
-            matcher: matcher.map(|m| m.to_string()),
-            hooks: vec![hook_command],
-        };
-        self.hooks
-            .entry(hook_name.to_string())
-            .or_default()
-            .push(hook_config);
+        self.push_hook(hook_name, matcher, command, hook_type, None);
         self
     }
 
@@ -1560,19 +1490,13 @@ impl ClaudeCodeSettings {
         hook_type: &str,
         timeout_seconds: u32,
     ) -> Self {
-        let hook_command = HookCommand {
-            command: command.to_string(),
-            hook_type: hook_type.to_string(),
-            timeout: Some(timeout_seconds),
-        };
-        let hook_config = HookConfig {
-            matcher: matcher.map(|m| m.to_string()),
-            hooks: vec![hook_command],
-        };
-        self.hooks
-            .entry(hook_name.to_string())
-            .or_default()
-            .push(hook_config);
+        self.push_hook(
+            hook_name,
+            matcher,
+            command,
+            hook_type,
+            Some(timeout_seconds),
+        );
         self
     }
 
@@ -1883,34 +1807,32 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_worktree_base_ref(mut self, base_ref: &str) -> Self {
-        let mut wt = self.worktree.unwrap_or_default();
-        wt.base_ref = Some(base_ref.to_string());
-        self.worktree = Some(wt);
+        self.worktree.get_or_insert_with(Default::default).base_ref = Some(base_ref.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_worktree_symlink_directories(mut self, dirs: Vec<String>) -> Self {
-        let mut wt = self.worktree.unwrap_or_default();
-        wt.symlink_directories = dirs;
-        self.worktree = Some(wt);
+        self.worktree
+            .get_or_insert_with(Default::default)
+            .symlink_directories = dirs;
         self
     }
 
     #[allow(dead_code)]
     pub fn with_worktree_sparse_paths(mut self, paths: Vec<String>) -> Self {
-        let mut wt = self.worktree.unwrap_or_default();
-        wt.sparse_paths = paths;
-        self.worktree = Some(wt);
+        self.worktree
+            .get_or_insert_with(Default::default)
+            .sparse_paths = paths;
         self
     }
 
     /// `"worktree"` (the default) or `"none"`.
     #[allow(dead_code)]
     pub fn with_worktree_bg_isolation(mut self, isolation: &str) -> Self {
-        let mut wt = self.worktree.unwrap_or_default();
-        wt.bg_isolation = Some(isolation.to_string());
-        self.worktree = Some(wt);
+        self.worktree
+            .get_or_insert_with(Default::default)
+            .bg_isolation = Some(isolation.to_string());
         self
     }
 
@@ -2294,32 +2216,20 @@ impl ClaudeCodeSettings {
     /// Skip filesystem isolation while keeping network isolation (v2.1.216+).
     #[allow(dead_code)]
     pub fn with_sandbox_filesystem_disabled(mut self, disabled: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut filesystem = sandbox.filesystem.unwrap_or_default();
-        filesystem.disabled = Some(disabled);
-        sandbox.filesystem = Some(filesystem);
-        self.sandbox = Some(sandbox);
+        self.sandbox_filesystem_mut().disabled = Some(disabled);
         self
     }
 
     /// Deny non-allowlisted hosts outright instead of prompting.
     #[allow(dead_code)]
     pub fn with_sandbox_network_strict_allowlist(mut self, strict: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.strict_allowlist = Some(strict);
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().strict_allowlist = Some(strict);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_network_tls_terminate(mut self, tls: SandboxTlsTerminate) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut network = sandbox.network.unwrap_or_default();
-        network.tls_terminate = Some(tls);
-        sandbox.network = Some(network);
-        self.sandbox = Some(sandbox);
+        self.sandbox_network_mut().tls_terminate = Some(tls);
         self
     }
 
@@ -2327,33 +2237,27 @@ impl ClaudeCodeSettings {
     /// code-execution isolation — prefer excluding the specific command.
     #[allow(dead_code)]
     pub fn with_sandbox_allow_apple_events(mut self, allow: bool) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.allow_apple_events = Some(allow);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().allow_apple_events = Some(allow);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_attribution_session_url(mut self, enabled: bool) -> Self {
-        let mut attr = self.attribution.unwrap_or_default();
-        attr.session_url = Some(enabled);
-        self.attribution = Some(attr);
+        self.attribution
+            .get_or_insert_with(Default::default)
+            .session_url = Some(enabled);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_ripgrep(mut self, ripgrep: SandboxRipgrep) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.ripgrep = Some(ripgrep);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().ripgrep = Some(ripgrep);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_credentials(mut self, credentials: SandboxCredentials) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox.credentials = Some(credentials);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut().credentials = Some(credentials);
         self
     }
 
@@ -2361,21 +2265,21 @@ impl ClaudeCodeSettings {
     /// `denyRead` path, this survives a `dangerouslyDisableSandbox` retry.
     #[allow(dead_code)]
     pub fn with_sandbox_credential_env_var(mut self, env_var: SandboxCredentialEnvVar) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut credentials = sandbox.credentials.unwrap_or_default();
-        credentials.env_vars.push(env_var);
-        sandbox.credentials = Some(credentials);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut()
+            .credentials
+            .get_or_insert_with(Default::default)
+            .env_vars
+            .push(env_var);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_sandbox_credential_file(mut self, file: SandboxCredentialFile) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        let mut credentials = sandbox.credentials.unwrap_or_default();
-        credentials.files.push(file);
-        sandbox.credentials = Some(credentials);
-        self.sandbox = Some(sandbox);
+        self.sandbox_mut()
+            .credentials
+            .get_or_insert_with(Default::default)
+            .files
+            .push(file);
         self
     }
 
@@ -2387,19 +2291,17 @@ impl ClaudeCodeSettings {
         command: &str,
         violations: Vec<String>,
     ) -> Self {
-        let mut sandbox = self.sandbox.unwrap_or_default();
-        sandbox
+        self.sandbox_mut()
             .ignore_violations
             .insert(command.to_string(), violations);
-        self.sandbox = Some(sandbox);
         self
     }
 
     #[allow(dead_code)]
     pub fn with_auto_mode_classify_all_shell(mut self, enabled: bool) -> Self {
-        let mut mode = self.auto_mode.unwrap_or_default();
-        mode.classify_all_shell = Some(enabled);
-        self.auto_mode = Some(mode);
+        self.auto_mode
+            .get_or_insert_with(Default::default)
+            .classify_all_shell = Some(enabled);
         self
     }
 
@@ -2477,9 +2379,9 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_remote_default_environment_id(mut self, id: &str) -> Self {
-        let mut remote = self.remote.unwrap_or_default();
-        remote.default_environment_id = Some(id.to_string());
-        self.remote = Some(remote);
+        self.remote
+            .get_or_insert_with(Default::default)
+            .default_environment_id = Some(id.to_string());
         self
     }
 

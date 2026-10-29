@@ -111,17 +111,16 @@ impl FileCreate {
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         let chmod_mode = if self.executable { "755" } else { "644" };
+        let file = Self::output_file_path("$VORPAL_OUTPUT", &self.name);
 
         let step_script = formatdoc! {"
-            cat << 'EOF' > $VORPAL_OUTPUT/{name}
+            cat << 'EOF' > {file}
             {contents}
             EOF
 
-            chmod {chmod_mode} $VORPAL_OUTPUT/{name}
+            chmod {chmod_mode} {file}
         ",
-            chmod_mode = chmod_mode,
             contents = self.content,
-            name = self.name,
         };
 
         let step = step::shell(context, &self.artifacts, &[], step_script, &[]).await?;
@@ -147,31 +146,27 @@ impl FileSource {
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         let layout = SourceLayout::for_path(&self.path);
+        let name = format!("{}-file-source", self.name);
 
         let step_script = formatdoc! {r#"
-            pushd source/{name}-file-source
+            pushd source/{name}
             cp -r {source_path} ${{VORPAL_OUTPUT}}
             {prune}
         "#,
-            name = self.name,
             prune = prune_harness_dirs("${VORPAL_OUTPUT}"),
             source_path = layout.source_path,
         };
 
         let step = step::shell(context, &[], &[], step_script, &[]).await?;
 
-        let source = ArtifactSource::new(&format!("{}-file-source", self.name), &layout.path)
+        let source = ArtifactSource::new(&name, &layout.path)
             .with_includes(layout.includes)
             .build();
 
-        Artifact::new(
-            &format!("{}-file-source", self.name),
-            vec![step],
-            self.systems,
-        )
-        .with_sources(vec![source])
-        .build(context)
-        .await
+        Artifact::new(&name, vec![step], self.systems)
+            .with_sources(vec![source])
+            .build(context)
+            .await
     }
 }
 

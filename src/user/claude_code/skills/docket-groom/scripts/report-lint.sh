@@ -36,8 +36,7 @@ fi
 pattern='waiting on [a-z]+-[0-9]+([^ (0-9]|$| [^(])|still open|still to do|\bopen items|remaining items|your call|up to you|not re-judged|did not re-judge|not yet proposed|(check|criterion|criteria) (that )?belongs? (with|on)|match(es|ing) (its )?siblings|re-run to|want me to|let me know'
 
 # grep exits 1 on no match; that is the clean case.
-if hits=$(grep -n -i -E -- "$pattern" "${1:--}"); then
-    printf '%s\n' "$hits" | sed -E 's/^([0-9]+):/line \1: /'
+if grep -n -i -E -- "$pattern" "${1:--}" | sed -E 's/^([0-9]+):/line \1: /'; then
     exit 1
 fi
 exit 0

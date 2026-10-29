@@ -1,6 +1,6 @@
 ---
 node: judge-simplicity
-version: 21
+version: 22
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -112,7 +112,7 @@ a reason to turn an unsupported claim into a Suggestion.
 Report examined-clean only when the assigned review is complete and no
 unresolved findings or judgment-blocking gaps remain; name what was examined.
 An empty payload with incomplete coverage is an incomplete review, not a
-clean result. Acceptance belongs to the workflow.
+clean result.
 
 # Stuck
 After permitted inspection, emit supported findings plus a `gap` for any missing

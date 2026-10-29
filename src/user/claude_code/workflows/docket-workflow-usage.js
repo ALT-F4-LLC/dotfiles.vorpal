@@ -478,9 +478,9 @@ function modelObservation(file, extract, classification, mode) {
     const named = relayed.map(modelName).filter((model) => model !== null)
     const models = [...new Set(named)].sort()
     const invalidModels = relayed.length - named.length
-    const lastModel = typeof extract.last_model === 'string' && extract.last_model !== ''
-        ? modelName(extract.last_model) : null
-    const lastModelInvalid = typeof extract.last_model === 'string' && extract.last_model !== '' && lastModel === null
+    const lastRelayed = typeof extract.last_model === 'string' && extract.last_model !== ''
+    const lastModel = lastRelayed ? modelName(extract.last_model) : null
+    const lastModelInvalid = lastRelayed && lastModel === null
     const efforts = Array.isArray(extract.efforts_observed)
         ? [...new Set(extract.efforts_observed.filter((effort) =>
             typeof effort === 'string' && effort !== ''))].sort()
@@ -588,18 +588,19 @@ function reduceRows(results, mode, exclude) {
         : (a, b) => parseInt(a.key.split('-')[1], 10) - parseInt(b.key.split('-')[1], 10)
     // Seats mode carries the tool-call count as a fifth unit row; steps mode
     // keeps the four-row contract docket-run pipes to dispatch backfill-usage.
-    const rows = [...totals.values()].sort(cmp).flatMap(({ key, sums, tool_uses, files, observation }) =>
-        mode === 'seats'
-            ? [...UNITS.map((unit) => ({ proposal: key[0], voter: key[1], unit, quantity: sums[unit] })),
-               { proposal: key[0], voter: key[1], unit: 'tool_uses', quantity: tool_uses }]
-            : UNITS.map((unit, i) => ({
-                step: key,
-                unit,
-                quantity: sums[unit],
-                ...(i === 0 && files === 1 && servedMetadata(observation)
-                    ? { metadata: servedMetadata(observation) } : {}),
-            })),
-    )
+    const rows = [...totals.values()].sort(cmp).flatMap(({ key, sums, tool_uses, files, observation }) => {
+        if (mode === 'seats') {
+            return [...UNITS.map((unit) => ({ proposal: key[0], voter: key[1], unit, quantity: sums[unit] })),
+                    { proposal: key[0], voter: key[1], unit: 'tool_uses', quantity: tool_uses }]
+        }
+        const metadata = files === 1 ? servedMetadata(observation) : null
+        return UNITS.map((unit, i) => ({
+            step: key,
+            unit,
+            quantity: sums[unit],
+            ...(i === 0 && metadata ? { metadata } : {}),
+        }))
+    })
     return { rows, overhead, skipped, errors, model_observations }
 }
 // TEST-END docket-workflow-usage-classify
@@ -896,26 +897,21 @@ const extractOnce = (path, retry, label, config, what) => agent(extractBrief(pat
     return null
 })
 function classifyFirstAttempt(r, file, i) {
-    if (!r) {
-        log(`docket-workflow-usage: ${file}: extraction agent returned nothing`)
-        errors.push(`${file}: extraction agent returned nothing`)
+    const fail = (what) => {
+        log(`docket-workflow-usage: ${file}: ${what}`)
+        errors.push(`${file}: ${what}`)
         return null
     }
+    if (!r) return fail('extraction agent returned nothing')
     if (!r.extract || !r.extract.ok) {
         const why = (r.extract && r.extract.error) || 'no error text'
         if (PATH_MISS_RE.test(why)) {
             log(`docket-workflow-usage: ${file}: jq could not open the file (${why}) — the relay likely retyped the path; retrying once with a fresh agent`)
             return { file, path: files[i], pathMiss: why }
         }
-        log(`docket-workflow-usage: ${file}: jq failed — ${why}`)
-        errors.push(`${file}: jq failed — ${why}`)
-        return null
+        return fail(`jq failed — ${why}`)
     }
-    if (!hasUsage(r.extract)) {
-        log(`docket-workflow-usage: ${file}: extract reported ok but carried no usage`)
-        errors.push(`${file}: extract reported ok but carried no usage`)
-        return null
-    }
+    if (!hasUsage(r.extract)) return fail('extract reported ok but carried no usage')
     return { ...r, path: files[i] }
 }
 

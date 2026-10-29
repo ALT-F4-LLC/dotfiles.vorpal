@@ -36,8 +36,7 @@ and `$LABEL` is `corpus-$MODE` throughout.
 **Run it under `/loop` for repeated passes.** `simplify-corpus` has no watch
 loop of its own: `/loop /simplify-corpus [tighten]` (self-pacing) or
 `/loop 30m /simplify-corpus [tighten] <paths>` supplies the recurring
-wake-up, and each firing re-enters this skill from §1. Invoked outside
-`/loop`, do one pass and say so; there will be no next tick.
+wake-up, and each firing re-enters this skill from §1.
 
 ## Scope
 
@@ -71,8 +70,7 @@ report-only step says. Drop from no argument, since each is still read:
 
 - `src/user/claude_code/CLAUDE.md` and
   `src/user/claude_code/references/working-agreement.md`: the operator's
-  own working agreement, owned outside this corpus's style authority. Tighten
-  mode treats them the same way.
+  own working agreement, owned outside this corpus's style authority.
 - `src/user/claude_code/hooks/`, every file: the guard hooks are a
   permission and sandbox boundary that changes only by the operator's
   hand.
@@ -262,16 +260,11 @@ size label. `docket-groom` triages it and `docket-plan` or direct work
 drains it.
 
 **Report-only files never reach the CLI.** Before step 1, set aside every
-accepted candidate whose file is `src/user/claude_code/CLAUDE.md`,
-`src/user/claude_code/references/working-agreement.md`, anything under
-`src/user/claude_code/hooks/`, or (simplify mode) a schema under
-`src/user/docket/config/schemas/`. Run step 1's check on each so the
+accepted candidate whose file is on the mode's Scope report-only list.
+Run step 1's check on each so the
 report carries real evidence, keep the scratch candidate path, and carry
 the file, the entry's summary, the bytes and lines removed, and the diff's
-scratch location to the Report as an operator decision: the charter changes
-by the operator's hand, a hook is a permission boundary, and a schema
-candidate is a `docket-refit` proposal for a new version, never a diff
-against frozen bytes. Add `<path><TAB><blob><TAB>reported` to the session
+scratch location to the Report as an operator decision. Add `<path><TAB><blob><TAB>reported` to the session
 memo so a later pass does not rerun the workflow on the same bytes. File
 nothing for them.
 

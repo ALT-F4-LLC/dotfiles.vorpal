@@ -143,6 +143,7 @@ const scopeLint = `${skillsRoot}/docket-groom/scripts/scope-lint.sh`
 const acLint = `${skillsRoot}/docket-groom/scripts/ac-lint.sh`
 // A drafted criterion that is filler, not a contract: the caller drafts it inline.
 const PLACEHOLDER = /drafted for an uncovered|stores no acceptance|not linted|\(drafted\)|^\s*$/i
+const draftOf = (c) => [c.text, c.repair].filter((s) => typeof s === 'string' && !PLACEHOLDER.test(s)).join(' ')
 const rulings = Array.isArray(input.rulings) ? input.rulings.filter((r) => typeof r === 'string' && r !== '') : []
 const projects = input.projects
 const issues = input.issues
@@ -599,13 +600,13 @@ const results = await pipeline(
         // survey facts a judge does not return.
         const judged = entries.map((e, i) => {
             const row = group.judged[i]
+            const what = `judge ${row.id} (${group.project.name})`
             if (!e) {
-                missing(`judge ${row.id} (${group.project.name})`)
+                missing(what)
                 return null
             }
-            if (e.readOk === false) uncovered.push({ what: `judge ${row.id} (${group.project.name})`, why: e.notes || 'issue could not be read' })
+            if (e.readOk === false) uncovered.push({ what, why: e.notes || 'issue could not be read' })
             const labels = Array.isArray(row.labels) ? row.labels : []
-            const draftOf = (c) => [c.text, c.repair].filter((s) => typeof s === "string" && !PLACEHOLDER.test(s)).join(" ")
             const undrafted = (Array.isArray(e.criteria) ? e.criteria : []).filter((c) => c && c.index === 0 && !/mutant|read-verified/i.test(draftOf(c)))
             if (undrafted.length) log(`docket-groom: ${row.id} returned ${undrafted.length} drafted criterion(s) that are placeholder text or name neither a mutant nor read-verified; the caller drafts them inline`)
             return {
@@ -618,7 +619,7 @@ const results = await pipeline(
                 routing: { ...e.routing, current: labels.filter((l) => typeof l === 'string' && l.startsWith('route-')) },
                 epic: { ...e.epic, current: row.parent_id || '' },
                 judged: true,
-                undraftedCriteria: undrafted.map((c) => ({ text: c.text || "", repair: c.repair || "" })),
+                undraftedCriteria: undrafted.map((c) => ({ text: c.text || '', repair: c.repair || '' })),
             }
         }).filter(Boolean)
         return { ...group, entries: judged }
@@ -664,11 +665,10 @@ const unsized = judgedEntries.filter((e) => e.size.sizeVerdict === 'set').length
 const decisionText = VALUE_DECISIONS.map((d) => `${judgedEntries.filter((e) => e.value.decision === d).length} ${d}`).join(', ')
 const tail = uncovered.length ? `; ${uncovered.length} UNCOVERED` : ''
 
-const result = {
+return {
     registry,
     ledger,
     clusters,
     uncovered,
     summary: `${judgedEntries.length}/${workCount} issue(s) judged across ${groups.length}/${projects.length} project(s): ${decisionText}; ${oversized} oversized, ${unsized} unsized${tail}.`,
 }
-return result

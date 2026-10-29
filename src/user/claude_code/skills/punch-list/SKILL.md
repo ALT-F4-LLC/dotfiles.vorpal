@@ -133,7 +133,8 @@ For every observation, before moving on:
    criteria at planning time; supply the concrete failing variant so the
    planner has something to confirm.
 5. **Dedupe.** Compare against the loaded punch list per
-   [deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating).
+   [deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating)
+   as written; do not invent a second procedure.
 
 Keep the running punch list in scratch: local item id, area, grade, type,
 title, locator, acceptance, dedupe verdict, and once filed the issue id.
@@ -183,13 +184,8 @@ PUNCH_LIST_ITEM
   duplicate the item.
 - No assignee, no parent, no routing label, no size label, no status
   beyond the default. Groom groups items under epics and routes them.
-- Read each receipt back and record the issue id on the punch list.
-
-The deduplication ledger follows docket-postmortem's
-[deduplicate before creating](../docket-postmortem/references/filing.md#deduplicate-before-creating)
-section as written; receipt verification follows its
-[worker-ready issue contract](../docket-postmortem/references/filing.md#worker-ready-issue-contract).
-Do not invent a second procedure.
+- Read each receipt back, verifying it per the worker-ready issue
+  contract, and record the issue id on the punch list.
 
 ## Final walkthrough: `punch-list reinspect`
 
@@ -228,8 +224,7 @@ the verdicts before presenting the report table. Then:
   reopen or new-regression convention, and link the prior issue when a
   new one is filed. A new issue goes through the filing section above.
   Reopening the prior issue (`docket issue reopen`, shorthand for moving it
-  back to backlog) is a permitted second mutation, taken only after the
-  operator confirms it, with the same compare-and-set `--if-version` read.
+  back to backlog) is permitted only after the operator confirms it, with the same compare-and-set `--if-version` read.
 - **unverifiable**: comment and leave the state unchanged.
 
 Edit nothing else on any issue.

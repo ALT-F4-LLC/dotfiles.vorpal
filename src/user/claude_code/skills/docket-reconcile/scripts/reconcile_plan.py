@@ -19,6 +19,7 @@ import os
 import re
 import subprocess
 import sys
+from collections import Counter
 
 LIMIT = "1000"
 ACTIONABLE = ("REGISTER", "RESTORE", "DEPRECATE")
@@ -38,6 +39,10 @@ def docket(cwd, *args):
         return {"ok": False, "error": (p.stderr or p.stdout).strip() or f"exit {p.returncode}"}
 
 
+def project_items(cwd):
+    return docket(cwd, "project", "list", "--json=v2").get("data", {}).get("items", [])
+
+
 def config_roots(checkout):
     # later root wins a workflow name declared in both
     return [os.path.expanduser("~/.docket/config"), os.path.join(checkout, ".docket", "config")]
@@ -55,7 +60,7 @@ def frontmatter(path):
     """Return (payload refs, packet_includes paths) from a contract's frontmatter."""
     with open(path) as fh:
         lines = fh.read().split("\n")
-    if not lines or lines[0].strip() != "---":
+    if lines[0].strip() != "---":
         return [], []
     payloads, includes, in_includes = [], [], False
     for line in lines[1:]:
@@ -84,8 +89,7 @@ def registry_rows(checkout, kind):
 def plan_project(checkout):
     """Return (prefix, actions, targets); actions are (phase, kind, text)."""
     roots = config_roots(checkout)
-    cur = [p for p in docket(checkout, "project", "list", "--json=v2").get("data", {}).get("items", [])
-           if p.get("current")]
+    cur = [p for p in project_items(checkout) if p.get("current")]
     prefix = cur[0]["prefix"] if cur else "UNRESOLVED"
     plan = []
 
@@ -202,9 +206,7 @@ def print_plan(prefix, checkout, plan, targets):
 
 
 def summary_line(prefix, plan):
-    counts = {}
-    for _, kind, _ in plan:
-        counts[kind] = counts.get(kind, 0) + 1
+    counts = Counter(kind for _, kind, _ in plan)
     detail = ", ".join(f"{n} {k}" for k, n in sorted(counts.items()))
     return f"{prefix:6} {detail or 'in sync'}"
 
@@ -218,9 +220,7 @@ def main(argv):
         return 2
 
     if "--all-projects" in flags:
-        here = os.getcwd()
-        items = docket(here, "project", "list", "--json=v2").get("data", {}).get("items", [])
-        targets = [(p["prefix"], p["identity"]) for p in items]
+        targets = [(p["prefix"], p["identity"]) for p in project_items(os.getcwd())]
     else:
         targets = [(None, args[0] if args else os.getcwd())]
 

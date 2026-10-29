@@ -88,17 +88,18 @@ function classify(file) {
   const reportOnly = file === 'src/user/claude_code/CLAUDE.md'
     || file === 'src/user/claude_code/references/working-agreement.md'
     || file.startsWith('src/user/claude_code/hooks/')
-  if (file === 'src/user/claude_code/settings.rs') return { kind: 'rust', confirm: true, versioned: false, reportOnly: false }
-  if (docketConfig && file.includes('/schemas/') && ext === 'json') return { kind: 'json', confirm: false, versioned: false, reportOnly: true }
-  if (docketConfig && (file.includes('/contracts/') || file.includes('/fragments/')) && ext === 'md') return { kind: 'contract', confirm: false, versioned: true, reportOnly }
-  if (docketConfig && file.includes('/workflows/') && ext === 'toml') return { kind: 'workflow-toml', confirm: false, versioned: true, reportOnly }
-  if (ext === 'md') return { kind: 'prose', confirm: false, versioned: false, reportOnly }
-  if (ext === 'js') return { kind: 'javascript', confirm: false, versioned: false, reportOnly }
-  if (ext === 'py') return { kind: 'python', confirm: false, versioned: false, reportOnly }
-  if (ext === 'sh' || file.startsWith('.docket/bin/') || file.startsWith('src/user/docket/bin/')) return { kind: 'shell', confirm: false, versioned: false, reportOnly }
-  if (ext === 'rs') return { kind: 'rust', confirm: false, versioned: false, reportOnly }
-  if (ext === 'toml') return { kind: 'toml', confirm: false, versioned: false, reportOnly }
-  return { kind: 'data', confirm: false, versioned: false, reportOnly: false }
+  const as = (kind, flags) => ({ kind, confirm: false, versioned: false, reportOnly, ...flags })
+  if (file === 'src/user/claude_code/settings.rs') return as('rust', { confirm: true })
+  if (docketConfig && file.includes('/schemas/') && ext === 'json') return as('json', { reportOnly: true })
+  if (docketConfig && (file.includes('/contracts/') || file.includes('/fragments/')) && ext === 'md') return as('contract', { versioned: true })
+  if (docketConfig && file.includes('/workflows/') && ext === 'toml') return as('workflow-toml', { versioned: true })
+  if (ext === 'md') return as('prose')
+  if (ext === 'js') return as('javascript')
+  if (ext === 'py') return as('python')
+  if (ext === 'sh' || file.startsWith('.docket/bin/') || file.startsWith('src/user/docket/bin/')) return as('shell')
+  if (ext === 'rs') return as('rust')
+  if (ext === 'toml') return as('toml')
+  return as('data', { reportOnly: false })
 }
 
 // A candidate that is not strictly smaller is rejected in code, so a pass over
@@ -163,10 +164,11 @@ function parseCheck(stdout) {
   const exit = exitStatus(text)
   const complete = gate && version !== null && bytes !== null && lines !== null && result !== null
   const intact = complete && exit === 0 && result === 'intact' && failures.length === 0
+  const exitLabel = exit ?? 'missing'
   let problem = ''
-  if (!complete) problem = `unparsable check output (exit ${exit === null ? 'missing' : exit})`
+  if (!complete) problem = `unparsable check output (exit ${exitLabel})`
   else if (failures.length) problem = failures.join('; ')
-  else if (!intact) problem = `check failed (exit ${exit === null ? 'missing' : exit}, result ${result})`
+  else if (!intact) problem = `check failed (exit ${exitLabel}, result ${result})`
   return {
     intact,
     problem,
@@ -431,12 +433,14 @@ const work = targets.filter((t) => t.kind !== 'data')
 
 log(`Pass ${pass}: ${work.length} file(s), one simplifier each; candidates under ${scratchDir}`)
 
+const baseOf = (t) => ({ file: t.file, kind: t.kind, reportOnly: t.reportOnly })
+
 phase('Simplify')
 const results = await pipeline(
   work,
   (t) => agent(simplifyPrompt(t.file, candidatePath(scratchDir, t.file), t.kind, pass), { phase: 'Simplify', label: `simplify:${t.file}`, schema: SIMPLIFY_SCHEMA, ...AGENT_CONFIG.simplify }),
   async (simplified, t) => {
-    const base = { file: t.file, kind: t.kind, reportOnly: Boolean(t.reportOnly) }
+    const base = baseOf(t)
     if (!simplified) return { ...base, status: 'rejected', reason: 'the simplifier returned nothing' }
     if (!simplified.changed) return { ...base, status: 'unchanged', summary: simplified.summary }
     const candidate = simplified.candidate || candidatePath(scratchDir, t.file)
@@ -448,27 +452,24 @@ const results = await pipeline(
   },
   async (checked, t) => {
     if (!checked || checked.status !== 'checked') return checked
-    const base = { file: t.file, kind: t.kind, reportOnly: Boolean(t.reportOnly) }
+    const { check, ...kept } = checked
     const framings = CODE_KINDS.has(t.kind) ? CODE_FRAMINGS : PROSE_FRAMINGS
     const returns = await parallel(framings.map((framing) => () =>
       agent(verifyPrompt(t.file, checked.candidate, t.kind, framing), { phase: 'Verify', label: `verify:${t.file}:${framing.key}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.verify })
     ))
     const tally = tallyVotes(returns)
-    if (!tally.accepted) return { ...base, status: 'rejected', reason: `${tally.upheld}/${tally.votes} refuters upheld; ${tally.reasons.join(' | ') || 'no votes returned'}` }
+    if (!tally.accepted) return { ...baseOf(t), status: 'rejected', reason: `${tally.upheld}/${tally.votes} refuters upheld; ${tally.reasons.join(' | ') || 'no votes returned'}` }
     return {
-      ...base,
+      ...kept,
       status: 'accepted',
-      candidate: checked.candidate,
-      summary: checked.summary,
-      usedSkill: checked.usedSkill,
       confirm: t.confirm,
       versioned: t.versioned,
-      versionBefore: checked.check.versionBefore,
-      versionAfter: checked.check.versionAfter,
-      bytesBefore: checked.check.bytesBefore,
-      bytesAfter: checked.check.bytesAfter,
-      linesBefore: checked.check.linesBefore,
-      linesAfter: checked.check.linesAfter,
+      versionBefore: check.versionBefore,
+      versionAfter: check.versionAfter,
+      bytesBefore: check.bytesBefore,
+      bytesAfter: check.bytesAfter,
+      linesBefore: check.linesBefore,
+      linesAfter: check.linesAfter,
       refuterVotes: tally.votes,
       upheldBy: tally.upheld,
     }
@@ -476,7 +477,8 @@ const results = await pipeline(
 )
 
 const outcomes = results.filter(Boolean)
-const dropped = work.filter((t) => !outcomes.some((o) => o.file === t.file)).map((t) => t.file)
+const returned = new Set(outcomes.map((o) => o.file))
+const dropped = work.filter((t) => !returned.has(t.file)).map((t) => t.file)
 const accepted = outcomes.filter((o) => o.status === 'accepted')
 const rejected = [
   ...outcomes.filter((o) => o.status === 'rejected'),

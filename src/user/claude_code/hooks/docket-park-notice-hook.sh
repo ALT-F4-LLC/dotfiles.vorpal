@@ -116,7 +116,6 @@ for R in $RUNS; do
     printf '%s\n' "$CALLS" | jq -e --arg r "$R" "$DRIVES_DEF"' select(.text | drives($r))' >/dev/null 2>&1 || continue
 
     ROUTED=$(events_of "$R" step-routed) || continue
-    [ -n "$ROUTED" ] || continue
     # The lists travel on stdin: thousands of events overrun the kernel's
     # per-argument limit as a --argjson value.
     CLEARED=$(for K in step-resolved step-skipped step-superseded issue-abandoned; do

@@ -353,7 +353,7 @@ Leave out the total line. Return an empty array when no file qualifies.`,
   { phase: 'Read', label: 'size-check', schema: SIZE_SCHEMA, ...AGENT_CONFIG.sizing }
 )
 if (!sizeReport) log('size-check returned nothing; no file is sharded, and the completeness pass re-reads any span a reader missed')
-const largeFiles = ((sizeReport && sizeReport.large) || [])
+const largeFiles = (sizeReport?.large || [])
   .filter(({ file, lines }) => files.includes(file) && lines > SHARD_LINES)
 const lineCounts = new Map(largeFiles.map(({ file, lines }) => [file, lines]))
 if (largeFiles.length) log(`Sharding ${largeFiles.length} large file(s): ${largeFiles.map(({ file, lines }) => `${file} (${lines}L)`).join(', ')}`)
@@ -379,13 +379,11 @@ log(`${rawFindings.length} raw finding(s) before verification`)
 if (rawFindings.length) phase('Verify')
 const batches = buildVerifyBatches(rawFindings)
 const { covered, uncovered } = planVerification(batches, verifyAllowance)
-if (uncovered.length) log(`Verification allowance covers ${covered.length} of ${batches.length} batch(es); ${uncovered.reduce((n, b) => n + b.items.length, 0)} finding(s) will be reported UNVERIFIED`)
+const uncoveredFindings = uncovered.flatMap((batch) => batch.items.map(({ finding }) => finding))
+if (uncovered.length) log(`Verification allowance covers ${covered.length} of ${batches.length} batch(es); ${uncoveredFindings.length} finding(s) will be reported UNVERIFIED`)
 const results = covered.length ? (await parallel(covered.map((batch) => () => verifyBatch(batch, note)))).filter(Boolean) : []
 const findings = results.flatMap((r) => r.upheld)
-const unverified = [
-  ...results.flatMap((r) => r.unverified),
-  ...uncovered.flatMap((batch) => batch.items.map(({ finding }) => finding)),
-]
+const unverified = [...results.flatMap((r) => r.unverified), ...uncoveredFindings]
 const verifiedCount = rawFindings.length - unverified.length
 if (rawFindings.length) log(`${findings.length}/${verifiedCount} verified finding(s) survived adversarial verification; ${unverified.length} unverified`)
 

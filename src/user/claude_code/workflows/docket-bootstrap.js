@@ -193,13 +193,15 @@ ${READ_ONLY}
 Read the CI configuration (e.g. .github/workflows/*.yaml), build files (Makefile, justfile, package manifests, Cargo.toml, etc.), and any documented build/test entrypoints. Return the real build and check commands, the CI jobs that run them, their prerequisites, and any merge gates the repository enforces. Every claim needs a file:line citation; do not infer a command from convention alone. A gap in tests or CI is a finding, never filled in with an invented successful gate.`
 }
 
+const candidateList = (gateCandidates) =>
+    gateCandidates.map((c) => `- ${c.path} (${c.kind})`).join('\n') || '(none enumerated by the caller)'
+
 function gatesScriptsPrompt(checkoutRoot, gateCandidates) {
-    const list = gateCandidates.map((c) => `- ${c.path} (${c.kind})`).join('\n')
     return `Classify what each candidate gate or check script in one repository actually does, for a docket bootstrap that must never execute a side-effecting command without the operator's approval.
 
 Checkout root: ${checkoutRoot}
 Candidates:
-${list || '(none enumerated by the caller)'}
+${candidateList(gateCandidates)}
 
 ${READ_ONLY}
 
@@ -221,7 +223,7 @@ function combinedPrompt(checkoutRoot, gateCandidates) {
 
 Checkout root: ${checkoutRoot}
 Gate/check candidates:
-${gateCandidates.map((c) => `- ${c.path} (${c.kind})`).join('\n') || '(none enumerated by the caller)'}
+${candidateList(gateCandidates)}
 
 ${READ_ONLY}
 
@@ -327,5 +329,4 @@ async function runGateUnion() {
     }
 }
 
-const result = input.stage === 'mine' ? await runMine() : await runGateUnion()
-return result
+return input.stage === 'mine' ? await runMine() : await runGateUnion()

@@ -10,16 +10,21 @@ DATA=$(cat)
 
 # -- Parse JSON fields with jq --
 
-MODEL=$(echo "$DATA" | jq -r '.model.display_name // .model.id // "unknown"')
-PROJECT_DIR=$(echo "$DATA" | jq -r '.workspace.project_dir // .workspace.current_dir // ""')
-COST=$(echo "$DATA" | jq -r '.cost.total_cost_usd // 0')
-DURATION_MS=$(echo "$DATA" | jq -r '.cost.total_duration_ms // 0')
-LINES_ADDED=$(echo "$DATA" | jq -r '.cost.total_lines_added // 0')
-LINES_REMOVED=$(echo "$DATA" | jq -r '.cost.total_lines_removed // 0')
-CTX_USED_RAW=$(echo "$DATA" | jq -r '.context_window.used_percentage // empty')
-if [ -n "$CTX_USED_RAW" ]; then
-    CTX_USED=${CTX_USED_RAW%.*}
-else
+# One jq pass; fields are joined with the unit separator so empty values keep their place.
+FIELDS=$(
+    echo "$DATA" | jq -r '[
+        .model.display_name // .model.id // "unknown",
+        .workspace.project_dir // .workspace.current_dir // "",
+        .cost.total_cost_usd // 0,
+        .cost.total_duration_ms // 0,
+        .cost.total_lines_added // 0,
+        .cost.total_lines_removed // 0,
+        .context_window.used_percentage // "",
+        .agent.name // ""
+    ] | map(tostring) | join("\u001f")'
+)
+IFS=$'\x1f' read -r MODEL PROJECT_DIR COST DURATION_MS LINES_ADDED LINES_REMOVED CTX_USED AGENT_NAME <<< "$FIELDS"
+if [ -z "$CTX_USED" ]; then
     INPUT_TOKENS=$(echo "$DATA" | jq -r '.context_window.current_usage.input_tokens // 0')
     CACHE_CREATE=$(echo "$DATA" | jq -r '.context_window.current_usage.cache_creation_input_tokens // 0')
     CACHE_READ=$(echo "$DATA" | jq -r '.context_window.current_usage.cache_read_input_tokens // 0')
@@ -32,7 +37,6 @@ else
         CTX_USED=0
     fi
 fi
-AGENT_NAME=$(echo "$DATA" | jq -r '.agent.name // empty')
 
 # -- Colors --
 
@@ -79,7 +83,7 @@ get_git_info() {
         local branch
         branch=$(git -C "$dir" symbolic-ref --short HEAD 2>/dev/null || git -C "$dir" rev-parse --short HEAD 2>/dev/null || echo "")
         if [ -n "$branch" ]; then
-            local staged=0 modified=0
+            local staged modified
             staged=$(git -C "$dir" diff --cached --numstat 2>/dev/null | wc -l | tr -d ' ')
             modified=$(git -C "$dir" diff --numstat 2>/dev/null | wc -l | tr -d ' ')
             result="${branch}:${staged}:${modified}"
@@ -92,9 +96,7 @@ get_git_info() {
 
 # -- Build single output line --
 
-OUT=""
-
-OUT="${OUT}🤖 ${CYAN}${MODEL}${RESET}"
+OUT="🤖 ${CYAN}${MODEL}${RESET}"
 
 if [ -n "$AGENT_NAME" ]; then
     OUT="${OUT} ${DIM}[${YELLOW}${AGENT_NAME}${DIM}]${RESET}"
@@ -107,9 +109,7 @@ OUT="${OUT} ${DIM}|${RESET} 📁 ${BOLD}${DIR_NAME}${RESET}"
 if [ -n "$PROJECT_DIR" ]; then
     GIT_INFO=$(get_git_info "$PROJECT_DIR")
     if [ -n "$GIT_INFO" ]; then
-        BRANCH=$(echo "$GIT_INFO" | cut -d: -f1)
-        STAGED=$(echo "$GIT_INFO" | cut -d: -f2)
-        MODIFIED=$(echo "$GIT_INFO" | cut -d: -f3)
+        IFS=: read -r BRANCH STAGED MODIFIED <<< "$GIT_INFO"
 
         OUT="${OUT} ${DIM}|${RESET} 🌿 ${BRANCH}"
 

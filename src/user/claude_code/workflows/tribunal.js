@@ -8,7 +8,6 @@ export const meta = {
     ],
 }
 
-// ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is a one-line summary;
 // this block is the single copy of the argument and return contract).
 //
@@ -58,20 +57,17 @@ export const meta = {
 // seat attempt that reported a cast error. Every seat answers through
 // SEAT_SCHEMA, so no free text crosses. The engine's record stays the
 // authority: the caller reads `docket vote result` before acting.
-// ---------------------------------------------------------------------------
 
 // Verifier settings are local; judges keep caller routing from pinned policy.
 const AGENT_CONFIG = {
     verify: { model: 'haiku', effort: 'low' },
 }
 
-// ---------------------------------------------------------------------------
 // Seat routing is the caller's to supply, resolved from the same pinned
 // policy.toml the engine routes step rows from: a seat's standing variant with
 // the [security] pins applied. The engine renders that triple onto every vote
 // step row, but a conversational gate has no row, so it arrives on each
 // `voters` entry instead either way. This script re-derives nothing.
-// ---------------------------------------------------------------------------
 
 // A seat missing any of the triple was never routed — the run pins no
 // policy.toml, or the roster was re-typed without its fields — and a panel
@@ -150,9 +146,7 @@ function lensOf(seat) {
     return { role: key, text: LENSES[key] || WHOLE_SYSTEM_LENS }
 }
 
-// ---------------------------------------------------------------------------
 // Briefs
-// ---------------------------------------------------------------------------
 
 // A sha reaches a brief only when it is SHAPED like the full object id the
 // engine records — 40 lowercase hex, never an abbreviation, never prose. This
@@ -605,9 +599,7 @@ Do not cast a vote, do not investigate, do not run anything else. You are a
 read-only probe reporting what the vote record currently says.`
 }
 
-// ---------------------------------------------------------------------------
 // Transport + validation
-// ---------------------------------------------------------------------------
 
 function decodeArgs(value) {
     if (typeof value !== 'string') return value
@@ -692,9 +684,7 @@ if (seats.length > 1) {
     }
 }
 
-// ---------------------------------------------------------------------------
 // Judge / Verify
-// ---------------------------------------------------------------------------
 
 // Every spawn attempt (first seating or the conversational re-seat) that
 // reported a cast error, as {seat, castError} in completion order. The brief

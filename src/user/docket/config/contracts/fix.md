@@ -1,6 +1,6 @@
 ---
 node: fix
-version: 26
+version: 27
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -125,10 +125,9 @@ of the candidate:
 - Remove or bypass only the enforcement under test in the copy. Confirm that
   the regression runs against that copy and fails for the expected behavioral
   reason, with setup and test discovery still valid.
-- Record the candidate identity, and inline the mutation diff, exact test
-  command, and decisive failing output under the change-summary's mutant
-  evidence; a scratch path does not substitute for them. A syntax error or
-  missing project file proves nothing about enforcement. If another valid
+- Record the candidate identity and report the run under the
+  change-summary's mutant evidence. A syntax error or missing project file
+  proves nothing about enforcement. If another valid
   control still enforces the invariant, investigate that result; do not
   weaken the invariant or pin an incidental call to kill a mutant.
 

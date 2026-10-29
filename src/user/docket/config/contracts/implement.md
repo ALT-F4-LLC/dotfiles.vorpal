@@ -1,6 +1,6 @@
 ---
 node: implement
-version: 21
+version: 22
 archetype: executor-write
 packet_includes:
   - fragments/code-philosophy.md
@@ -51,12 +51,10 @@ Determine each AC's baseline status and how to verify it:
   does not establish satisfaction.
 
 If every AC and required deliverable is already satisfied, take the
-verification path: verify the existing candidate and perform the same
-required completion checks. Emit an already-satisfied change-summary, identify
+verification path: verify the existing candidate. Emit an already-satisfied change-summary, identify
 verified pre-existing fix commits separately from the candidate SHA, and state
 any unavailable historical attribution. Do not invent a pre-fail, recreate the
-fix, or create an empty commit merely to show activity. Use the brief's
-hand-back procedure for the existing candidate; this outcome still goes
+fix, or create an empty commit merely to show activity. This outcome still goes
 through the workflow's normal downstream review and verification steps.
 If warranted regression coverage changes the tree, commit and report those
 changes normally.

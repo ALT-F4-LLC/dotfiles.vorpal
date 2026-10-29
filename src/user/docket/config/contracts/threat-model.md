@@ -1,6 +1,6 @@
 ---
 node: threat-model
-version: 13
+version: 14
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -160,8 +160,7 @@ Use concrete IDs only for declared cases and their references, not
 illustrative examples in the emitted model.
 
 Write for the implementer. Keep each row actionable, put shared evidence in
-one cited location, and omit repeated methodology and boilerplate. The
-pinned live inputs appear once, in the acceptance or suite rows the model cites.
+one cited location, and omit repeated methodology and boilerplate.
 
 # Stuck
 After permitted inspection, record a `gap` when missing or conflicting

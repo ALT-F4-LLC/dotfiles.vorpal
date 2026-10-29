@@ -1,6 +1,6 @@
 ---
 fragment: test-code-boundaries
-version: 9
+version: 10
 ---
 # When the change under review is test code
 
@@ -30,9 +30,8 @@ available evidence.
   assertion can detect the relevant defect, whether fixture assumptions support
   claims about a real producer, whether nondeterministic outcomes make results
   unreliable as evidence, and whether coverage omissions are deliberate and
-  justified. These remain judge-testing's claims on a test-heavy diff, and a
-  shared source location does not shift them to another seat, nor does it
-  require either seat to suppress a supported finding.
+  justified. A shared source location neither shifts these claims to another
+  seat nor requires either seat to suppress a supported finding.
 
 ## Where both land on one defect
 
@@ -44,8 +43,8 @@ changing the vocabulary of an adequacy claim does not make it yours.
 
 Author each supported finding with its own evidence and severity. Let
 synthesize-findings cluster findings that describe the same underlying defect,
-preserving the contributing seats and their severities under synthesize-findings'
-clustering rules and the engine's aggregation. Sharing a file or using
+preserving the contributing seats and their severities under its clustering
+rules and the engine's aggregation. Sharing a file or using
 similar words alone does not establish that two findings describe the same
 defect.
 

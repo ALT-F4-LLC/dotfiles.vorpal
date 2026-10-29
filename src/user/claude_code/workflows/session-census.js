@@ -52,11 +52,8 @@ const ROLE_BRIEF_CHARS = 300
 const ERROR_TEXT_CHARS = 200
 const EFFORT_RANK = {low: 0, medium: 1, high: 2, xhigh: 3, max: 4}
 const UNKNOWN_EFFORT_RANK = 9
-// Agent budget: the Workflow tool caps one invocation at 1000 agent() calls
-// over its lifetime. A shared project directory can be "hundreds of files," so
-// planAgentCap() checks the caller's window against that cap, the same
-// AGENT_CAP/AGENT_CAP_MARGIN pattern corpus-check.js uses.
-// SCOUT_AGENTS is the one scout call; RETRY_ESTIMATE_FRACTION projects a
+// Agent budget (AGENT CAP in the header), the same AGENT_CAP/AGENT_CAP_MARGIN
+// pattern corpus-check.js uses. SCOUT_AGENTS is the one scout call; RETRY_ESTIMATE_FRACTION projects a
 // worst-case retry cost from observed fleet behavior (most sweeps see a
 // small single-digit retryable fraction; this over-estimates so the warning
 // fires before the real run, not after it starts failing on the cap).
@@ -625,11 +622,8 @@ let files = scouted.files.map((f) => {
 })
 if (files.length === 0) throw new Error(`session-census: no transcripts under ${root} newer than ${cutoff}; nothing to measure`)
 
-// Agent-cap pre-flight: one extract agent per file, plus a projected worst-
-// case retry cost, against the 1000-agent lifetime cap. A caller-chosen
-// window this script never bounded itself could otherwise run straight into
-// the harness's own cap mid-sweep, dying with an unattributed AgentCapError
-// instead of a clear, up-front account of what was dropped and why.
+// Agent-cap pre-flight (AGENT CAP in the header): truncate up front with a
+// logged account rather than die mid-sweep on an unattributed AgentCapError.
 const capPlan = planAgentCap(files.length)
 if (capPlan.maxFiles < files.length) {
     // The scout returns paths only, no mtime, so there is no recency signal

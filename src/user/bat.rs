@@ -50,14 +50,14 @@ impl Bat {
                 .build(context)
                 .await?;
 
-            artifacts.push(config_theme.clone());
-
             config_builder = config_builder.with_theme(&theme_name);
 
             symlinks.push((
                 format!("{}/tokyonight_night.tmTheme", get_env_key(&config_theme)),
                 "${HOME}/.config/bat/themes/tokyonight.tmTheme".to_string(),
             ));
+
+            artifacts.push(config_theme);
         }
 
         let binary = bat::Bat::new().build(context).await?;
@@ -90,13 +90,10 @@ impl BatConfig {
     }
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
-        let mut content = String::new();
-
-        if let Some(theme) = self.theme {
-            let content_theme = format!("--theme={theme}");
-
-            content.push_str(&content_theme);
-        }
+        let content = self
+            .theme
+            .map(|theme| format!("--theme={theme}"))
+            .unwrap_or_default();
 
         FileCreate::new(&format!("{}-bat-config", self.name), self.systems, &content)
             .build(context)
@@ -115,9 +112,9 @@ impl BatTheme {
 
     pub async fn build(self, context: &mut ConfigContext) -> Result<String> {
         FileSource::new(
-            &format!("{}-bat-theme", &self.name),
+            &format!("{}-bat-theme", self.name),
             &self.path,
-            self.systems.clone(),
+            self.systems,
         )
         .build(context)
         .await

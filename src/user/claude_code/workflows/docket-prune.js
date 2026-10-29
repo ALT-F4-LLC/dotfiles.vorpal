@@ -12,7 +12,6 @@ export const meta = {
     ],
 }
 
-// ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is a one-line summary;
 // this block is the single copy of the argument and return contract).
 //
@@ -111,7 +110,6 @@ export const meta = {
 // ~16-slot concurrency cap. Definitions beyond the judge bound are
 // returned as deferred; a deferred definition has no verdict or keeps its
 // stale-hash verdicts, so the next pass plans it for judgment again.
-// ---------------------------------------------------------------------------
 
 // Pin models so a launch never inherits the caller's quota-limited model.
 // Evidence agents count and cite, and each recording shard is checked in
@@ -595,7 +593,7 @@ function unsettledEntries(ledger, plan, fresh) {
 }
 // TEST-END docket-prune-decide
 
-// ---- Input -----------------------------------------------------------------
+// Input
 
 const input = typeof args === 'string' ? JSON.parse(args) : (args || {})
 if (typeof args === 'string') log('docket-prune: decoded args from the harness JSON-encoded transport (normal)')
@@ -630,7 +628,7 @@ const READ_ONLY = `Sentinel: ${SENTINEL}. Read-only: write nothing outside ${scr
 const uncovered = []
 const missing = (what) => uncovered.push({ what, why: 'agent returned nothing' })
 
-// ---- Plan ------------------------------------------------------------------
+// Plan
 
 const only = Array.isArray(input.only) ? input.only.filter(Boolean) : []
 const plan = planPass(input.definitions, input.ledger || null, Boolean(input.all), only)
@@ -645,7 +643,7 @@ if (only.length) log(`docket-prune: scoped to ${only.join(' ')}; ${plan.skipped.
 log(`Pass ${pass}: ${input.definitions.length} definition(s); ${toJudge.length} to judge, ${plan.carried.length} verdict(s) carried, ${plan.dropped.length} ledgered path(s) gone from disk`)
 
 
-// ---- Record ----------------------------------------------------------------
+// Record
 
 // The merged ledger and one issue body per unfiled cut are written under
 // scratch by one agent, since the script itself has no filesystem. The
@@ -736,7 +734,7 @@ async function emptyPass() {
     }
 }
 
-// ---- Evidence prompts -----------------------------------------------------
+// Evidence prompts
 
 const definitionList = input.definitions.map((d) => `${d.path} (${d.surface})`).join('\n')
 
@@ -834,7 +832,7 @@ ${READ_ONLY}
 For every source file under the corpus root's five subtrees plus policy.toml and README.md, and for every workflow script and skill under the harness, report missing-installed when the installed tree has no counterpart, differs when \`cmp\` reports a difference, and extra-installed for an installed definition with no source. A tree marked unavailable is a note, not a drift row. cut-ledger.json is never a drift row.`
 }
 
-// ---- Trial prompts --------------------------------------------------------
+// Trial prompts
 
 function evidenceFor(path, evidence) {
     const census = evidence.census && evidence.census.definitions.find((d) => d.path === path)
@@ -936,7 +934,7 @@ Your angle: ${framing.angle}
 Work your angle first and let it lead, but every ground below still refutes any ruling: a citation that does not say what the ruling claims (open it), a class held against a unit kind it does not apply to, a stay resting on the definition's own text or on an engine citation, a remove that would break a consumer or a gate, a refactor whose cut list removes an operative rule. Return one vote per ruling. When you refute, proposed is the verdict that should replace it and reason names the locator that settles it; when you cannot refute, say what you checked.`
 }
 
-// ---- Evidence --------------------------------------------------------------
+// Evidence
 
 function slug(text) {
     return String(text).replace(/[^A-Za-z0-9._-]+/g, '-')
@@ -1003,7 +1001,7 @@ async function trialPass() {
     }
     log(`docket-prune: evidence in; ${evidence.coverage.logsScanned} agent log(s) digested across ${digests.length} director(ies), ${runs.length} run store(s) read`)
 
-    // ---- Trial -----------------------------------------------------------------
+    // Trial
 
     phase('Prosecute')
     log(`docket-prune: trying ${toJudge.length} definition(s), ${AGENTS_PER_DEFINITION} agents each`)

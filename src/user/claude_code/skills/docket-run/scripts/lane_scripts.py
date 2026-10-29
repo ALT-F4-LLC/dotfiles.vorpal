@@ -143,13 +143,14 @@ def is_rendered(path):
 
 
 def parse_args(argv):
+    usage = "usage: lane_scripts.py [--root DIR] [--out DIR] [--check] [--list]"
     root, out, check, listing = None, None, False, False
     rest = list(argv[1:])
     while rest:
         arg = rest.pop(0)
         if arg in ("--root", "--out"):
             if not rest:
-                raise SystemExit("usage: lane_scripts.py [--root DIR] [--out DIR] [--check] [--list]")
+                raise SystemExit(usage)
             value = rest.pop(0)
             if arg == "--root":
                 root = value
@@ -160,7 +161,7 @@ def parse_args(argv):
         elif arg == "--list":
             listing = True
         else:
-            raise SystemExit("usage: lane_scripts.py [--root DIR] [--out DIR] [--check] [--list]")
+            raise SystemExit(usage)
     root = os.path.abspath(root or default_root())
     out = os.path.abspath(out or os.path.join(root, OUT_DIR))
     return root, out, check, listing
@@ -202,9 +203,10 @@ def main(argv):
     for entry, definition in definitions:
         toml_rel = os.path.join(TOML_DIR, entry)
         text = render(definition, toml_rel, body)
-        if len(text.encode("utf-8")) > SCRIPT_SIZE_CAP:
+        size = len(text.encode("utf-8"))
+        if size > SCRIPT_SIZE_CAP:
             raise SystemExit(f"lane_scripts: {definition['name']}.js would be "
-                             f"{len(text.encode('utf-8'))} bytes, over the Workflow tool's "
+                             f"{size} bytes, over the Workflow tool's "
                              f"{SCRIPT_SIZE_CAP}-byte cap")
         rendered[definition["name"]] = text
 

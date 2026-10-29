@@ -105,10 +105,8 @@ if (input.stage === 'evidence') {
         throw new Error(`docket-refit: stage "evidence" needs args.target {surface (${SURFACES.join('|')}), path, name}`)
     }
 }
-if (input.stage === 'verify') {
-    if (!Array.isArray(input.capabilities) || input.capabilities.length === 0) {
-        throw new Error('docket-refit: stage "verify" needs a non-empty args.capabilities array of capability questions')
-    }
+if (input.stage === 'verify' && (!Array.isArray(input.capabilities) || input.capabilities.length === 0)) {
+    throw new Error('docket-refit: stage "verify" needs a non-empty args.capabilities array of capability questions')
 }
 
 const checkoutRoot = input.checkoutRoot
@@ -305,47 +303,44 @@ function noteMissing(results, describe) {
 // analyst echoes back is not trusted to match the listing's spelling.
 const withProject = (results, list) => results.flatMap((r, i) => (r ? [{ ...r, project: list[i].name }] : []))
 
-// Sweep and mining are independent reads of different sources; they run
-// together and the barrier only collects both for the return.
-async function evidenceFor(target, phases, miningProjects) {
-    const [sweep, mining] = await parallel([
-        () => agent(sweepPrompt(target), {
-            label: `sweep:${corpusRelative(target.path)}`,
-            phase: phases.sweep,
-            agentType: 'executor-read',
-            schema: SWEEP_SCHEMA,
-            ...AGENT_CONFIG.sweep,
-        }),
-        () => parallel(miningProjects.map((project) => () =>
-            agent(minePrompt(target, project), {
-                label: `mine:${corpusRelative(target.path)}@${project.name}`,
-                phase: phases.mine,
-                agentType: 'executor-read',
-                schema: MINE_SCHEMA,
-                ...AGENT_CONFIG.mine,
-            })
-        )),
-    ])
-    if (!sweep) missing(`sweep of ${corpusRelative(target.path)}`)
-    noteMissing(mining || [], (i) => `mining ${corpusRelative(target.path)} in ${miningProjects[i].name}`)
-    return { sweep: sweep || null, mining: withProject(mining || [], miningProjects) }
-}
-
 const tail = () => (uncovered.length ? `; ${uncovered.length} UNCOVERED` : '')
 
 // Stage: evidence
 
 async function runEvidence() {
     const target = input.target
+    const rel = corpusRelative(target.path)
     log(`docket-refit: evidence for ${target.path} (${target.surface}); sweeping consumers and mining ${projects.length} project(s)`)
-    const { sweep, mining } = await evidenceFor(target, { sweep: 'Sweep', mine: 'Mine' }, projects)
+    // Sweep and mining are independent reads of different sources; they run
+    // together and the barrier only collects both for the return.
+    const [sweep, rawMining] = await parallel([
+        () => agent(sweepPrompt(target), {
+            label: `sweep:${rel}`,
+            phase: 'Sweep',
+            agentType: 'executor-read',
+            schema: SWEEP_SCHEMA,
+            ...AGENT_CONFIG.sweep,
+        }),
+        () => parallel(projects.map((project) => () =>
+            agent(minePrompt(target, project), {
+                label: `mine:${rel}@${project.name}`,
+                phase: 'Mine',
+                agentType: 'executor-read',
+                schema: MINE_SCHEMA,
+                ...AGENT_CONFIG.mine,
+            })
+        )),
+    ])
+    if (!sweep) missing(`sweep of ${rel}`)
+    noteMissing(rawMining || [], (i) => `mining ${rel} in ${projects[i].name}`)
+    const mining = withProject(rawMining || [], projects)
     const consumers = sweep ? sweep.consumers.length : 0
     const runs = mining.reduce((n, r) => n + (r.runsExamined || 0), 0)
     return {
-        sweep,
+        sweep: sweep || null,
         mining,
         uncovered,
-        summary: `${corpusRelative(target.path)}: ${consumers} consumer(s) swept; ${runs} run(s) examined across ${mining.length}/${projects.length} project(s)${tail()}.`,
+        summary: `${rel}: ${consumers} consumer(s) swept; ${runs} run(s) examined across ${mining.length}/${projects.length} project(s)${tail()}.`,
     }
 }
 
@@ -385,5 +380,4 @@ async function runVerify() {
     }
 }
 
-const result = input.stage === 'evidence' ? await runEvidence() : await runVerify()
-return result
+return input.stage === 'evidence' ? await runEvidence() : await runVerify()

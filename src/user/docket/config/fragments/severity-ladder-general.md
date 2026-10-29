@@ -1,6 +1,6 @@
 ---
 fragment: severity-ladder-general
-version: 11
+version: 12
 ---
 # Severity ladder: general
 
@@ -47,8 +47,7 @@ separately from confidence.
 **Hard gates require the packet.** Apply `fragments/hard-gates.md` only when
 its contents are supplied in your packet. Confirm the trigger and check its
 counter-examples and override rules before raising a gate finding; a candidate
-symptom alone is insufficient. In this general track, a confirmed,
-unoverridden gate finding is a Blocker. A seat without that fragment raises no
+symptom alone is insufficient. A seat without that fragment raises no
 gate findings and reconstructs no gate list from memory. It may report the
 same substance within its own remit, using its own rubric and terms. If the
 packet says the fragment is required but its contents are missing, report
@@ -89,7 +88,7 @@ finding's severity to obtain a routing outcome.
 `blocker` included, stands in for a Question, Praise, or "could not judge."
 Use the contract's existing representation; do not invent fields. A judgment
 a Question blocks stays incomplete while independent work continues. Praise
-lives in the body and never enters cluster arithmetic.
+never enters cluster arithmetic.
 
 **Report every finding; do not self-filter for importance.** Preserve
 supported minor findings for downstream filtering. Tool detectability does

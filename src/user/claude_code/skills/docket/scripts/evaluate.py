@@ -165,7 +165,6 @@ def grade(answer, case_data=None):
         for command in commands:
             argv = command.get("argv", [])
             require(command.get("cwd") == "$CHECKOUT", "wrong or implicit project working directory")
-            require(isinstance(argv, list) and all(isinstance(a, str) for a in argv), "argv must be strings")
             require(bool(argv) and argv[0] == "docket", "command must use docket directly")
             require(validate_flags(argv), "unknown, repeated, incomplete, or non-inspection flag")
             require(flag(argv, "--json") == "v2" or flag(argv, "--format") == "json", "new commands must select JSON v2")

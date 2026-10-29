@@ -103,8 +103,7 @@ supplies the recurring wake-up; each firing re-enters this skill from §1.
    scans only the shards whose files appear in `git diff --name-only
    <surveyed-head> HEAD`, plus the shards the last round returned `uncovered`
    or holding `unverified` units. If the list is empty, report that no source
-   files changed and go to step 5. Write the new `surveyed-head` at step 6,
-   once a round returned with no `uncovered` shard. The round returns ranked
+   files changed and go to step 5. The round returns ranked
    units whose findings survived refutation, the units it skipped as security
    boundaries, and the report-only items it confirmed.
    - Scouts are read-only by instruction only. Before anything else, require
@@ -169,7 +168,7 @@ supplies the recurring wake-up; each firing re-enters this skill from §1.
      cannot happen at runtime" is not a proof. An entry whose search finds a
      reference is dropped and queued `refuted`; one defeated by reflection,
      a plugin registry, or a published export is dropped and queued `skipped`.
-   Say in the report which class each filed entry used. The operator chose to
+   The operator chose to
    skip uncovered code; filing inert edits and dead-code removals for units
    without tests is this skill's reading of that choice, so the report names
    every `inert` and `reachability` entry filed for such a unit.
@@ -305,7 +304,7 @@ name keeps both launches' findings, deduped by entry and lines);
 concatenate `unverified`, `uncovered`, and `securitySkipped`; sum `excluded`;
 and drop from the combined `refutedKeys` every key any launch's `units` still
 carries, so one launch's refutation never hides an item another launch
-confirmed. A shard under `uncovered` is rescanned next round. The workflow
+confirmed. The workflow
 refuses a seat past its runaway backstop and a `mode` other than `discover`.
 The return, and how a round is built, are in the workflow header and the
 [discovery reference](references/discovery.md).

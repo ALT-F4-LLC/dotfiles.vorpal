@@ -104,7 +104,6 @@ citations=$(printf '%s\n' "$text" | awk '
             range = substr(tok, RSTART + 1)
             split(range, r, "-")
             from = r[1]; to = (2 in r) ? r[2] : r[1]
-            delete r
         }
         if (ticks % 2 == 1) sub(/^[ \t]*`/, "", rest)
         sub(/^[ \t]*\(?[ \t]*/, "", rest)

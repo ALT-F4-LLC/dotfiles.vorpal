@@ -161,9 +161,8 @@ at 0.48 scored 0.73 and passed while the same reject at
 weight, not its evidence, decided. `security-vote` on the
 security track already made a single dissent decisive by
 seating two, and `reconcile` protects a lone high finding
-with `method = "max"`; this is the doc-track equivalent. A
-threshold is a post-approval routing check: the tally math,
-`on_fail`, the loop bound (`max_fix_loops = 2` on
+with `method = "max"`; this is the doc-track equivalent. The
+tally math, `on_fail`, the loop bound (`max_fix_loops = 2` on
 `reconcile`, parking waiting-human when exceeded) and a
 committed proposal's bypass are unchanged. A revise round
 won over the alternative, `waiting-human`, because the loop

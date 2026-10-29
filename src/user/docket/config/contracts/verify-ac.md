@@ -1,6 +1,6 @@
 ---
 node: verify-ac
-version: 26
+version: 27
 archetype: executor-read
 packet_includes:
   - fragments/evidence-rules.md
@@ -171,12 +171,10 @@ sandbox, permission, or trust change.
 calling a requirement incompatible with the plan: a file outside write scope
 may already satisfy it. If evidence proves an AC false and every repair
 requires work outside all applicable step scopes, judge `unmet-out-of-scope`
-and emit a scope/AC gap in the same completion, or cite the existing open
-filing with its status; absent any `unmet` AC in the same report, routing
+under its definition above; absent any `unmet` AC in the same report, routing
 sends that judgment to `verify-ac-vote` rather than the fixer, and a rejected
 vote returns it to the fixer as `unmet`. Do not choose `unmet` to force a
-round the scope cannot use, and do not choose `unmet-out-of-scope` while any
-repair route is in scope. Quote the criterion, applicable declarations and
+round the scope cannot use. Quote the criterion, applicable declarations and
 amendments, and required work outside them. If evidence is unavailable, use
 `unverifiable` and name the actual verification limit. A forbidden
 design-only requirement is an issue-body gap; a supplied findings artifact is
@@ -238,7 +236,7 @@ Missing ACs, unclear wording, contradictory requirements, unavailable inputs,
 or inadequate evidence require a specific gap. For existing ACs whose
 judgment is blocked, report `unverifiable` with the defect or missing
 evidence. When the AC list itself is absent, report that gap through the
-supplied protocol; do not fabricate IDs or let an empty list imply
+supplied protocol; do not let an empty list imply
 acceptance. Preserve supported judgments and finish every independent AC and
 scope comparison. If the report cannot be recorded, return the evidence and
 failure without claiming it was recorded.

@@ -8,7 +8,6 @@ export const meta = {
     ],
 }
 
-// ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is a one-line summary;
 // this block and the args and return block further down are the contract).
 //
@@ -43,7 +42,6 @@ export const meta = {
 // (default) | "seats", exclude: [STEP-N...] in steps mode or [seat...] in
 // seats mode}. The script cannot read files itself; its agents run one fixed jq program per
 // transcript and the reduction happens here.
-// ---------------------------------------------------------------------------
 
 // scout/extract/recheck only relay a fixed command's output through a schema
 // (no judgment involved), so a cheap model is pinned rather than inherited —
@@ -57,7 +55,6 @@ const AGENT_CONFIG = {
 
 const DEFAULT_MODE = 'steps'
 
-// ---------------------------------------------------------------------------
 // THE TRANSCRIPT-DERIVED TOKEN PATH, designed rather than a workaround: a
 // claimant cannot observe its own token consumption, so the conductor that
 // spawned it measures the transcripts here and pipes the rows to
@@ -204,7 +201,6 @@ const DEFAULT_MODE = 'steps'
 // nothing for the lane and is not the lane's join), and a dispatched agent that carries no usage. A bootstrap:false confirmed on that re-check is not an
 // error: it is folded into wave overhead instead, since the lane script never
 // dispatches an agent without a bootstrap brief.
-// ---------------------------------------------------------------------------
 
 const input = (typeof args === 'string' ? JSON.parse(args) : args) || {}
 if (typeof args === 'string') log('docket-workflow-usage: decoded args from the harness JSON-encoded transport (normal)')

@@ -135,7 +135,7 @@ def load_scenario(path):
         if step["id"] in seen:
             raise SweepError(f"duplicate step id: {step['id']}")
         seen.add(step["id"])
-        for mode in step.get("modes", ["text", "json", "format"]):
+        for mode in step.get("modes", list(MODES)):
             if mode not in MODES:
                 raise SweepError(f"step {step['id']}: unknown mode {mode!r}")
         forbid(step)
@@ -172,7 +172,7 @@ def check_trust_order(steps):
     first_add = next((i for i, s in enumerate(steps) if positional(s["argv"])[:2] == ["trust", "add"]), None)
     if first_add is None:
         return
-    last_engine = max((i for i, s in enumerate(steps) if positional(s["argv"])[:1] and positional(s["argv"])[0] in ENGINE_GROUPS), default=-1)
+    last_engine = max((i for i, s in enumerate(steps) if any(w in ENGINE_GROUPS for w in positional(s["argv"])[:1])), default=-1)
     if last_engine > first_add:
         raise SweepError(
             f"step {steps[first_add]['id']} adds a trust entry before engine step {steps[last_engine]['id']}; "
@@ -274,13 +274,12 @@ class Runner:
         # a probe with no scripted stdin gets a closed one.
         stream = {"input": stdin} if stdin is not None else {"stdin": subprocess.DEVNULL}
         try:
-            result = subprocess.run(
+            return subprocess.run(
                 [self.binary, *argv], cwd=cwd, env=env, capture_output=True, text=True,
                 check=False, timeout=self.timeout, **stream,
             )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise SweepError(f"docket {' '.join(argv)} failed to run: {exc}") from exc
-        return result
 
     def assert_isolated(self):
         result = self.run(["config", "--json"], self.repo)
@@ -320,12 +319,12 @@ class Runner:
         stdin = self.substitute(step["stdin"]) if "stdin" in step else None
         records = []
         parsed = None
-        for mode in step.get("modes", ["text", "json", "format"]):
-            # A verb that takes `--` needs the output flag before it.
-            at = step.get("mode_at", len(argv))
+        # A verb that takes `--` needs the output flag before it.
+        at = step.get("mode_at", len(argv))
+        expect = step.get("expect_exit")
+        for mode in step.get("modes", list(MODES)):
             full = [*argv[:at], *MODES[mode], *argv[at:]]
             result = self.run(full, cwd, stdin, step.get("env"))
-            expect = step.get("expect_exit")
             if expect is not None and result.returncode != expect:
                 raise SweepError(
                     f"step {step['id']} ({mode}) exited {result.returncode}, expected {expect}\n"
@@ -461,6 +460,13 @@ def digest(fixtures, inventory):
     return "\n".join(lines) + "\n"
 
 
+def load_versioned(path, label):
+    document = json.loads(path.read_text())
+    if not isinstance(document, dict) or document.get("schema_version") != 1:
+        raise SweepError(f"unsupported {label} schema")
+    return document
+
+
 def serialized(value):
     return json.dumps(value, ensure_ascii=False, indent=2) + "\n"
 
@@ -490,24 +496,17 @@ def main():
         parser.error("--timeout must be positive")
     try:
         scenario = load_scenario(args.scenario)
-        inventory = json.loads(args.inventory.read_text())
-        if not isinstance(inventory, dict) or inventory.get("schema_version") != 1:
-            raise SweepError("unsupported inventory schema")
+        inventory = load_versioned(args.inventory, "inventory")
         if args.coverage:
             coverage = check_coverage(scenario, inventory)
             print(f"Scenario covers {len(coverage['exercised'])} commands; {len(coverage['skipped'])} skipped with a reason.")
             return 0
         if args.digest:
-            fixtures = json.loads(args.fixtures.read_text())
-            if not isinstance(fixtures, dict) or fixtures.get("schema_version") != 1:
-                raise SweepError("unsupported fixtures schema")
-            sys.stdout.write(digest(fixtures, inventory))
+            sys.stdout.write(digest(load_versioned(args.fixtures, "fixtures"), inventory))
             return 0
         actual = collect(args, scenario, inventory)
         if args.check:
-            expected = json.loads(args.fixtures.read_text())
-            if not isinstance(expected, dict) or expected.get("schema_version") != 1:
-                raise SweepError("unsupported fixtures schema")
+            expected = load_versioned(args.fixtures, "fixtures")
             before, after = serialized(comparable(expected)), serialized(comparable(actual))
             if before != after:
                 print("Docket CLI fixtures differ; review the upgrade before using --write.", file=sys.stderr)

@@ -145,10 +145,8 @@ say review/design-qa only. Same shape, byte-identical
 constraints. The v30 comment's "first-match in sorted
 order" claim is corrected to "declared order", confirmed
 against `ThresholdOrder` in the engine source
-(feature/engine-improvements at the time of checking):
-TOML tables decode into Go maps, which lose declaration
-order, so the engine reconstructs it from source text
-specifically to keep first-match-wins deterministic.
+(feature/engine-improvements at the time of checking); entry
+30 gives the mechanism.
 
 ## 43
 

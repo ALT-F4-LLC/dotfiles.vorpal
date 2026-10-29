@@ -84,7 +84,7 @@ while IFS= read -r id || [ -n "$id" ]; do
     [ -z "$id" ] && continue
     data=$(show "$id") || { printf '%s\tunresolved\n' "$id"; rc=1; continue; }
     targets=$(printf '%s' "$data" | jq -r --arg id "$id" \
-        '[.relations[]? | select(.relation_type=="depends_on" and .source_issue_id==$id) | .target_issue_id] | .[]')
+        '.relations[]? | select(.relation_type=="depends_on" and .source_issue_id==$id) | .target_issue_id')
     open=""
     for t in $targets; do
         state=$(state_of "$t")

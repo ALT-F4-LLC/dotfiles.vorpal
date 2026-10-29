@@ -85,8 +85,13 @@ rule below also requires `current_version > 0`.
 - **Current cohort.** Every pinned workflow has `behind == 0` and
   `current_version > 0`: the run used the workflow versions still in
   force. These runs are the evidence for a proposal.
-- **Baseline cohort.** Every pinned workflow has `behind` of 0 or 1 and
-  `current_version > 0`, with at least one at 1. It answers "did the last change help?" and supplies the
+- **Baseline cohort.** Every pinned workflow is at current or sits exactly
+  one registered version below it, counting deprecated versions
+  (`docket workflow list --deprecated --name <workflow>`), and
+  `current_version > 0`, with at least one below current. `behind` alone cannot
+  decide this: it skips deprecated versions, so a run pinned to
+  standard-change@10 reads `behind: 1` like one pinned to @54, and only @54
+  is baseline. It answers "did the last change help?" and supplies the
   before-side of a comparison. When the current cohort has under five runs,
   as it will right after a bump, the baseline joins it as the primary
   window and the report says so.

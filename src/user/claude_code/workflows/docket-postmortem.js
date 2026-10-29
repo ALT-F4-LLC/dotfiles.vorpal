@@ -14,7 +14,6 @@ export const meta = {
     ],
 }
 
-// ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS (the listing's description is a one-line summary;
 // this block is the single copy of the argument and return contract).
 //
@@ -152,7 +151,6 @@ export const meta = {
 // stage 1 alone is too large. Digest retries are not in that count; the
 // refute stage seats only as many candidates as the cap leaves room for
 // (refuteSeatCap) and returns the rest as uncovered.
-// ---------------------------------------------------------------------------
 
 // Pin models so a launch never inherits the caller's quota-limited model.
 // Digest agents relay a fixed jq program; flagged logs and the analysts
@@ -232,12 +230,7 @@ function tallyRefutations(votes) {
 function planShards(lines, bytes, shardBytes) {
     if (!(lines > 0)) return []
     const count = Math.max(1, Math.ceil((bytes > 0 ? bytes : 0) / shardBytes))
-    const per = Math.ceil(lines / count)
-    const out = []
-    for (let from = 1; from <= lines; from += per) {
-        out.push({ from, to: Math.min(lines, from + per - 1) })
-    }
-    return out
+    return planDigestBatches(lines, Math.ceil(lines / count))
 }
 
 // Contiguous 1-based line ranges of at most `size` lines covering 1..total.
@@ -736,7 +729,7 @@ const RUN_STATUSES = ['done', 'abandoned']
 const SESSION_ROLES = ['activate', 'drive', 'pause', 'resume', 'finish']
 const KINDS = ['main', 'workflow', 'subagent']
 
-// ---- Args ----------------------------------------------------------------
+// Args
 
 const input = typeof args === 'string' ? JSON.parse(args) : (args || {})
 if (typeof args === 'string') log('docket-postmortem: decoded args from the harness JSON-encoded transport (normal)')
@@ -785,7 +778,7 @@ const condenseDir = `${auditDir}/condensed`
 let spent = 0
 function seat(prompt, opts) { spent++; return agent(prompt, opts) }
 
-// ---- Inventory -------------------------------------------------------------
+// Inventory
 // Before any digest agent is seated, one bounded read agent runs the fixed
 // read command over the inventory TSV; kinds and bytes come from its output,
 // cross-checked against the file's own line count (see resolveInventory).
@@ -835,7 +828,7 @@ if (sampling) {
 }
 const unsampledSet = new Set(sampleSelection ? sampleSelection.flatMap((s) => s.unsampled) : [])
 
-// ---- Schemas -------------------------------------------------------------
+// Schemas
 
 const EVIDENCE = {
     type: 'object',
@@ -961,7 +954,7 @@ const RECONCILE_SCHEMA = {
     required: ['drafts', 'dropped', 'notes'],
 }
 
-// ---- Briefs --------------------------------------------------------------
+// Briefs
 
 const BOUNDARY = `Observe only. The audited run is finished; nothing you read is live work.
 Do not change repositories, definitions, memory, configuration, Git, or the
@@ -1205,7 +1198,7 @@ ${JSON.stringify(upheld, null, 2)}
 Merge by defect and owner, not by similar wording. Rank by consequence. For each distinct defect, draft one worker-ready issue that satisfies filing.md's worker-ready issue contract. Lift every remedy to the highest automation rung that can carry it, and rewrite any remedy marked remedyNeedsRework; a draft left on human-gate names its vital condition. Run \`docket issue list --json\` from the owning checkout for each owner (read-only) and name any existing issue that may already track the defect. Mark an instance-policy choice as a referral to docket-retro. Set aside a finding the arc resolved or that is only a control observation, with the reason. Return the schema, with your working notes in notes. Write no file.`
 }
 
-// ---- Stage 1: digest every inventoried log --------------------------------
+// Stage 1: digest every inventoried log
 
 const uncovered = []
 // Seat working notes. A seat writes no file; the calling skill persists these.
@@ -1318,7 +1311,7 @@ if (!continuation) {
     log(`docket-postmortem: continuation over ${continuation.lines.length} deferred line(s) of ${run.id}`)
 }
 
-// ---- Stage 2: deep-read every agent log the budget reaches ----------------
+// Stage 2: deep-read every agent log the budget reaches
 
 // A digest-flagged log is always read: a stratum may not sample away the logs
 // the digests singled out.
@@ -1355,7 +1348,7 @@ await parallel(plan.batches.map((batch, i) => async () => {
 }))
 log(`docket-postmortem: ${deepRead.size} log(s) read in full; ${observations.length} observation(s)`)
 
-// ---- Stage 3: patterns (barrier: needs every observation together) --------
+// Stage 3: patterns (barrier: needs every observation together)
 
 // A sampled read makes a recurrence count what the sample saw, not a prevalence
 // in the run. Say so, so the analyst states counts as seen and the caller
@@ -1383,7 +1376,7 @@ if (groups.length > 0) {
     }
 }
 
-// ---- Stage 4: refute ------------------------------------------------------
+// Stage 4: refute
 
 const rank = { 'load-bearing': 0, friction: 1, 'paper-cut': 2 }
 candidates.sort((a, b) => (rank[a.severity] ?? 3) - (rank[b.severity] ?? 3))
@@ -1415,7 +1408,7 @@ await parallel(judged.map((candidate) => async () => {
 }))
 log(`docket-postmortem: ${upheld.length} upheld, ${refuted.length} refuted, ${unverified.length} unverified of ${judged.length} judged`)
 
-// ---- Stage 5: reconcile (barrier: needs every survivor together) ---------
+// Stage 5: reconcile (barrier: needs every survivor together)
 
 const toReconcile = [...(Array.isArray(continuation?.priorUpheld) ? continuation.priorUpheld : []), ...upheld]
 let reconciled = []

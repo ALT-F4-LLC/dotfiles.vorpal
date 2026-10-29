@@ -1,6 +1,6 @@
 ---
 fragment: evidence-rules
-version: 12
+version: 13
 ---
 # Evidence rules
 
@@ -81,10 +81,9 @@ unresolved question warrants it.
   correct change in the pipeline's real environment. A finding you inferred,
   read from source without running, or marked UNVERIFIED is at most
   `medium`, however serious it would be if real; so is a missing test on
-  code that works. Record a `medium` or `low` out-of-scope finding in your step's artifact and
-  in one `docket issue comment add` on your step's own issue instead, one
-  comment covering every such finding, and file nothing for it. This bound
-  governs discoveries outside your work. A gap your contract's Stuck clause
+  code that works. Record each `medium` or `low` out-of-scope finding in your
+  step's artifact and in one `docket issue comment add` on your step's own
+  issue that covers them all, and file nothing for it. A gap your contract's Stuck clause
   requires, and a filing your contract mandates for an item it selects, follow
   that contract; the two checks below still apply to them unless that
   contract exempts its selected items from a check by name.

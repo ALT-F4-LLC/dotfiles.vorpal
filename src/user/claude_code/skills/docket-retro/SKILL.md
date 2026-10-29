@@ -586,5 +586,6 @@ present even when empty:
 
 Filed proposals drain through `docket-groom` into `docket-plan` and
 `docket-run`, through `docket-refit` for a redesign, or into direct work
-when they touch `src/user/claude_code/` or `src/user/claude_code.rs`, per [brief](../brief/SKILL.md)'s
+when they touch `src/user/claude_code/`, `src/user/claude_code.rs`, or
+`src/user/docket/config/`, per [brief](../brief/SKILL.md)'s
 harness rule; do not start that work.

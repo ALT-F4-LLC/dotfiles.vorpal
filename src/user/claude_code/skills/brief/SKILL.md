@@ -296,10 +296,11 @@ documentation edit, rules 3 through 6 never recommend `/docket-plan`: recommend
 track.
 
 **Harness work never goes through a run.** When any `files` or `scope`
-entry lies under `src/user/claude_code/` or `src/user/claude_code.rs` (the agents, hooks, skills,
-workflows, references, and settings the docket chain runs on, and the
-builder that ships them), rules 1
-through 6 never recommend `/docket-plan`: recommend `/goal`, or `/loop`
+entry lies under `src/user/claude_code/`, `src/user/claude_code.rs`, or
+`src/user/docket/config/` (the agents, hooks, skills, workflows,
+references, and settings the docket chain runs on, the builder that ships
+them, and the workflow, contract, fragment, schema, policy, and changelog
+definitions the chain binds), rules 1 through 6 never recommend `/docket-plan`: recommend `/goal`, or `/loop`
 under rule 4 when Shape is `iterative`. A run that edits its own machinery
 is slower than the operator's session and its result is confounded by the
 change under test, so the harness is improved directly. This rule precedes

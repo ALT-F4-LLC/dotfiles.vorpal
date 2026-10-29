@@ -643,7 +643,8 @@ Record these findings alongside the value decision:
   if it has them. Design documents authored through `spec-doc` are a
   separate track and stay `route-run`. Harness work never goes through a
   run either: an issue with any `files` or `scope` entry under
-  `src/user/claude_code/` or `src/user/claude_code.rs` gets `route-direct` whatever its size or
+  `src/user/claude_code/`, `src/user/claude_code.rs`, or
+  `src/user/docket/config/` gets `route-direct` whatever its size or
   security boundary, loses `route-run`, and keeps `security-change`, per
   brief's harness rule. Otherwise `route-run`
   for one-shot work a worker can finish without a question, whatever its

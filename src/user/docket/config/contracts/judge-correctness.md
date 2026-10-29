@@ -1,6 +1,6 @@
 ---
 node: judge-correctness
-version: 26
+version: 27
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -82,9 +82,7 @@ Preserve unsupported candidates as qualified leads or Questions, with the missin
 evidence and next probe, rather than a low-severity finding; use `gap` when they
 prevent judgment. Suggestions need an identifiable benefit within this charter.
 
-On re-review, apply re-review-rounds: preserve finding IDs and supported severities,
-carry unresolved findings forward, and justify closures with evidence. Preserve
-target identities, dispositions, evidence references, and gaps across handoffs
+On re-review, apply re-review-rounds. Preserve target identities, dispositions, evidence references, and gaps across handoffs
 and compaction.
 
 # Emit
@@ -120,5 +118,5 @@ fragment, prior-state evidence, or verification capability. Name what is missing
 the affected judgment, evidence of the limitation, and what would resolve it.
 Use the brief's gap channel; invent no payload fields or recording commands.
 Complete independent checks, retain their findings, and stop the whole review
-only when nothing in scope can be judged. Never infer intent solely from the
-implementation or claim coverage you could not establish.
+only when nothing in scope can be judged. Never claim coverage you could not
+establish.

@@ -30,8 +30,10 @@ trap 'rm -rf "$work"' EXIT
 git ls-files -z -- "$@" | tr '\0' '\n' | grep -E "\.(${EXT})\$" | grep -Ev "$TEST" | grep -Ev "$GEN" | sort > "$work/files" || true
 [ -s "$work/files" ] || { echo '[]'; exit 0; }
 
-tr '\n' '\0' < "$work/files" | xargs -0 wc -l | grep -v ' total$' | awk '{ n = $1; $1 = ""; sub(/^ /, ""); print n "\t" $0 }' > "$work/lines"
-{ git log --since=6.months --name-only --pretty=format: | grep -v "^$" || true; } | sort | uniq -c | awk '{ n = $1; $1 = ""; sub(/^ /, ""); print n "\t" $0 }' > "$work/churn"
+# Turn "count path" lines into "count<TAB>path".
+TSV='{ n = $1; $1 = ""; sub(/^ /, ""); print n "\t" $0 }'
+tr '\n' '\0' < "$work/files" | xargs -0 wc -l | grep -v ' total$' | awk "$TSV" > "$work/lines"
+{ git log --since=6.months --name-only --pretty=format: | grep -v "^$" || true; } | sort | uniq -c | awk "$TSV" > "$work/churn"
 
 awk -F'\t' -v target="$target" '
     FILENAME == ARGV[1] { churn[$2] = $1; next }
@@ -45,9 +47,7 @@ awk -F'\t' -v target="$target" '
     split("\n") | map(select(length > 0) | split("\t"))
     | group_by(.[0])
     | map({ files: map(.[1]), lines: (map(.[2] | tonumber) | add), churn: (map(.[3] | tonumber) | add) })
-    | map(. + { density: (.churn / (if .lines < 1 then 1 else .lines end)) })
-    | sort_by(-.density)
+    | sort_by(-(.churn / ([.lines, 1] | max)))
     | to_entries
-    | map(.value + { name: ("shard-" + ((.key + 1) | tostring) + ":" + (.value.files[0] | split("/")[0:2] | join("/"))) })
-    | map({ name, files, lines })
+    | map({ name: ("shard-" + ((.key + 1) | tostring) + ":" + (.value.files[0] | split("/")[0:2] | join("/"))), files: .value.files, lines: .value.lines })
 '

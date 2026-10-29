@@ -77,8 +77,7 @@ PR, and the PR names its base. A failed or errored read refuses identically
 to a negative one — never fall back to a guess.
 
 Which of the six apply depends on the mode, and each mode's step 1 names its
-own set. Precondition 6 states which modes read a base and why: `open` has
-no PR yet, and `ready`, `checks`, and `close` neither push nor diff.
+own set.
 
 1. `gh auth status` exits 0. It runs as one bare command, the shape **gh
    under the sandbox** below requires, and its exit status is the tool
@@ -109,14 +108,6 @@ no PR yet, and `ready`, `checks`, and `close` neither push nor diff.
    Precondition 4's ban on letting `gh` infer its target covers the PR
    number too: a `gh pr merge` with no number merges whatever gh guesses
    from the checkout.
-
-   **Mode selection's intent-hint resolution is the one other caller of this
-   exact query**, run before any mode is chosen rather than as this
-   precondition. There, zero matches resolves the hint to `open` instead of
-   refusing, since an unrecognized word with no open PR yet is exactly the
-   case `open` handles, and a mode reached that way never runs this
-   precondition again. Every other caller of precondition 5 keeps the
-   refusal above unchanged.
 
    **An explicitly given number is not trusted to be this branch's PR.** Read
    `headRefName` for it (`gh pr view <pr-number> -R <owner>/<repo> --json
@@ -346,8 +337,7 @@ one site that does not depend on that ref being current: a stale
 two sites that diff the branch against its base (**Title and body**, and
 `merge` step 2) cannot tolerate staleness in either direction, which is why
 they diff against precondition 6's `<merge-base>`, read from GitHub, and
-never against `origin/<base>`. **Fail closed**: either command exiting
-non-zero refuses the push.
+never against `origin/<base>`.
 
 One limit, stated so it is not assumed closed: the scan is **path-shaped
 only** — a credential pasted into an ordinary source file is not caught
@@ -813,8 +803,7 @@ be checked is not evidence the branch has no PR.
    command errors** — no remote-tracking ref exists yet for the head branch —
    **stop and report it; never fetch first and capture the sha afterwards.**
    That recovery is exactly the bare `--force-with-lease` the push rules
-   forbid: it would compare against a ref the fetch just refreshed rather
-   than a value that predates it.
+   forbid.
 2. Run preconditions 1-6, then `git fetch origin`, once. `sync` is the one
    mode that fetches, because the rebase needs the base's newest commits
    locally and `gh` cannot supply them. When the fetch fails on transport
@@ -1031,8 +1020,7 @@ plausible the context makes it look.
      names a way out rather than looping.
    - `mergeable == MERGEABLE`.
    - `mergeStateStatus == CLEAN`, with exactly one exception, and this
-     step's single read (`isDraft,mergeable,mergeStateStatus,reviewDecision,
-     statusCheckRollup,headRefOid,baseRefName`) cannot by itself tell a
+     step's single read cannot by itself tell a
      pending-required-check `BLOCKED`/`UNSTABLE` apart from one caused by a
      failed check, a missing approval, or an unsatisfied protection rule:
      both surface the same status. So when the invocation said `auto` and
@@ -1058,8 +1046,7 @@ plausible the context makes it look.
      An **empty** check list refuses: vacuously "all concluded" is not
      evidence of green, it is evidence the checks never ran. This bullet
      does not refuse on a check that is still pending — step 3 decides
-     that, and it is the only place the pending rule and its `auto`
-     exemption are written, so the exemption cannot be unreachable.
+     that.
    - `reviewDecision == APPROVED`, **or** it is empty. An empty
      `reviewDecision` is treated as **UNREVIEWED, never as "no review
      required."** Merge proceeds on empty only when `mergeStateStatus ==
@@ -1102,11 +1089,7 @@ plausible the context makes it look.
 3. **Pending checks — the one place this is decided.** If any check from
    step 2's rollup is still pending: refuse before invoking `gh pr merge`,
    *unless* the invocation explicitly said `auto`, in which case the merge
-   proceeds down the `--auto` path in step 5. Step 2 hands pending here
-   rather than deciding it: its check-list bullet does not refuse on a
-   pending check, and its `mergeStateStatus` bullet carries the same `auto`
-   carve-out, so an invocation that said `auto` reaches step 5 with a check
-   still running.
+   proceeds down the `--auto` path in step 5.
 
    The refusal exists because a plain `gh pr merge` does not fail on a
    pending required check — it silently **arms an unattended merge** that

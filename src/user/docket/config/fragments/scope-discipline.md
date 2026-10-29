@@ -1,6 +1,6 @@
 ---
 fragment: scope-discipline
-version: 14
+version: 15
 ---
 # Scope discipline
 
@@ -13,7 +13,7 @@ authorize it. Disclosure records a deviation; it does not authorize one.
   exclusions, and permitted files or resources. In Docket, check both the
   concrete `files` inventory and `scope` globs; one does not replace the other.
   Record this attempt's starting state and governing declaration. Unresolved
-  boundaries block dependent edits until resolved. Make routine implementation
+  boundaries block dependent edits. Make routine implementation
   decisions inside a clear boundary without asking again for authority already
   granted.
 - **Inspect enough; change only what is authorized.** Read relevant callers,

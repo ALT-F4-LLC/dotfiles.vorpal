@@ -1,6 +1,6 @@
 ---
 node: judge-design
-version: 22
+version: 23
 archetype: executor-read
 packet_includes:
   - fragments/design-search.md
@@ -169,8 +169,9 @@ prevents judgment of a behavior the change decides. Choices left open within
 an established accepted direction do not automatically require more specification.
 Use the same route for missing required fragments, an unavailable review target
 after permitted reconstruction, or other inputs needed for this seat's judgment.
-Name what is missing, the dependent judgment, the evidence of the limitation,
-and what would resolve it. Continue independent review work.
+Name each undecided behavior or missing input, the dependent judgment, the
+evidence of the limitation, and the accepted decision or input that would
+resolve it. Continue independent review work.
 
 Missing governing coverage is an expected outcome of this seat's placement in
 the UI review fanout, not a failure. File every warranted gap regardless of
@@ -179,8 +180,7 @@ not invent requirements to avoid the gap or author the missing specification
 in this step.
 
 A gap must survive the run. Use the brief's gap channel; invent no payload
-fields or recording commands. Name each undecided behavior and the accepted
-decision or missing input needed to resolve it. Use known paths; disclose
+fields or recording commands. Use known paths; disclose
 unavailable file scope rather than inventing it. The conductor uses these
 declarations for issue placement and scope. Filing alone does not route spec
 authoring: make the required spec-track handoff explicit for grooming. That

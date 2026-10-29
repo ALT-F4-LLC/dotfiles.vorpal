@@ -7,7 +7,6 @@ export const meta = {
     ],
 }
 
-// ---------------------------------------------------------------------------
 // CONTRACT FOR CALLERS
 //
 // What it does:
@@ -34,7 +33,6 @@ export const meta = {
 // dispatch covers retro-analyst, so this script is its only seating path
 // and the caller sets each seat's {model, effort} explicitly per analyst
 // entry, because no engine row supplies them as it does for lane script steps.
-// ---------------------------------------------------------------------------
 
 // The retro-analyst contract's Emit and Stuck sections, as fields: the window
 // and coverage stated once, ranked findings, and gaps. A finding's full

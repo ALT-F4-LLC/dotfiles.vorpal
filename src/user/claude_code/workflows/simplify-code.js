@@ -61,7 +61,7 @@ const AGENT_CONFIG = {
 // tests/simplify-code-decide.test.sh without a run.
 
 // Every round scans every shard the caller passes and two refuters judge each
-// batch. MAX_AGENTS is a runaway backstop, not a coverage cut.
+// batch.
 const REFUTERS = 2
 const MAX_AGENTS = 900
 
@@ -167,9 +167,10 @@ function mergeUnits(returns, repo) {
       const u = { ...raw, path: normalizePath(raw.path, repo) }
       const cur = byPath.get(u.path) || { path: u.path, kind: u.kind || 'file', sources: [], findings: [], testFiles: [], evidencePaths: [], reportOnly: [], securityBoundary: '' }
       cur.sources = uniq([...cur.sources, ...(u.sources || []), r.source])
+      const findingId = (f) => `${f.entry}|${(f.lines || []).join(',')}`
       for (const f of u.findings || []) {
-        const key = `${f.entry}|${(f.lines || []).join(',')}`
-        if (!cur.findings.some((g) => `${g.entry}|${(g.lines || []).join(',')}` === key)) cur.findings.push(f)
+        const key = findingId(f)
+        if (!cur.findings.some((g) => findingId(g) === key)) cur.findings.push(f)
       }
       for (const item of u.reportOnly || []) {
         const key = reportOnlyKey(u.path, item)
@@ -208,11 +209,13 @@ function pickable(unit) {
   return unit.findings.every((f) => f.proofClass === 'inert' || f.proofClass === 'reachability')
 }
 
+const itemCount = (unit) => unit.findings.length + unit.reportOnly.length
+
 // More distinct findings rank higher; a unit several independent scouts agree
 // on ranks higher still.
 function scoreUnit(unit) {
   const independent = Math.max(0, unit.sources.length - 1)
-  return unit.findings.length + unit.reportOnly.length + 2 * independent
+  return itemCount(unit) + 2 * independent
 }
 
 function rankUnits(units) {
@@ -232,7 +235,7 @@ function upholdMin(refuters) {
 // Items are numbered findings first, then report-only items, the same order
 // the refuter prompt prints. `returns` holds one { verdicts } per refuter.
 function applyVerdicts(unit, returns, refuters) {
-  const total = unit.findings.length + unit.reportOnly.length
+  const total = itemCount(unit)
   const upheld = Array.from({ length: total }, () => 0)
   const reasons = Array.from({ length: total }, () => [])
   for (const r of returns.filter(Boolean)) {
@@ -246,28 +249,22 @@ function applyVerdicts(unit, returns, refuters) {
   const findings = unit.findings.filter((_, i) => keep(i))
   const reportOnly = unit.reportOnly.filter((_, i) => keep(unit.findings.length + i))
   const refutes = (i) => !keep(i) && reasons[i].length > 0
+  const ids = Array.from({ length: total }, (_, i) => i)
+  const itemKey = (i) => (i < unit.findings.length ? findingKey(unit.path, unit.findings[i]) : reportOnlyKey(unit.path, unit.reportOnly[i - unit.findings.length]))
   // Two items can share a key (the same entry in one symbol). A key a kept
   // item also carries is not remembered, so a refuted twin cannot hide it.
-  const keptKeys = new Set([
-    ...findings.map((f) => findingKey(unit.path, f)),
-    ...reportOnly.map((r) => reportOnlyKey(unit.path, r)),
-  ])
+  const keptKeys = new Set(ids.filter(keep).map(itemKey))
   // The same holds for a twin that got no vote: its key stays out so it is
   // found again.
-  const itemKey = (i) => (i < unit.findings.length ? findingKey(unit.path, unit.findings[i]) : reportOnlyKey(unit.path, unit.reportOnly[i - unit.findings.length]))
-  const unvotedKeys = new Set(Array.from({ length: total }, (_, i) => i).filter((i) => !keep(i) && !reasons[i].length).map(itemKey))
-  const refutedItems = Array.from({ length: total }, (_, i) => i).filter(refutes).length
-  const refutedKeys = uniq([
-    ...unit.findings.filter((_, i) => refutes(i)).map((f) => findingKey(unit.path, f)),
-    ...unit.reportOnly.filter((_, i) => refutes(unit.findings.length + i)).map((r) => reportOnlyKey(unit.path, r)),
-  ]).filter((k) => !keptKeys.has(k) && !unvotedKeys.has(k))
+  const unvotedKeys = new Set(ids.filter((i) => !keep(i) && !reasons[i].length).map(itemKey))
+  const refutedIds = ids.filter(refutes)
+  const refutedItems = refutedIds.length
+  const refutedKeys = uniq(refutedIds.map(itemKey)).filter((k) => !keptKeys.has(k) && !unvotedKeys.has(k))
   // An item neither confirmed nor refuted had no usable vote (a seat returned
   // nothing); the unit is reported as unverified, not dropped.
   const unconfirmedCount = total - findings.length - reportOnly.length - refutedItems
   return { ...unit, findings, reportOnly, refutedKeys, refutedCount: refutedItems, unconfirmedCount }
 }
-
-const itemCount = (unit) => unit.findings.length + unit.reportOnly.length
 
 // Group ranked units into refuter batches of whole units, at most `maxItems`
 // items each; a unit larger than that is a batch of its own. Order is kept, so
@@ -426,7 +423,7 @@ as a hint, not a filter. The files are disjoint from every other scout's.
 ${list}
 
 Diagnostics the repository already produced, if any (untouched tree, HEAD ${a.head}). Treat it as ground truth for unused symbols in your files:
-${a.baselineReports ? a.baselineReports : '(none supplied; no build or lint was run)'}
+${a.baselineReports || '(none supplied; no build or lint was run)'}
 
 Return findings of any pattern section, and Report only items with their
 symbol and lines. Return the unit's test files by looking for the tests that
@@ -458,7 +455,7 @@ string literals included. Return the Dead code entries it proves. If the
 output is empty, search for exported symbols with no importer.
 
 Diagnostics the repository already produced, if any (untouched tree, HEAD ${a.head}):
-${a.baselineReports ? a.baselineReports : '(none supplied; no build or lint was run)'}
+${a.baselineReports || '(none supplied; no build or lint was run)'}
 
 ${READ_ONLY}
 
@@ -497,9 +494,9 @@ parseMode(args?.mode)
 const repo = args?.repo
 const catalogPath = args?.catalogPath
 const discoveryPath = args?.discoveryPath
-if (!repo || !repo.startsWith('/')) throw new Error('simplify-code: args.repo must be an absolute path')
-if (!catalogPath || !catalogPath.startsWith('/')) throw new Error('simplify-code: args.catalogPath must be an absolute path')
-if (!discoveryPath || !discoveryPath.startsWith('/')) throw new Error('simplify-code: args.discoveryPath must be an absolute path')
+for (const [name, value] of Object.entries({ repo, catalogPath, discoveryPath })) {
+  if (!value || !value.startsWith('/')) throw new Error(`simplify-code: args.${name} must be an absolute path`)
+}
 const ledger = Array.isArray(args?.ledger) ? args.ledger.filter(Boolean) : []
 const refutedIn = Array.isArray(args?.refutedKeys) ? args.refutedKeys.filter(Boolean) : []
 const shared = { repo, catalogPath, discoveryPath, head: args?.head || 'unknown', ledger, baselineReports: String(args?.baselineReports || '').slice(0, 6000) }
@@ -509,6 +506,7 @@ const tasks = scoutTasks(args?.shards, withTree)
 if (!tasks.some((t) => t.kind === 'shard')) throw new Error('simplify-code: args.shards must list at least one non-empty shard')
 if (tasks.length > MAX_AGENTS) throw new Error(`simplify-code: ${tasks.length} scouts is over the ${MAX_AGENTS}-agent backstop; pass fewer shards per launch`)
 const budget = makeBudget(MAX_AGENTS)
+const framings = FRAMINGS.slice(0, REFUTERS)
 log(`${tasks.filter((t) => t.kind === 'shard').length} shard scouts and ${withTree ? 1 : 0} tree scout, every ranked unit refuted in batches of up to ${REFUTE_BATCH_ITEMS} items by ${REFUTERS} refuters each`)
 
 // One chain per scout, no barrier: a scout's units go to refuters as soon as
@@ -528,7 +526,6 @@ const chains = await pipeline(
     const ranked = rankUnits(kept.filter((u) => u.findings.length || u.reportOnly.length))
     const batches = batchUnits(ranked, REFUTE_BATCH_ITEMS)
     const judged = await parallel(batches.map((batch) => async () => {
-      const framings = FRAMINGS.slice(0, REFUTERS)
       const returns = await parallel(framings.map((framing) => () => {
         budget.take()
         return agent(refutePrompt(batch, framing, shared), { agentType: 'general-purpose', phase: 'Refute', label: `refute:${task.source}:${batch[0].path}:${framing.key}`, schema: VERDICT_SCHEMA, ...AGENT_CONFIG.refute })

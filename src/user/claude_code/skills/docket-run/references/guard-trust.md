@@ -14,9 +14,9 @@ examples reflect the swept commands as of that build.
 
 ## Contents
 
-- [`docket guard`](#guard-commands) — 119 lines
+- [`docket guard`](#guard-commands) — 117 lines
   - [`guard record`](#guard-record) — 18 lines
-  - [`guard spawn`](#guard-spawn) — 47 lines
+  - [`guard spawn`](#guard-spawn) — 45 lines
 - [`docket trust`](#trust-commands) — 184 lines
   - [`trust add <name> -- <argv...>`](#trust-add) — 66 lines
   - [`trust list`](#trust-list) — 16 lines
@@ -131,9 +131,7 @@ names no reap of this run is `VALIDATION_ERROR` (exit 3).
 `--deciding-vote` permits the panel that will decide a reap hold to
 start. The proposal must exist and be open; the flag relaxes only the
 reap check, never row matching, and does not acknowledge the reap. Every
-use records a `spawn-admitted` event naming the proposal and hold. Use it
-with `--run`, not `--active`, since the exception concerns one run's
-panel.
+use records a `spawn-admitted` event naming the proposal and hold.
 
 **No guard writes anything except `guard spawn`'s `--ack-reap`
 acknowledgment and the `spawn-admitted` event it records for a

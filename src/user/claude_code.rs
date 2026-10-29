@@ -786,16 +786,13 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_sandbox_fail_if_unavailable(true)
         .with_sandbox_excluded_commands(owned(SANDBOX_EXCLUDED_COMMANDS))
         .with_sandbox_filesystem_allow_write(
-            owned(
-                SANDBOX_TOOLCHAIN_CACHE_PATHS
-                    .iter()
-                    .chain(SANDBOX_ALLOW_WRITE_PATHS)
-                    .copied()
-                    .chain(scratch_roots.iter().map(String::as_str)),
-            )
-            .into_iter()
-            .chain(just_tempdir)
-            .collect(),
+            SANDBOX_TOOLCHAIN_CACHE_PATHS
+                .iter()
+                .chain(SANDBOX_ALLOW_WRITE_PATHS)
+                .map(|path| path.to_string())
+                .chain(scratch_roots.iter().cloned())
+                .chain(just_tempdir)
+                .collect(),
         )
         .with_sandbox_filesystem_deny_write(owned(TRUST_STORE_PATHS))
         .with_sandbox_filesystem_deny_read(sandbox_filesystem_deny_read_paths())
@@ -952,6 +949,21 @@ mod tests {
             .expect("an array of rules")
             .iter()
             .map(|row| row.as_str().expect("a string rule").to_string())
+            .collect()
+    }
+
+    /// The emitted `event` hook entries with a hook that runs `command`.
+    fn hook_entries_running(event: &str, command: &str) -> Vec<serde_json::Value> {
+        emitted_settings()["hooks"][event]
+            .as_array()
+            .expect("a hook list")
+            .iter()
+            .filter(|entry| {
+                entry["hooks"]
+                    .as_array()
+                    .is_some_and(|hooks| hooks.iter().any(|hook| hook["command"] == command))
+            })
+            .cloned()
             .collect()
     }
 
@@ -2018,20 +2030,10 @@ mod tests {
         // PermissionDenied matches on tool name, so a matcher drops every
         // refusal from a tool it does not name (Edit classifier refusals
         // reached no friction row while this was `Bash`).
-        let settings = emitted_settings();
-        let entries = settings["hooks"]["PermissionDenied"]
-            .as_array()
-            .expect("a PermissionDenied hook list");
-        let friction: Vec<_> = entries
-            .iter()
-            .filter(|entry| {
-                entry["hooks"].as_array().is_some_and(|hooks| {
-                    hooks.iter().any(|hook| {
-                        hook["command"] == "bash ~/.claude/hooks/sandbox-friction-hook.sh"
-                    })
-                })
-            })
-            .collect();
+        let friction = hook_entries_running(
+            "PermissionDenied",
+            "bash ~/.claude/hooks/sandbox-friction-hook.sh",
+        );
 
         assert_eq!(friction.len(), 1);
         assert!(friction[0].get("matcher").is_none());
@@ -2066,20 +2068,10 @@ mod tests {
     fn sensitive_path_guard_covers_write() {
         // executor-read holds the Write tool for its own scratch dir; the
         // guard confines that Write, so it must be registered on Write too.
-        let settings = emitted_settings();
-        let entries = settings["hooks"]["PreToolUse"]
-            .as_array()
-            .expect("a PreToolUse hook list");
-        let guard: Vec<_> = entries
-            .iter()
-            .filter(|entry| {
-                entry["hooks"].as_array().is_some_and(|hooks| {
-                    hooks.iter().any(|hook| {
-                        hook["command"] == "bash ~/.claude/hooks/sensitive-path-guard-hook.sh"
-                    })
-                })
-            })
-            .collect();
+        let guard = hook_entries_running(
+            "PreToolUse",
+            "bash ~/.claude/hooks/sensitive-path-guard-hook.sh",
+        );
 
         assert_eq!(guard.len(), 1);
         let mut tools: Vec<&str> = guard[0]["matcher"]

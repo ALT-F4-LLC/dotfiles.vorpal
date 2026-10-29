@@ -69,7 +69,6 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --base) [ $# -ge 2 ] || usage; base="$2"; shift 2 ;;
         --repo) [ $# -ge 2 ] || usage; repo="$2"; shift 2 ;;
-        -h | --help) usage ;;
         -*) usage ;;
         *) [ -z "$input" ] || usage; input="$1"; shift ;;
     esac
@@ -183,9 +182,14 @@ ac_paths=$(printf '%s' "$ac_paths" | sort -u)
 
 # Rows to check against scope: path, then why it must be in scope.
 scope_rows=""
+problems=0
 while IFS= read -r path; do
     [ -n "$path" ] || continue
     scope_rows="${scope_rows}${path}"$'\t'"named by the acceptance criteria"$'\n'
+    if ! in_list "$path" "$files"; then
+        problems=1
+        printf 'missing from files: %s (named by the acceptance criteria)\n' "$path"
+    fi
 done < "$(lines_of "$ac_paths")"
 while IFS= read -r file; do
     case "$file" in
@@ -197,15 +201,6 @@ while IFS= read -r file; do
     in_list "$sibling" "$tree" || continue
     scope_rows="${scope_rows}${sibling}"$'\t'"test beside ${file}"$'\n'
 done < "$(lines_of "$files")"
-
-problems=0
-while IFS= read -r path; do
-    [ -n "$path" ] || continue
-    if ! in_list "$path" "$files"; then
-        problems=$((problems + 1))
-        printf 'missing from files: %s (named by the acceptance criteria)\n' "$path"
-    fi
-done < "$(lines_of "$ac_paths")"
 
 outside=$(printf '%s' "$scope_rows" | SCOPE_LINT_GLOBS="$scope" awk -F '\t' '
 function literal_re(c) {
@@ -240,9 +235,8 @@ BEGIN { count = split(ENVIRON["SCOPE_LINT_GLOBS"], globs, "\n") }
     printf "outside scope: %s (%s)\n", $1, $2
 }')
 if [ -n "$outside" ]; then
-    problems=$((problems + $(printf '%s\n' "$outside" | wc -l)))
+    problems=1
     printf '%s\n' "$outside"
 fi
 
-[ "$problems" -eq 0 ] || exit 1
-exit 0
+exit "$problems"

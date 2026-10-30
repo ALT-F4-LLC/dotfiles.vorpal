@@ -499,6 +499,16 @@ case_redirection_between_verb_words_denies() {
         "accepted false DENY: | glued after an fd duplication"
     assert_verdict "docket trust 2>&1 | grep add" executor-write ALLOW \
         "a spaced | after an fd duplication ends the command"
+    assert_verdict "docket > trust trust add erik key" executor-write DENY \
+        "spaced redirection target spelled trust"
+    assert_verdict "docket > trust trust add erik key" docket-conductor-RUN-1 DENY \
+        "conductor: spaced redirection target spelled trust"
+    assert_verdict "docket trust > add add erik key" executor-write DENY \
+        "spaced redirection target spelled add"
+    assert_verdict "docket > 'trust' trust add erik key" executor-write DENY \
+        "quoted redirection target spelled trust"
+    assert_verdict 'docket > "a trust" trust add erik key' executor-write DENY \
+        "quoted target holding a blank and the word trust"
     assert_verdict "docket trust {fd}>/dev/null add erik key" executor-write DENY \
         "named-fd redirection between trust and add"
     assert_verdict "docket >/dev/null {trust,} add erik key" executor-write DENY \

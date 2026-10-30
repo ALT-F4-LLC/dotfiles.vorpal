@@ -496,11 +496,31 @@ function ends_in_redirection(word) {
     if (word == "" || substr(word, 1, 1) == MARK) return 0
     return word ~ /[<>]$/ || word ~ /[<>][&|]$/ || word ~ /&>>?$/
 }
+# The index of the first word after the target of a bare redirection
+# operator, which starts at words[k], and 0 when the command ends inside it.
+# A quoted target holding blanks reaches here as several marked words of one
+# group, and all of them are the target.
+function past_target(k,   g, piece) {
+    if (k > n) return k
+    if (substr(words[k], 1, 1) == MARK) {
+        decode(words[k])
+        g = D_GROUP
+        for (k++; k <= n && substr(words[k], 1, 1) == MARK; k++) {
+            decode(words[k])
+            if (D_GROUP != g) break
+        }
+        return k
+    }
+    piece = words[k]
+    gsub(/[<>]&|&>|>[|]/, "", piece)
+    if (piece ~ /[;|&\140]/) return 0
+    return k + 1
+}
 # The index of the word the shell passes as the argument at words[k]. The
 # shell drops a redirection from the word list, and where its target ends is
-# not recoverable here: the pre-pass splits a quoted target into several
-# words and glues none of them back, and unquoted whole text has lost its
-# quotes. So past a redirection the argument is the first later word of the
+# not always recoverable here: the pre-pass writes bare a fragment glued
+# after a quoted group holding blanks and a double-quoted target holding an
+# expansion, and unquoted whole text has lost its quotes. So past a redirection the argument is the first later word of the
 # same command that reads as want or holds an expandable brace, and 0 when
 # none does. The command ends at the first unquoted ; | & or backtick that is
 # not part of a redirection operator, and never inside target text glued to
@@ -508,18 +528,15 @@ function ends_in_redirection(word) {
 # `>a;b` may be `>"a;b"`, one word. Reading it as one costs a false DENY on
 # the unquoted spelling. A brace word read by may_spell_trust_verb gets no
 # such reading, so `{docket,trust} >"a;b" add` stays a residual ALLOW.
-# When prev, the word before words[k],
-# ends in a bare operator (`trust> f`, `docket>& 2`), words[k] is the
-# target of that operator, and the search starts past it.
+# The word after a bare operator is its target, never the argument, so a
+# target spelled trust (`docket > trust trust add`) is skipped: after a bare
+# operator word, and when prev, the word before words[k], ends in one
+# (`trust> f`, `docket>& 2`).
 function argument_at(k, want, prev,   w, piece) {
     if (k > n) return k
     if (ends_in_redirection(prev)) {
-        piece = words[k]
-        if (substr(piece, 1, 1) != MARK) {
-            gsub(/[<>]&|&>|>[|]/, "", piece)
-            if (piece ~ /[;|&\140]/) return 0
-        }
-        k++
+        k = past_target(k)
+        if (!k) return 0
     } else if (!is_redirection(words[k])) return k
     for (; k <= n; k++) {
         if (!is_redirection(words[k])) {
@@ -528,6 +545,11 @@ function argument_at(k, want, prev,   w, piece) {
             if (has_brace(w) && may_brace_expand(k)) return k
             sub(/[^A-Za-z0-9_-].*$/, "", w)
             if (w ~ want) return k
+        } else if (ends_in_redirection(words[k])) {
+            k = past_target(k + 1)
+            if (!k) return 0
+            k--
+            continue
         }
         piece = words[k]
         if (substr(piece, 1, 1) == MARK) continue

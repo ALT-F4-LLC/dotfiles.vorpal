@@ -305,6 +305,9 @@ const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
 /// filesystem without the write allowlist, the read-deny list, or the
 /// network filter.
 ///
+/// CAUSE (registry.vorpal.lol): the sandbox injects HTTPS_PROXY/HTTP_PROXY (an authenticated 127.0.0.1 filtering proxy) and curl through it reaches the registry (200), but the vorpal client opens the gRPC channel with tonic `Channel::builder(uri).connect()` (sdk/rust/src/context.rs), which dials TCP directly and never reads proxy variables; Seatbelt denies the direct egress ("Operation not permitted").
+/// DECISION (registry.vorpal.lol): keep the `vorpal *` exclusion; a client change that honors the proxy lies outside this repo, and no sandbox setting admits direct egress without dropping the network filter for every command.
+///
 /// MEASURED (2026-10-25, Claude Code 2.1.310, strict sandbox mode, auto
 /// permission mode; a sandboxed `vorpal run` prints "failed to connect to
 /// https://registry.vorpal.lol", an unsandboxed one reaches the registry):

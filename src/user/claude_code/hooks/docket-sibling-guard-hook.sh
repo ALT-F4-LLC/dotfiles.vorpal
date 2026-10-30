@@ -621,6 +621,16 @@ case "$COMMAND" in
         log_decision "deny" "framing-bytes"
         deny "$REASON_PREFIX this command carries a control byte (0x1d or 0x1e) the sibling-guard hook uses to frame its own analysis, so it cannot be checked. Remove the byte; no shell command needs it." ;;
 esac
+# Heredoc, redirect and widening-trigger classification lives in the shared
+# file docket-guard-leaf-lines.awk beside this hook (LEAF_LINES_AWK), loaded
+# as a filter (`-v mode=...`) or as a library ahead of an inline program. It
+# is resolved like the pre-pass, and a missing or unreadable copy refuses the
+# command: without it nothing below could be classified.
+HOOK_DIR="${0%/*}"
+[ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
+LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
+[ -r "$LEAF_LINES_AWK" ] || { log_decision "deny" "no-leaf-lines"; deny "$REASON_PREFIX the sibling-guard hook's shared line-selection file (docket-guard-leaf-lines.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."; }
+
 # The probe below reads its cap tokens on fd 7 and reports on fds 8 (leaf
 # frames and refusal markers) and 9. A command that redirects one of them
 # (`done 7</dev/zero`, `{ ...; } 8>&-`) would refill its own cap, silence its
@@ -628,11 +638,16 @@ esac
 # or 9 is refused before the walk. Reading fd 7 (`<&7`) only drains tokens,
 # which ends the walk sooner. The match is textual
 # and over-reaches into quoted prose; no executor command needs these fds.
-PROBE_FD_RE='(^|[^A-Za-z0-9_$])[789][<>]'
-if [[ "$COMMAND" =~ $PROBE_FD_RE ]]; then
-    log_decision "deny" "probe-fd"
-    deny "$REASON_PREFIX this command redirects file descriptor 7, 8 or 9, which the sibling-guard hook uses to read its own analysis, so it cannot be checked. Use fds 0-2 or 3-6 instead; if the digits are prose in a quoted string, reword them."
-fi
+PROBE_FD=$(printf '%s' "$COMMAND" | awk -v mode=probe-fd -f "$LEAF_LINES_AWK" 2>/dev/null)
+case "$PROBE_FD" in
+    0) ;;
+    1)
+        log_decision "deny" "probe-fd"
+        deny "$REASON_PREFIX this command redirects file descriptor 7, 8 or 9, which the sibling-guard hook uses to read its own analysis, so it cannot be checked. Use fds 0-2 or 3-6 instead; if the digits are prose in a quoted string, reword them." ;;
+    *)
+        log_decision "deny" "analysis-failure"
+        deny "$REASON_PREFIX the sibling-guard hook's fd check failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying." ;;
+esac
 
 # zsh, which runs the Bash tool's commands, writes the target of its clobber
 # and append-clobber operators (`>!`, `>>!`, `&>!`, `>&!`, `&>>!`, `>>&!` and
@@ -648,32 +663,33 @@ fi
 # or one carrying `$` or a backtick) is refused outright. The match is
 # textual: the operator inside quoted prose is spelled again too, which can
 # only add a deny.
-ZSH_WRITE_RE='(&>>?|>>&?|>&)[!|]|>!'
-ZSH_TARGET_RE="(${ZSH_WRITE_RE})[[:space:]]*([^[:space:];&|<>()]*)"
-if [ -z "${DOCKET_GUARD_ZSH_RESPELLED:-}" ] && [[ "$COMMAND" =~ $ZSH_WRITE_RE ]]; then
-    ZSH_COMMAND="$COMMAND"
-    while [[ "$ZSH_COMMAND" =~ $ZSH_TARGET_RE ]]; do
-        ZSH_OP="${BASH_REMATCH[1]}"
-        case "${BASH_REMATCH[3]}" in
-            "" | *[\$\`]*)
-                log_decision "deny" "zsh-write-redirect"
-                deny "$REASON_PREFIX this command has a zsh write redirect (\`${ZSH_OP}\`) whose target is an expansion or missing, so the sibling-guard hook cannot tell which file it writes. Write to a literal path." ;;
-        esac
-        case "$ZSH_OP" in
-            *'>>'*) ZSH_COMMAND="${ZSH_COMMAND/"$ZSH_OP"/>>}" ;;
-            *) ZSH_COMMAND="${ZSH_COMMAND/"$ZSH_OP"/>}" ;;
-        esac
-    done
-    ZSH_ERR=$(printf '%s' "$INPUT" | jq -c --arg c "$ZSH_COMMAND" '.tool_input.command = $c' 2>/dev/null \
-        | DOCKET_GUARD_BOUNDED=1 DOCKET_GUARD_ZSH_RESPELLED=1 "$BASH" "$0" 2>&1 >/dev/null)
-    case $? in
-        0) ;;
-        2)
+# The shared file's zsh mode prints nothing when there is no such operator,
+# R and the operator for a target it cannot judge, or S and the respelled
+# command; each result ends in a `.` so a trailing newline survives.
+if [ -z "${DOCKET_GUARD_ZSH_RESPELLED:-}" ]; then
+    ZSH_OUT=$(printf '%s' "$COMMAND" | awk -v mode=zsh -f "$LEAF_LINES_AWK" 2>/dev/null) || {
+        log_decision "deny" "analysis-failure"
+        deny "$REASON_PREFIX the sibling-guard hook's zsh redirect check failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+    }
+    ZSH_OUT="${ZSH_OUT%.}"
+    case "$ZSH_OUT" in
+        R*)
+            ZSH_OP="${ZSH_OUT#R}"
             log_decision "deny" "zsh-write-redirect"
-            deny "$ZSH_ERR" ;;
-        *)
-            log_decision "deny" "analysis-failure"
-            deny "$REASON_PREFIX the sibling-guard hook could not check this command's zsh write redirect (\`>!\`, \`&>|\` and the like) in its bash spelling. Use \`>\` or \`>>\` instead, which this hook reads directly." ;;
+            deny "$REASON_PREFIX this command has a zsh write redirect (\`${ZSH_OP}\`) whose target is an expansion or missing, so the sibling-guard hook cannot tell which file it writes. Write to a literal path." ;;
+        S*)
+            ZSH_COMMAND="${ZSH_OUT#S}"
+            ZSH_ERR=$(printf '%s' "$INPUT" | jq -c --arg c "$ZSH_COMMAND" '.tool_input.command = $c' 2>/dev/null \
+                | DOCKET_GUARD_BOUNDED=1 DOCKET_GUARD_ZSH_RESPELLED=1 "$BASH" "$0" 2>&1 >/dev/null)
+            case $? in
+                0) ;;
+                2)
+                    log_decision "deny" "zsh-write-redirect"
+                    deny "$ZSH_ERR" ;;
+                *)
+                    log_decision "deny" "analysis-failure"
+                    deny "$REASON_PREFIX the sibling-guard hook could not check this command's zsh write redirect (\`>!\`, \`&>|\` and the like) in its bash spelling. Use \`>\` or \`>>\` instead, which this hook reads directly." ;;
+            esac ;;
     esac
 fi
 
@@ -732,17 +748,32 @@ fi
 # frames. The file is resolved beside this hook, like the pre-pass, and a
 # missing or unreadable copy refuses the command: without it there is no
 # leaf list to check.
-HOOK_DIR="${0%/*}"
-[ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
 PROBE_SH="${HOOK_DIR}/docket-guard-probe.sh"
 [ -r "$PROBE_SH" ] && PROBE_PROGRAM=$(<"$PROBE_SH") && [ -n "$PROBE_PROGRAM" ] || { log_decision "deny" "no-probe"; deny "$REASON_PREFIX the sibling-guard hook's shared probe file (docket-guard-probe.sh) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."; }
-PROBE_RAW=$(printf '%s' "$COMMAND" | bash -c "$PROBE_PROGRAM" 2>&1)
+# A redirection on a compound command is refused in the probe's restricted
+# mode, since its target never reaches a leaf. The shared file's hoist mode
+# cuts the one shape it can make visible, a redirect list that ends the
+# command right after a done, fi, esac or } and writes only /dev/null or a
+# plain $TMPDIR-rooted path (or duplicates an fd), and prints each file it
+# writes as a `cat /dev/null > TARGET` leaf, which joins the walked leaves
+# below and is matched as a simple command's redirect is. It prints nothing
+# for any other command, and a cut command bash cannot parse is not used.
+# The checks above all read the original command, as does the text scan.
+PROBE_COMMAND="$COMMAND"
+HOIST_FRAMES=""
+HOIST=$(printf '%s' "$COMMAND" | awk -v mode=hoist -f "$LEAF_LINES_AWK" 2>/dev/null)
+if [ -n "$HOIST" ] && printf '%s' "${HOIST%%$'\036'*}" | bash -n >/dev/null 2>&1; then
+    PROBE_COMMAND="${HOIST%%$'\036'*}"
+    HOIST_FRAMES="${HOIST#*$'\036'}"
+fi
+PROBE_RAW=$(printf '%s' "$PROBE_COMMAND" | bash -c "$PROBE_PROGRAM" 2>&1)
 PROBE_RC=$?
 
 # Leaves are the framed segments; everything outside a frame is bash's own
 # stderr during the walk, the probe's refusal markers included.
 PROBE_TEXT=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s\036", substr($0, i + 1) }')
 PROBE_ERR=$(printf '%s' "$PROBE_RAW" | awk 'BEGIN { RS = "\036"; ORS = "" } { i = index($0, "\035"); if (i > 0) printf "%s", substr($0, 1, i - 1); else printf "%s", $0 }')
+PROBE_TEXT="$PROBE_TEXT$HOIST_FRAMES"
 
 # One dispatch for every probe refusal: the marker, or for 113 and 114 the
 # exit status as a fallback (see docket-guard-probe.sh).
@@ -802,7 +833,7 @@ TEXT_FRAME=""
 # its substitutions run, so their inner commands never reach the probe as
 # leaves of their own; every line of the leaf is therefore matched as a leaf,
 # except the body of a heredoc (its terminator line included). The shared
-# file docket-guard-leaf-lines.awk beside this hook (LEAF_LINES_AWK below)
+# file docket-guard-leaf-lines.awk beside this hook (LEAF_LINES_AWK above)
 # classifies the lines. It finds heredoc operators with a quote-aware lexer,
 # so a `<<'EOF'` inside quotes or a comment opens no body, and it stops
 # skipping anything, keeping every remaining line, wherever its reading could
@@ -827,10 +858,6 @@ TEXT_FRAME=""
 # stop-marking fallback at the leaf boundary rather than carrying them into
 # the next leaf.
 #
-# The file is resolved beside this hook, like the pre-pass, and a missing or
-# unreadable copy refuses the command: without it no line would be scanned.
-LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
-[ -r "$LEAF_LINES_AWK" ] || { log_decision "deny" "no-leaf-lines"; deny "$REASON_PREFIX the sibling-guard hook's shared line-selection file (docket-guard-leaf-lines.awk) is missing or unreadable beside this hook, so it cannot check this command. This is a hook installation defect, not a caller mistake -- report it rather than retrying."; }
 
 # --- Widening: where a heredoc's body stops being inert data. ------------
 #
@@ -862,37 +889,7 @@ LEAF_LINES_AWK="${HOOK_DIR}/docket-guard-leaf-lines.awk"
 # words, applied per line. A line whose quoting this cannot read as bash
 # would (an unclosed quote, `$'...'`, or a double-quoted span carrying `$(`,
 # `${` or a backtick, whose inner quotes nest) keeps its prose.
-INTERPRETER_RE='(^|[^A-Za-z0-9_.])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_.]|$)'
-QUOTED_PROSE_AWK='
-BEGIN { SQ = "\047"; DQ = "\042"; BQ = "\140" }
-{
-    s = $0
-    n = length(s)
-    if (index(s, "$" SQ)) { print s; next }
-    out = ""
-    i = 1
-    while (i <= n) {
-        c = substr(s, i, 1)
-        if (c == "\\") { out = out substr(s, i, 2); i += 2; continue }
-        if (c != SQ && c != DQ) { out = out c; i++; continue }
-        j = i + 1
-        while (j <= n && substr(s, j, 1) != c) j += (c == DQ && substr(s, j, 1) == "\\") ? 2 : 1
-        if (j > n) { out = out substr(s, i); break }
-        span = substr(s, i + 1, j - i - 1)
-        if (c == DQ && (index(span, "$(") || index(span, "${") || index(span, BQ))) { out = s; break }
-        out = out (span ~ /[ \t]/ ? " " : substr(s, i, j - i + 1))
-        i = j + 1
-    }
-    print out
-}
-'
-CODE_LINES=$(printf '%s' "$PROBE_TEXT$TEXT_FRAME" | awk -v mode=code -f "$LEAF_LINES_AWK")
-WIDEN_LINES=$(printf '%s\n' "$CODE_LINES" | awk "$QUOTED_PROSE_AWK")
-WIDEN=0
-if [[ "$WIDEN_LINES" =~ $INTERPRETER_RE ]]; then
-    WIDEN=1
-fi
-
+#
 # bash expands an unquoted-delimiter heredoc body when its redirection runs,
 # so a `$( )` or backtick substitution there runs a command (`cat <<E` then
 # `$(echo '...' | sh)`), and an interpreter inside one widens the scan as a
@@ -900,34 +897,19 @@ fi
 # quoted-delimiter body; every substitution span in it is read, through the
 # same quoted-prose rule, so `$(date) wrote notes` does not widen. A span
 # that never closes runs to the end of the text, toward reading.
-SUBST_SPANS_AWK='
-BEGIN { BQ = "\140" }
-{
-    s = $0
-    n = length(s)
-    out = ""
-    for (i = 1; i <= n; i++) {
-        c = substr(s, i, 1)
-        if (c == "\\") { if (depth > 0 || inbt) out = out substr(s, i, 2); i++; continue }
-        if (c == BQ) { inbt = !inbt; out = out " "; continue }
-        if (c == "$" && substr(s, i + 1, 1) == "(") { depth++; out = out " "; i++; continue }
-        if (depth > 0) {
-            if (c == "(") depth++
-            else if (c == ")") { depth--; if (depth == 0) { out = out " "; continue } }
-            out = out c
-        } else if (inbt) {
-            out = out c
-        }
-    }
-    print out
-}
-'
-if [ "$WIDEN" -eq 0 ]; then
-    SUBST_LINES=$(printf '%s' "$PROBE_TEXT$TEXT_FRAME" | awk -v mode=scan -v widen=0 -f "$LEAF_LINES_AWK" | awk "$SUBST_SPANS_AWK" | awk "$QUOTED_PROSE_AWK")
-    if [[ "$SUBST_LINES" =~ $INTERPRETER_RE ]]; then
-        WIDEN=1
-    fi
-fi
+#
+# The interpreter list and both readings, the code lines and the substitution
+# spans of unquoted-delimiter bodies, are the widen mode of the shared file
+# docket-guard-leaf-lines.awk, which prints 1 or 0. A pass that prints
+# neither failed, and the hook refuses rather than reading every heredoc body
+# as inert.
+WIDEN=$(printf '%s' "$PROBE_TEXT$TEXT_FRAME" | awk -v mode=widen -f "$LEAF_LINES_AWK" 2>/dev/null)
+case "$WIDEN" in
+    0 | 1) ;;
+    *)
+        log_decision "deny" "analysis-failure"
+        deny "$REASON_PREFIX the sibling-guard hook's widening program failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying." ;;
+esac
 
 SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK")
 
@@ -966,9 +948,9 @@ BEGIN { MARK = "\001"; BQ = "\140"; KW = "^(if|then|else|elif|fi|do|done|while|u
         if (w == "") continue
         if (length(w) >= 2 && substr(w, 1, 1) == MARK && substr(w, length(w), 1) == MARK) { out = out " " w; continue }
         if (substr(w, 1, 1) == "#") break
-        gsub(/>\|/, ">\002", w); gsub(/>&/, ">\003", w); gsub(/&>/, "\003>", w); gsub(/<&/, "<\003", w)
+        w = redir_protect_ops(w)
         gsub(/[;|&()]/, "\n", w); gsub(BQ, "\n", w)
-        gsub(/\002/, "|", w); gsub(/\003/, "\\&", w)
+        w = redir_restore_ops(w)
         out = out " " w
     }
     m = split(out, seg, /\n/)
@@ -987,7 +969,7 @@ BEGIN { MARK = "\001"; BQ = "\140"; KW = "^(if|then|else|elif|fi|do|done|while|u
 }
 '
 if [ -n "$TEXT_FRAME" ]; then
-    TEXT_LINES=$(printf '%s' "$TEXT_FRAME" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null | awk "$TEXT_SPLIT_AWK") || {
+    TEXT_LINES=$(printf '%s' "$TEXT_FRAME" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null | awk -f "$LEAF_LINES_AWK" -f <(printf '%s' "$TEXT_SPLIT_AWK")) || {
         log_decision "deny" "analysis-failure"
         deny "$REASON_PREFIX the sibling-guard hook's text scan failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
     }
@@ -1019,7 +1001,7 @@ fi
 # `-`, then plain characters, `$name` or `${name}` is an own file when an own
 # `.d` token precedes it in the same word.
 # The id is compared whole: `STEP-93` and `STEP-9393` are different steps.
-MATCH=$(printf '%s' "$STRIPPED" | awk -v own="$OWN_STEP" -v own_mode="$OWN_MODE" -v interp="$WIDEN" -v cwd="$CALLER_CWD" '
+MATCH_AWK='
 BEGIN {
     MARK = "\001"
     DOTDOT_RE = "(^|/)\\.\\.(/|$)"
@@ -1397,12 +1379,12 @@ END {
             # WORKTREE by path: a destructive head, or an output or read-write
             # (`<>`) redirection, aimed at another checkout.
             if ((verb == "rm" || verb == "rmdir" || verb == "mv") && foreign_checkout(w)) report("WORKTREE", verb " " w)
-            if (foreign_checkout(w) && (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})<?>/ || w ~ /^&>/ || prev_redirect)) report("WORKTREE", "write into " w)
-            prev_redirect = (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})(>{1,2}\|?|<>)$/ || w ~ /^&>>?$/)
+            if (foreign_checkout(w) && (redir_write_word(w) || prev_redirect)) report("WORKTREE", "write into " w)
+            prev_redirect = redir_write_op(w)
             # Any standalone redirect operator (`<`, `<>`, `>&`, `3<>`,
             # `{fd}>`): the word after it is a file the shell opens, not a
             # docket argument.
-            prev_redirect_op = (w ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})[<>&|]*[<>][<>&|-]*$/)
+            prev_redirect_op = redir_op(w)
         }
         # WORKTREE by write operand: a verb that writes the file an operand
         # names, aimed at another checkout. tee, truncate and touch write
@@ -1418,8 +1400,8 @@ END {
                 if (skipnext) { skipnext = 0; continue }
                 if (quoted && gsize[D_GROUP] >= 2 && !interp) continue
                 # A redirect and its target belong to the shell, not the verb.
-                if (!quoted && x ~ /^([0-9]*|\{[A-Za-z_][A-Za-z0-9_]*\})[<>&|]*[<>][<>&|-]*$/) { skipnext = 1; continue }
-                if (!quoted && (x ~ /^[0-9]*[<>]/ || x ~ /^&>/)) continue
+                if (!quoted && redir_op(x)) { skipnext = 1; continue }
+                if (!quoted && redir_glued(x)) continue
                 if (!dashdash && x == "--") { dashdash = 1; continue }
                 if (!dashdash && x ~ /^-/) {
                     if (verb == "sed" && (x ~ /^-[A-Za-z]*i/ || x ~ /^--in-place/)) inplace = 1
@@ -1545,7 +1527,8 @@ END {
         }
     }
 }
-' 2>/dev/null)
+'
+MATCH=$(printf '%s' "$STRIPPED" | awk -v own="$OWN_STEP" -v own_mode="$OWN_MODE" -v interp="$WIDEN" -v cwd="$CALLER_CWD" -f "$LEAF_LINES_AWK" -f <(printf '%s' "$MATCH_AWK") 2>/dev/null)
 MATCH_RC=$?
 # An awk that exits non-zero with no match printed did not finish the match
 # (a program that fails to parse prints nothing), so its empty output is not

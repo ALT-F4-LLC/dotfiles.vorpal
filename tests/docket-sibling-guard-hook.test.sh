@@ -1736,6 +1736,91 @@ case_friction_log_records_decisions() {
     rm -rf "$home_dir"
 }
 
+# --- The shared classification in docket-guard-leaf-lines.awk. -------------
+# Read-only analyst commands this guard refused: a jq program naming an
+# event kind or a step id, and a loop whose output goes to scratch. A
+# redirect list that ends the command after a loop is hoisted into a leaf of
+# its own, so its target is matched as a simple command's is; any other
+# compound redirect still refuses.
+case_shared_classification() {
+    assert_verdict "jq '.kind==\"step-annotated\"' f > \"\$TMPDIR/x\"" executor-read "$OPERATOR" ALLOW "jq program naming an event kind, output to scratch, no claim held"
+    assert_verdict "jq -c 'select(.step_id==\"STEP-14640\")' events.jsonl" executor-read "$OPERATOR" ALLOW "jq program holding a literal step id"
+    assert_verdict "for n in 1 2; do jq . e\$n.json; done > \"\$TMPDIR/votes.txt\"" executor-read "$OPERATOR" ALLOW "loop with a trailing scratch redirect"
+    assert_verdict "for f in a b; do cat \"\$f\"; done 2>&1 >> \"\${TMPDIR}/STEP-42.d/out.txt\"" executor-write "$WAVE_42" ALLOW "loop appending to its own scratch dir"
+    assert_verdict "if true; then echo x; fi >/dev/null" executor-write "$WAVE_42" ALLOW "if with its output discarded"
+    assert_verdict "for f in a b; do cat \"\$f\"; done > \"\$TMPDIR/STEP-7.d/out.txt\"" executor-write "$WAVE_42" DENY "hoisted loop redirect into a sibling's scratch"
+    assert_verdict "while :; do break; done 2>/dev/null >| \$TMPDIR/STEP-7.d/x" executor-write "$WAVE_42" DENY "hoisted clobber into a sibling's scratch, second item"
+    assert_verdict "for f in a; do :; done >& \"\$TMPDIR/STEP-7.d/x\"" executor-write "$WAVE_42" DENY ">& with a file word is a write, hoisted"
+    assert_verdict "TMPDIR=${SIB_DIR}; for f in a; do :; done > \"\$TMPDIR/x\"" executor-write "$WAVE_42" DENY "TMPDIR repointed in the command: not hoisted"
+    assert_verdict "for f in a; do :; done > \"\$TMPDIR/../x\"" executor-write "$WAVE_42" DENY "scratch target with a .. segment: not hoisted"
+    assert_verdict "for f in a; do :; done > \$TMPDIR/{a,b}" executor-write "$WAVE_42" DENY "brace target: not hoisted"
+    assert_verdict "for f in a; do :; done > \"\$TMPDIR/x\"; echo hi" executor-write "$WAVE_42" DENY "redirect list not ending the command: not hoisted"
+    assert_verdict "{ for f in a; do :; done > \"\$TMPDIR/x\"; }" executor-write "$WAVE_42" DENY "nested compound redirect: not hoisted"
+    assert_verdict "for f in a; do :; done < \"\$TMPDIR/x\" > \"\$TMPDIR/y\"" executor-write "$WAVE_42" DENY "input item in the list: not hoisted"
+    assert_verdict "for f in a; do :; done 7> \"\$TMPDIR/x\"" executor-write "$WAVE_42" DENY "probe fd in a hoistable list"
+    # Accepted residual, pinned so a tightening is deliberate: a TMPDIR
+    # repoint spelled without the literal name passes the hoist, as a
+    # repointed variable passes a simple command's redirect.
+    assert_verdict "a=/tmp/claude-501/STE; T\\MPDIR=\${a}P-7.d; for f in a; do :; done > \"\$TMPDIR/x\"" executor-write "$WAVE_42" ALLOW "TMPDIR repoint without the literal name (accepted residual)"
+    assert_verdict "a=/tmp/claude-501/STE; T\\MPDIR=\${a}P-7.d; cat /dev/null > \"\$TMPDIR/x\"" executor-write "$WAVE_42" ALLOW "the same repoint on a simple command (accepted residual)"
+}
+
+# The parts of the shared file the trust and commit guards consume, run
+# directly: the redirection walk the trust guard's argument_at takes, its
+# inert reading and spaced-assignment trigger, and the commit guard's raw
+# widening reading.
+LEAF_LIB="$(dirname "$HOOK")/docket-guard-leaf-lines.awk"
+PREPASS_LIB="$(dirname "$HOOK")/docket-guard-prepass.awk"
+REDIR_DRIVER='{ n = split($0, w, /[ \t]+/); printf "%d %d", redir_next(w, n, 2, w[1]), redir_next(w, n, 3, w[2]) }'
+
+# assert_library <program> <input> <want> <label>: the program runs with the
+# shared file loaded as a library over the pre-pass's marking of input.
+assert_library() {
+    local got
+    got=$(printf '%s' "$2" | LC_ALL=C awk -f "$PREPASS_LIB" | awk -f "$LEAF_LIB" -f <(printf '%s' "$1"))
+    [ "$got" = "$3" ] && pass "$4 (${3})" || fail "$4 (want '${3}', got '${got}')"
+}
+
+# assert_filter <mode> <input> <want> <label> [awk args...]
+assert_filter() {
+    local mode="$1" input="$2" want="$3" label="$4" got
+    shift 4
+    got=$(printf '%s' "$input" | awk -v mode="$mode" "$@" -f "$LEAF_LIB")
+    [ "$got" = "$want" ] && pass "${label} (${want:-nothing})" || fail "${label} (want '${want}', got '${got}')"
+}
+
+# assert_inert <command> <want> <label>: the trust guard's pipeline, line
+# selection then the pre-pass then the inert reading.
+assert_inert() {
+    local got
+    got=$(printf '%s' "$1" | awk -v mode=scan -v widen=0 -f "$LEAF_LIB" | LC_ALL=C awk -f "$PREPASS_LIB" | awk -v mode=inert -f "$LEAF_LIB")
+    [ "$got" = "$2" ] && pass "$3 (${2:-inert})" || fail "$3 (want '${2}', got '${got}')"
+}
+
+case_shared_library() {
+    assert_library "$REDIR_DRIVER" 'docket >/dev/null trust add x' '3 3' "glued redirect between docket and trust is skipped"
+    assert_library "$REDIR_DRIVER" 'docket > trust trust add' '4 4' "a bare operator's target spelled trust is skipped"
+    assert_library "$REDIR_DRIVER" 'docket trust> add add x' '2 4' "the target after a word ending in an operator is skipped"
+    assert_library "$REDIR_DRIVER" 'docket > "a b" trust add' '5 5' "a quoted target holding a blank is one target"
+    assert_library "$REDIR_DRIVER" 'docket >a;b trust add' '3 3' "a ; glued inside a target does not end the command"
+    assert_library "$REDIR_DRIVER" 'docket > a;b trust add' '0 0' "the command ends inside a spaced target"
+    assert_library "$REDIR_DRIVER" 'docket trust add <<- EOF' '2 3' "the spaced <<- delimiter is a target"
+    assert_library '{ printf "%d%d%d", redir_ends_command($1), redir_word($1), redir_open($1) }' 'x;' '100' "a glued ; ends the command"
+    assert_library '{ printf "%d%d%d", redir_ends_command($1), redir_word($1), redir_open($1) }' '2>&1' '010' "an fd dup ends nothing"
+    assert_library '{ printf "%d%d%d", redir_ends_command($1), redir_word($1), redir_open($1) }' 'trust>&' '001' "a word ending in >& is open"
+    assert_library '{ printf "%s %s", redir_bare_ops($1), redir_cut_glued(redir_bare_ops($1)) }' 'docket>&2' 'docket>2 docket' "head word cut at its glued redirect"
+    assert_inert $'cat >> "$TMPDIR/STEP-13947.d/STEP-13947-change-summary.md" <<\'EOF\'\nThe operator runs docket trust add and docket trust rm.\nEOF' '' "prose heredoc naming the trust verbs is inert"
+    assert_inert 'cat x | sh -c y' 'ACTIVE' "an interpreter beside cat is active"
+    assert_inert 'X=1 PATH=/x cat y' 'ACTIVE' "a PATH assignment is active"
+    assert_filter assign-widen 'X= "docket trust add a"' 'ACTIVE' "a spaced empty assignment runs its quoted word"
+    assert_filter assign-widen 'X="docket trust add a"' '' "a quoted assignment value is not run"
+    assert_filter widen $'cat <<\'E\'\nsh\nE\036' '0' "a quoted body naming sh does not widen the sibling reading"
+    assert_filter widen $'cat <<\'E\'\nsh\nE\036' '1' "the raw reading widens on a body naming sh" -v bodies=1
+    assert_filter widen $'ls # run with sh\036' '1' "the raw reading widens on a comment" -v bodies=1
+    assert_filter hoist 'for f in a; do :; done 2>&1 >"$TMPDIR/x"' $'for f in a; do :; done\036cat /dev/null > "$TMPDIR/x"\036' "hoist cuts the list and emits its file"
+    assert_filter hoist 'for f in a; do :; done > /abs/x' '' "hoist leaves a non-scratch target"
+}
+
 case_acceptance
 case_own_bootstrap_allows
 case_hand_back_text_is_not_a_verb
@@ -1774,6 +1859,8 @@ case_leaf_cap_stops_the_walk
 case_probe_killed_by_signal
 case_analysis_bound_denies
 case_friction_log_records_decisions
+case_shared_classification
+case_shared_library
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

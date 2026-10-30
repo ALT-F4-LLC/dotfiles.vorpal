@@ -66,6 +66,7 @@ jobs:
       - run: bash tests/docket-advisor-first-hook.test.sh
       - run: bash tests/docket-run-lane-units.test.sh
       - run: bash tests/docket-run-refill.test.sh
+      - run: bash tests/docket-run-served-pair.test.sh
       - run: bash tests/docket-run-lane-scripts.test.sh
       - run: bash tests/docket-run-lane-roster.test.sh
 

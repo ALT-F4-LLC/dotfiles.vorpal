@@ -211,7 +211,8 @@ stay identical to the form this file prescribes where the verb is taught:
 
 ```bash
 umask 077; cat > <scratchpad>/conductor.d/$RUN.verbs <<'EOF'
-docket dispatch close --run $RUN --backfill-from "<scratchpad>/dispatch-<M>-rows.json" --source "wave-journal:<wfId-0>,<wfId-1>" --json   # file holds the bare rows array of every launch, never {rows: [...]}
+docket dispatch close --run $RUN --backfill-from "<scratchpad>/dispatch-<M>-rows.json" --source "wave-journal:<wfId-0>,<wfId-1>" --json > "<scratchpad>/dispatch-<M>-close.json"; cat "<scratchpad>/dispatch-<M>-close.json"   # file holds the bare rows array of every launch, never {rows: [...]}
+bash ~/.claude/skills/docket-run/scripts/resend_metadata.sh --rows "<scratchpad>/dispatch-<M>-rows.json" --close "<scratchpad>/dispatch-<M>-close.json"   # after the dispatch's last close succeeds; again before the done report while it lists pending
 docket dispatch backfill-usage --run $RUN --source "wave-journal:<wfId>" --from-json - < "<scratchpad>/wave-<wfId>.json"   # file holds the bare rows array, never {rows: [...]}
 docket vote create -d "<the decision, stated plainly>" -r "<evidence summary>" --files-changed "<comma-separated paths the decision covers>" -n 3 -c <low|medium|high|critical> --threshold 0.67 --created-by conductor
 docket vote link <proposal-id> --issue <ID>
@@ -863,7 +864,9 @@ report, never after. Every `Silent:` line under Vote usage names a
 proposal and seat needing the seats-mode join per **A panel you convened
 yourself gets the same treatment** (step 3), before the done report. One
 command checks both: every cast reported usage, and every attempted step
-has a `step_usage` row.
+has a `step_usage` row. Re-run `resend_metadata.sh` (step 6 under **3.
+Close the dispatch**) for every dispatch whose last run listed a
+`pending` step, before the done report.
 
 ```bash
 docket run report $RUN --json | jq -e '.data
@@ -1657,8 +1660,8 @@ jq -s add "<scratchpad>/wave-<wfId-0>.json" "<scratchpad>/wave-<wfId-1>.json" > 
 #    --skip-integration-check REASON is an override, recorded on the close
 #    event; pass it only on the operator's recorded word or an advisor-first
 #    ruling (Gates carries that form), never on your own ruling. Read the
-#    whole output.
-docket dispatch close --run $RUN --backfill-from "<scratchpad>/dispatch-<M>-rows.json" --source "wave-journal:<wfId-0>,<wfId-1>" --json
+#    whole output: it is saved for step 6, then printed in full.
+docket dispatch close --run $RUN --backfill-from "<scratchpad>/dispatch-<M>-rows.json" --source "wave-journal:<wfId-0>,<wfId-1>" --json > "<scratchpad>/dispatch-<M>-close.json"; cat "<scratchpad>/dispatch-<M>-close.json"
 # 4b. the override, in the form that records the operator's own word:
 #    unlike a plain close it is a conductor verb, so the token rides stdin.
 docket dispatch close --run $RUN --skip-integration-check "<the operator's reason>" --json < <scratchpad>/conductor.d/$RUN.token
@@ -1667,7 +1670,27 @@ docket dispatch close --run $RUN --skip-integration-check "<the operator's reaso
 #    integrated): bare, never --backfill-from again, since its rows already landed.
 #    Also the close when every join returned no rows.
 docket dispatch close --run $RUN --json
+# 6. once the dispatch's last close (4 or 5) succeeds, re-send the metadata the
+#    back-fill dropped (below). Skip it only when every join returned no rows.
+bash ~/.claude/skills/docket-run/scripts/resend_metadata.sh --rows "<scratchpad>/dispatch-<M>-rows.json" --close "<scratchpad>/dispatch-<M>-close.json"
 ```
+
+**Re-send the metadata the back-fill dropped (step 6).** The engine drops
+a row's metadata bag when its step is not yet terminal, and still writes
+the usage. A writer step is often still gated when its wave is back-filled,
+and the bare re-close in step 5 never re-sends the bag, so the step's
+served `model_resolved` and `effort_resolved` stay unknown.
+`resend_metadata.sh` reads the saved close output to find the dropped bags:
+- After a successful close, they are the steps under
+  `.data.backfill.metadata_dropped`.
+- After a refused close, the candidates are every step whose rows carry a
+  bag.
+
+For each terminal candidate whose stored pair differs from its row's, the
+script runs `docket step annotate STEP-N --metadata`, which needs no
+conductor token. It prints `{annotated, current, pending}`. A `pending`
+step was still non-terminal. Re-run the same command for its dispatch
+before the done report; the script holds no state.
 
 Rows land against the step's recorded attempt, `--source` defaults to
 `backfilled`, and the window is `dispatch.grace` from the run's newest

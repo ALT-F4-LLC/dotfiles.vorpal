@@ -336,18 +336,26 @@ fi
 # drops its quote and group state at the leaf boundary rather than carrying
 # it into the next leaf.
 #
-# The boundary on either side of an interpreter name is any byte that is not
-# a word character and not a dot. The dot is what separates a file name from
-# its extension, so a target named `cases.sh`, `x.env` or `run.node` is not
-# an interpreter and does not widen; every spelling that can run
-# one still does (`sh`, `/bin/sh`, `"sh"`, `$(sh`, a backtick, `;sh`).
-INTERPRETER_RE='(^|[^A-Za-z0-9_.])(sh|bash|dash|zsh|ksh|mksh|csh|tcsh|python[0-9.]*|perl|ruby|node|nodejs|php|lua[0-9.]*|tclsh|expect|osascript|env|eval)([^A-Za-z0-9_.]|$)'
-WIDEN=0
-if [[ "$PROBE_TEXT" =~ $INTERPRETER_RE ]]; then
-    WIDEN=1
-fi
+# The interpreter trigger is the shared file's widen mode with bodies=1: its
+# interpreter-name pattern over the whole probe text, comments, prose and
+# heredoc bodies included. The boundary on either side of an interpreter
+# name is any byte that is not a word character and not a dot, so a target
+# named `cases.sh`, `x.env` or `run.node` does not widen; every spelling that
+# can run one still does (`sh`, `/bin/sh`, `"sh"`, `$(sh`, a backtick,
+# `;sh`). Any output other than 0 or 1 refuses.
+WIDEN=$(printf '%s' "$PROBE_TEXT" | awk -v mode=widen -v bodies=1 -f "$LEAF_LINES_AWK" 2>/dev/null)
+case "$WIDEN" in
+    0|1) ;;
+    *) deny "git write blocked: the commit-guard hook could not classify this command's interpreter trigger, so it refuses rather than guessing. Retry the call; if it keeps refusing, that is a hook defect to report separately." ;;
+esac
 
-SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK")
+# A scan that fails, or prints nothing for a non-empty probe text, leaves
+# the match stage no command to read, so the hook refuses rather than
+# allowing.
+SCAN_TEXT=$(printf '%s' "$PROBE_TEXT" | awk -v mode=scan -v widen="$WIDEN" -f "$LEAF_LINES_AWK" 2>/dev/null) || \
+    deny "git write blocked: the commit-guard hook's line selection (docket-guard-leaf-lines.awk) failed, so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+[ -n "$SCAN_TEXT" ] || [ -z "$PROBE_TEXT" ] || \
+    deny "git write blocked: the commit-guard hook's line selection (docket-guard-leaf-lines.awk) selected no line of a non-empty command, so it cannot check it. This is a hook defect, not a caller mistake -- report it rather than retrying."
 
 # --- Quote-group marking. ------------------------------------------------
 #

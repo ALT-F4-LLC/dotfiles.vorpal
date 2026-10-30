@@ -1148,6 +1148,10 @@ case_multibyte_text_under_utf8() {
         "utf-8: multibyte word before git commit"
     LC_ALL=en_US.UTF-8 assert_verdict "git commit -m 'café — fix'" DENY \
         "utf-8: git commit with a multibyte message"
+    LC_ALL=en_US.UTF-8 assert_verdict "echo $'\\xe9' && git commit -m x" DENY \
+        "utf-8: invalid byte spelled by ANSI-C quoting before git commit"
+    LC_ALL=en_US.UTF-8 assert_verdict "echo "$'\xe9'" && git commit -m x" DENY \
+        "utf-8: raw invalid byte before git commit"
 }
 
 case_prepass_program_failure() {
@@ -1172,6 +1176,35 @@ case_prepass_program_failure() {
     case "$err" in
         *"pre-pass program failed"*) pass "unparseable pre-pass program names the analysis failure" ;;
         *) fail "unparseable pre-pass program reason: ${err}" ;;
+    esac
+    rm -rf "$scratch_dir"
+}
+
+# A line selection that fails in scan mode leaves the match stage no command
+# to read. The copy appends a rule that exits non-zero in scan mode only, so
+# the widen call before it still succeeds and the scan guard is what refuses.
+case_scan_program_failure() {
+    local scratch_dir scratch_hook err rc
+    scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-commit-guard-scan-broken.XXXXXX") || \
+        fatal "mktemp failed"
+    scratch_hook="${scratch_dir}/docket-commit-guard-hook.sh"
+    cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
+    cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${scratch_dir}/" || \
+        fatal "could not copy the pre-pass file to scratch dir"
+    { cat "$(dirname "$HOOK")/docket-guard-leaf-lines.awk"; printf '%s\n' 'FILTER && mode == "scan" { exit 2 }'; } \
+        >"${scratch_dir}/docket-guard-leaf-lines.awk" || \
+        fatal "could not write the broken line-selection file to scratch dir"
+    err=$(PATH="$PATH_WITH_DOCKET" GATE_STATE=unapproved "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
+        <<<"$(build_input 'git commit -m x')")
+    rc=$?
+    if [ "$rc" -eq 2 ]; then
+        pass "failing scan-mode line selection fails closed on git commit (DENY)"
+    else
+        fail "failing scan-mode line selection on git commit (want DENY, got exit ${rc})"
+    fi
+    case "$err" in
+        *"line selection (docket-guard-leaf-lines.awk) failed"*) pass "failing scan-mode line selection names the analysis failure" ;;
+        *) fail "failing scan-mode line selection reason: ${err}" ;;
     esac
     rm -rf "$scratch_dir"
 }
@@ -1303,6 +1336,7 @@ case_missing_prepass_file_denies
 case_missing_probe_file_denies
 case_match_program_failure
 case_prepass_program_failure
+case_scan_program_failure
 case_multibyte_text_under_utf8
 case_prepass_copies_identical
 case_analysis_bound_denies

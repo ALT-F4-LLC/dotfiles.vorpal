@@ -10,7 +10,6 @@ export const meta = {
 // hand edit here. The header ends at LANE; the body follows verbatim.
 const LANE = { workflow: 'security-change' }
 
-// ---------------------------------------------------------------------------
 // THE LANE BODY, shared by every lane script. lane_scripts.py (beside this
 // file) renders one script per workflow definition under
 // src/user/docket/config/workflows: a header carrying `meta` and `LANE`
@@ -131,7 +130,6 @@ const LANE = { workflow: 'security-change' }
 // ancestry parks, spawn failures and deferrals, counted from its own rows and
 // settled statuses. It is the run's only coordination source; docket-workflow-usage.js
 // measures tokens alone.
-// ---------------------------------------------------------------------------
 
 // TEST-BEGIN configuration — shared by the extracted behavior suites.
 // The script's own file name, for every refusal and log line. The rendered
@@ -2645,10 +2643,10 @@ function blockedReason(res) {
 }
 // TEST-END chain-dead
 
-// ---- lanes: one per issue, an issue-less row riding a lane of its own ----
+// lanes: one per issue, an issue-less row riding a lane of its own
 const laneOf = (row) => (row.issue ? String(row.issue) : `row:${row.step}`)
 
-// ---- what the manifest certifies about cross-issue concurrency ----
+// what the manifest certifies about cross-issue concurrency
 // Every row that is neither an action nor a vote is an executor. The engine
 // keys class headroom on the row's `class`, defaulted to the executor hint
 // (workflow validate.go); mirror that default.
@@ -2673,7 +2671,7 @@ const scopePairs = new Set([...stages.values()].flatMap((group) =>
     pairsOf(writerLanesOf(group)).map(([a, b]) => pairKey(a, b))))
 const scopeCertified = (a, b) => a === b || scopePairs.has(pairKey(a, b))
 
-// ---- launches: one dispatch, one wave per issue ----
+// launches: one dispatch, one wave per issue
 // The Workflow tool caps ONE invocation at HARNESS_CAP concurrent agents and
 // AGENT_LIFETIME_CAP over its life; a nested workflow() shares both, separate
 // top-level launches share neither. lane_units.py owns the partition: one
@@ -2984,7 +2982,7 @@ function runRow(row, label) {
             `and the wave launches at most ${WRITER_LADDER_BUDGET} such cohorts; the ` +
             `engine re-offers it next dispatch (issue ${row.issue}'s later stages deferred)`)
         deadIssues.set(row.issue, { step: row.step, status: 'not-launched-writer-budget',
-            deferral: `writer ladder budget: the wave launches at most ${WRITER_LADDER_BUDGET === 3 ? 'three' : WRITER_LADDER_BUDGET} uncertified writer cohorts` })
+            deferral: `writer ladder budget: the wave launches at most three uncertified writer cohorts` })
         return Promise.resolve({ step: row.step, status: 'not-launched-writer-budget', text: null })
     }
     return admission(row).then((go) => {

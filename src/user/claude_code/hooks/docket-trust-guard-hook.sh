@@ -491,10 +491,10 @@ function is_redirection(word,   rest) {
     return substr(rest, 1, 1) != "("
 }
 # An unquoted word that ends in a redirection operator with no target glued
-# after it: `trust>`, `docket>>`, `trust>&`, `trust>|`, `trust&>`.
+# after it: `trust>`, `docket>>`, `trust>&`, `trust>|`, `trust&>`, `<<-`.
 function ends_in_redirection(word) {
     if (word == "" || substr(word, 1, 1) == MARK) return 0
-    return word ~ /[<>]$/ || word ~ /[<>][&|]$/ || word ~ /&>>?$/
+    return word ~ /[<>]$/ || word ~ /[<>][&|]$/ || word ~ /&>>?$/ || word ~ /<<-$/
 }
 # The index of the first word after the target of a bare redirection
 # operator, which starts at words[k], and 0 when the command ends inside it.
@@ -773,7 +773,13 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
             # verb. Only a glued trailing shell operator is stripped from the
             # flag (it ends the segment); any other suffix is a different
             # argument and keeps the deny. See the comment above the block.
-            if (texact == tw && vexact == vw && v + 1 <= n) {
+            # No bare operator may stand from the docket word to the verb:
+            # its target is text this pass may have split into words, and
+            # a verb and flag read from inside it (`> "x add --help" add`)
+            # are not the ones the shell passes.
+            spaced_op = !hquoted && ends_in_redirection(hw)
+            for (j = i + 1; j < v; j++) if (ends_in_redirection(words[j])) spaced_op = 1
+            if (!spaced_op && texact == tw && vexact == vw && v + 1 <= n) {
                 pquoted = decode(words[v + 1])
                 pw = D_WORD
                 sub(/[|&;()<>].*$/, "", pw)

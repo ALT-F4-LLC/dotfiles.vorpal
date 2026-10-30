@@ -509,6 +509,32 @@ case_redirection_between_verb_words_denies() {
         "quoted redirection target spelled trust"
     assert_verdict 'docket > "a trust" trust add erik key' executor-write DENY \
         "quoted target holding a blank and the word trust"
+    assert_verdict 'docket trust > "add --help" add erik key' executor-write DENY \
+        "help flag inside a quoted redirection target"
+    assert_verdict 'true | python3 -c x; docket trust > "add --help" add erik key' executor-write DENY \
+        "read unquoted: help flag inside a quoted redirection target"
+    assert_verdict 'true | python3 -c x; docket trust > "x add --help" add erik key' executor-write DENY \
+        "read unquoted: verb and help flag inside a quoted target"
+    assert_verdict 'true | python3 -c x; docket > "x trust add --help" trust add erik key' executor-write DENY \
+        "read unquoted: trust, verb and help flag inside a quoted target"
+    assert_verdict 'true | python3 -c x; docket> "x trust add --help" trust add erik key' executor-write DENY \
+        "read unquoted: the same target after an operator glued onto docket"
+    assert_verdict "docket trust > /dev/null add --help" executor-read DENY \
+        "accepted false DENY: help read behind a spaced redirection"
+    assert_verdict "docket >/dev/null trust add --help" executor-read ALLOW \
+        "help read behind a glued redirection before trust"
+    assert_verdict "docket > /dev/null trust add --help" executor-read DENY \
+        "accepted false DENY: help read behind a spaced redirection before trust"
+    assert_verdict 'true | python3 -c x; docket trust <<- "add --help" add erik key' executor-write DENY \
+        "read unquoted: help flag inside a spaced <<- delimiter"
+    assert_verdict 'docket <<- "x trust add --help" trust add erik key' executor-write DENY \
+        "trust, verb and help flag inside a spaced <<- delimiter"
+    assert_verdict 'docket trust 0<<- "add --help" add erik key' executor-write DENY \
+        "help flag inside an fd-numbered spaced <<- delimiter"
+    assert_verdict "docket trust<<- x add erik key" executor-write DENY \
+        "<<- glued onto the trust word, spaced delimiter"
+    assert_verdict "docket trust <<- x list" executor-write ALLOW \
+        "a spaced <<- delimiter before a read verb"
     assert_verdict "docket trust {fd}>/dev/null add erik key" executor-write DENY \
         "named-fd redirection between trust and add"
     assert_verdict "docket >/dev/null {trust,} add erik key" executor-write DENY \

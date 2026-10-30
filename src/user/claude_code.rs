@@ -558,7 +558,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         )
         .with_model_setting(
             "claude-haiku-5-5",
-            serde_json::json!({ "effortLevel": "high" }), // default
+            serde_json::json!({ "effortLevel": "medium" }), // default
         )
         .with_model_setting(
             "claude-opus-5-5",

@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 56
+version = 57
 
 [match]
 labels_any = ["security-change", "security-load-bearing", "security"]
@@ -83,7 +83,7 @@ after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
-params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 3, output = "findings", source_field = "member_sources" }
 payload = "findings@15"
 # First-match, declared order: an open blocker gets a fix round before the
 # panel sees the change; an open high goes to security-vote.

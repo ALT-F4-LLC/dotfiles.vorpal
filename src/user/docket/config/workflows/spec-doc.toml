@@ -1,7 +1,7 @@
 [pipeline]
 description = "Author a PRD/TDD/ADR/ux-spec, optionally grounded by research, then validate, review, and vote to accept: the doc-acceptance panel for TDD/ADR, the tribunal for PRD/ux-spec. A rejection re-enters the doctype's revise step, then review, up to the loop bound."
 name = "spec-doc"
-version = 49
+version = 50
 
 [match]
 labels_any = ["spec-doc"]
@@ -130,7 +130,7 @@ after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
-params = { field = "severity", method = "max", hold_spread = 3, output = "findings" }
+params = { field = "severity", method = "max", hold_spread = 3, output = "findings", source_field = "member_sources" }
 payload = "findings@15"
 threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 

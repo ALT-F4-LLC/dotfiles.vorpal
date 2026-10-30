@@ -3,6 +3,14 @@
 Version history of `workflows/spec-doc.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 50
+
+The reconcile aggregate declares `source_field = "member_sources"`, so the
+run report and the executor ledger attribute each cluster to the judge that
+raised it. Before this, both skipped the step and reported zero unique and
+zero corroborated clusters for every judge. No topology, routing, reduction,
+or limit change.
+
 ## 49
 
 Repoints the synthesize-findings payload to findings-cluster@7 and the

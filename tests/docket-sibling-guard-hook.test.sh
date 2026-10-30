@@ -438,6 +438,12 @@ case_command_shapes() {
     assert_verdict "rm -rf ${SIB_DIR} | cat" executor-write "$WAVE_42" DENY "simple rm in a non-last pipeline stage"
     assert_verdict "pkill node | cat" executor-write "$WAVE_42" DENY "simple pkill in a non-last pipeline stage"
     assert_verdict "{ ls ${OWN_DIR}; } | cat" executor-write "$WAVE_42" ALLOW "own brace group in a non-last pipeline stage"
+    # A < or > inside a single-quoted for-list word is a literal, while an
+    # unquoted process substitution in the list runs when the head expands.
+    assert_verdict "for p in 'a|->>' b; do files=\$(echo \"\$F\" | sort -u | xargs grep -lE \"\$p\" 2>/dev/null); n=\$(echo \"\$files\" | grep -c .); done" executor-read "$WAVE_42" ALLOW "read-only grep loop whose for list holds a single-quoted word containing >"
+    assert_verdict 'for p in <(echo x); do :; done' executor-write "$WAVE_42" DENY "for list holding an unquoted process substitution"
+    assert_verdict "for p in \"'\" <(echo x) \"'\"; do :; done" executor-write "$WAVE_42" DENY "for list holding a process substitution between double-quoted single quotes"
+    assert_verdict "for p in \\' <(echo x) \\'; do :; done" executor-write "$WAVE_42" DENY "for list holding a process substitution between escaped single quotes"
     # The probe ends an arithmetic for loop before its body fires, so every
     # `for ((...))` header is refused and the reason names the `for x in` shape.
     assert_verdict "for ((i=0; i<3; i++)); do rm -rf ${SIB_DIR}/x; done" executor-write "$WAVE_42" DENY "arithmetic for loop removing a sibling's dir"

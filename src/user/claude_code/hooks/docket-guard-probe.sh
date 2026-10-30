@@ -102,7 +102,37 @@ _guard_probe() {
     fi
     case "$_leaf_head" in
         for | select | case | eval)
-            case "$BASH_COMMAND" in
+            # A < or > inside a single-quoted word of a for, select or
+            # case head is a literal (`for p in 'a|->>'`), so it is masked
+            # before the test. eval is left whole: its quoted text runs.
+            # A head holding $', $(, ${ or a backtick nests its quoting
+            # beyond this scan, so it is tested whole too.
+            local _leaf_scan="$BASH_COMMAND"
+            case "$_leaf_head:$BASH_COMMAND" in
+                eval:* | *"\$'"* | *"\$("* | *"\${"* | *"\`"*) ;;
+                *)
+                    # _leaf_q is the open quote: none, ' or ". A backslash
+                    # outside single quotes carries the next character.
+                    local _leaf_i=0 _leaf_c _leaf_q=""
+                    _leaf_scan=""
+                    while [ "$_leaf_i" -lt "${#BASH_COMMAND}" ]; do
+                        _leaf_c="${BASH_COMMAND:_leaf_i:1}"
+                        _leaf_i=$((_leaf_i + 1))
+                        case "$_leaf_q$_leaf_c" in
+                            "'") _leaf_q="'" ;;
+                            \") _leaf_q=\" ;;
+                            "'"[\<\>]) _leaf_c=_ ;;
+                            "''") _leaf_q="" ;;
+                            "'"*) ;;
+                            \\ | \"\\)
+                                _leaf_c="$_leaf_c${BASH_COMMAND:_leaf_i:1}"
+                                _leaf_i=$((_leaf_i + 1)) ;;
+                            \"\") _leaf_q="" ;;
+                        esac
+                        _leaf_scan="$_leaf_scan$_leaf_c"
+                    done ;;
+            esac
+            case "$_leaf_scan" in
                 *[\<\>]*)
                     printf "%s\n" "_guard_probe: structural redirect" >&8
                     exit 114 ;;

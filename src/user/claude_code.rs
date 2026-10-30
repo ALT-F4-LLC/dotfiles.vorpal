@@ -546,7 +546,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_auto_compact_window(300000)
         .with_away_summary_enabled(false)
         .with_cleanup_period_days(45)
-        .with_effort_level("high")
+        .with_effort_level("medium")
         .with_feedback_survey_rate(0.0)
         .with_include_git_instructions(false)
         .with_input_needed_notif_enabled(true)
@@ -554,19 +554,19 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_model("sonnet")
         .with_model_setting(
             "claude-fable-5-1",
-            serde_json::json!({ "effortLevel": "high" }), // default
+            serde_json::json!({ "effortLevel": "high" }), // default: high
         )
         .with_model_setting(
             "claude-haiku-5-5",
-            serde_json::json!({ "effortLevel": "medium" }), // default
+            serde_json::json!({ "effortLevel": "medium" }), // default: medium
         )
         .with_model_setting(
             "claude-opus-5-5",
-            serde_json::json!({ "effortLevel": "medium" }), // default
+            serde_json::json!({ "effortLevel": "medium" }), // default: medium
         )
         .with_model_setting(
             "claude-sonnet-5-5",
-            serde_json::json!({ "effortLevel": "high" }), // default
+            serde_json::json!({ "effortLevel": "medium" }), // default: high
         )
         // Docket queue and run reads routinely exceed the 30000 default; at
         // the 128000 ceiling they return inline instead of to a file that

@@ -1,6 +1,6 @@
 [pipeline]
 name = "ui-change"
-version = 47
+version = 48
 description = "UI change bound to an accepted ux-spec cited in the issue body. Design-judged and design-QA'd before AC verification, so AC verification can read the design-QA findings and resolve met/unmet instead of unverifiable. The conductor integrates commits; the operator publishes."
 
 [match]
@@ -75,7 +75,7 @@ after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
-params = { field = "severity", method = "max", output = "findings" }
+params = { field = "severity", method = "max", output = "findings", source_field = "member_sources" }
 payload = "findings@15"
 threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 

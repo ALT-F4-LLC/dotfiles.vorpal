@@ -3,6 +3,14 @@
 Version history of `workflows/ui-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 48
+
+The reconcile aggregate declares `source_field = "member_sources"`, so the
+run report and the executor ledger attribute each cluster to the judge that
+raised it. Before this, both skipped the step and reported zero unique and
+zero corroborated clusters for every judge. No topology, routing, reduction,
+or limit change.
+
 ## 47
 
 Repoints the synthesize-findings payload to findings-cluster@7 and the

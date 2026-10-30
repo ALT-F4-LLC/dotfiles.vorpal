@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 55
+version = 56
 
 [match]
 unless_labels = [
@@ -75,7 +75,7 @@ after = ["synthesize-findings"]
 inputs = ["synthesize-findings.findings"]
 max_fix_loops = 2
 name = "reconcile"
-params = { field = "severity", method = "max", output = "findings" }
+params = { field = "severity", method = "max", output = "findings", source_field = "member_sources" }
 payload = "findings@15"
 threshold = { "fix-loop" = "any(open_severity >= blocker)" }
 

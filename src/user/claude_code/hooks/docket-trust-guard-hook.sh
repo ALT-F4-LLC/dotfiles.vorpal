@@ -490,6 +490,12 @@ function is_redirection(word,   rest) {
     else return 0
     return substr(rest, 1, 1) != "("
 }
+# An unquoted word that ends in a redirection operator with no target glued
+# after it: `trust>`, `docket>>`, `trust>&`, `trust>|`, `trust&>`.
+function ends_in_redirection(word) {
+    if (word == "" || substr(word, 1, 1) == MARK) return 0
+    return word ~ /[<>]$/ || word ~ /[<>][&|]$/ || word ~ /&>>?$/
+}
 # The index of the word the shell passes as the argument at words[k]. The
 # shell drops a redirection from the word list, and where its target ends is
 # not recoverable here: the pre-pass splits a quoted target into several
@@ -497,9 +503,19 @@ function is_redirection(word,   rest) {
 # quotes. So past a redirection the argument is the first later word of the
 # same command that reads as want or holds an expandable brace, and 0 when
 # none does. The command ends at the first unquoted ; | & or backtick that is
-# not part of a redirection operator.
-function argument_at(k, want,   w, piece) {
-    if (k > n || !is_redirection(words[k])) return k
+# not part of a redirection operator. When prev, the word before words[k],
+# ends in a bare operator (`trust> f`, `docket>& 2`), words[k] is the
+# target of that operator, and the search starts past it.
+function argument_at(k, want, prev,   w, piece) {
+    if (k > n) return k
+    if (ends_in_redirection(prev)) {
+        piece = words[k]
+        if (substr(piece, 1, 1) != MARK) {
+            gsub(/[<>]&|&>|>[|]/, "", piece)
+            if (piece ~ /[;|&\140]/) return 0
+        }
+        k++
+    } else if (!is_redirection(words[k])) return k
     for (; k <= n; k++) {
         if (!is_redirection(words[k])) {
             decode(words[k])
@@ -706,7 +722,7 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
         if (anypos && hd ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=docket$/) hd = "docket"
         if (hd == "docket" || hd ~ /\/docket$/) {
             if (i + 2 > n) continue
-            t = argument_at(i + 1, "^trust$")
+            t = argument_at(i + 1, "^trust$", hquoted ? "" : hw)
             if (!t || t + 1 > n) continue
             tquoted = decode(words[t])
             tgroup = D_GROUP
@@ -715,7 +731,7 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
             if (has_brace(tw) && !(hquoted && tquoted && hgroup == tgroup) && may_brace_expand(t)) { print "MATCH"; exit }
             sub(/[^A-Za-z0-9_-].*$/, "", tw)
             if (tw != "trust") continue
-            v = argument_at(t + 1, "^(add|rm)$")
+            v = argument_at(t + 1, "^(add|rm)$", words[t])
             if (!v) continue
             vquoted = decode(words[v])
             vgroup = D_GROUP

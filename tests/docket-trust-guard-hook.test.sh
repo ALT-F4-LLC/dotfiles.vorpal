@@ -457,6 +457,10 @@ case_redirection_between_verb_words_denies() {
         ">& glued onto the docket word behind a non-inert command"
     assert_verdict "docket trust > /dev/null add erik key" executor-write DENY \
         "spaced > and its target between trust and add"
+    assert_verdict "docket trust> /dev/null add erik key" executor-write DENY \
+        "> glued onto the trust word, spaced target"
+    assert_verdict "docket> /dev/null trust add erik key" executor-write DENY \
+        "> glued onto the docket word, spaced target"
     assert_verdict "docket trust 2>&1 add erik key" executor-write DENY \
         "fd duplication between trust and add"
     assert_verdict "docket trust &>/dev/null add erik key" executor-write DENY \

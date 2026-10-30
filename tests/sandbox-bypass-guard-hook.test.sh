@@ -81,7 +81,7 @@ assert_verdict() {
     fi
 }
 
-GOCMD='GOCACHE="/tmp/claude-501/STEP-1.d/gocache" vorpal run go:1.26.0 test ./...'
+GOCMD='vorpal run go:1.26.0 test ./... -C "/work/repo"'
 
 case_executor_lift_denies() {
     assert_verdict "$GOCMD" executor-write true DENY "executor-write: vorpal go test with lift"
@@ -126,7 +126,7 @@ case_malformed_input_allows() {
 }
 
 # The deny reason must keep telling the executor what to do instead, so a
-# denied lift ends in a sandboxed retry rather than a stalled step.
+# denied lift ends in the bare vorpal call rather than a stalled step.
 DENY_REASON='sandbox bypass blocked: dangerouslyDisableSandbox is never available to an executor step'
 
 case_deny_reason_is_fixed() {
@@ -137,8 +137,8 @@ case_deny_reason_is_fixed() {
         *) fail "deny reason changed or missing: ${err}" ;;
     esac
     case "$err" in
-        *"Run the same command sandboxed"*) pass "deny reason names the sandboxed retry" ;;
-        *) fail "deny reason no longer tells the executor to run sandboxed" ;;
+        *'vorpal run <alias> <subcommand> -C'*) pass "deny reason names the bare vorpal call shape" ;;
+        *) fail "deny reason no longer names the bare vorpal call shape" ;;
     esac
 }
 

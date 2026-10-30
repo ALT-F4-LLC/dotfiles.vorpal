@@ -503,7 +503,12 @@ function ends_in_redirection(word) {
 # quotes. So past a redirection the argument is the first later word of the
 # same command that reads as want or holds an expandable brace, and 0 when
 # none does. The command ends at the first unquoted ; | & or backtick that is
-# not part of a redirection operator. When prev, the word before words[k],
+# not part of a redirection operator, and never inside target text glued to
+# an operator: the pre-pass writes a blank-free quoted target bare, so
+# `>a;b` may be `>"a;b"`, one word. Reading it as one costs a false DENY on
+# the unquoted spelling. A brace word read by may_spell_trust_verb gets no
+# such reading, so `{docket,trust} >"a;b" add` stays a residual ALLOW.
+# When prev, the word before words[k],
 # ends in a bare operator (`trust> f`, `docket>& 2`), words[k] is the
 # target of that operator, and the search starts past it.
 function argument_at(k, want, prev,   w, piece) {
@@ -526,6 +531,7 @@ function argument_at(k, want, prev,   w, piece) {
         }
         piece = words[k]
         if (substr(piece, 1, 1) == MARK) continue
+        if (is_redirection(piece) && !ends_in_redirection(piece)) continue
         gsub(/[<>]&|&>|>[|]/, "", piece)
         if (piece ~ /[;|&\140]/) return 0
     }

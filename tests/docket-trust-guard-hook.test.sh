@@ -475,6 +475,30 @@ case_redirection_between_verb_words_denies() {
         "quoted target with text glued after it"
     assert_verdict 'docket trust >a" b" add erik key' executor-write DENY \
         "target with a quoted tail holding a blank"
+    assert_verdict "docket trust >'a;b' add erik key" executor-write DENY \
+        "single-quoted target holding ;"
+    assert_verdict 'docket trust >"a;b" add erik key' executor-write DENY \
+        "double-quoted target holding ;"
+    assert_verdict "docket trust >'a|b' add erik key" executor-write DENY \
+        "quoted target holding |"
+    assert_verdict "docket trust >'a&b' add erik key" executor-write DENY \
+        "quoted target holding &"
+    assert_verdict "docket trust >'f;' add erik key" executor-write DENY \
+        "quoted target ending in ;"
+    assert_verdict 'docket trust >a\;b add erik key' executor-write DENY \
+        "target holding an escaped ;"
+    assert_verdict "docket trust >'a\`b' add erik key" executor-write DENY \
+        "quoted target holding a backtick"
+    assert_verdict 'docket trust >a`x`b add erik key' executor-write DENY \
+        "target holding a command substitution"
+    assert_verdict "true | python3 -c x; docket trust >'a;b' add erik key" executor-write DENY \
+        "read unquoted: quoted target holding ;"
+    assert_verdict "docket trust >f; x add erik key" executor-write DENY \
+        "accepted false DENY: ; glued after a redirection target"
+    assert_verdict "docket trust 2>&1| grep add" executor-write DENY \
+        "accepted false DENY: | glued after an fd duplication"
+    assert_verdict "docket trust 2>&1 | grep add" executor-write ALLOW \
+        "a spaced | after an fd duplication ends the command"
     assert_verdict "docket trust {fd}>/dev/null add erik key" executor-write DENY \
         "named-fd redirection between trust and add"
     assert_verdict "docket >/dev/null {trust,} add erik key" executor-write DENY \

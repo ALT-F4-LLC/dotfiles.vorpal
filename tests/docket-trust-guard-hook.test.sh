@@ -1158,6 +1158,18 @@ case_scratch_prose_names_trust_verbs() {
         executor-write DENY "interpreter on a later code line of its leaf still widens"
 }
 
+# A change summary appended to the executor's own scratch through a
+# quoted-delimiter heredoc, its markdown prose naming both trust verbs in
+# backticks. The trust guard refused this shape in a run before the
+# classification moved to the shared file.
+case_change_summary_prose_names_trust_verbs() {
+    local body
+    body=$'\n## Completion checks\n- Adding declared files to an existing entry is `ErrConflict`. The operator must `docket trust rm` and then `docket trust add`.\n- The drift reason reads "re-run `docket trust add` for this gate with the entry\'s existing flags".\nEOF'
+    assert_verdict "cat >> /tmp/claude-501/STEP-13947.d/STEP-13947-change-summary.md <<'EOF'${body}" \
+        executor-write ALLOW "change-summary heredoc of prose naming the trust verbs (absolute scratch path)"
+    assert_verdict "cat >> \"\$TMPDIR/STEP-13947.d/STEP-13947-change-summary.md\" <<'EOF'${body}" \
+        executor-write ALLOW "change-summary heredoc of prose naming the trust verbs (\$TMPDIR scratch path)"
+}
 # ---- HEREDOC DESTINATION: a quoted delimiter is inert only to THIS shell ----
 #
 # `<<'EOF'` stops the OUTER shell expanding the body; it says nothing about
@@ -1723,7 +1735,7 @@ case_match_program_failure() {
     scratch_dir=$(mktemp -d "${TMPDIR:-/tmp}/docket-trust-guard-match-broken.XXXXXX") || \
         fatal "mktemp failed"
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
-    sed 's/^function active() { print "ACTIVE"; exit }$/function active() { print = "ACTIVE"; exit }/' \
+    sed 's/^BEGIN { MARK = "\\001" }$/BEGIN { MARK = = "\\001" }/' \
         "$HOOK" >"$scratch_hook" || fatal "could not copy hook to scratch dir"
     cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${scratch_dir}/" || \
         fatal "could not copy the pre-pass file to scratch dir"
@@ -1952,6 +1964,7 @@ case_heredoc_body_prose
 case_executor_read_payload_heredoc
 case_widened_body_brace_prose
 case_scratch_prose_names_trust_verbs
+case_change_summary_prose_names_trust_verbs
 case_heredoc_body_destination
 case_heredoc_written_then_run
 case_heredoc_sourced_from_stdin

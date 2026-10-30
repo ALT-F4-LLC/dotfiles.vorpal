@@ -92,9 +92,10 @@
 # in an INERT command. Everywhere else the whole command text is the scan.
 #
 # A command is inert when every command word in it names a program or
-# builtin that never runs its input or its arguments as code (INERT_WORDS
-# below: the writers and readers an executor's findings, payload and
-# scratch notes go through, plus the docket CLI itself), the command
+# builtin that never runs its input or its arguments as code (WIDEN_INERT
+# in docket-guard-leaf-lines.awk: the writers and readers an executor's
+# findings, payload and scratch notes go through, plus the docket CLI
+# itself), the command
 # branches on nothing (no `if`, `while`, `until`, `for`, `select`, `case`,
 # `!`, `[`, `[[`, `test` or `||`), and PATH is not reassigned. A launcher
 # (LAUNCHER_WORDS: `command`, `env`, `nice`, `timeout`, `sudo` and the
@@ -154,9 +155,9 @@
 # THE MATCH step below asks whether "docket trust add" or "docket trust rm"
 # is present as three separately-resolved words (a redirection between them
 # is skipped, as the shell drops it) versus one prose span, and whether a
-# bare -h/--help stands right after a clean verb. The same awk program
-# decides inertness, in `mode=inert`, from the same command-position
-# tracking the brace rule already needed.
+# bare -h/--help stands right after a clean verb. The inert mode of the
+# shared file docket-guard-leaf-lines.awk decides inertness from the same
+# command-position tracking.
 
 set -uo pipefail
 
@@ -345,12 +346,14 @@ MARKED=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) 
 
 # --- THE MATCH, and the inertness test that bounds its prose exemption. -----
 #
-# One awk program, two modes. `mode=inert` walks the marked code text and
-# prints ACTIVE at the first command word outside INERT_WORDS, the first
+# The inertness test is the inert mode of the shared file
+# docket-guard-leaf-lines.awk (LEAF_LINES_AWK): over the marked code text it
+# prints ACTIVE at the first command word outside its inert list, the first
 # control-flow word, the first `||`, or the first PATH assignment; a launcher
-# word defers the test to the word it launches. `mode=match` is the match
-# proper, on the marked code text of an inert command or on the unquoted
-# whole text of any other.
+# word defers the test to the word it launches. The match proper is the
+# program below, run on the marked code text of an inert command or on the
+# unquoted whole text of any other. It loads after the shared file and takes
+# every redirection reading from its redir_* functions.
 #
 # Three consecutive words `docket trust (add|rm)`, head-normalized on
 # `docket` the same way commit-guard normalizes `git` (closes a delimiter
@@ -415,27 +418,7 @@ MARKED=$(printf '%s' "$CODE_TEXT" | LC_ALL=C awk -f "$PREPASS_AWK" 2>/dev/null) 
 # the wrapper launches, which no inert command is, so the call is read
 # unquoted and every word there is in command position.
 MATCH_PROGRAM='
-BEGIN {
-    MARK = "\001"
-    k = split("cat tee printf echo jq mkdir rmdir cd pwd ls wc head tail grep cut sort uniq tr diff cmp stat basename dirname realpath mktemp date sleep true false : chmod cp mv rm touch ln export local unset shift set readonly declare typeset read docket", list, " ")
-    for (j = 1; j <= k; j++) INERT_WORDS[list[j]] = 1
-    k = split("command builtin exec nohup nice timeout time setsid stdbuf sudo env repeat", list, " ")
-    for (j = 1; j <= k; j++) LAUNCHER_WORDS[list[j]] = 1
-    k = split("if elif while until for select case ! [ [[ test", list, " ")
-    for (j = 1; j <= k; j++) FLOW_WORDS[list[j]] = 1
-}
-function active() { print "ACTIVE"; exit }
-# The word in command position, or the word a launcher launches: a word
-# outside INERT_WORDS ends the inert reading. A closing brace or paren is
-# structure, not a command. A launcher defers the test to its operand.
-function inert_word(word,   cw) {
-    cw = word
-    sub(/\).*$/, "", cw)
-    if (cw == "" || cw == "}") return
-    if (cw in FLOW_WORDS) active()
-    if (cw in LAUNCHER_WORDS) { launch = 1; return }
-    if (!(cw in INERT_WORDS)) active()
-}
+BEGIN { MARK = "\001" }
 function has_brace(word,   stripped) {
     stripped = word
     gsub(/\$\{/, "", stripped)
@@ -469,7 +452,7 @@ function may_spell_trust_verb(from, first,   k, rest, piece, p) {
     for (k = from + 1; k <= n; k++) {
         piece = words[k]
         if (substr(piece, 1, 1) != MARK) {
-            gsub(/[<>]&|&>|>[|]/, "", piece)
+            piece = redir_strip_ops(piece)
             if ((p = match(piece, /[;|&\140]/)) > 0) {
                 rest = rest substr(piece, 1, p - 1)
                 break
@@ -478,43 +461,6 @@ function may_spell_trust_verb(from, first,   k, rest, piece, p) {
         rest = rest piece
     }
     return rest ~ /d.*o.*c.*k.*e.*t/ && rest ~ /t.*r.*u.*s.*t/ && rest ~ /a.*d.*d|r.*m/
-}
-# An unquoted word that opens with a redirection operator, behind an optional
-# fd number or {name}: `>f`, `2>&1`, `&>f`, `<<<x`, `>|f`, or a bare `>`.
-# `<(` and `>(` are process substitutions, which are arguments.
-function is_redirection(word,   rest) {
-    if (substr(word, 1, 1) == MARK) return 0
-    rest = word
-    if (match(rest, /^[0-9]+/) || match(rest, /^[{][A-Za-z_][A-Za-z0-9_]*[}]/)) rest = substr(rest, RLENGTH + 1)
-    if (match(rest, /^&>>?/) || match(rest, /^<<[<-]?/) || match(rest, /^[<>][<>&|]?/)) rest = substr(rest, RLENGTH + 1)
-    else return 0
-    return substr(rest, 1, 1) != "("
-}
-# An unquoted word that ends in a redirection operator with no target glued
-# after it: `trust>`, `docket>>`, `trust>&`, `trust>|`, `trust&>`, `<<-`.
-function ends_in_redirection(word) {
-    if (word == "" || substr(word, 1, 1) == MARK) return 0
-    return word ~ /[<>]$/ || word ~ /[<>][&|]$/ || word ~ /&>>?$/ || word ~ /<<-$/
-}
-# The index of the first word after the target of a bare redirection
-# operator, which starts at words[k], and 0 when the command ends inside it.
-# A quoted target holding blanks reaches here as several marked words of one
-# group, and all of them are the target.
-function past_target(k,   g, piece) {
-    if (k > n) return k
-    if (substr(words[k], 1, 1) == MARK) {
-        decode(words[k])
-        g = D_GROUP
-        for (k++; k <= n && substr(words[k], 1, 1) == MARK; k++) {
-            decode(words[k])
-            if (D_GROUP != g) break
-        }
-        return k
-    }
-    piece = words[k]
-    gsub(/[<>]&|&>|>[|]/, "", piece)
-    if (piece ~ /[;|&\140]/) return 0
-    return k + 1
 }
 # The index of the word the shell passes as the argument at words[k]. The
 # shell drops a redirection from the word list, and where its target ends is
@@ -532,30 +478,17 @@ function past_target(k,   g, piece) {
 # target spelled trust (`docket > trust trust add`) is skipped: after a bare
 # operator word, and when prev, the word before words[k], ends in one
 # (`trust> f`, `docket>& 2`).
-function argument_at(k, want, prev,   w, piece) {
+function argument_at(k, want, prev,   w, j) {
     if (k > n) return k
-    if (ends_in_redirection(prev)) {
-        k = past_target(k)
-        if (!k) return 0
-    } else if (!is_redirection(words[k])) return k
-    for (; k <= n; k++) {
-        if (!is_redirection(words[k])) {
-            decode(words[k])
-            w = D_WORD
-            if (has_brace(w) && may_brace_expand(k)) return k
-            sub(/[^A-Za-z0-9_-].*$/, "", w)
-            if (w ~ want) return k
-        } else if (ends_in_redirection(words[k])) {
-            k = past_target(k + 1)
-            if (!k) return 0
-            k--
-            continue
-        }
-        piece = words[k]
-        if (substr(piece, 1, 1) == MARK) continue
-        if (is_redirection(piece) && !ends_in_redirection(piece)) continue
-        gsub(/[<>]&|&>|>[|]/, "", piece)
-        if (piece ~ /[;|&\140]/) return 0
+    j = redir_next(words, n, k, prev)
+    if (j == k) return k
+    for (k = j; k && k <= n; k = redir_next(words, n, k + 1, "")) {
+        decode(words[k])
+        w = D_WORD
+        if (has_brace(w) && may_brace_expand(k)) return k
+        sub(/[^A-Za-z0-9_-].*$/, "", w)
+        if (w ~ want) return k
+        if (redir_ends_command(words[k])) return 0
     }
     return 0
 }
@@ -582,118 +515,8 @@ function decode(raw,    inner, cpos) {
     gsub(/^[\047\042]+|[\047\042]+$/, "", D_WORD)
     return 0
 }
-function parens(word,   t, o, c) {
-    t = word; o = gsub(/\(/, "", t)
-    t = word; c = gsub(/\)/, "", t)
-    return o - c
-}
-# The inert reading of one line of marked code text. Every word in command
-# position must be inert: the first word of the line, the word after an
-# operator (standalone, or glued: `(cat`, `sh;`), and the word a launcher
-# launches. A quoted group is one word however many tokens the pre-pass
-# split it into, and is the command when it stands in command position
-# other than as an assignment value. Redirection operands, arithmetic spans
-# and launcher options are skipped. A quoted group that holds a blank can
-# never be an inert command, so `"a b"` in command position is active.
-function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
-    cmdpos = 1
-    launch = 0
-    assign_tail = 0
-    redir = 0
-    arith = 0
-    array = 0
-    prev_group = ""
-    for (i = 1; i <= n; i++) {
-        q = decode(words[i])
-        w = D_WORD
-        if (q) {
-            if (D_GROUP == prev_group) continue
-            prev_group = D_GROUP
-            if (redir) { redir = 0; continue }
-            if (arith > 0) continue
-            if (launch) { launch = 0; inert_word(w); cmdpos = 0; continue }
-            if (cmdpos && !assign_tail) { inert_word(w); cmdpos = 0 }
-            assign_tail = 0
-            continue
-        }
-        prev_group = ""
-        if (index(w, "||") > 0) active()
-        if (w ~ /(^|[^A-Za-z0-9_])PATH\+?=/) active()
-        # An operator ending the word (`x;`, `f)&&`) puts the next word in
-        # command position whatever this word was.
-        trailing = (w ~ /[\140(;|&]$/)
-        skipped = 0
-        if (arith > 0) { arith += parens(w); skipped = 1 }
-        else if (index(w, "$((") > 0 || w ~ /^\(\(/) {
-            arith = parens(w)
-            if (arith < 0) arith = 0
-            skipped = 1
-        }
-        else if (redir) { redir = 0; skipped = 1 }
-        # A redirection, with its operand glued (`2>/dev/null`, `<<EOF`) or
-        # following (`> f`); `<(` and `>(` are substitutions, read below.
-        else if (w ~ /^[0-9]*[<>]+([^(<>].*)?$/ || w ~ /^&>>?/) {
-            redir = (w ~ /^[0-9]*[<>]+$/ || w ~ /^&>>?$/)
-            skipped = 1
-        }
-        # In an array assignment the words up to the `)` are values.
-        if (array) { if (index(w, ")") > 0) array = 0; skipped = 1 }
-        else if (w ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=\(/) { array = (index(w, ")") == 0); skipped = 1 }
-        if (skipped) {
-            if (trailing) {
-                if (launch) active()
-                cmdpos = 1
-                assign_tail = 0
-            }
-            continue
-        }
-        # Backticks alternate outside and inside text; inside is a command,
-        # and the text glued after a closing backtick is not.
-        nb = split(w, parts, /\140/)
-        for (p = 1; p <= nb; p++) {
-            inside = (p % 2 == 0)
-            if (inside) { cmdpos = 1; assign_tail = 0 }
-            m = split(parts[p], segs, /[(;|&]+/)
-            for (s = 1; s <= m; s++) {
-                seg = segs[s]
-                if (s > 1) {
-                    if (launch) active()
-                    cmdpos = 1
-                    assign_tail = 0
-                }
-                if (seg == "") continue
-                if (launch) {
-                    if (seg ~ /^-/ || seg ~ /^[0-9]+$/ || seg ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=/) continue
-                    launch = 0
-                    inert_word(seg)
-                    cmdpos = 0
-                    continue
-                }
-                if (!cmdpos) { assign_tail = 0; continue }
-                if (seg in FLOW_WORDS) active()
-                if (is_command_prefix(seg, words[i + 1])) { assign_tail = (seg ~ /=$/); continue }
-                inert_word(seg)
-                cmdpos = 0
-                assign_tail = 0
-            }
-            if (parts[p] ~ /[(;|&]$/) {
-                if (launch) active()
-                cmdpos = 1
-                assign_tail = 0
-            }
-            if (inside) cmdpos = 0
-        }
-        if (trailing) {
-            if (launch) active()
-            cmdpos = 1
-            assign_tail = 0
-        }
-    }
-    if (launch) active()
-}
 {
     n = split($0, words, /[ \t]+/)
-    if (mode == "inert") { inert_line(); next }
     cmdpos = 1
     after_repeat = 0
     for (i = 1; i <= n; i++) {
@@ -708,12 +531,7 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
         # still trimmed off it. mawk has no backreference in a replacement,
         # hence one gsub per operator.
         cut = w
-        if (!hquoted) {
-            gsub(/>&/, ">", cut)
-            gsub(/<&/, "<", cut)
-            gsub(/&>/, ">", cut)
-            gsub(/>[|]/, ">", cut)
-        }
+        if (!hquoted) cut = redir_bare_ops(cut)
         hw = cut
         # Keep the text after the last glued operator. One leftmost match
         # of a one-byte class per pass: mawk does not take the longest
@@ -746,7 +564,7 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
         # A redirection glued onto the head word (`docket>/dev/null`) is not
         # part of the command name.
         hd = hw
-        if (!hquoted) sub(/[<>].*$/, "", hd)
+        if (!hquoted) hd = redir_cut_glued(hd)
         if (anypos && hd ~ /^[A-Za-z_][A-Za-z0-9_]*\+?=docket$/) hd = "docket"
         if (hd == "docket" || hd ~ /\/docket$/) {
             if (i + 2 > n) continue
@@ -777,12 +595,13 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
             # its target is text this pass may have split into words, and
             # a verb and flag read from inside it (`> "x add --help" add`)
             # are not the ones the shell passes.
-            spaced_op = !hquoted && ends_in_redirection(hw)
-            for (j = i + 1; j < v; j++) if (ends_in_redirection(words[j])) spaced_op = 1
+            spaced_op = !hquoted && redir_open(hw)
+            for (j = i + 1; j < v; j++) if (redir_open(words[j])) spaced_op = 1
             if (!spaced_op && texact == tw && vexact == vw && v + 1 <= n) {
                 pquoted = decode(words[v + 1])
                 pw = D_WORD
-                sub(/[|&;()<>].*$/, "", pw)
+                pw = redir_cut_glued(pw)
+                sub(/[|&;()].*$/, "", pw)
                 if (!strict && !pquoted && (pw == "-h" || pw == "--help")) continue
             }
             print "MATCH"
@@ -797,19 +616,20 @@ function inert_line(   i, q, w, m, segs, s, seg, trailing, prev_group) {
 # verdict: refuse, as for a missing pre-pass file. A printed result still
 # decides, since the program exits early on it and the pipeline can then end
 # on SIGPIPE.
-INERT=$(printf '%s' "$MARKED" | awk -v mode=inert "$MATCH_PROGRAM" 2>/dev/null)
+INERT=$(printf '%s' "$MARKED" | awk -v mode=inert -f "$LEAF_LINES_AWK" 2>/dev/null)
 INERT_RC=$?
 if [ "$INERT_RC" -ne 0 ] && [ -z "$INERT" ]; then
-    deny "$REASON_PREFIX the trust-guard hook's match program failed (awk exit ${INERT_RC}), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
+    deny "$REASON_PREFIX the trust-guard hook's inertness test failed (awk exit ${INERT_RC}), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 fi
 # The pre-pass emits `X= "a b"` and `X="a b"` alike (`X=` then marked
 # tokens), and the inert pass reads a marked group after an `=`-ending word
 # as that assignment's value. For the spaced form bash runs the quoted word
-# as the command, so the code text itself decides: an assignment name, `=`,
-# blank space and a quote make the call active.
-EMPTY_ASSIGN_RE='(^|[^A-Za-z0-9_])[A-Za-z_][A-Za-z0-9_]*\+?=[[:space:]]+[\"'"'"']'
-if [ "$INERT" != "ACTIVE" ] && [[ "$CODE_TEXT" =~ $EMPTY_ASSIGN_RE ]]; then
-    INERT=ACTIVE
+# as the command, so the code text itself decides, through the shared file's
+# assign-widen mode: an assignment name, `=`, blank space and a quote make
+# the call active.
+if [ "$INERT" != "ACTIVE" ]; then
+    INERT=$(printf '%s' "$CODE_TEXT" | awk -v mode=assign-widen -f "$LEAF_LINES_AWK" 2>/dev/null) || \
+        deny "$REASON_PREFIX the trust-guard hook's assignment test failed (docket-guard-leaf-lines.awk), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."
 fi
 
 ANYPOS=0
@@ -826,7 +646,7 @@ else
     SCAN_TEXT=$MARKED
 fi
 
-MATCH=$(printf '%s' "$SCAN_TEXT" | awk -v mode=match -v strict="$CONDUCTOR" -v anypos="$ANYPOS" "$MATCH_PROGRAM" 2>/dev/null)
+MATCH=$(printf '%s' "$SCAN_TEXT" | awk -v mode=match -v strict="$CONDUCTOR" -v anypos="$ANYPOS" -f "$LEAF_LINES_AWK" -f <(printf '%s' "$MATCH_PROGRAM") 2>/dev/null)
 MATCH_RC=$?
 if [ "$MATCH_RC" -ne 0 ] && [ -z "$MATCH" ]; then
     deny "$REASON_PREFIX the trust-guard hook's match program failed (awk exit ${MATCH_RC}), so it cannot check this command. This is a hook defect, not a caller mistake -- report it rather than retrying."

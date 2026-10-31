@@ -292,6 +292,14 @@ expect_never_asked() {
     fi
 }
 
+expect_stderr_has() { # <fixed string> <pass label> <fail label>
+    if grep -qF -- "$1" "$STDERR_FILE"; then
+        pass "$2"
+    else
+        fail "$3 (stderr: $(tr '\n' ' ' <"$STDERR_FILE"))"
+    fi
+}
+
 # ---- Every active run is asked, in one engine call ----
 case_two_active_runs_older_holds() {
     reset_env
@@ -302,11 +310,8 @@ case_two_active_runs_older_holds() {
     run_case "two active runs, only the OLDER holds a reap" DENY \
         "$(workflow_payload "$HOME/.claude/workflows/standard-change.js")"
     expect_argv "  ...asked over every active run" "guard spawn --active"
-    if grep -q 'RUN-14' "$STDERR_FILE"; then
-        pass "  ...and the denial names the older run"
-    else
-        fail "  ...denial did not name RUN-14 (stderr: $(tr '\n' ' ' <"$STDERR_FILE"))"
-    fi
+    expect_stderr_has RUN-14 "  ...and the denial names the older run" \
+        "  ...denial did not name RUN-14"
 }
 
 case_never_resolves_a_run() {
@@ -439,11 +444,8 @@ case_denial_text_is_the_engines() {
     one_held_run
     verdict_of "$PATH_WITH_DOCKET" \
         "$(workflow_payload "$HOME/.claude/workflows/standard-change.js")" >/dev/null
-    if grep -q 'unacknowledged reaps in bounded classes hold headroom' "$STDERR_FILE"; then
-        pass "deny forwards the engine's own reason on stderr"
-    else
-        fail "deny lost the engine's reason (stderr: $(tr '\n' ' ' <"$STDERR_FILE"))"
-    fi
+    expect_stderr_has 'unacknowledged reaps in bounded classes hold headroom' \
+        "deny forwards the engine's own reason on stderr" "deny lost the engine's reason"
 }
 
 # ---- Paths the carve-out sits upstream of ----
@@ -491,16 +493,8 @@ expect_cwd_refused() {
     local label="$1" bad="$2" reason="$3" payload="$4"
     one_held_run
     run_case "$label" DENY "$payload"
-    if grep -qF -- "$bad" "$STDERR_FILE"; then
-        pass "  ...naming the path verbatim"
-    else
-        fail "  ...stderr did not name ${bad} (stderr: $(tr '\n' ' ' <"$STDERR_FILE"))"
-    fi
-    if grep -qF -- "$reason" "$STDERR_FILE"; then
-        pass "  ...because it is ${reason}"
-    else
-        fail "  ...stderr did not say '${reason}' (stderr: $(tr '\n' ' ' <"$STDERR_FILE"))"
-    fi
+    expect_stderr_has "$bad" "  ...naming the path verbatim" "  ...stderr did not name ${bad}"
+    expect_stderr_has "$reason" "  ...because it is ${reason}" "  ...stderr did not say '${reason}'"
     if [ -f "$MARKER" ]; then
         fail "  ...but the engine was consulted (asked: $(asked_all | tr '\n' ';'))"
     else
@@ -677,15 +671,6 @@ case_usage_join_resolved_target() {
         "$LINK_HOME" "${STORE_DIR_REAL}/docket-workflow-usage.js"
 }
 
-case_two_active_runs_older_holds
-case_never_resolves_a_run
-case_tribunal_installed_path_forwards
-case_tribunal_source_path_forwards
-case_tribunal_stringified_args_forwards
-case_tribunal_admitted_onto_the_run_the_engine_named
-case_tribunal_verdict_still_the_engines
-case_tribunal_under_no_hold_claims_nothing
-case_tribunal_without_proposal_asks_plainly
 # ---- A launch whose args.tribunal is not tribunal.js is refused before any claim ----
 # One launch carried the installed lane script as its tribunal path; the
 # lane claimed three steps before anyone noticed. The hook refuses such a launch
@@ -702,18 +687,14 @@ WAVE_SCRIPT="$HOME/.claude/workflows/standard-change.js"
 TRIBUNAL_FIXTURE="${SANDBOX}/workflows/tribunal.js"
 mkdir -p "${SANDBOX}/workflows" && : >"$TRIBUNAL_FIXTURE"
 
-expect_tribunal_refused() { # <label> <bad> <reason> <payload>
-    expect_cwd_refused "$@"
-}
-
 case_wave_tribunal_is_wave_script_refused() {
-    expect_tribunal_refused "standard-change.js launched with args.tribunal set to standard-change.js" \
+    expect_cwd_refused "standard-change.js launched with args.tribunal set to standard-change.js" \
         "$WAVE_SCRIPT" "not a path to tribunal.js" \
         "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$WAVE_SCRIPT")"
 }
 
 case_wave_tribunal_is_wave_script_stringified_refused() {
-    expect_tribunal_refused "same launch, args as a JSON string (the shape the harness sends)" \
+    expect_cwd_refused "same launch, args as a JSON string (the shape the harness sends)" \
         "$WAVE_SCRIPT" "not a path to tribunal.js" \
         "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$WAVE_SCRIPT" string)"
 }
@@ -721,14 +702,14 @@ case_wave_tribunal_is_wave_script_stringified_refused() {
 case_wave_tribunal_lookalike_refused() {
     local bad="${SANDBOX}/workflows/tribunal.js.bak"
     : >"$bad"
-    expect_tribunal_refused "args.tribunal named tribunal.js.bak, a lookalike that exists" \
+    expect_cwd_refused "args.tribunal named tribunal.js.bak, a lookalike that exists" \
         "$bad" "not a path to tribunal.js" \
         "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$bad")"
 }
 
 case_wave_tribunal_missing_refused() {
     local bad="${SANDBOX}/nowhere/tribunal.js"
-    expect_tribunal_refused "args.tribunal a tribunal.js path that does not exist" \
+    expect_cwd_refused "args.tribunal a tribunal.js path that does not exist" \
         "$bad" "does not exist" \
         "$(workflow_payload_tribunal "$WAVE_SCRIPT" "$bad")"
 }
@@ -748,6 +729,15 @@ case_wave_without_tribunal_passes() {
         "$(lane_payload_cwd "$WAVE_SCRIPT" "$REPO_ROOT")"
 }
 
+case_two_active_runs_older_holds
+case_never_resolves_a_run
+case_tribunal_installed_path_forwards
+case_tribunal_source_path_forwards
+case_tribunal_stringified_args_forwards
+case_tribunal_admitted_onto_the_run_the_engine_named
+case_tribunal_verdict_still_the_engines
+case_tribunal_under_no_hold_claims_nothing
+case_tribunal_without_proposal_asks_plainly
 case_tribunal_malformed_proposal_asks_plainly
 case_wave_still_denies
 case_agent_call_still_denies

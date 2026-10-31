@@ -140,7 +140,7 @@ out.oneUpholdTwoMissing = tallyVotes([uphold, null, null])
 out.allMissing = tallyVotes([null, null, null])
 process.stdout.write(JSON.stringify(out))
 JS
-{ cat "${WORK}/region.js"; cat "${WORK}/cases.js"; } > "${WORK}/run.js"
+cat "${WORK}/region.js" "${WORK}/cases.js" > "${WORK}/run.js"
 SIMPLIFY_WORK="$WORK" node "${WORK}/run.js" > "${WORK}/out.json"
 ok $? 'the decision helpers evaluate outside a workflow run'
 

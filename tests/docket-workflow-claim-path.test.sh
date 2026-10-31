@@ -53,9 +53,9 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
 }
 
 for region in configuration classifier-retry park-signals orphaned-claim packet claim-path pre-claim-probe; do
-    extract "$region" >> "${WORK}/regions.js" || fatal "bad or missing TEST markers for ${region}"
-    printf '\n' >> "${WORK}/regions.js"
-done
+    extract "$region" || fatal "bad or missing TEST markers for ${region}"
+    printf '\n'
+done > "${WORK}/regions.js"
 
 cat > "${WORK}/suite.js" <<'JS'
 const fs = require('fs')
@@ -80,6 +80,7 @@ const goodModule = (owner) => ({
 })
 const NOT_FOUND = `Workflow script file not found: ${MODULE}`
 const UNREADABLE = `workflow({scriptPath: '${MODULE}'}): scriptPath must be a script path this tool returned, or a file you can already read (the working directory or a directory you have added): ${MODULE}`
+const blockedReason = (text) => { try { return JSON.parse(text).data.blocked_reason } catch { return null } }
 
 // A fresh wave per scenario. `replies` answers successive agent() calls (the
 // command output as a string, null, or an Error to throw); a string reaches
@@ -113,7 +114,7 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
 ;(async () => {
     // ---- a valid module launches; the claim agent is wave overhead ----
     {
-        const { api, calls } = wave({ replies: ['CLAIMED STEP-12 attempt=3'], load: (p) => goodModule('wave:STEP-12:1') })
+        const { api, calls } = wave({ replies: ['CLAIMED STEP-12 attempt=3'], load: () => goodModule('wave:STEP-12:1') })
         const res = await api.claimPacket(row, r, 'lane')
         ok(res.ok && res.owner === 'wave:STEP-12:1' && res.claim.packet === PACKET,
             'a valid module hands the packet to the executor launch')
@@ -163,9 +164,7 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
             load: new Error(NOT_FOUND),
         })
         const res = await api.claimPacket(row, r, 'lane')
-        let reason = null
-        try { reason = JSON.parse(res.result.text).data.blocked_reason } catch {}
-        ok(!res.ok && res.result.status === 'skipped-not-ready' && reason === clause.replace(/ \(.*\)$/, '') &&
+        ok(!res.ok && res.result.status === 'skipped-not-ready' && blockedReason(res.result.text) === clause.replace(/ \(.*\)$/, '') &&
             !api.runParked(res.result) && calls.stepShow === 0,
             `a cross-launch "${clause}" refusal defers the lane with the clause as blocked_reason`)
         const pregate = clause.startsWith('a detached pre-gate')
@@ -274,9 +273,7 @@ function wave({ replies = [], load, cwd = '/repo', show = { status: 'claimed', a
         const PREGATE = 'a detached pre-gate run for its target is in flight'
         const { api, calls } = wave({ show: { status: 'pending', blockedReason: PREGATE } })
         const res = await api.preClaimSkip(row, 'lane')
-        let reason = null
-        try { reason = JSON.parse(res.text).data.blocked_reason } catch {}
-        ok(res && res.status === 'skipped-not-ready' && reason === PREGATE && calls.stepShow === 1,
+        ok(res && res.status === 'skipped-not-ready' && blockedReason(res.text) === PREGATE && calls.stepShow === 1,
             "a pending step held by its target's detached pre-gate settles skipped-not-ready, not skipped-not-claimable")
         fs.writeFileSync(`${process.argv[3]}/pregate.json`, JSON.stringify([res, follower]))
     }
@@ -309,8 +306,9 @@ waits=$(sed -n "s/^ *\`WAITS='\\(.*\\)'\`,\$/\\1/p" "$SKILL")
 settle=$(sed -n 's/.*`jq -r --slurpfile rows "$ROWS_FILE" "$WAITS"'"'"'\([^'"'"']*\)'"'"' "$STATUSES_FILE" >> "$SETTLED_FILE"`.*/\1/p' "$SKILL")
 [ -n "$waits" ] && [ -n "$settle" ] || fatal "no refill settle filter found in ${SKILL}"
 printf '%s\n' '{"step":"STEP-12","issue":"ISS-1"}' '{"step":"STEP-13","issue":"ISS-1"}' > "${WORK}/rows.jsonl"
-held=$(jq -r --slurpfile rows "${WORK}/rows.jsonl" "$waits$settle" "${WORK}/pregate.json" | tr '\n' ' ')
-control=$(jq -r --slurpfile rows "${WORK}/rows.jsonl" "$waits$settle" "${WORK}/after.json" | tr '\n' ' ')
+settled() { jq -r --slurpfile rows "${WORK}/rows.jsonl" "$waits$settle" "${WORK}/$1.json" | tr '\n' ' '; }
+held=$(settled pregate)
+control=$(settled after)
 if [ "$control" = "STEP-12 STEP-13 " ] && [ "$held" = "" ]; then
     printf 'PASS: the refill settle filter leaves a pre-gate-held row and its chain-dead follower pending\n'
 else

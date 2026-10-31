@@ -128,6 +128,22 @@ ADVISORY=(advisory.sh)
 UNWIRED=()
 KNOWN_UNVERIFIED=()'
 
+# expect_gate_fails <label> <dir> <registry-body> <pattern> <missing> [<pass-tail>];
+# passes when the gate exits non-zero and its output matches <pattern>.
+# <missing> names what the failure message says the gate did not name.
+expect_gate_fails() {
+    local label="$1" dir="$2" registry="$3" pattern="$4" missing="$5"
+    local pass_tail="${6:-gate fails and names it}" out
+    if out=$(run_gate "$dir" "$registry" 2>&1); then
+        fail "${label}: expected non-zero exit, gate passed"
+    elif printf '%s\n' "$out" | grep -q "$pattern"; then
+        pass "${label}: ${pass_tail}"
+    else
+        fail "${label}: gate failed but did not name ${missing}"
+        printf '%s\n' "$out" | sed 's/^/    /'
+    fi
+}
+
 # ---- clean fixture passes -------------------------------------------------
 FIX="${WORK}/clean"
 build_fixture "$FIX"
@@ -146,16 +162,8 @@ cat > "${FIX}/hooks/mystery.sh" <<'HOOK'
 echo unclassified
 HOOK
 chmod +x "${FIX}/hooks/mystery.sh"
-if out=$(run_gate "$FIX" "$CLEAN_REGISTRY" 2>&1); then
-    fail "unclassified hook: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "mystery.sh is not classified"; then
-        pass "unclassified hook: gate fails and names it"
-    else
-        fail "unclassified hook: gate failed but did not name mystery.sh"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "unclassified hook" "$FIX" "$CLEAN_REGISTRY" \
+    "mystery.sh is not classified" mystery.sh
 
 # ---- an ADVISORY hook with a deny path fails ------------------------------
 FIX="${WORK}/advisory-deny"
@@ -164,16 +172,8 @@ cat > "${FIX}/hooks/advisory.sh" <<'HOOK'
 #!/bin/bash
 exit 2
 HOOK
-if out=$(run_gate "$FIX" "$CLEAN_REGISTRY" 2>&1); then
-    fail "ADVISORY with deny path: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "advisory.sh is ADVISORY but its code carries a deny path"; then
-        pass "ADVISORY with deny path: gate fails and names it"
-    else
-        fail "ADVISORY with deny path: gate failed but did not name advisory.sh"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "ADVISORY with deny path" "$FIX" "$CLEAN_REGISTRY" \
+    "advisory.sh is ADVISORY but its code carries a deny path" advisory.sh
 
 # ---- a registered UNWIRED hook fails ---------------------------------------
 FIX="${WORK}/unwired-registered"
@@ -199,16 +199,8 @@ REGISTRY='ENFORCING=(enforcing.sh)
 ADVISORY=(advisory.sh)
 UNWIRED=(parked.sh)
 KNOWN_UNVERIFIED=()'
-if out=$(run_gate "$FIX" "$REGISTRY" 2>&1); then
-    fail "UNWIRED but registered: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "parked.sh is UNWIRED but .* registers it"; then
-        pass "UNWIRED but registered: gate fails and names it"
-    else
-        fail "UNWIRED but registered: gate failed but did not name parked.sh"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "UNWIRED but registered" "$FIX" "$REGISTRY" \
+    "parked.sh is UNWIRED but .* registers it" parked.sh
 
 # ---- LIBRARIES: shared code an ENFORCING hook loads ------------------------
 LIB_REGISTRY="${CLEAN_REGISTRY}
@@ -232,14 +224,8 @@ fi
 
 FIX="${WORK}/library-unloaded"
 lib_fixture "$FIX" 0
-if out=$(run_gate "$FIX" "$LIB_REGISTRY" 2>&1); then
-    fail "library no ENFORCING hook loads: expected non-zero exit, gate passed"
-elif printf '%s\n' "$out" | grep -q "shared-lib.sh is a LIBRARY but no ENFORCING hook loads it"; then
-    pass "library no ENFORCING hook loads: gate fails and names it"
-else
-    fail "library no ENFORCING hook loads: gate failed but did not name shared-lib.sh"
-    printf '%s\n' "$out" | sed 's/^/    /'
-fi
+expect_gate_fails "library no ENFORCING hook loads" "$FIX" "$LIB_REGISTRY" \
+    "shared-lib.sh is a LIBRARY but no ENFORCING hook loads it" shared-lib.sh
 
 FIX="${WORK}/library-registered"
 lib_fixture "$FIX" 1
@@ -255,14 +241,8 @@ fn build3() {
         );
 }
 RS
-if out=$(run_gate "$FIX" "$LIB_REGISTRY" 2>&1); then
-    fail "registered library: expected non-zero exit, gate passed"
-elif printf '%s\n' "$out" | grep -q "shared-lib.sh is a LIBRARY but .* registers it"; then
-    pass "registered library: gate fails and names it"
-else
-    fail "registered library: gate failed but did not name shared-lib.sh"
-    printf '%s\n' "$out" | sed 's/^/    /'
-fi
+expect_gate_fails "registered library" "$FIX" "$LIB_REGISTRY" \
+    "shared-lib.sh is a LIBRARY but .* registers it" shared-lib.sh
 
 # ---- KNOWN_UNVERIFIED entry that is gone fails -----------------------------
 FIX="${WORK}/known-unverified-gone"
@@ -271,16 +251,8 @@ REGISTRY='ENFORCING=(enforcing.sh)
 ADVISORY=(advisory.sh)
 UNWIRED=()
 KNOWN_UNVERIFIED=(vanished.sh)'
-if out=$(run_gate "$FIX" "$REGISTRY" 2>&1); then
-    fail "KNOWN_UNVERIFIED entry gone: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "vanished.sh is in KNOWN_UNVERIFIED but not ENFORCING"; then
-        pass "KNOWN_UNVERIFIED entry gone: gate fails and names it"
-    else
-        fail "KNOWN_UNVERIFIED entry gone: gate failed but did not name vanished.sh"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "KNOWN_UNVERIFIED entry gone" "$FIX" "$REGISTRY" \
+    "vanished.sh is in KNOWN_UNVERIFIED but not ENFORCING" vanished.sh
 
 # ---- KNOWN_UNVERIFIED entry that now has a suite fails ---------------------
 FIX="${WORK}/known-unverified-now-has-suite"
@@ -289,31 +261,16 @@ REGISTRY='ENFORCING=(enforcing.sh)
 ADVISORY=(advisory.sh)
 UNWIRED=()
 KNOWN_UNVERIFIED=(enforcing.sh)'
-if out=$(run_gate "$FIX" "$REGISTRY" 2>&1); then
-    fail "KNOWN_UNVERIFIED now has suite: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "enforcing.sh has a suite at .* now; remove it from KNOWN_UNVERIFIED"; then
-        pass "KNOWN_UNVERIFIED now has suite: gate fails and names it"
-    else
-        fail "KNOWN_UNVERIFIED now has suite: gate failed but did not name enforcing.sh"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "KNOWN_UNVERIFIED now has suite" "$FIX" "$REGISTRY" \
+    "enforcing.sh has a suite at .* now; remove it from KNOWN_UNVERIFIED" enforcing.sh
 
 # ---- a suite under MIN_CASES fails -----------------------------------------
 FIX="${WORK}/under-floor"
 build_fixture "$FIX"
 write_suite "${FIX}/tests/enforcing.test.sh" 3
-if out=$(run_gate "$FIX" "$CLEAN_REGISTRY" 2>&1); then
-    fail "suite under MIN_CASES: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "passed only 3 case(s), under the floor"; then
-        pass "suite under MIN_CASES: gate fails and names the shortfall"
-    else
-        fail "suite under MIN_CASES: gate failed but did not name the shortfall"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "suite under MIN_CASES" "$FIX" "$CLEAN_REGISTRY" \
+    "passed only 3 case(s), under the floor" "the shortfall" \
+    "gate fails and names the shortfall"
 
 # ---- an ENFORCING hook with no registration fails --------------------------
 FIX="${WORK}/no-registration"
@@ -323,16 +280,8 @@ fn build() {
     let settings_builder = settings_builder;
 }
 RS
-if out=$(run_gate "$FIX" "$CLEAN_REGISTRY" 2>&1); then
-    fail "ENFORCING with no registration: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "enforcing.sh is ENFORCING but .* never registers it"; then
-        pass "ENFORCING with no registration: gate fails and names it"
-    else
-        fail "ENFORCING with no registration: gate failed but did not name it"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "ENFORCING with no registration" "$FIX" "$CLEAN_REGISTRY" \
+    "enforcing.sh is ENFORCING but .* never registers it" it
 
 # ---- is_registered: a collapsed one-line .with_hook call is still found ---
 # Mutant pin for the earlier line-leading-`)` rule: a one-line call opened
@@ -365,21 +314,12 @@ fi
 # settings_builder chain. Only other.sh may pass; enforcing.sh must be named
 # as unregistered.
 FIX="${WORK}/collapsed-call-fail-open"
-mkdir -p "${FIX}/hooks" "${FIX}/tests"
-cat > "${FIX}/hooks/enforcing.sh" <<'HOOK'
-#!/bin/bash
-exit 2
-HOOK
+build_fixture "$FIX"
 cat > "${FIX}/hooks/other.sh" <<'HOOK'
 #!/bin/bash
 exit 2
 HOOK
-cat > "${FIX}/hooks/advisory.sh" <<'HOOK'
-#!/bin/bash
-echo observed
-HOOK
-chmod +x "${FIX}/hooks/enforcing.sh" "${FIX}/hooks/other.sh" "${FIX}/hooks/advisory.sh"
-write_suite "${FIX}/tests/enforcing.test.sh" 10
+chmod +x "${FIX}/hooks/other.sh"
 write_suite "${FIX}/tests/other.test.sh" 10
 cat > "${FIX}/claude_code.rs" <<'RS'
 fn build() {
@@ -395,16 +335,9 @@ TWO_HOOK_REGISTRY='ENFORCING=(enforcing.sh other.sh)
 ADVISORY=(advisory.sh)
 UNWIRED=()
 KNOWN_UNVERIFIED=()'
-if out=$(run_gate "$FIX" "$TWO_HOOK_REGISTRY" 2>&1); then
-    fail "collapsed call fail-open: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "enforcing.sh is ENFORCING but .* never registers it"; then
-        pass "collapsed call fail-open: deleted registration named despite an unrelated collapsed call"
-    else
-        fail "collapsed call fail-open: gate failed but did not name enforcing.sh"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "collapsed call fail-open" "$FIX" "$TWO_HOOK_REGISTRY" \
+    "enforcing.sh is ENFORCING but .* never registers it" enforcing.sh \
+    "deleted registration named despite an unrelated collapsed call"
 
 # ---- is_registered: a wrapped nested argument keeps the call window open --
 # Mutant pin for the same rule: a nested Some(&format!(...)) that wraps onto
@@ -451,16 +384,8 @@ fn build() {
     */
 }
 RS
-if out=$(run_gate "$FIX" "$CLEAN_REGISTRY" 2>&1); then
-    fail "block-commented registration: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "enforcing.sh is ENFORCING but .* never registers it"; then
-        pass "block-commented registration: gate fails and names it"
-    else
-        fail "block-commented registration: gate failed but did not name it"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "block-commented registration" "$FIX" "$CLEAN_REGISTRY" \
+    "enforcing.sh is ENFORCING but .* never registers it" it
 
 # ---- is_registered: a dropped builder result does not count --------------
 FIX="${WORK}/dropped-result"
@@ -477,16 +402,8 @@ fn build() {
     );
 }
 RS
-if out=$(run_gate "$FIX" "$CLEAN_REGISTRY" 2>&1); then
-    fail "dropped builder result: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "enforcing.sh is ENFORCING but .* never registers it"; then
-        pass "dropped builder result: gate fails and names it"
-    else
-        fail "dropped builder result: gate failed but did not name it"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+expect_gate_fails "dropped builder result" "$FIX" "$CLEAN_REGISTRY" \
+    "enforcing.sh is ENFORCING but .* never registers it" it
 
 # ---- skip-suites mode: checks run, suites do not ---------------------------
 # SDET_ABUSE_SKIP_SUITES=1 lets the record-time gate reuse a `tests` pass for
@@ -508,11 +425,6 @@ write_marker_suite() { # <path> <marker>
     chmod +x "$path"
 }
 
-# run_gate_skip <dir> <registry-body>; run_gate in skip-suites mode.
-run_gate_skip() { # <dir> <registry-body>
-    SDET_ABUSE_SKIP_SUITES=1 run_gate "$@"
-}
-
 FIX="${WORK}/marker-full"
 build_fixture "$FIX"
 write_marker_suite "${FIX}/tests/enforcing.test.sh" "${FIX}/marker"
@@ -526,7 +438,7 @@ fi
 FIX="${WORK}/skip-clean"
 build_fixture "$FIX"
 write_marker_suite "${FIX}/tests/enforcing.test.sh" "${FIX}/marker"
-if out=$(run_gate_skip "$FIX" "$CLEAN_REGISTRY" 2>&1); then
+if out=$(SDET_ABUSE_SKIP_SUITES=1 run_gate "$FIX" "$CLEAN_REGISTRY" 2>&1); then
     if [ -e "${FIX}/marker" ]; then
         fail "skip mode, clean fixture: gate exits 0 but ran the suite (marker present)"
     elif printf '%s\n' "$out" | grep -q "enforcing.sh .*ENFORCING  suite"; then
@@ -548,16 +460,8 @@ cat > "${FIX}/hooks/mystery.sh" <<'HOOK'
 echo unclassified
 HOOK
 chmod +x "${FIX}/hooks/mystery.sh"
-if out=$(run_gate_skip "$FIX" "$CLEAN_REGISTRY" 2>&1); then
-    fail "skip mode, unclassified hook: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "mystery.sh is not classified"; then
-        pass "skip mode, unclassified hook: gate fails and names it"
-    else
-        fail "skip mode, unclassified hook: gate failed but did not name mystery.sh"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+SDET_ABUSE_SKIP_SUITES=1 expect_gate_fails "skip mode, unclassified hook" "$FIX" "$CLEAN_REGISTRY" \
+    "mystery.sh is not classified" mystery.sh
 
 FIX="${WORK}/skip-no-registration"
 build_fixture "$FIX"
@@ -566,16 +470,8 @@ fn build() {
     let settings_builder = settings_builder;
 }
 RS
-if out=$(run_gate_skip "$FIX" "$CLEAN_REGISTRY" 2>&1); then
-    fail "skip mode, no registration: expected non-zero exit, gate passed"
-else
-    if printf '%s\n' "$out" | grep -q "enforcing.sh is ENFORCING but .* never registers it"; then
-        pass "skip mode, no registration: gate fails and names it"
-    else
-        fail "skip mode, no registration: gate failed but did not name it"
-        printf '%s\n' "$out" | sed 's/^/    /'
-    fi
-fi
+SDET_ABUSE_SKIP_SUITES=1 expect_gate_fails "skip mode, no registration" "$FIX" "$CLEAN_REGISTRY" \
+    "enforcing.sh is ENFORCING but .* never registers it" it
 
 echo
 if [ "$FAIL" -gt 0 ]; then

@@ -103,13 +103,7 @@ build_input() {
 }
 
 assert_verdict() {
-    local cmd="$1" agent="$2" want="$3" label="$4" got
-    got=$(verdict_of "$(build_input "$cmd" "$agent")")
-    if [ "$got" = "$want" ]; then
-        pass "${label} (${want})"
-    else
-        fail "${label} (want ${want}, got ${got})"
-    fi
+    assert_verdict_raw "$(build_input "$1" "$2")" "$3" "$4"
 }
 
 assert_verdict_raw() {
@@ -127,9 +121,14 @@ assert_verdict_raw() {
 # executor-facing text for a different one.
 DENY_REASON='trust-store write blocked: `docket trust add/rm` is operator-reserved'
 
+# Prints the hook's stderr for one command and returns the hook's exit code.
+hook_stderr() {
+    PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$1" "$2")"
+}
+
 assert_deny_reason() {
     local cmd="$1" agent="$2" label="$3" err
-    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$cmd" "$agent")")
+    err=$(hook_stderr "$cmd" "$agent")
     case "$err" in
         "${DENY_REASON}"*) pass "${label} (reason text unchanged)" ;;
         *) fail "${label} (reason text changed or missing: ${err})" ;;
@@ -181,7 +180,7 @@ case_conductor_seat_denies() {
 # its own STEP-N.d in a Bash call that holds only inert commands.
 case_executor_read_deny_recovery() {
     local err
-    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "docket trust add erik key" executor-read)")
+    err=$(hook_stderr "docket trust add erik key" executor-read)
     case "$err" in
         *"Write tool where you have it"*) pass "executor deny reason names the Write tool as one recovery, not the only one" ;;
         *) fail "executor deny reason names the Write tool as one recovery, not the only one (got: ${err})" ;;
@@ -1680,16 +1679,14 @@ case_missing_prepass_file_denies() {
     scratch_hook="${scratch_dir}/docket-trust-guard-hook.sh"
     cp "$HOOK" "$scratch_hook" || fatal "could not copy hook to scratch dir"
     # Deliberately no docket-guard-prepass.awk beside the copy.
-    PATH="$TOOLS_DIR" "$BASH_BIN" "$scratch_hook" >/dev/null 2>&1 \
-        <<<"$(build_input 'docket trust add erik key' executor-write)"
+    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
+        <<<"$(build_input 'docket trust add erik key' executor-write)")
     rc=$?
     if [ "$rc" -eq 2 ]; then
         pass "hook copy with no sibling awk file denies (exit 2)"
     else
         fail "hook copy with no sibling awk file did not deny (exit ${rc})"
     fi
-    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$scratch_hook" 2>&1 >/dev/null \
-        <<<"$(build_input 'docket trust add erik key' executor-write)")
     case "$err" in
         *"docket-guard-prepass.awk"*) pass "missing-file deny names the cause" ;;
         *) fail "missing-file deny reason changed or missing: ${err}" ;;
@@ -1759,13 +1756,6 @@ case_match_program_failure() {
     rm -rf "$scratch_dir"
 }
 
-# ---- Unparseable pre-pass program: fail CLOSED, not open ------------------
-#
-# A pre-pass program awk cannot parse prints nothing and exits non-zero, so
-# the match stage would see no command at all. The hook refuses instead of
-# allowing. The copy appends one unparseable statement to the shared file;
-# `ls` from an executor is allowed by the shipped hook.
-
 # Under a UTF-8 locale macOS awk refused a lone byte of a multibyte
 # character, so the byte-wise pre-pass failed and the guard denied any
 # command carrying one unquoted. The deny rows show the C-locale pass still
@@ -1780,6 +1770,13 @@ case_multibyte_text_under_utf8() {
     LC_ALL=en_US.UTF-8 assert_verdict "docket trust rm erik # café — x" executor-write DENY \
         "utf-8: docket trust rm with a multibyte comment"
 }
+
+# ---- Unparseable pre-pass program: fail CLOSED, not open ------------------
+#
+# A pre-pass program awk cannot parse prints nothing and exits non-zero, so
+# the match stage would see no command at all. The hook refuses instead of
+# allowing. The copy appends one unparseable statement to the shared file;
+# `ls` from an executor is allowed by the shipped hook.
 
 case_prepass_program_failure() {
     local scratch_dir scratch_hook err rc
@@ -1857,7 +1854,7 @@ CONTROL_BYTE_REASON='control byte (0x01, 0x1d or 0x1e)'
 
 assert_control_byte_deny() {
     local cmd="$1" agent="$2" label="$3" err rc
-    err=$(PATH="$TOOLS_DIR" "$BASH_BIN" "$HOOK" 2>&1 >/dev/null <<<"$(build_input "$cmd" "$agent")")
+    err=$(hook_stderr "$cmd" "$agent")
     rc=$?
     if [ "$rc" -ne 2 ]; then
         fail "${label} (want exit 2, got exit ${rc})"

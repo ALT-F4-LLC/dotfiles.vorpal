@@ -260,11 +260,7 @@ ok(runParked(A) === false, 'A: the success result does not park the run')
 // text, never a second read.
 const A2 = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'returned without casting' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: APPROVED }],
-    'STEP-2493 → seat:judge-security (retry)': { text: 'cast recorded' },
 })
 ok(A2.status === 'gate-passed' && A2.spawn_accounting === '3 seats, 4 probes, 1 retry',
     `AC: a re-seat adds exactly one probe (got ${JSON.stringify(A2.spawn_accounting)})`)
@@ -278,11 +274,7 @@ ok(LOG.some((l) => l.includes('1 seat(s) returned without a recorded cast (judge
 // decided on the engine's record as it stands.
 await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'nothing' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': [{ text: OPEN_ONE_MISSING }, { text: envelope('done', 'approved', ['judge-security']) }],
-    'STEP-2493 → seat:judge-security (retry)': { text: 'nothing again' },
 })
 ok(LOG.some((l) => l.includes('STILL NO CAST from judge-security')),
     `A3: a seat silent after its one re-spawn is named (got ${JSON.stringify(LOG)})`)
@@ -291,11 +283,7 @@ ok(LOG.some((l) => l.includes('STILL NO CAST from judge-security')),
 // failure: no notes, no accounting cushion.
 const B = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { reject: API_ERR },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': [{ reject: API_ERR }, { text: OPEN_ONE_MISSING }, { text: REJECTED }],
-    'STEP-2493 → seat:judge-security (retry)': { text: 'cast recorded' },
 })
 ok(B.status === 'gate-rejected', 'B: rejected tally -> status is gate-rejected')
 ok(B.notes === undefined, 'B: a failing gate gets NO absorbed-error notes')
@@ -339,9 +327,6 @@ ok(C3.status === 'gate-skipped' && CALLS.length === 1,
 // status alone.
 const D = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': { reject: '[STEP-2493 → gate:outcome] blocked by safety classifier: the brief was refused on content' },
 })
 ok(calls('STEP-2493 → gate:outcome') === 1, 'D: a content classifier block is NOT resubmitted')
@@ -364,9 +349,6 @@ const BODY = {
 const E = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 → gate:proposal': { text: BODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': { text: APPROVED },
 })
 ok(E.status === 'gate-passed', 'E: the healthy gate passes')
@@ -403,9 +385,6 @@ ok(calls('STEP-2493 → gate:held-cluster') === 0,
 // A REJECTED proposal is equally conclusive — one read after the panel.
 const E2 = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': { text: REJECTED },
 })
 ok(E2.status === 'gate-rejected' && probes() === 3,
@@ -414,9 +393,6 @@ ok(E2.status === 'gate-rejected' && probes() === 3,
 // A gate that did not clear — every seat cast, the ballot still open.
 const E3 = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': { text: envelope('ready', 'open', []) },
 })
 ok(E3.status === 'gate-parked' && LOG.some((l) => l.includes('gate did NOT clear (ready, tally open)')),
@@ -429,9 +405,6 @@ ok(E3.status === 'gate-parked' && LOG.some((l) => l.includes('gate did NOT clear
 const E4 = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
     'STEP-2493 → gate:proposal': [{ reject: API_ERR }, { reject: API_ERR }],
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': { text: APPROVED },
 })
 ok(E4.status === 'gate-passed' && WORKFLOW_CALLS.length === 1 && WORKFLOW_CALLS[0].context === '',
@@ -447,18 +420,12 @@ ok(E4.spawn_accounting === '3 seats, 4 probes, 1 retry' && Array.isArray(E4.note
 // re-seated off it.
 const F = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': { text: {} },
 })
 ok(F.status === 'gate-parked' && !CALLS.some((c) => c.includes('(retry)')),
     'F: a non-envelope reply parks the gate and re-spawns nobody')
 const F2 = await run({
     'STEP-2493 → gate:status':  { text: OPEN_NOBODY },
-    'STEP-2493 → seat:judge-architecture': { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-security':     { text: 'cast recorded' },
-    'STEP-2493 → seat:judge-correctness':  { text: 'cast recorded' },
     'STEP-2493 → gate:outcome': { text: { error: 'Error: STEP-2493 is a "executor" step, not a gate' } },
 })
 ok(F2.status === 'gate-parked' && LOG.some((l) => l.includes('engine error — Error: STEP-2493 is a')),

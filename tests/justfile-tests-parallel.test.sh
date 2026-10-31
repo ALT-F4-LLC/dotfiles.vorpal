@@ -131,7 +131,7 @@ make_fixture "$F5" a:0 b:0 c:0 d:0 e:0 f:0
 run_body "$F5" 2
 [ "$(sort -n "${F5}/concurrency" | tail -n1)" = 2 ]
 check "TESTS_JOBS=2 runs two suites at once and no more" $?
-[ "$(sort "${F5}/ran" | wc -l | tr -d ' ')" = 6 ]
+[ "$(wc -l < "${F5}/ran" | tr -d ' ')" = 6 ]
 check "every suite ran under a bound of 2" $?
 
 if [ "$fail" -ne 0 ]; then

@@ -108,7 +108,7 @@ want='[{"issue":"HRN-10","workflow":"standard-change@56"},{"issue":"DKT-11","wor
 [ $rc -eq 0 ] && [ "$(jq -c . "$WORK/out")" = "$want" ]
 ok $? "RUN-1: every bound issue, in issue order, own prefix upper-cased, workflow as name@version (rc ${rc})"
 ! grep -q 'HRN-13' "$WORK/out"; ok $? "RUN-1: an issue bound to another run is not listed"
-[ -z "$(cat "$WORK/err")" ]; ok $? "RUN-1: nothing on stderr"
+[ ! -s "$WORK/err" ]; ok $? "RUN-1: nothing on stderr"
 run_roster 1 --store "$DB"; rc=$?
 [ $rc -eq 0 ] && [ "$(jq 'length' "$WORK/out")" = "3" ]
 ok $? "a bare run number is accepted (rc ${rc})"

@@ -126,7 +126,7 @@ out.planRejected = planAssembly(chunks, [verdict('001', 'unchanged'), verdict('0
 out.planUnchanged = planAssembly(chunks, [verdict('001', 'unchanged'), verdict('002', 'unchanged'), verdict('003', 'unchanged')])
 process.stdout.write(JSON.stringify(out))
 JS
-{ cat "${WORK}/region.js"; cat "${WORK}/cases.js"; } > "${WORK}/run.js"
+cat "${WORK}/region.js" "${WORK}/cases.js" > "${WORK}/run.js"
 TIGHTEN_WORK="$WORK" node "${WORK}/run.js" > "${WORK}/out.json"
 ok $? 'the decision helpers evaluate outside a workflow run'
 

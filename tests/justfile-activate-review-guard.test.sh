@@ -238,14 +238,8 @@ done
 # A step list whose total disagrees with its steps is partial, even when every
 # listed step is finished and nothing else would refuse.
 arrange done
-cat > "${FIX}/steps-RUN-7.json" <<'JSON'
-{"ok":true,"data":{"steps":[
- {"run":"RUN-7","issue":"DOT-1","step":"STEP-9","instance":"threat-model@0","kind":"executor","attempt":1,"status":"done"},
- {"run":"RUN-7","issue":"DOT-1","step":"STEP-10","instance":"implement@0","kind":"executor","attempt":1,"status":"done"},
- {"run":"RUN-7","issue":"DOT-1","step":"STEP-11","instance":"review-correctness@0","kind":"executor","attempt":1,"status":"done"},
- {"run":"RUN-7","issue":"DOT-2","step":"STEP-20","instance":"implement@0","kind":"executor","attempt":1,"status":"skipped"}
-],"total":5}}
-JSON
+sed 's/"claimed"/"skipped"/; s/"total":4/"total":5/' "${FIX}/steps-RUN-7.json" > "${FIX}/steps.tmp"
+mv "${FIX}/steps.tmp" "${FIX}/steps-RUN-7.json"
 activate ""
 refused && grep -q '(step list RUN-7)' "${WORK}/err"
 check "a step list whose total differs from its length refuses activation" $?

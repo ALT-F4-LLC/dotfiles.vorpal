@@ -67,14 +67,20 @@ iso() { date -u -r "$1" +%Y-%m-%dT%H:%M:%S.000Z 2>/dev/null || date -u -d "@$1" 
 reset() {
     rm -f "$FIX"/events-*.json "$FIX/down" "$FIX/total" "$FIX/events-down" "$FIX"/fail-* "$FIX"/total-*
     printf '{"ok":true,"data":{"runs":[{"run":"RUN-158","status":"active"}],"total":1}}\n' > "$FIX/runs.json"
-    jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"drive the run"}}' > "$TRANSCRIPT"
+    begin "drive the run"
     conduct RUN-158 $((T0 + 1))
 }
-# conduct <run> <epoch seconds>: the session drives the run through its own tool call.
-conduct() {
-    jq -cn --arg ts "$(iso "$2")" --arg c "docket next --run $1" \
+# begin <text>: start a fresh transcript with a user line at T0.
+begin() {
+    jq -cn --arg ts "$(iso $T0)" --arg c "$1" '{type:"user",timestamp:$ts,message:{content:$c}}' > "$TRANSCRIPT"
+}
+# bash_call <epoch seconds> <command>: the session runs a Bash tool call.
+bash_call() {
+    jq -cn --arg ts "$(iso "$1")" --arg c "$2" \
         '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:$c}}]}}' >> "$TRANSCRIPT"
 }
+# conduct <run> <epoch seconds>: the session drives the run through its own tool call.
+conduct() { bash_call "$2" "docket next --run $1"; }
 # push <epoch seconds> <message>
 push() {
     jq -cn --arg ts "$(iso "$1")" --arg m "$2" \
@@ -156,7 +162,7 @@ run "a park routed before the transcript began is allowed" 0 "$(stop_in)"
 reset; park STEP-9011 112 $((T0 + 60)) "waiting-human: the step recorded only gap artifacts; operator disposes"
 run "a waiting-human route with a reason still blocks" 2 "$(stop_in)" "STEP-9011"
 reset; park STEP-9012 113 $((T0 + 60))
-jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"nothing about runs"}}' > "$TRANSCRIPT"
+begin "nothing about runs"
 run "a run the transcript never names is allowed" 0 "$(stop_in)"
 # The session-start hook writes the live run listing into every transcript that
 # starts while a run is active; it names the run but drives nothing.
@@ -164,7 +170,7 @@ jq -cn --arg ts "$(iso $T0)" '{type:"attachment",timestamp:$ts,attachment:{type:
 run "a run named only in the session-start listing is allowed" 0 "$(stop_in)"
 jq -cn --arg ts "$(iso $T0)" '{type:"assistant",timestamp:$ts,message:{content:[{type:"text",text:"RUN-158 is parked on STEP-9012 --run RUN-158"}]}}' > "$TRANSCRIPT"
 run "a run named only in prose is allowed" 0 "$(stop_in)"
-jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"x"}}' > "$TRANSCRIPT"; conduct RUN-1580 $((T0 + 1))
+begin x; conduct RUN-1580 $((T0 + 1))
 run "a longer run id is not a match for the run (prefix)" 0 "$(stop_in)"
 reset; printf '{"ok":true,"data":{"runs":[{"run":"RUN-158"},{"run":"RUN-159"}],"total":2}}\n' > "$FIX/runs.json"
 PARK_RUN=RUN-159 park STEP-9030 130 $((T0 + 60))
@@ -175,7 +181,6 @@ reset; park STEP-9031 131 $((T0 + 60)); clear_park step-superseded STEP-9031 140
 run "a superseded park is not outstanding" 0 "$(stop_in)"
 reset; park STEP-9032 132 $((T0 + 60)); echo 1001 > "$FIX/total-step-routed"
 run "a step-routed list cut at the newest events still blocks an unannounced park" 2 "$(stop_in)" "STEP-9032"
-rm -f "$FIX/total"
 reset; park STEP-9033 133 $((T0 + 60))
 jq -cn '{type:"user",message:{content:"no timestamps"}}' > "$TRANSCRIPT"; jq -cn '{type:"assistant",message:{content:[{type:"tool_use",name:"Bash",input:{command:"docket next --run RUN-158"}}]}}' >> "$TRANSCRIPT"
 run "a transcript with no timestamps is allowed" 0 "$(stop_in)"
@@ -197,14 +202,12 @@ run "an unreadable engine is allowed" 0 "$(stop_in)"
 reset; park STEP-9015 116 $((T0 + 60)); rm -f "$TRANSCRIPT"
 run "a missing transcript is allowed" 0 "$(stop_in)"
 reset; park STEP-9016 117 $((T0 + 60))
-printf '' | PATH="${BIN}:${PATH}" FIX="$FIX" bash "$HOOK" >/dev/null 2>&1; [ $? -eq 0 ] && pass "empty stdin is allowed" || fail "empty stdin blocked"
+run "empty stdin is allowed" 0 ""
 PATH="/usr/bin:/bin" bash "$HOOK" < /dev/null >/dev/null 2>&1; [ $? -eq 0 ] && pass "no docket on PATH is allowed" || fail "no docket blocked"
 
 reset; park STEP-9040 140 $((T0 + 60)); : > "$FIX/events-down"
 run "events failing after run status succeeds is allowed" 0 "$(stop_in)"
-rm -f "$FIX/events-down"
-reset; jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"x"}}' > "$TRANSCRIPT"
-jq -cn --arg ts "$(iso $((T0 + 1)))" '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:"docket run report RUN-158"}}]}}' >> "$TRANSCRIPT"
+reset; begin x; bash_call $((T0 + 1)) "docket run report RUN-158"
 park STEP-9050 150 $((T0 + 60))
 run "a tool call that only reads the run's report does not make the session its conductor" 0 "$(stop_in)"
 # A failed or truncated clearing query cannot establish that nothing cleared.
@@ -221,12 +224,10 @@ run "an abandon that predates the park does not clear it" 2 "$(stop_in)" "STEP-9
 reset; park STEP-9064 164 $((T0 + 60))
 run "a subagent is never held to the push" 0 "$(tool_in Workflow | jq -c '. + {agent_id:"a1"}')"
 # Reading a run's events is not conducting it.
-reset; jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"x"}}' > "$TRANSCRIPT"
-jq -cn --arg ts "$(iso $((T0 + 1)))" '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:"docket events list --run RUN-158 --kind step-routed"}}]}}' >> "$TRANSCRIPT"
+reset; begin x; bash_call $((T0 + 1)) "docket events list --run RUN-158 --kind step-routed"
 park STEP-9065 165 $((T0 + 60))
 run "a read-only --run call does not make the session the conductor" 0 "$(stop_in)"
-reset; jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"x"}}' > "$TRANSCRIPT"
-jq -cn --arg ts "$(iso $((T0 + 1)))" '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:"cat ~/.docket/conductor.d/RUN-158.token"}}]}}' >> "$TRANSCRIPT"
+reset; begin x; bash_call $((T0 + 1)) "cat ~/.docket/conductor.d/RUN-158.token"
 park STEP-9066 166 $((T0 + 60))
 run "reading the conductor token path makes the session the conductor" 2 "$(stop_in)" "STEP-9066"
 # Unattended mode queues questions instead of pushing; the latest operator
@@ -254,8 +255,7 @@ run "an unreadable mode note reads as attended" 2 "$(stop_in)" "STEP-9074"
 reset; park STEP-9075 175 $((T0 + 60)); mode_note 10 operator "$UNATT" $(( (T0 - 500) * 1000 ))
 run "an unattended note from an earlier session is stale and does not skip the run" 2 "$(stop_in)" "STEP-9075"
 # A newline ends a command: the second line's --run does not belong to the first.
-reset; jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"x"}}' > "$TRANSCRIPT"
-jq -cn --arg ts "$(iso $((T0 + 1)))" --arg c $'docket next --json\ndocket events list --run RUN-158' '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:$c}}]}}' >> "$TRANSCRIPT"
+reset; begin x; bash_call $((T0 + 1)) $'docket next --json\ndocket events list --run RUN-158'
 park STEP-9076 176 $((T0 + 60))
 run "a --run on a later line of a multi-line command does not make the session the conductor" 0 "$(stop_in)"
 # 9. Two parks, one announced: only the unannounced one is named.
@@ -264,14 +264,12 @@ push $((T0 + 100)) "RUN-158: STEP-9020 parked"
 run "two parks, one announced: the other is named" 2 "$(stop_in)" "STEP-9021"
 grep -q 'STEP-9020' "${WORK}/err" && fail "the announced step was named" || pass "the announced step is not named"
 
-
 # 10. A read-only dispatch verb does not make the session the conductor.
-reset; jq -cn --arg ts "$(iso $T0)" '{type:"user",timestamp:$ts,message:{content:"x"}}' > "$TRANSCRIPT"
-jq -cn --arg ts "$(iso $((T0 + 1)))" '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:"docket dispatch verify --run RUN-158 --json"}}]}}' >> "$TRANSCRIPT"
+reset; begin x; bash_call $((T0 + 1)) "docket dispatch verify --run RUN-158 --json"
 park STEP-9080 180 $((T0 + 60))
 run "a read-only docket dispatch verify --run does not make the session the conductor" 0 "$(stop_in)"
 reset; park STEP-9081 181 $((T0 + 60))
-jq -cn --arg ts "$(iso $((T0 + 2)))" '{type:"assistant",timestamp:$ts,message:{content:[{type:"tool_use",name:"Bash",input:{command:"docket dispatch open --json --run RUN-158"}}]}}' >> "$TRANSCRIPT"
+bash_call $((T0 + 2)) "docket dispatch open --json --run RUN-158"
 run "a run-moving dispatch verb with flags before --run drives the run" 2 "$(stop_in)" "STEP-9081"
 
 # 11. A clearing list past the kernel's per-argument limit still checks the run.

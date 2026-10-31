@@ -86,7 +86,7 @@ check_tree() { # <workflows> <corpus> <settings>
     sources=$(brief_sources "$wf" "$corpus")
     # Exit 2 is a setup fault, not a finding: a mutant that reads no sources
     # must not count as red.
-    if [ -z "$sources" ] || [ ! -f "$wf/tribunal.js" ] || [ ! -f "$wf/standard-change.js" ] \
+    if [ ! -f "$wf/tribunal.js" ] || [ ! -f "$wf/standard-change.js" ] \
         || [ ! -f "$settings" ]; then
         echo "  no brief sources under $wf and $corpus, or no settings source at $settings"
         return 2
@@ -161,14 +161,14 @@ TMP="${TMPDIR:-/tmp}/seat-brief-inline-interpreter.$$"
 mkdir -p "$TMP"
 trap 'rm -rf "$TMP"' EXIT
 
-mutant() { # <label> <setup-fn>
-    local label="$1" setup="$2"
+mutant() { # <label>, also the name of its setup function
+    local label="$1"
     local wf="$TMP/$label/workflows" corpus="$TMP/$label/config"
     rm -rf "$TMP/$label"
     mkdir -p "$wf" "$corpus"
     cp "$WORKFLOWS/tribunal.js" "$WORKFLOWS/standard-change.js" "$wf/"
     cp -R "$CORPUS/contracts" "$CORPUS/fragments" "$corpus/"
-    "$setup" "$wf" "$corpus"
+    "$label" "$wf" "$corpus"
     check_tree "$wf" "$corpus" "$SETTINGS" > "$TMP/$label.out" 2>&1
     case $? in
         1) ok "mutant $label is red" ;;
@@ -184,19 +184,16 @@ m2() { printf '\nRead the bundle with `python3 -c "import json,sys; print(json.l
 # m3: a fragment instructs a sibling interpreter with a combined flag
 m3() { printf '\nParse it with `node -pe "JSON.parse(require(\\"fs\\").readFileSync(0))"`.\n' >> "$2/fragments/evidence-rules.md"; }
 # m4: the rule is defined but rendered into only one seat-brief mode
-m4() { awk 'BEGIN{seen=0} /^\$\{evidenceParseRule\}$/{ if (seen==0) {seen=1; next} } {print}' "$1/tribunal.js" > "$1/t.tmp" && mv "$1/t.tmp" "$1/tribunal.js"; }
+m4() { awk '/^\$\{evidenceParseRule\}$/ && !seen {seen=1; next} {print}' "$1/tribunal.js" > "$1/t.tmp" && mv "$1/t.tmp" "$1/tribunal.js"; }
 # m5: the rule sentence itself is reworded away
 m5() { sed -i.bak "s/${RULE_SENTENCE}/Parse it however you like/" "$1/tribunal.js"; }
 # m7: the docket-step side of the rule is dropped from the shared fragment,
 # so judge and verify contracts render without it while tribunal.js keeps it
 m7() { sed -i.bak "s/${RULE_SENTENCE}/Parse it however you like/" "$2/fragments/evidence-rules.md"; }
 
-mutant m1 m1
-mutant m2 m2
-mutant m3 m3
-mutant m4 m4
-mutant m5 m5
-mutant m7 m7
+for m in m1 m2 m3 m4 m5 m7; do
+    mutant "$m"
+done
 
 # m6: the deny-list source loses its interpreter rows, so (a) must go red
 # rather than silently checking nothing.

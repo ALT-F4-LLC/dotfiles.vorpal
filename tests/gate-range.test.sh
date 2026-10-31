@@ -128,7 +128,6 @@ expect "own gate, base unresolvable: message quotes the value" 2 "" "DOCKET_GATE
 MODE=bogus-mode
 resolve "DOCKET_GATE_BASE=${BASE_SHA}"
 expect "unknown mode exits 2 naming the gate" 2 "" "sample-gate FAILED: gate_range: unknown mode 'bogus-mode'"
-MODE=own-gate
 
 MODE=always
 resolve "DOCKET_GATE_BASE=${BASE_SHA}"
@@ -142,7 +141,6 @@ expect "always: base empty, another gate: exits 2" 2 "" "sample-gate FAILED: DOC
 
 resolve DOCKET_GATE=other-gate "DOCKET_GATE_BASE=${UNRESOLVABLE}"
 expect "always: base unresolvable, another gate: exits 2" 2 "" "sample-gate FAILED: DOCKET_GATE_BASE"
-MODE=own-gate
 
 MODE=set-base
 resolve "DOCKET_GATE_BASE=${BASE_SHA}"
@@ -165,7 +163,6 @@ expect "set-base: another gate, base unset: no range" 0 ""
 
 resolve DOCKET_GATE=other-gate "DOCKET_GATE_BASE="
 expect "set-base: another gate, base empty: no range" 0 ""
-MODE=own-gate
 
 echo
 if [ "$FAIL" -gt 0 ]; then

@@ -165,7 +165,7 @@ export PATH="$WORK/bin:$PATH" STUB_DIR="$WORK"
 ok $? "single-project plan exits 0 without --strict"
 
 has() { grep -qF -- "$1" "$WORK/plan.txt"; }
-line_of() { grep -nF -- "$1" "$WORK/plan.txt" | head -1 | cut -d: -f1; }
+line_of() { grep -m1 -nF -- "$1" "$WORK/plan.txt" | cut -d: -f1; }
 
 has "project: PRJ $REPO"; ok $? "names the project the checkout resolves to"
 has "REGISTER  docket schema register s@2 $CFG/schemas/s@2.json"; ok $? "unregistered corpus schema version is REGISTER"
@@ -207,8 +207,7 @@ ok $? "apply order: schemas in, workflows in, workflows out, schemas out"
 [ $? -eq 1 ]; ok $? "--strict exits 1 while actionable lines remain"
 
 (cd "$REPO" && STUB_TRUNCATED=1 python3 "$SCRIPT") > /dev/null 2> "$WORK/err"
-rc=$?
-[ $rc -eq 2 ] && grep -q "truncated" "$WORK/err"; ok $? "a truncated registry listing refuses to plan (exit 2)"
+[ $? -eq 2 ] && grep -q "truncated" "$WORK/err"; ok $? "a truncated registry listing refuses to plan (exit 2)"
 
 # --- every project ----------------------------------------------------------
 python3 "$SCRIPT" --all-projects --summary > "$WORK/summary.txt" 2> "$WORK/err"

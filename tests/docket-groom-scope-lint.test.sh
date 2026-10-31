@@ -56,7 +56,7 @@ printf '#!/bin/sh\n' > "${REPO}/bin/docket-workflow-claim"
 printf 'tests:\n' > "${REPO}/justfile"
 printf '# nothing ignored\n' > "${REPO}/.gitignore"
 git -C "$REPO" init -q
-git -C "$REPO" -c user.email=t@t -c user.name=t -c commit.gpgsign=false add -A
+git -C "$REPO" add -A
 git -C "$REPO" -c user.email=t@t -c user.name=t -c commit.gpgsign=false commit -q -m fixture
 BASE=$(git -C "$REPO" rev-parse HEAD)
 

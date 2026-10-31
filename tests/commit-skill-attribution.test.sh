@@ -108,19 +108,12 @@ paragraph() { # <anchor> <flat> <out>
     grep -F -- "$1" "$2" > "$3"
 }
 
-# Prose sentences of an already-flattened region, one per line.
-sentences() { # <file>
-    sed -E 's/([.!?][*`")]*) +/\1\
-/g' "$1"
-}
-
-# The one sentence of <region-file> carrying <anchor>, written to <out>.
+# The one sentence of an already-flattened <region-file> carrying <anchor>,
+# written to <out>, under paragraph()'s exactly-one rule.
 sentence() { # <anchor> <region-file> <out>
-    local hits
-    sentences "$2" > "${WORK}/sentences"
-    hits=$(grep -cF -- "$1" "${WORK}/sentences")
-    [ "$hits" -eq 1 ] || return 1
-    grep -F -- "$1" "${WORK}/sentences" > "$3"
+    sed -E 's/([.!?][*`")]*) +/\1\
+/g' "$2" > "${WORK}/sentences"
+    paragraph "$1" "${WORK}/sentences" "$3"
 }
 
 # Assert one literal inside one already-extracted region of <flat>. A literal
@@ -161,12 +154,14 @@ if [ -z "${COMMIT_SKILL_ATTRIBUTION_INNER:-}" ]; then
             "s/The\\s+commit\\s+skill's\\s+message\\s+is\\s+final:\\s+no\\s+post-commit\\s+amendment\\s+for\\s+attribution,\\s+\`Claude-Session:\`\\s+or\\s+otherwise\\.\\s*//s" \
             "${WORK}/refit-clean.md" > "${WORK}/refit-broken.md"
 
+        inner() { # <commit-file> <refit-file>
+            COMMIT_SKILL_ATTRIBUTION_INNER=1 COMMIT_SKILL_FILE="$1" \
+                REFIT_SKILL_FILE="$2" bash "$0" >/dev/null 2>&1
+        }
+
         if cmp -s "${WORK}/commit-clean.md" "${WORK}/commit-broken.md"; then
             bad "self-check: the commit mutation did not apply — the control proves nothing"
-        elif COMMIT_SKILL_ATTRIBUTION_INNER=1 \
-            COMMIT_SKILL_FILE="${WORK}/commit-broken.md" \
-            REFIT_SKILL_FILE="${WORK}/refit-clean.md" \
-            bash "$0" >/dev/null 2>&1; then
+        elif inner "${WORK}/commit-broken.md" "${WORK}/refit-clean.md"; then
             bad "self-check: a commit skill copy with its ruling deleted still passed the suite"
         else
             ok "self-check: a broken commit skill copy fails the suite"
@@ -174,19 +169,13 @@ if [ -z "${COMMIT_SKILL_ATTRIBUTION_INNER:-}" ]; then
 
         if cmp -s "${WORK}/refit-clean.md" "${WORK}/refit-broken.md"; then
             bad "self-check: the refit mutation did not apply — the control proves nothing"
-        elif COMMIT_SKILL_ATTRIBUTION_INNER=1 \
-            COMMIT_SKILL_FILE="${WORK}/commit-clean.md" \
-            REFIT_SKILL_FILE="${WORK}/refit-broken.md" \
-            bash "$0" >/dev/null 2>&1; then
+        elif inner "${WORK}/commit-clean.md" "${WORK}/refit-broken.md"; then
             bad "self-check: a refit skill copy with its deference sentence deleted still passed the suite"
         else
             ok "self-check: a broken refit skill copy fails the suite"
         fi
 
-        if COMMIT_SKILL_ATTRIBUTION_INNER=1 \
-            COMMIT_SKILL_FILE="${WORK}/commit-clean.md" \
-            REFIT_SKILL_FILE="${WORK}/refit-clean.md" \
-            bash "$0" >/dev/null 2>&1; then
+        if inner "${WORK}/commit-clean.md" "${WORK}/refit-clean.md"; then
             ok "self-check: clean copies of both skill files pass the suite"
         else
             bad "self-check: clean copies of the repository's own skill files do not pass"

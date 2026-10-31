@@ -65,7 +65,7 @@ impl GhosttyConfig {
             theme = {theme}
         ",
             background_opacity = self.background_opacity,
-            font_family = self.font_family.as_str(),
+            font_family = self.font_family,
             font_size = self.font_size,
             macos_option_as_alt = self.macos_option_as_alt,
             theme = self.theme
@@ -93,9 +93,7 @@ impl Ghostty {
         self,
         context: &mut ConfigContext,
     ) -> Result<(Vec<String>, Vec<(String, String)>)> {
-        let mut artifacts = vec![];
-
-        let config = GhosttyConfig::new(&self.name, self.systems.clone())
+        let config = GhosttyConfig::new(&self.name, self.systems)
             .with_background_opacity(0.95)
             .with_font_family("GeistMono NFM")
             .with_font_size(14)
@@ -109,8 +107,6 @@ impl Ghostty {
             "${HOME}/Library/Application\\ Support/com.mitchellh.ghostty/config".to_string(),
         )];
 
-        artifacts.push(config);
-
-        Ok((artifacts, symlinks))
+        Ok((vec![config], symlinks))
     }
 }

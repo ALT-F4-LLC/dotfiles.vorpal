@@ -110,22 +110,20 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$USAGE"
 }
 
-{
-    extract docket-workflow-usage-extract  || fatal "bad or missing TEST markers for docket-workflow-usage-extract"
-    extract docket-workflow-usage-select   || fatal "bad or missing TEST markers for docket-workflow-usage-select"
-    extract docket-workflow-usage-classify || fatal "bad or missing TEST markers for docket-workflow-usage-classify"
-    extract docket-workflow-usage-paths    || fatal "bad or missing TEST markers for docket-workflow-usage-paths"
-} > "${WORK}/regions.js" || exit 2
+for region in extract select classify paths; do
+    extract "docket-workflow-usage-${region}" || fatal "bad or missing TEST markers for docket-workflow-usage-${region}"
+done > "${WORK}/regions.js" || exit 2
 [ -s "${WORK}/regions.js" ] || fatal "extracted regions are empty"
 
-# The jq program reaches disk the way the workflow's agents write it.
-{ cat "${WORK}/regions.js"; echo 'process.stdout.write(EXTRACT_JQ)'; } > "${WORK}/emit.js"
-node "${WORK}/emit.js" > "${WORK}/docket-workflow-usage.jq" || fatal "could not evaluate EXTRACT_JQ"
-[ -s "${WORK}/docket-workflow-usage.jq" ] || fatal "EXTRACT_JQ is empty"
-# The seats-mode selection program, written to disk the way the scout writes it.
-{ cat "${WORK}/regions.js"; echo 'process.stdout.write(SELECT_JQ)'; } > "${WORK}/emit-select.js"
-node "${WORK}/emit-select.js" > "${WORK}/docket-workflow-usage-select.jq" || fatal "could not evaluate SELECT_JQ"
-[ -s "${WORK}/docket-workflow-usage-select.jq" ] || fatal "SELECT_JQ is empty"
+emit_jq() { # <const> <out> — write one jq program constant to disk
+    { cat "${WORK}/regions.js"; echo "process.stdout.write($1)"; } > "${WORK}/emit-$1.js"
+    node "${WORK}/emit-$1.js" > "$2" || fatal "could not evaluate $1"
+    [ -s "$2" ] || fatal "$1 is empty"
+}
+# The jq program reaches disk the way the workflow's agents write it, and the
+# seats-mode selection program the way the scout writes it.
+emit_jq EXTRACT_JQ "${WORK}/docket-workflow-usage.jq"
+emit_jq SELECT_JQ "${WORK}/docket-workflow-usage-select.jq"
 
 # ---- Fixtures ---------------------------------------------------------------
 # One synthetic wave directory. Each agent is a bootstrap user message plus two

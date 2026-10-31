@@ -60,23 +60,18 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$WAVE"
 }
 
-{
-    extract configuration || fatal "bad or missing TEST markers for configuration"
-    # packet defines shellQuote, which the blocked-settle brief reads.
-    extract packet         || fatal "bad or missing TEST markers for packet"
-    # park-signals first: it defines isConflictReport, which the orphaned-claim
-    # predicate reads. chain-dead nests inside stage-ladder; extract it alone.
-    extract park-signals   || fatal "bad or missing TEST markers for park-signals"
-    extract orphaned-claim || fatal "bad or missing TEST markers for orphaned-claim"
-    extract blocked-settle || fatal "bad or missing TEST markers for blocked-settle"
-    extract chain-dead     || fatal "bad or missing TEST markers for chain-dead"
-} > "${WORK}/regions.js" || exit 2
+# packet defines shellQuote, which the blocked-settle brief reads.
+# park-signals precedes orphaned-claim: it defines isConflictReport, which the
+# orphaned-claim predicate reads. chain-dead nests inside stage-ladder; extract
+# it alone.
+for region in configuration packet park-signals orphaned-claim blocked-settle chain-dead; do
+    extract "$region" || fatal "bad or missing TEST markers for ${region}"
+done > "${WORK}/suite.js" || exit 2
 
-[ -s "${WORK}/regions.js" ] || fatal "extracted regions are empty"
-grep -q 'orphanedClaimReport' "${WORK}/regions.js" ||
+[ -s "${WORK}/suite.js" ] || fatal "extracted regions are empty"
+grep -q 'orphanedClaimReport' "${WORK}/suite.js" ||
     fatal "orphaned-claim region does not contain orphanedClaimReport"
 
-cat "${WORK}/regions.js" > "${WORK}/suite.js"
 cat >> "${WORK}/suite.js" <<'JS'
 
 let pass = 0

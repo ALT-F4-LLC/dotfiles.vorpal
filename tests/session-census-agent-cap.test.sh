@@ -64,12 +64,7 @@ extract session-census-config    > "${WORK}/config.js" || fatal "bad or missing 
 extract session-census-agent-cap > "${WORK}/cap.js"     || fatal "bad or missing TEST markers for session-census-agent-cap"
 grep -q 'function planAgentCap' "${WORK}/cap.js" || fatal "session-census-agent-cap region does not contain planAgentCap"
 
-{
-    cat "${WORK}/config.js"
-    cat "${WORK}/cap.js"
-} > "${WORK}/suite.mjs"
-
-cat >> "${WORK}/suite.mjs" <<'JS'
+cat "${WORK}/config.js" "${WORK}/cap.js" - > "${WORK}/suite.mjs" <<'JS'
 
 let pass = 0
 let fail = 0
@@ -140,4 +135,3 @@ process.exit(fail === 0 ? 0 : 1)
 JS
 
 node "${WORK}/suite.mjs"
-exit $?

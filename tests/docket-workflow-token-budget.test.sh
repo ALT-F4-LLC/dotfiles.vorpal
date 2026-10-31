@@ -88,37 +88,13 @@ const parallel = (fns) => Promise.all(fns.map((f) => f()))
 // suite is specifically about what the lane script does when budget.total varies.
 let budget = { total: null, spent: () => 0, remaining: () => Infinity }
 let SPAWNED = []
-let GATES = []
-let RESULTS = new Map()
-const settleFor = (row) => {
-    const r = RESULTS.get(row.step)
-    return typeof r === 'function' ? r(row) : r
-}
-let HOLD = new Set()
-let OPEN = new Map()
 const spawn = (row) => {
     SPAWNED.push(row.step)
-    const canned = settleFor(row) === undefined
-        ? { step: row.step, status: 'returned', text: `${row.step} recorded (done)` }
-        : settleFor(row)
-    if (!HOLD.has(row.step)) return Promise.resolve(canned)
-    return new Promise((resolve) => OPEN.set(row.step, () => resolve(canned)))
+    return Promise.resolve({ step: row.step, status: 'returned', text: `${row.step} recorded (done)` })
 }
-const runGate = (row) => {
-    GATES.push(row.step)
-    return Promise.resolve(settleFor(row) === undefined
-        ? { step: row.step, status: 'gate-passed', text: '{"status":"done"}' }
-        : settleFor(row))
-}
-let PROBED = []
-const probe = (_cmd, _label, _phase, step) => {
-    PROBED.push(step)
-    return Promise.resolve('')
-}
-const stepShow = (step) => {
-    PROBED.push(step)
-    return Promise.resolve(null)
-}
+const runGate = (row) => Promise.resolve({ step: row.step, status: 'gate-passed', text: '{"status":"done"}' })
+const probe = () => Promise.resolve('')
+const stepShow = () => Promise.resolve(null)
 
 const ladder = async () => {
 JS
@@ -137,22 +113,11 @@ const ok = (cond, label) => {
     if (cond) { pass++; console.log(`PASS: ${label}`) }
     else { fail++; console.error(`FAIL: ${label}`) }
 }
-const settle = () => new Promise((r) => setTimeout(r, 0))
-const finish = async (step) => {
-    const r = OPEN.get(step)
-    if (!r) throw new Error(`finish(${step}): not spawned yet, or not held`)
-    OPEN.delete(step)
-    r()
-    await settle()
-}
 const start = (theRows, budgetOverride) => {
     rows = theRows
     input = {}
     budget = budgetOverride || { total: null, spent: () => 0, remaining: () => Infinity }
-    SPAWNED = []; GATES = []; PROBED = []; LOG.length = 0
-    RESULTS = new Map()
-    HOLD = new Set()   // nothing held in this suite — every row settles immediately
-    OPEN = new Map()
+    SPAWNED = []; LOG.length = 0
     // The lane script returns {statuses, coordination}; these cases read the statuses.
     return ladder().then((out) => out.statuses)
 }
@@ -214,4 +179,3 @@ process.exit(fail === 0 ? 0 : 1)
 JS
 
 node "${WORK}/suite.mjs"
-exit $?

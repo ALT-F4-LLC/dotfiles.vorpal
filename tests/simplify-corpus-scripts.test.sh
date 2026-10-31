@@ -222,7 +222,7 @@ passed() { # <name> — the run exited 0 with result intact
 }
 
 printf '%s\n' 'export const meta = { name: "x" }' 'function a() { return 1 }' 'return { a: a() }' > "${WORK}/module.js"
-printf '%s\n' 'export const meta = { name: "x" }' 'function a() { return 1 }' 'return { a: a() }' > "${WORK}/module-tight.js"
+cp "${WORK}/module.js" "${WORK}/module-tight.js"
 printf '%s\n' 'export const meta = { name: "x" }' 'function a() { return 1 }' 'function a() { return 2 }' 'return a()' > "${WORK}/module-dup.js"
 printf '%s\n' 'export const meta = = { name: "x" }' 'return 1' > "${WORK}/module-bad.js"
 check js-ok javascript "${WORK}/module.js" "${WORK}/module-tight.js"

@@ -24,6 +24,7 @@ set -uo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 WORKFLOW="${SIMPLIFY_CODE_JS:-${SCRIPT_DIR}/../src/user/claude_code/workflows/simplify-code.js}"
 SKILL="${SIMPLIFY_CODE_SKILL:-${SCRIPT_DIR}/../src/user/claude_code/skills/simplify-code/SKILL.md}"
+DISCOVERY="${SIMPLIFY_CODE_DISCOVERY:-${SCRIPT_DIR}/../src/user/claude_code/skills/simplify-code/references/discovery.md}"
 
 fatal() {
     printf 'FATAL: %s\n' "$1" >&2
@@ -31,7 +32,6 @@ fatal() {
 }
 
 [ -f "$WORKFLOW" ] || fatal "simplify-code.js not found at ${WORKFLOW}"
-DISCOVERY="${SIMPLIFY_CODE_DISCOVERY:-${SCRIPT_DIR}/../src/user/claude_code/skills/simplify-code/references/discovery.md}"
 [ -f "$SKILL" ] || fatal "SKILL.md not found at ${SKILL}"
 [ -f "$DISCOVERY" ] || fatal "discovery.md not found at ${DISCOVERY}"
 for sibling in catalog.md gates.md; do
@@ -197,9 +197,7 @@ const sv = sliceVerdicts([{ verdicts: [{ id: 0, refuted: false, reason: 'a' }, {
 ok(sv[0].verdicts.length === 2 && sv[0].verdicts[0].id === 0 && sv[0].verdicts[0].refuted === true && sv[0].verdicts[1].id === 1 && sv[1] === null, 'a batch verdict slice renumbers to the unit and keeps a missing vote missing')
 const outOfRange = sliceVerdicts([{ verdicts: [{ id: 9, refuted: false, reason: '' }] }], 0, 3)
 ok(outOfRange[0].verdicts.length === 0, 'a verdict outside the unit\'s slice is dropped')
-const gu = (id) => ({ id, refuted: false, reason: '' })
-const gr = (id) => ({ id, refuted: true, reason: 'r' })
-const twoRefuters = applyVerdicts(unit('pkg/fmt.go', [f('Dead store', [1]), f('Dead store', [9])]), [{ verdicts: [gu(0), gu(1)] }, { verdicts: [gu(0), gr(1)] }], 2)
+const twoRefuters = applyVerdicts(unit('pkg/fmt.go', [f('Dead store', [1]), f('Dead store', [9])]), [{ verdicts: [up(0), up(1)] }, { verdicts: [up(0), rf(1)] }], 2)
 ok(twoRefuters.findings.length === 1 && twoRefuters.findings[0].lines[0] === 1, 'with two refuters, an item one of them refutes is dropped')
 ok(upholdMin(2) === 2 && upholdMin(3) === 2 && upholdMin(1) === 1, 'the uphold threshold is a majority')
 
@@ -231,8 +229,7 @@ ok(!/mode: "work"/.test(skill) && !/Worker seat/.test(skill), 'the skill seats n
 // The skill is read-only on the checkout and files Docket issues.
 ok(/The checkout is read-only/.test(skill) && /Docket issues and scratch/.test(skill), 'the skill states it is read-only and writes only issues and scratch')
 ok(!/never create issues/i.test(skill + gates) && !/not filed elsewhere/.test(skill), 'the old no-issues rule is gone')
-const gatesText = fs.readFileSync(process.env.DC_DISCOVERY.replace('discovery.md', 'gates.md'), 'utf8')
-ok(/after-<prior issue id>/.test(skill) && /after-<that issue's id>/.test(gatesText), 'a regression files under a distinct idempotency key that names the prior issue')
+ok(/after-<prior issue id>/.test(skill) && /after-<that issue's id>/.test(gates), 'a regression files under a distinct idempotency key that names the prior issue')
 ok(/docket issue create/.test(skill) && /--size/.test(skill) && /--idempotency-key/.test(skill) && /-l simplify-code/.test(skill), 'the skill files labelled, sized, idempotent issues')
 ok(/-f <path>/.test(skill) && /--scope/.test(skill), 'every issue names files and a scope')
 ok(!/Skill\(\{skill: "commit"/.test(skill) && !/commit` skill/.test(skill), 'the skill does not commit')
@@ -260,5 +257,5 @@ process.stdout.write("const AGENT_CONFIG_FOR_TEST = " + m[1].replace(/\/\/[^\n]*
 # syntax error elsewhere would otherwise reach the runtime first.
 { echo 'async function main() {'; sed 's/^export const meta/const meta/' "$WORKFLOW"; echo '}'; } > "${WORK}/whole.js"
 node --check "${WORK}/whole.js" || fatal "simplify-code.js does not parse as a workflow script"
-{ cat "${WORK}/region.js"; cat "${WORK}/config.js"; cat "${WORK}/cases.js"; } > "${WORK}/run.js"
+cat "${WORK}/region.js" "${WORK}/config.js" "${WORK}/cases.js" > "${WORK}/run.js"
 DC_WORKFLOW="$WORKFLOW" DC_SKILL="$SKILL" DC_DISCOVERY="$DISCOVERY" node "${WORK}/run.js"

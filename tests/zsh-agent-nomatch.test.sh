@@ -60,13 +60,10 @@ outside_touches() { # <zshrc>
 # setting ("unset" or a value), $2 the block file, $3 the word to echo.
 # Sets OUT and RC.
 agent_shell() { # <claudecode|unset> <block> <word>
-    local dir="$TMP/work"
+    local dir="$TMP/work" setting=(CLAUDECODE="$1")
+    [ "$1" = unset ] && setting=(-u CLAUDECODE)
     rm -rf "$dir"; mkdir -p "$dir"
-    if [ "$1" = unset ]; then
-        OUT=$(cd "$dir" && env -u CLAUDECODE zsh -f -c "source '$2'; echo $3" 2>&1)
-    else
-        OUT=$(cd "$dir" && CLAUDECODE="$1" zsh -f -c "source '$2'; echo $3" 2>&1)
-    fi
+    OUT=$(cd "$dir" && env "${setting[@]}" zsh -f -c "source '$2'; echo $3" 2>&1)
     RC=$?
 }
 
@@ -131,8 +128,7 @@ else
     mutant() { # <name> <sed expr>
         sed "$2" "$TMP/real.zsh" > "$TMP/mut.zsh"
         if cmp -s "$TMP/real.zsh" "$TMP/mut.zsh"; then bad "mutant ${1} changed nothing"; return; fi
-        check_block "$TMP/mut.zsh" >/dev/null 2>&1
-        if [ $? -ne 0 ]; then ok "mutant ${1} is red"; else bad "mutant ${1} passed the checks (should be red)"; fi
+        if ! check_block "$TMP/mut.zsh" >/dev/null 2>&1; then ok "mutant ${1} is red"; else bad "mutant ${1} passed the checks (should be red)"; fi
     }
     mutant "option dropped" 's/^  setopt NO_NOMATCH$/  :/'
     mutant "condition dropped" 's/^if \[\[ -n ${CLAUDECODE-} \]\]; then$/if true; then/'

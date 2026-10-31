@@ -54,8 +54,7 @@ changelog_version() { # <changelog.md>
 # workflow that disagrees. Returns 0 when every pair matches, 1 on a mismatch,
 # and 2 when an input makes the comparison impossible.
 compare_versions() { # <workflows-dir> <changelogs-dir>
-    local workflows="$1" changelogs="$2" status=0 toml name changelog want got
-    local pairs=0
+    local workflows="$1" changelogs="$2" status=0 toml name changelog want got pairs=0
 
     if [ ! -d "$workflows" ]; then
         echo "FAIL: no workflows directory at ${workflows}"
@@ -147,10 +146,8 @@ mv "${FIX}/unpaired/changelogs/alpha.md" "${FIX}/unpaired/changelogs/policy.md"
 expect_versions() { # <label> <status> <fixture-dir> [<expected line>...]
     local label="$1" want_status="$2" dir="$3"
     shift 3
-    local out got want_out=''
-    if [ "$#" -gt 0 ]; then
-        want_out=$(printf '%s\n' "$@")
-    fi
+    local out got want_out
+    want_out=$(printf '%s\n' "$@")
     out=$(compare_versions "${dir}/workflows" "${dir}/changelogs")
     got=$?
     if [ "$got" = "$want_status" ] && [ "$out" = "$want_out" ]; then

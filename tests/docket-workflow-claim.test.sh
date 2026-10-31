@@ -107,6 +107,11 @@ set_args() { # [module] — sets ARGS; a plain assignment, since bash 3.2 has no
 # modval <module> <jq filter>: a field of the module's returned object.
 modval() { sed -n '2s/^return //p' "$1" | jq -r "$2"; }
 
+# modpacket <module>: the module's packet, byte for byte.
+modpacket() { sed -n '2s/^return //p' "$1" | jq -j '.packet'; }
+
+bytes_of() { wc -c <"$1" | tr -d ' '; }
+
 mode_of() { stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1"; }
 
 sha256_of() {
@@ -126,7 +131,7 @@ check $? "the claim carries the owner, --render, the metadata and --json=v2"
 [ -f "$MODULE" ]; check $? "the module lands at the path the lane script computed"
 [ "$(head -n 1 "$MODULE")" = "export const meta = { name: 'docket-packet', description: 'Docket work packet written by docket-workflow-claim' }" ]
 check $? "the module opens with a pure-literal meta"
-sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"
+modpacket "$MODULE" >"$C/packet.out"
 cmp -s "$C/packet.out" "$WORK/packet.txt"; check $? "the module's packet is the engine's packet byte for byte"
 [ "$(modval "$MODULE" '.step + " " + .owner + " " + (.attempt|tostring) + " " + (.expected_attempt|tostring) + " " + (.re_minted|tostring)')" = "STEP-7 wave:STEP-7:2 3 3 false" ]
 check $? "the module records step, owner, attempt, expected attempt and re_minted"
@@ -176,7 +181,7 @@ run_claim secret-fresh success "${ARGS[@]}"
 SECRET="$C/tmp/STEP-7.d/STEP-7.secret"
 [ "$RC" -eq 0 ] && [ -f "$SECRET" ] && [ ! -L "$SECRET" ] && [ "$(mode_of "$SECRET")" = "600" ]
 check $? "after the claim the secret survives the step-dir rebuild as a regular file, mode 600 (got $RC: $OUT)"
-[ "$(wc -c <"$SECRET" | tr -d ' ')" -ge 32 ]; check $? "a fresh secret carries at least 32 bytes"
+[ "$(bytes_of "$SECRET")" -ge 32 ]; check $? "a fresh secret carries at least 32 bytes"
 [ -s "$C/claim.stdin" ] && cmp -s "$C/claim.stdin" "$SECRET"
 check $? "the claim reads exactly the secret file's bytes on stdin"
 [ ! -e "$C/tmp/STEP-7.d/STEP-7-old.md" ] && [ "$(mode_of "$C/tmp/STEP-7.d")" = "700" ]
@@ -324,9 +329,9 @@ gate_packet fail "$WORK/gates-fail.txt"
 C="$WORK/cap-pass"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 set_args
 STUB_PACKET_FILE="$WORK/gates-pass.txt" STUB_RENDER="$WORK/gates-pass.txt" run_claim cap-pass success "${ARGS[@]}"
-[ "$RC" -eq 0 ] && [ -f "$MODULE" ] && [ "$(wc -c <"$MODULE" | tr -d ' ')" -lt "$CAP" ]
+[ "$RC" -eq 0 ] && [ -f "$MODULE" ] && [ "$(bytes_of "$MODULE")" -lt "$CAP" ]
 check $? "two 262 KB passing gate rows yield a module under the script cap (got $RC: ${OUT:0:200})"
-[[ "$OUT" == "CLAIMED STEP-7 attempt=3 packet_bytes=$(wc -c <"$WORK/gates-pass.txt" | tr -d ' ') module_bytes=$(wc -c <"$MODULE" | tr -d ' ') abridged=1 sha256="* ]]
+[[ "$OUT" == "CLAIMED STEP-7 attempt=3 packet_bytes=$(bytes_of "$WORK/gates-pass.txt") module_bytes=$(bytes_of "$MODULE") abridged=1 sha256="* ]]
 check $? "the CLAIMED line carries the engine packet's bytes, the module's bytes and abridged=1"
 [ "$(modval "$MODULE" '.packet_abridged')" = "true" ]; check $? "the module records that its packet is abridged"
 [ "$(gate_row "$MODULE" tests '.output | length')" -lt 8500 ] &&
@@ -343,19 +348,19 @@ cmp -s "$C/tmp/STEP-7.d/STEP-7.packet.md" "$WORK/gates-pass.txt" &&
     [ "$(modval "$MODULE" '.packet_sha256')" = "$(sha256_of "$WORK/gates-pass.txt")" ]
 check $? "the packet file and packet_sha256 stay the engine's render"
 sed '/^== INPUT gate-results from /{n;d;}' "$WORK/gates-pass.txt" >"$C/packet.expected"
-sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' | sed '/^== INPUT gate-results from /{n;d;}' >"$C/packet.actual"
+modpacket "$MODULE" | sed '/^== INPUT gate-results from /{n;d;}' >"$C/packet.actual"
 diff "$C/packet.actual" "$C/packet.expected" >/dev/null
 check $? "every line outside the gate rows is unchanged"
 [ "$(sed -n '1p' "$C/stub.log" | cut -d' ' -f1-3)" = "step claim STEP-7" ] && ! grep -q '^step render' "$C/stub.log"
 check $? "the packet is sized from the claim's own render, with no separate render before it"
-sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"
+modpacket "$MODULE" >"$C/packet.out"
 node "$WORK/success/load.mjs" "$MODULE" "$C/packet.out"
 check $? "the abridged module evaluates as a script body"
 
 C="$WORK/cap-fail"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 set_args
 STUB_PACKET_FILE="$WORK/gates-fail.txt" run_claim cap-fail success "${ARGS[@]}"
-[ "$RC" -eq 0 ] && [ "$(wc -c <"$MODULE" | tr -d ' ')" -lt "$CAP" ] &&
+[ "$RC" -eq 0 ] && [ "$(bytes_of "$MODULE")" -lt "$CAP" ] &&
     [ "$(gate_row "$MODULE" tests '.output | length')" -gt 65536 ] &&
     [ "$(gate_row "$MODULE" tests '.output | endswith(("x" * 40000) + "TAIL-tests\n")')" = "true" ]
 check $? "a failing gate's output tail still reaches the module when its row is abridged (got $RC)"
@@ -363,7 +368,7 @@ check $? "a failing gate's output tail still reaches the module when its row is 
 C="$WORK/cap-small"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 set_args
 STUB_RENDER="$WORK/packet.txt" run_claim cap-small success "${ARGS[@]}"
-sed -n '2s/^return //p' "$MODULE" | jq -j '.packet' >"$C/packet.out"
+modpacket "$MODULE" >"$C/packet.out"
 [ "$RC" -eq 0 ] && cmp -s "$C/packet.out" "$WORK/packet.txt" && [ "$(modval "$MODULE" '.packet_abridged')" = "false" ] &&
     [ "$(modval "$MODULE" '.packet_by_reference')" = "false" ] && [[ "$OUT" == *" abridged=0 "* ]]
 check $? "a packet whose module fits is never abridged or by reference"
@@ -373,8 +378,8 @@ check $? "a packet whose module fits is never abridged or by reference"
 C="$WORK/cap-byref"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"
 set_args
 STUB_PACKET_FILE="$WORK/too-big.txt" run_claim cap-byref success "${ARGS[@]}"
-[ "$RC" -eq 0 ] && [ -f "$MODULE" ] && [ "$(wc -c <"$MODULE" | tr -d ' ')" -lt "$CAP" ] &&
-    [[ "$OUT" == "CLAIMED STEP-7 attempt=3 packet_bytes=$(wc -c <"$WORK/too-big.txt" | tr -d ' ') module_bytes=$(wc -c <"$MODULE" | tr -d ' ') abridged=1 sha256="* ]]
+[ "$RC" -eq 0 ] && [ -f "$MODULE" ] && [ "$(bytes_of "$MODULE")" -lt "$CAP" ] &&
+    [[ "$OUT" == "CLAIMED STEP-7 attempt=3 packet_bytes=$(bytes_of "$WORK/too-big.txt") module_bytes=$(bytes_of "$MODULE") abridged=1 sha256="* ]]
 check $? "a 900 KB packet with no gate row to abridge claims with exit 0 and a module under the cap (got $RC: ${OUT:0:200})"
 [ "$(modval "$MODULE" '.packet_by_reference')" = "true" ] && [ "$(modval "$MODULE" '.packet_abridged')" = "true" ]
 check $? "the module records that its packet is by reference"
@@ -382,14 +387,15 @@ check $? "the module records that its packet is by reference"
     cmp -s "$C/tmp/STEP-7.d/STEP-7.packet.md" "$WORK/too-big.txt" &&
     [ "$(modval "$MODULE" '.packet_file')" = "$C/tmp/STEP-7.d/STEP-7.packet.md" ]
 check $? "packet_file and its packet_sha256 match the engine's packet"
-modval "$MODULE" '.packet' | grep -qF "$C/tmp/STEP-7.d/STEP-7.packet.md" &&
-    modval "$MODULE" '.packet' | grep -qF "$(sha256_of "$WORK/too-big.txt")" &&
-    modval "$MODULE" '.packet' | grep -q '^== STEP STEP-7 (by reference)$'
+BYREF=$(modval "$MODULE" '.packet')
+printf '%s\n' "$BYREF" | grep -qF "$C/tmp/STEP-7.d/STEP-7.packet.md" &&
+    printf '%s\n' "$BYREF" | grep -qF "$(sha256_of "$WORK/too-big.txt")" &&
+    printf '%s\n' "$BYREF" | grep -q '^== STEP STEP-7 (by reference)$'
 check $? "the by-reference packet names the packet file and its sha256"
 ! grep -q '^step fail' "$C/stub.log" && [ -e "$C/tmp/STEP-7.d/STEP-7.token" ]
 check $? "the by-reference claim keeps its lease: no step fail, token in place"
 F="$C/tmp/STEP-7.d/STEP-7.packet.folded.md"
-modval "$MODULE" '.packet' | grep -qF "$F" && [ "$(tr -d '\n' <"$F" | cksum)" = "$(tr -d '\n' <"$WORK/too-big.txt" | cksum)" ] &&
+printf '%s\n' "$BYREF" | grep -qF "$F" && [ "$(tr -d '\n' <"$F" | cksum)" = "$(tr -d '\n' <"$WORK/too-big.txt" | cksum)" ] &&
     [ "$(awk '{ if (length($0) > m) m = length($0) } END { print m }' "$F")" -le 1500 ]
 check $? "the stub names a folded copy whose lines stay within 1,500 bytes and whose bytes match the packet"
 
@@ -400,7 +406,7 @@ set_args
 STUB_PACKET_FILE="$WORK/gates-big.txt" run_claim cap-byref-gates success "${ARGS[@]}"
 [ "$RC" -eq 0 ] && [ "$(modval "$MODULE" '.packet_by_reference')" = "true" ] &&
     [ "$(modval "$MODULE" '.packet_sha256')" = "$(sha256_of "$WORK/gates-big.txt")" ] &&
-    [ "$(wc -c <"$MODULE" | tr -d ' ')" -lt "$CAP" ]
+    [ "$(bytes_of "$MODULE")" -lt "$CAP" ]
 check $? "abridged gate rows that still leave the packet over the cap fall back to by reference (got $RC: ${OUT:0:200})"
 # ---- stale modules are swept, fresh ones kept ------------------------------------
 C="$WORK/sweep"; MODULE="$C/repo/.claude/docket-packets/STEP-7.a3.js"

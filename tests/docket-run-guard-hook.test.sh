@@ -107,8 +107,7 @@ case "${1:-}" in
                     esac
                     shift
                 done
-                RUNS=$(build_runs_json)
-                printf '%s' "$RUNS" | jq -c --argjson all "$all" --argjson limit "$limit" '
+                build_runs_json | jq -c --argjson all "$all" --argjson limit "$limit" '
                     (if $all then . else map(select(.status != "done" and .status != "abandoned")) end) as $runs
                     | {ok:true, data:{total:($runs | length),
                         runs:(if $limit > 0 then $runs[:$limit] else $runs end)}}'
@@ -185,6 +184,8 @@ reset_env() {
     unset GUARD_STOP_REASON GUARD_RECORD_EXIT GUARD_RECORD_REASON RUN_NAMES RUN_STATUSES RUN_STATUS_UNREADABLE VERIFY_PINS_EXITS
     unset RUN_STATUS_JSON RUN_STATUS_EXIT STOP_INPUT_JSON
 }
+
+OPEN_DISPATCH_REASON='Error: RUN-1 has an open dispatch: DISPATCH-1 expiring at 123456789 — reconcile with `docket dispatch close --run RUN-1`, give up on it with `docket dispatch abandon --run RUN-1`, or wait for the TTL to auto-abandon it'
 
 # ---- CARVE-OUT 4: every live run paused (waiting-human) allows the stop ----
 case_carveout4_single_run_paused_allows() {
@@ -280,7 +281,7 @@ case_regression_open_dispatch_allows() {
     reset_env
     export GUARD_STOP_REASON="work is still pending"
     export GUARD_RECORD_EXIT=2
-    export GUARD_RECORD_REASON='Error: RUN-1 has an open dispatch: DISPATCH-1 expiring at 123456789 — reconcile with `docket dispatch close --run RUN-1`, give up on it with `docket dispatch abandon --run RUN-1`, or wait for the TTL to auto-abandon it'
+    export GUARD_RECORD_REASON="$OPEN_DISPATCH_REASON"
     export RUN_NAMES="RUN-1"
     export RUN_STATUSES="active"
     run_case "guard record confirms an open dispatch -> allow asynchronous yield" ALLOW
@@ -441,7 +442,7 @@ case_engine_and_session_contracts() {
     run_case "a repeated Stop-hook block allows the turn to end" ALLOW
     unset STOP_INPUT_JSON
     export GUARD_RECORD_EXIT=2
-    export GUARD_RECORD_REASON='Error: RUN-1 has an open dispatch: DISPATCH-1 expiring at 123456789 — reconcile with `docket dispatch close --run RUN-1`, give up on it with `docket dispatch abandon --run RUN-1`, or wait for the TTL to auto-abandon it'
+    export GUARD_RECORD_REASON="$OPEN_DISPATCH_REASON"
     run_case "async dispatch still permits yielding without jq" ALLOW "$PATH_NO_JQ"
     export GUARD_RECORD_REASON='Error: database is locked'
     run_case "generic exit 2 remains unknown without jq" DENY "$PATH_NO_JQ"

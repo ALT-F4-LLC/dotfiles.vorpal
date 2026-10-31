@@ -127,6 +127,7 @@ for (const isolated of [true, false]) {
 
         // ---- nothing asks the executor to fetch it ----
         const head = brief.slice(0, brief.indexOf(BEGIN))
+        const flat = head.replace(/\s+/g, ' ')
         ok(!head.includes('.data.packet') && !head.includes('.packet.md') && !/with the Read tool/.test(head),
             `${label}: no instruction to extract or Read a packet file`)
         ok(!head.includes(`--render --metadata`) && !head.includes(`.data.token`) && !head.includes('.claim.json'),
@@ -153,11 +154,14 @@ for (const isolated of [true, false]) {
         // ---- cleanup keeps every file the recorded artifact cites ----
         // Render the brief against a real step dir under $WORK, take the
         // cleanup instruction it gives after a record, and run it there.
-        const FIX = `${process.env.WORK}/${isolated ? 'iso' : 'shared'}-${isWrite ? 'w' : 'r'}/STEP-4381.d`
-        const FIXPHYS = `${process.env.WORK}/phys-${isolated ? 'iso' : 'shared'}-${isWrite ? 'w' : 'r'}/STEP-4381.d`
+        const tag = `${isolated ? 'iso' : 'shared'}-${isWrite ? 'w' : 'r'}`
+        const fixBase = `${process.env.WORK}/${tag}`
+        const physBase = `${process.env.WORK}/phys-${tag}`
+        const FIX = `${fixBase}/STEP-4381.d`
+        const FIXPHYS = `${physBase}/STEP-4381.d`
         mkdirSync(`${FIX}/target/src`, { recursive: true, mode: 0o700 })
         // The Write tool's spelling of the same dir: another path to it.
-        symlinkSync(FIX.replace(/\/STEP-4381\.d$/, ''), FIXPHYS.replace(/\/STEP-4381\.d$/, ''))
+        symlinkSync(fixBase, physBase)
         const artifact = `${FIX}/STEP-4381-change-summary.md`
         const cited = [`${FIX}/STEP-4381-probe.txt`, `${FIX}/STEP-4381-probe-out.log`]
         writeFileSync(artifact, `# Summary\nProbe output: ${cited[0]}\nLog (Write-tool spelling): ${FIXPHYS}/STEP-4381-probe-out.log\n`)
@@ -165,10 +169,8 @@ for (const isolated of [true, false]) {
         writeFileSync(`${FIX}/STEP-4381-tmp.txt`, 'scratch\n')
         writeFileSync(`${FIX}/STEP-4381.token`, 'spent-token\n')
         writeFileSync(`${FIX}/target/src/x.go`, 'package x\n')
-        const fixHead = (() => {
-            const b = executorBrief(row, owner, { ...claim, dir: FIX, dirPhysical: FIXPHYS, token: `${FIX}/STEP-4381.token` }, isolated, isWrite, CWD)
-            return b.slice(0, b.indexOf(BEGIN))
-        })()
+        const fixBrief = executorBrief(row, owner, { ...claim, dir: FIX, dirPhysical: FIXPHYS, token: `${FIX}/STEP-4381.token` }, isolated, isWrite, CWD)
+        const fixHead = fixBrief.slice(0, fixBrief.indexOf(BEGIN))
         const m = /AFTER `record` exits 0[^`]*`([^`]+)`/.exec(fixHead)
         const cleanup = m ? m[1].replace(/<kind>/g, 'change-summary') : ''
         ok(cleanup !== '', `${label}: the brief gives a step-dir cleanup instruction after record`)
@@ -180,7 +182,7 @@ for (const isolated of [true, false]) {
             `${label}: after cleanup every path the artifact body cites is readable, in either dir spelling (cleanup ${JSON.stringify(cleanup)}, error ${JSON.stringify(ran)}, left ${JSON.stringify(existsSync(FIX) ? readdirSync(FIX) : null)})`)
         ok(!existsSync(`${FIX}/STEP-4381-tmp.txt`) && !existsSync(`${FIX}/STEP-4381.token`) && !existsSync(`${FIX}/target`),
             `${label}: cleanup removes the uncited scratch, the spent token and uncited trees (left ${JSON.stringify(existsSync(FIX) ? readdirSync(FIX) : null)})`)
-        ok(head.replace(/\s+/g, ' ').includes(`AFTER \`fail\` exits 0, remove the whole step dir in one plain call: \`rm -rf ${DIR}\``),
+        ok(flat.includes(`AFTER \`fail\` exits 0, remove the whole step dir in one plain call: \`rm -rf ${DIR}\``),
             `${label}: after a fail, which cites nothing, the whole step dir goes`)
         ok(!head.includes(`cat ${TOKEN}`) && head.includes('Never `cat` the token'),
             `${label}: the token's only channel stays the stdin redirect`)
@@ -200,18 +202,16 @@ for (const isolated of [true, false]) {
             ok(failCmd.startsWith('docket step fail STEP-4381 '),
                 `${label}: obligation 3's docket step fail command stays bare (got ${JSON.stringify(failCmd)})`)
             ok(!head.includes(`cd ${CWD}`), `${label}: the brief never cds to the wave's cwd`)
-            ok(head.replace(/\s+/g, ' ').includes('Run every `docket` verb from this worktree, with no preceding `cd`'),
+            ok(flat.includes('Run every `docket` verb from this worktree, with no preceding `cd`'),
                 `${label}: the brief states docket verbs run from the worktree with no preceding cd`)
+            ok(head.includes('git worktree list --porcelain') && head.includes('git checkout --detach --quiet'),
+                `${label}: the worktree bootstrap aligns HEAD before any work`)
+            ok(head.includes('STOP with the token file intact'), `${label}: a denied bootstrap leaves the live claim for the conductor`)
         } else {
             ok(recordCmd.startsWith(`cd ${CWD} && docket step record STEP-4381 `),
                 `${label}: obligation 3's docket step record command begins with cd <cwd> && (got ${JSON.stringify(recordCmd)})`)
             ok(failCmd.startsWith(`cd ${CWD} && docket step fail STEP-4381 `),
                 `${label}: obligation 3's docket step fail command begins with cd <cwd> && (got ${JSON.stringify(failCmd)})`)
-        }
-        if (isolated) {
-            ok(head.includes('git worktree list --porcelain') && head.includes('git checkout --detach --quiet'),
-                `${label}: the worktree bootstrap aligns HEAD before any work`)
-            ok(head.includes('STOP with the token file intact'), `${label}: a denied bootstrap leaves the live claim for the conductor`)
         }
         ok(isWrite === head.includes('--worktree <YOUR CHECKOUT>'), `${label}: --worktree only on write-class records`)
         ok(!isWrite === head.includes(`mkdir -p ${DIR}/target`), `${label}: target reconstruction only for read-class`)
@@ -274,7 +274,6 @@ for (const isolated of [true, false]) {
         }
 
         // ---- refused-write rule: the refusal's own recovery, once, disclosed ----
-        const flat = head.replace(/\s+/g, ' ')
         ok(flat.includes(`If a write is refused and the refusal's own text names a recovery, take that recovery once and disclose the refusal and the retry in your reply and artifact.`),
             `${label}: a refused write takes the recovery its refusal names, once, disclosed`)
         ok(/^\s*WRITE BLOCKED: the refusal names no recovery,/m.test(head) &&

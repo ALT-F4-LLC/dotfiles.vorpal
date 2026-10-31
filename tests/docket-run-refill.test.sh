@@ -70,8 +70,7 @@ row() { # <step> <issue> <kind> <stage> [class]
 }
 answer() { # <n> <rows-jsonl-file or empty>: queue the n-th extend answer
     mkdir -p "$STUB_EXTEND_DIR"
-    if [ -n "${2:-}" ] && [ -s "$2" ]; then jq -c -s '{ok: true, data: {dispatch: "DISPATCH-1", run: "RUN-1", rows: .}}' "$2" > "$STUB_EXTEND_DIR/answer-$1.json"
-    else printf '{"ok":true,"data":{"dispatch":"DISPATCH-1","run":"RUN-1","rows":[]}}\n' > "$STUB_EXTEND_DIR/answer-$1.json"; fi
+    jq -c -s '{ok: true, data: {dispatch: "DISPATCH-1", run: "RUN-1", rows: .}}' "${2:-/dev/null}" > "$STUB_EXTEND_DIR/answer-$1.json"
 }
 reset() { # fresh state files and stub queue
     rm -rf "$STUB_EXTEND_DIR" "$WORK/state" "$WORK/launch"
@@ -85,6 +84,7 @@ refill() { # extra args; stdout in $OUT, stderr in $ERR, status in $RC; launches
     RC=$?
     ERR=$(cat "$WORK/err")
 }
+sorted() { sort "$1" | tr '\n' ' '; }
 steps_of() { jq -r '.step' "$1" | sort | tr '\n' ' '; }
 launched_lanes() { jq -r '.[].lanes[]' "$WORK/launch/launches.json" 2>/dev/null | sort | tr '\n' ' '; }
 
@@ -167,7 +167,7 @@ reset
 answer 1 ""
 printf '[{"step":"STEP-1","status":"returned"},{"step":"STEP-2","status":"skipped-chain-dead"},{"step":"STEP-3","status":"skipped-chain-dead"},{"step":"STEP-4","status":"skipped-not-ready"}]\n' > "$WORK/twolane.json"
 refill --statuses "$WORK/twolane.json"
-ok $([ "$RC" -eq 0 ] && [ "$(sort "$SETTLED" | tr '\n' ' ')" = "STEP-1 STEP-2 STEP-3 " ] && [ ! -s "$HELD" ] && [ "$(steps_of "$PENDING")" = "STEP-4 " ] && echo 0 || echo 1) "a deferred lane's chain-dead rows settle beside another lane's refusal (settled '$(sort "$SETTLED" | tr '\n' ' ')', pending $(steps_of "$PENDING"))"
+ok $([ "$RC" -eq 0 ] && [ "$(sorted "$SETTLED")" = "STEP-1 STEP-2 STEP-3 " ] && [ ! -s "$HELD" ] && [ "$(steps_of "$PENDING")" = "STEP-4 " ] && echo 0 || echo 1) "a deferred lane's chain-dead rows settle beside another lane's refusal (settled '$(sorted "$SETTLED")', pending $(steps_of "$PENDING"))"
 
 # ---- failures leave the rows file alone --------------------------------------
 reset
@@ -225,13 +225,13 @@ reset
 answer 1 ""; answer 2 ""
 printf '[{"step":"STEP-1","status":"recorded"}]\n' > "$WORK/s1.json"; printf '[{"step":"STEP-2","status":"recorded"}]\n' > "$WORK/s2.json"
 refill --statuses "$WORK/s1.json" --in-flight "ISS-3"; refill --statuses "$WORK/s2.json" --in-flight "ISS-3"
-ok $([ "$(sort "$SETTLED" | tr '\n' ' ')" = "STEP-1 STEP-2 " ] && echo 0 || echo 1) "settled accumulates across returns (got $(tr '\n' ' ' < "$SETTLED"))"
+ok $([ "$(sorted "$SETTLED")" = "STEP-1 STEP-2 " ] && echo 0 || echo 1) "settled accumulates across returns (got $(tr '\n' ' ' < "$SETTLED"))"
 reset
 { row STEP-1 ISS-1 executor 1; row STEP-2 ISS-2 executor 1; row STEP-3 ISS-3 executor 1; } > "$ROWS"
 answer 1 ""; answer 2 ""
 printf '[{"step":"STEP-1","status":"skipped-not-ready"}]\n' > "$WORK/b1.json"; printf '[{"step":"STEP-2","status":"skipped-not-ready"}]\n' > "$WORK/b2.json"
 refill --statuses "$WORK/b1.json" --in-flight "ISS-3"; refill --statuses "$WORK/b2.json" --in-flight "ISS-3"
-ok $([ "$(sort "$HELD" | tr '\n' ' ')" = "STEP-1 STEP-2 " ] && echo 0 || echo 1) "two bounces in a row hold both lanes (got $(tr '\n' ' ' < "$HELD"))"
+ok $([ "$(sorted "$HELD")" = "STEP-1 STEP-2 " ] && echo 0 || echo 1) "two bounces in a row hold both lanes (got $(tr '\n' ' ' < "$HELD"))"
 
 # ---- caps and the tribunal path reach lane_units.py -------------------------------
 reset
@@ -241,7 +241,7 @@ refill --write-cap 1
 ok $([ "$RC" -eq 0 ] && [ "$OUT" = 1 ] && echo 0 || echo 1) "--write-cap 1 over two free lanes launches one (got '${OUT}')"
 refill --tribunal /opt/tribunal.js
 ok $([ "$RC" -eq 0 ] && [ "$(jq -r '.tribunal' "$WORK/launch/args-0.json")" = /opt/tribunal.js ] && echo 0 || echo 1) "--tribunal reaches each launch's args"
-{ echo '{"ISS-1":"abc123"}'; } > "$WORK/integrated.json"; answer 3 ""
+echo '{"ISS-1":"abc123"}' > "$WORK/integrated.json"; answer 3 ""
 refill --integrated "$WORK/integrated.json"
 ok $([ "$RC" -eq 0 ] && [ "$(jq -r '.integrated' "$WORK/launch/args-0.json")" != null ] && echo 0 || echo 1) "--integrated reaches each launch's args"
 

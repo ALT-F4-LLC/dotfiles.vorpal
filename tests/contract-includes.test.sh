@@ -15,6 +15,7 @@
 # touching the checkout.
 
 set -uo pipefail
+shopt -s nullglob
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 CORPUS="${CORPUS_DIR:-${SCRIPT_DIR}/../src/user/docket/config}"
@@ -25,7 +26,6 @@ fail=0
 
 check_includes() { # <contracts-dir>
     local dir="$1" file rel
-    shopt -s nullglob
     for file in "$dir"/*.md; do
         while IFS= read -r rel; do
             [ -n "$rel" ] || continue
@@ -45,7 +45,6 @@ check_includes() { # <contracts-dir>
             in_list { in_list = 0 }
         ' "$file")
     done
-    shopt -u nullglob
 }
 
 check_includes "${CORPUS}/contracts"
@@ -97,7 +96,6 @@ non_pre_gated_executors() { # <workflow-file>
             tmp = gates_line
             gsub(/\{[^}]*\}/, "", tmp)
             if (tmp ~ /"[A-Za-z0-9_-]+"/) non_pre = 1
-            # Table entries without pre = true also count as non-pre.
             t = gates_line
             while (match(t, /\{[^}]*\}/)) {
                 entry = substr(t, RSTART, RLENGTH)
@@ -106,17 +104,15 @@ non_pre_gated_executors() { # <workflow-file>
             }
         }
         END { flush() }
-    ' "$1" | sort -u
+    ' "$1"
 }
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/contract-includes.XXXXXX") || exit 2
 trap 'rm -rf "$WORK"' EXIT
 
-shopt -s nullglob
 for wf in "${CORPUS}/workflows"/*.toml; do
     non_pre_gated_executors "$wf"
 done | sort -u > "${WORK}/needs-gates"
-shopt -u nullglob
 
 while IFS= read -r ex; do
     [ -n "$ex" ] || continue

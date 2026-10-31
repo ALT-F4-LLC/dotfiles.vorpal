@@ -49,7 +49,6 @@ trap 'rm -rf "$WORK"' EXIT
 [ "$(grep -c '^export ' "$TRIBUNAL")" -eq 1 ] || fatal "expected exactly one top-level export in tribunal.js"
 grep -q '^export const meta' "$TRIBUNAL" || fatal "the one top-level export is not \`export const meta\`"
 sed 's/^export const meta/const meta/' "$TRIBUNAL" > "${WORK}/body.js"
-grep -q '^export ' "${WORK}/body.js" && fatal "wrapped body still carries a top-level export"
 grep -q '^return ' "${WORK}/body.js" || fatal "tribunal.js has no top-level return to wrap"
 
 {

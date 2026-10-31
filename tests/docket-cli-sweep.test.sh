@@ -213,7 +213,6 @@ class SweepTests(unittest.TestCase):
         result = self.run_tool("--coverage")
         self.assertEqual(result.returncode, 2)
         self.assertIn("uncovered: docket events", result.stderr)
-        scenario = json.loads(self.scenario.read_text())
         scenario["skipped"].append({"command": "docket issue show", "reason": "stale"})
         self.scenario.write_text(json.dumps(scenario))
         result = self.run_tool("--coverage")
@@ -225,8 +224,7 @@ class SweepTests(unittest.TestCase):
         self.assertFalse(self.log.exists(), "--coverage must not run the binary")
 
     def test_forbidden_argv_and_trust_order_are_refused_before_any_probe(self):
-        scenario = json.loads(self.scenario.read_text())
-        base = json.dumps(scenario)
+        base = self.scenario.read_text()
         for step in ([{"id": "watch", "argv": ["events", "--watch"]}],
                      [{"id": "follow", "argv": ["events", "--follow"], "modes": ["text"]}],
                      [{"id": "probe", "argv": ["trust", "probe"], "modes": ["text"]}]):
@@ -257,11 +255,9 @@ class SweepTests(unittest.TestCase):
         self.assertEqual(os.listdir(self.tmpdir), [])
 
     def test_roster_must_be_empty_before_a_gate_verb(self):
-        scenario = json.loads(self.scenario.read_text())
         # A stand-in binary that reports an entry on the roster before activation.
         self.binary.write_text(FAKE.replace('entries = json.loads(roster.read_text()) if roster.exists() else []\n    emit(',
                                             'entries = [{"name": "sneaky"}]\n    emit('))
-        self.scenario.write_text(json.dumps(scenario))
         result = self.run_tool("--write")
         self.assertEqual(result.returncode, 2)
         self.assertIn("trust roster holds 1 entries before activate", result.stderr)
@@ -270,13 +266,13 @@ class SweepTests(unittest.TestCase):
 
     def test_expect_exit_mismatch_and_bad_capture_fail_without_writing(self):
         scenario = json.loads(self.scenario.read_text())
-        next(s for s in scenario["steps"] if s["id"] == "init")["expect_exit"] = 7
+        init = next(s for s in scenario["steps"] if s["id"] == "init")
+        init["expect_exit"] = 7
         self.scenario.write_text(json.dumps(scenario))
         result = self.run_tool("--write")
         self.assertEqual(result.returncode, 2)
         self.assertIn("expected 7", result.stderr)
-        scenario = json.loads(self.scenario.read_text())
-        next(s for s in scenario["steps"] if s["id"] == "init")["expect_exit"] = 0
+        init["expect_exit"] = 0
         next(s for s in scenario["steps"] if s["id"] == "create")["capture"] = {"token": "data.nope"}
         self.scenario.write_text(json.dumps(scenario))
         result = self.run_tool("--write")

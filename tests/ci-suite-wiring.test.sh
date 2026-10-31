@@ -188,10 +188,6 @@ wired_suites() { # <workflow-file>
         sed -n 's|^bash tests/\([A-Za-z0-9._-]*\.test\.sh\)$|\1|p' | sort -u
 }
 
-# Compare one tests directory against one workflow, printing a FAIL line per
-# disagreement. Returns 0 when the sets match and 1 when they differ; 2 means
-# an input made the comparison impossible, which a caller must never read as a
-# trustworthy disagreement.
 # Suite basenames the justfile's `tests` recipe would run, sorted and
 # deduplicated. The workflow-vs-directory comparison above says nothing about
 # the local `tests` recipe itself: deleting its loop over tests/*.test.sh
@@ -205,18 +201,15 @@ wired_suites() { # <workflow-file>
 # under the given tests directory without naming them, since that is what
 # the shell would do.
 recipe_suites() { # <tests-dir> <justfile>
-    local tests="$1" body loop_var
+    local tests="$1" body
     body=$(awk '
         /^tests:/ { in_recipe = 1; next }
         in_recipe && /^[^[:space:]]/ { exit }
         in_recipe { print }
     ' "$2")
 
-    loop_var=$(printf '%s\n' "$body" |
-        sed -n 's/^[[:space:]]*for[[:space:]][[:space:]]*\([A-Za-z_][A-Za-z0-9_]*\)[[:space:]][[:space:]]*in[[:space:]][[:space:]]*tests\/\*\.test\.sh[[:space:]]*;.*/\1/p' |
-        head -n1)
-
-    if [ -n "$loop_var" ]; then
+    if printf '%s\n' "$body" |
+        grep -q '^[[:space:]]*for[[:space:]][[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]][[:space:]]*in[[:space:]][[:space:]]*tests/\*\.test\.sh[[:space:]]*;'; then
         suite_names "$tests"
         return
     fi
@@ -267,6 +260,10 @@ compare_recipe() { # <tests-dir> <justfile>
     return "$status"
 }
 
+# Compare one tests directory against one workflow, printing a FAIL line per
+# disagreement. Returns 0 when the sets match and 1 when they differ; 2 means
+# an input made the comparison impossible, which a caller must never read as a
+# trustworthy disagreement.
 compare_wiring() { # <tests-dir> <workflow-file>
     local tests="$1" workflow="$2" cmp status=0 suite
 
@@ -310,12 +307,8 @@ compare_wiring() { # <tests-dir> <workflow-file>
 fail=0
 
 # ---- The real tree ----------------------------------------------------
-if ! compare_wiring "$TESTS" "$WORKFLOW"; then
-    fail=1
-fi
-if ! compare_recipe "$TESTS" "$JUSTFILE"; then
-    fail=1
-fi
+compare_wiring "$TESTS" "$WORKFLOW" || fail=1
+compare_recipe "$TESTS" "$JUSTFILE" || fail=1
 
 # ---- The suite's own honesty check ------------------------------------
 # CI only ever exercises the passing path, so each failure direction is
@@ -617,18 +610,18 @@ build:
     cargo build --locked --offline
 JUST
 
-# Assert both halves of compare_wiring's answer: the status AND the exact FAIL
-# lines. Asserting the status alone would leave the two `comm` directions
+# Assert both halves of a compare function's answer: the status AND the exact
+# FAIL lines. Asserting the status alone would leave the two `comm` directions
 # interchangeable, so a suite naming every real failure as its own inverse
 # would still read green.
-expect_wiring() { # <label> <status> <tests-dir> <workflow> [<expected line>...]
-    local label="$1" want_status="$2" tests="$3" workflow="$4"
-    shift 4
+expect_compare() { # <compare-fn> <label> <status> <tests-dir> <input> [<expected line>...]
+    local compare="$1" label="$2" want_status="$3" tests="$4" input="$5"
+    shift 5
     local out got want_out=''
     if [ "$#" -gt 0 ]; then
         want_out=$(printf '%s\n' "$@")
     fi
-    out=$(compare_wiring "$tests" "$workflow")
+    out=$("$compare" "$tests" "$input")
     got=$?
     if [ "$got" = "$want_status" ] && [ "$out" = "$want_out" ]; then
         echo "ok   self-check ${label}"
@@ -642,27 +635,8 @@ expect_wiring() { # <label> <status> <tests-dir> <workflow> [<expected line>...]
     return 1
 }
 
-# Same shape as expect_wiring, for compare_recipe.
-expect_recipe() { # <label> <status> <tests-dir> <justfile> [<expected line>...]
-    local label="$1" want_status="$2" tests="$3" justfile="$4"
-    shift 4
-    local out got want_out=''
-    if [ "$#" -gt 0 ]; then
-        want_out=$(printf '%s\n' "$@")
-    fi
-    out=$(compare_recipe "$tests" "$justfile")
-    got=$?
-    if [ "$got" = "$want_status" ] && [ "$out" = "$want_out" ]; then
-        echo "ok   self-check ${label}"
-        return 0
-    fi
-    echo "FAIL self-check ${label}: expected status ${want_status}, got ${got}"
-    echo "     expected output:"
-    printf '%s\n' "$want_out" | sed 's/^/       /'
-    echo "     actual output:"
-    printf '%s\n' "$out" | sed 's/^/       /'
-    return 1
-}
+expect_wiring() { expect_compare compare_wiring "$@"; }
+expect_recipe() { expect_compare compare_recipe "$@"; }
 
 UNWIRED_ALPHA="FAIL alpha.test.sh: suite is not invoked by any step the workflow runs"
 UNWIRED_BETA="FAIL beta.test.sh: suite is not invoked by any step the workflow runs"

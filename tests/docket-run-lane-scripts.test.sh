@@ -3,8 +3,10 @@
 # The lane scripts are rendered files, one per workflow definition.
 #
 # Wired into CI: `.github/workflows/vorpal.yaml` lists this file by name,
-# and tests/ci-suite-wiring.test.sh fails when it is not. Needs python3 (3.11+
-# for tomllib) and node; no engine, no network.
+# and tests/ci-suite-wiring.test.sh fails when it is not. Needs node and a
+# Python 3.11+ (for tomllib): the first of python3, python3.14 ... python3.11
+# on PATH that reports 3.11 or later. With none, it prints a SKIP line naming
+# that requirement and exits 0. No engine, no network.
 #
 # WHY THIS EXISTS. docket-run launches one Workflow script per issue lane,
 # and the script is the issue's workflow's: `~/.claude/workflows/<name>.js`
@@ -56,8 +58,26 @@ fatal() {
     exit 2
 }
 
-command -v python3 >/dev/null 2>&1 || fatal "python3 is required"
 command -v node >/dev/null 2>&1 || fatal "node is required"
+
+PYTHON=
+for candidate in python3 python3.14 python3.13 python3.12 python3.11; do
+    command -v "$candidate" >/dev/null 2>&1 || continue
+    version=$("$candidate" --version 2>&1) || continue
+    version=${version#Python }
+    major=${version%%.*}
+    minor=${version#*.}
+    minor=${minor%%.*}
+    case "$major$minor" in ''|*[!0-9]*) continue ;; esac
+    if [ "$major" -gt 3 ] || { [ "$major" -eq 3 ] && [ "$minor" -ge 11 ]; }; then
+        PYTHON=$(command -v "$candidate")
+        break
+    fi
+done
+if [ -z "$PYTHON" ]; then
+    printf 'SKIP: lane_scripts.py needs Python 3.11+ (tomllib); no python3 or python3.11-3.14 on PATH is 3.11+\n'
+    exit 0
+fi
 [ -f "$RENDER" ] || fatal "lane_scripts.py not found at ${RENDER}"
 [ -f "$BODY" ] || fatal "lane_body.js not found at ${BODY}"
 [ -d "$TOML_DIR" ] || fatal "workflow definitions not found at ${TOML_DIR}"
@@ -73,7 +93,7 @@ ok() { # <0|1> <label>
 }
 
 render() { # [args...]: run the renderer with -I; stdout+stderr to $WORK/out
-    python3 -I "$RENDER" "$@" > "$WORK/out" 2>&1
+    "$PYTHON" -I "$RENDER" "$@" > "$WORK/out" 2>&1
 }
 
 # A copy of the checkout's inputs and outputs, for mutation. The renderer
@@ -86,7 +106,7 @@ copy_tree() { # <dir>
     cp -R "$OUT_DIR" "$1/src/user/claude_code/workflows"
 }
 mut_render() { # <tree> [args...]: the copied renderer against the copied tree
-    python3 -I "$1/src/user/claude_code/skills/docket-run/scripts/lane_scripts.py" --root "$1" "${@:2}" > "$WORK/out" 2>&1
+    "$PYTHON" -I "$1/src/user/claude_code/skills/docket-run/scripts/lane_scripts.py" --root "$1" "${@:2}" > "$WORK/out" 2>&1
 }
 
 # ---- 1. the checkout is rendered -----------------------------------------

@@ -100,7 +100,7 @@ render() { # [args...]: run the renderer with -I; stdout+stderr to $WORK/out
 # finds the body beside itself, so the scripts directory is copied too.
 copy_tree() { # <dir>
     rm -rf "$1"
-    mkdir -p "$1/src/user/docket/config" "$1/src/user/claude_code/skills/docket-run" "$1/src/user/claude_code"
+    mkdir -p "$1/src/user/docket/config" "$1/src/user/claude_code/skills/docket-run"
     cp -R "$TOML_DIR" "$1/src/user/docket/config/workflows"
     cp -R "${ROOT}/src/user/claude_code/skills/docket-run/scripts" "$1/src/user/claude_code/skills/docket-run/scripts"
     cp -R "$OUT_DIR" "$1/src/user/claude_code/workflows"
@@ -115,6 +115,7 @@ ok $? "lane_scripts.py --check passes on the checkout ($(tail -n 1 "$WORK/out"))
 
 # ---- 2. one script per definition, named and declared after the pipeline --
 names=()
+body_bytes=$(wc -c < "$BODY")
 for toml in "$TOML_DIR"/*.toml; do
     name=$(sed -n 's/^name = "\([^"]*\)"$/\1/p' "$toml" | head -n 1)
     [ -n "$name" ]; ok $? "$(basename "$toml") declares a pipeline name (${name:-none})"
@@ -126,7 +127,6 @@ for toml in "$TOML_DIR"/*.toml; do
     grep -q "^const LANE = { workflow: '${name}' }\$" "$script"; ok $? "${name}.js: LANE is { workflow: '${name}' } and nothing else"
     head -n 12 "$script" | grep -qF -- "$MARKER"; ok $? "${name}.js: carries the rendered-file marker in its head"
     # 3. the body is a byte-for-byte suffix
-    body_bytes=$(wc -c < "$BODY")
     tail -c "$body_bytes" "$script" | cmp -s - "$BODY"; ok $? "${name}.js: ends with lane_body.js verbatim"
     for region in configuration launch-rows claim-path gate-vote stage-ladder; do
         [ "$(grep -c "^// TEST-BEGIN ${region} " "$script")" -eq 1 ]

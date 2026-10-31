@@ -48,16 +48,13 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 GROOM_SKILL="${DOCKET_GROOM_SKILL_FILE:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-groom/SKILL.md}"
 PLAN_SKILL="${DOCKET_PLAN_SKILL_FILE:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-plan/SKILL.md}"
 
-if [ ! -f "$GROOM_SKILL" ]; then
-    echo "FAIL input: no such file: ${GROOM_SKILL}" >&2
-    echo "mutant-rule-crossref: FAIL" >&2
-    exit 1
-fi
-if [ ! -f "$PLAN_SKILL" ]; then
-    echo "FAIL input: no such file: ${PLAN_SKILL}" >&2
-    echo "mutant-rule-crossref: FAIL" >&2
-    exit 1
-fi
+for skill in "$GROOM_SKILL" "$PLAN_SKILL"; do
+    if [ ! -f "$skill" ]; then
+        echo "FAIL input: no such file: ${skill}" >&2
+        echo "mutant-rule-crossref: FAIL" >&2
+        exit 1
+    fi
+done
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/mutant-rule-crossref.XXXXXX") || exit 2
 trap 'rm -rf "$WORK"' EXIT
@@ -107,9 +104,8 @@ flatten "$GROOM_SKILL" "${WORK}/groom-flat"
 flatten "$PLAN_SKILL" "${WORK}/plan-flat"
 
 # (g) docket-groom's deferral to docket-plan's mutant rule.
-if paragraph "${WORK}/groom-flat" \
-    'Every acceptance criterion, existing or drafted, must meet §2c' \
-    "${WORK}/groom-rule"; then
+groom_anchor='Every acceptance criterion, existing or drafted, must meet §2c'
+if paragraph "${WORK}/groom-flat" "$groom_anchor" "${WORK}/groom-rule"; then
     ok "groom: exactly one paragraph carries the deferral"
     states "groom: must carry the written mutant" \
         "${WORK}/groom-rule" 'must carry the written mutant'
@@ -118,20 +114,19 @@ if paragraph "${WORK}/groom-flat" \
     states "groom: the read-verified alternative" \
         "${WORK}/groom-rule" 'say **read-verified**'
 else
-    bad "groom: no single paragraph carries 'Every acceptance criterion, existing or drafted, must meet §2c'"
+    bad "groom: no single paragraph carries '${groom_anchor}'"
 fi
 
 # (p) docket-plan's own mutant-writing rule, which groom defers to.
-if paragraph "${WORK}/plan-flat" \
-    '**A mechanized check with no written mutant is not mechanized.**' \
-    "${WORK}/plan-rule"; then
+plan_anchor='**A mechanized check with no written mutant is not mechanized.**'
+if paragraph "${WORK}/plan-flat" "$plan_anchor" "${WORK}/plan-rule"; then
     ok "plan: exactly one paragraph carries the mutant rule"
     states "plan: write down the MUTANT" \
         "${WORK}/plan-rule" 'write down the MUTANT'
     states "plan: the read-verified alternative" \
         "${WORK}/plan-rule" 'mark it **read-verified**'
 else
-    bad "plan: no single paragraph carries '**A mechanized check with no written mutant is not mechanized.**'"
+    bad "plan: no single paragraph carries '${plan_anchor}'"
 fi
 
 if [ "$fail" -ne 0 ]; then

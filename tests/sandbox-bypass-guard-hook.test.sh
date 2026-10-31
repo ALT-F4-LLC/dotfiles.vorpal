@@ -71,14 +71,20 @@ build_input() {
           else . end'
 }
 
-assert_verdict() {
-    local cmd="$1" agent="$2" bypass="$3" want="$4" label="$5" got
-    got=$(verdict_of "$(build_input "$cmd" "$agent" "$bypass")")
+# check_verdict <input JSON> <want> <label>
+check_verdict() {
+    local want="$2" label="$3" got
+    got=$(verdict_of "$1")
     if [ "$got" = "$want" ]; then
         pass "${label} (${want})"
     else
         fail "${label} (want ${want}, got ${got})"
     fi
+}
+
+# assert_verdict <command> <agent_type or ""> <bypass> <want> <label>
+assert_verdict() {
+    check_verdict "$(build_input "$1" "$2" "$3")" "$4" "$5"
 }
 
 GOCMD='vorpal run go:1.26.0 test ./... -C "/work/repo"'
@@ -110,19 +116,13 @@ case_only_bash_and_only_boolean_true() {
     # The harness sends the flag as a JSON boolean; a string "true" is not a
     # lift and must not deny, or a future schema quirk turns into false denies.
     assert_verdict "$GOCMD" executor-write string ALLOW "string \"true\" is not the boolean flag"
-    local raw
-    raw=$(jq -nc '{tool_name:"Read", tool_input:{file_path:"/x", dangerouslyDisableSandbox:true}, agent_type:"executor-write"}')
-    local got
-    got=$(verdict_of "$raw")
-    [ "$got" = "ALLOW" ] && pass "non-Bash tool carrying the flag (ALLOW)" || fail "non-Bash tool carrying the flag (want ALLOW, got ${got})"
+    check_verdict "$(jq -nc '{tool_name:"Read", tool_input:{file_path:"/x", dangerouslyDisableSandbox:true}, agent_type:"executor-write"}')" \
+        ALLOW "non-Bash tool carrying the flag"
 }
 
 case_malformed_input_allows() {
-    local got
-    got=$(verdict_of '')
-    [ "$got" = "ALLOW" ] && pass "empty stdin (ALLOW)" || fail "empty stdin (want ALLOW, got ${got})"
-    got=$(verdict_of 'not json')
-    [ "$got" = "ALLOW" ] && pass "non-JSON stdin (ALLOW)" || fail "non-JSON stdin (want ALLOW, got ${got})"
+    check_verdict '' ALLOW "empty stdin"
+    check_verdict 'not json' ALLOW "non-JSON stdin"
 }
 
 # The deny reason must keep telling the executor what to do instead, so a
@@ -157,28 +157,28 @@ build_input_with_transcript() { # <command> <agent_type or ""> <bypass> <transcr
 case_transcript_fallback() {
     local wave_transcript="${WORK}/wave-seat.jsonl"
     printf '%s\n' '{"role":"user","content":"...docket step claim STEP-42 --owner wave:STEP-42 --render --json > <TMP>/STEP-42.d/STEP-42.claim.json..."}' >"$wave_transcript"
-    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" "" true "$wave_transcript")")
-    [ "$got" = "DENY" ] && pass "wave seat brief in transcript, agent_type absent (DENY)" || fail "wave seat brief in transcript, agent_type absent (want DENY, got ${got})"
+    check_verdict "$(build_input_with_transcript "$GOCMD" "" true "$wave_transcript")" \
+        DENY "wave seat brief in transcript, agent_type absent"
 
     local tribunal_transcript="${WORK}/tribunal-seat.jsonl"
     printf '%s\n' '{"role":"user","content":"THE PROPOSAL:   DKT-V338\nWORKING DIR:    /repo\n...docket vote cast DKT-V338 --voter judge-security..."}' >"$tribunal_transcript"
-    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" "" true "$tribunal_transcript")")
-    [ "$got" = "DENY" ] && pass "tribunal seat brief in transcript, agent_type absent (DENY)" || fail "tribunal seat brief in transcript, agent_type absent (want DENY, got ${got})"
+    check_verdict "$(build_input_with_transcript "$GOCMD" "" true "$tribunal_transcript")" \
+        DENY "tribunal seat brief in transcript, agent_type absent"
 
     # Positive control: agent_type still wins when both are present.
-    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" executor-write true "$wave_transcript")")
-    [ "$got" = "DENY" ] && pass "wave seat brief AND agent_type set (DENY)" || fail "wave seat brief AND agent_type set (want DENY, got ${got})"
+    check_verdict "$(build_input_with_transcript "$GOCMD" executor-write true "$wave_transcript")" \
+        DENY "wave seat brief AND agent_type set"
 
     # Negative control: an operator transcript that never mentions a seat
     # brief must not be caught by the fallback.
     local operator_transcript="${WORK}/operator.jsonl"
     printf '%s\n' '{"role":"user","content":"help me debug this docker build, see STEP one of the README"}' >"$operator_transcript"
-    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" "" true "$operator_transcript")")
-    [ "$got" = "ALLOW" ] && pass "ordinary transcript, agent_type absent (ALLOW)" || fail "ordinary transcript, agent_type absent (want ALLOW, got ${got})"
+    check_verdict "$(build_input_with_transcript "$GOCMD" "" true "$operator_transcript")" \
+        ALLOW "ordinary transcript, agent_type absent"
 
     # Missing/unreadable transcript_path must not itself deny.
-    got=$(verdict_of "$(build_input_with_transcript "$GOCMD" "" true "${WORK}/does-not-exist.jsonl")")
-    [ "$got" = "ALLOW" ] && pass "unreadable transcript_path, agent_type absent (ALLOW)" || fail "unreadable transcript_path, agent_type absent (want ALLOW, got ${got})"
+    check_verdict "$(build_input_with_transcript "$GOCMD" "" true "${WORK}/does-not-exist.jsonl")" \
+        ALLOW "unreadable transcript_path, agent_type absent"
 }
 
 case_friction_log_records_decisions() {

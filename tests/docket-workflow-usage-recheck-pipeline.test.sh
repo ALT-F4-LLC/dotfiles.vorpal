@@ -113,7 +113,7 @@ const pipeline = (items, ...stages) => Promise.all(items.map(async (item, i) => 
     let r = item
     try {
         for (const stage of stages) r = await stage(r, item, i)
-    } catch (e) {
+    } catch {
         return null
     }
     return r
@@ -123,9 +123,7 @@ const run = async () => {
 JS
     cat "${WORK}/region.js"
     printf 'return { results, errors }\n}\n'
-} > "${WORK}/suite.mjs"
-
-cat >> "${WORK}/suite.mjs" <<'JS'
+    cat <<'JS'
 
 let pass = 0
 let fail = 0
@@ -276,6 +274,6 @@ const GOOD = (bootstrap) => ({ ok: true, bootstrap, usage: USAGE, tool_uses: 0 }
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS
+} > "${WORK}/suite.mjs"
 
 node "${WORK}/suite.mjs"
-exit $?

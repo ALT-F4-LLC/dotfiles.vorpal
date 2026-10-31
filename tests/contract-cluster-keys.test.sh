@@ -67,26 +67,22 @@ fi
 
 fail=0
 
-comm -23 "${WORK}/fence" "${WORK}/schema-properties" > "${WORK}/fence-only"
-while read -r key; do
-    [ -n "$key" ] || continue
-    echo "FAIL ${key}: fenced in the contract but not a findings-cluster@7 property"
-    fail=1
-done < "${WORK}/fence-only"
+# Report each name in $1 that is absent from $2, with message $3.
+report_missing() {
+    local key
+    while read -r key; do
+        [ -n "$key" ] || continue
+        echo "FAIL ${key}: $3"
+        fail=1
+    done < <(comm -23 "$1" "$2")
+}
 
-comm -13 "${WORK}/fence" "${WORK}/schema-properties" > "${WORK}/schema-only"
-while read -r key; do
-    [ -n "$key" ] || continue
-    echo "FAIL ${key}: a findings-cluster@7 property the contract's fence omits"
-    fail=1
-done < "${WORK}/schema-only"
-
-comm -23 "${WORK}/schema-required" "${WORK}/fence" > "${WORK}/required-missing"
-while read -r key; do
-    [ -n "$key" ] || continue
-    echo "FAIL ${key}: required by findings-cluster@7 but not named in the contract's fence"
-    fail=1
-done < "${WORK}/required-missing"
+report_missing "${WORK}/fence" "${WORK}/schema-properties" \
+    "fenced in the contract but not a findings-cluster@7 property"
+report_missing "${WORK}/schema-properties" "${WORK}/fence" \
+    "a findings-cluster@7 property the contract's fence omits"
+report_missing "${WORK}/schema-required" "${WORK}/fence" \
+    "required by findings-cluster@7 but not named in the contract's fence"
 
 if [ "$fail" -ne 0 ]; then
     echo "contract-cluster-keys: FAIL" >&2

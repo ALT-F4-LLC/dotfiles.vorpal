@@ -62,11 +62,10 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     extract configuration || fatal "bad or missing TEST markers for configuration"
     extract park-signals || fatal "bad or missing TEST markers for park-signals"
     extract chain-dead   || fatal "bad or missing TEST markers for chain-dead"
-} > "${WORK}/predicates.js" || exit 2
+} > "${WORK}/suite.js" || exit 2
 
-[ -s "${WORK}/predicates.js" ] || fatal "extracted predicate region is empty"
+[ -s "${WORK}/suite.js" ] || fatal "extracted predicate region is empty"
 
-cat "${WORK}/predicates.js" > "${WORK}/suite.js"
 cat >> "${WORK}/suite.js" <<'JS'
 
 let pass = 0
@@ -287,8 +286,8 @@ ok(recordTail(executorReplyText('STEP-12', reply('none', 'none', 'Quoting the ol
     'structured: a tail the report only quotes is not a record when recorded is none')
 ok(executorReplyText('STEP-12', reply('done', 'none', 'Done.\n\nSTEP-12 recorded (done)')) === 'Done.\n\nSTEP-12 recorded (done)',
     'structured: a report already ending in the matching tail is kept as is')
-ok(recordTail(executorReplyText('STEP-12', reply('none', 'none', 'I stopped.'))) === null &&
-    stopSignal(executorReplyText('STEP-12', reply('none', 'none', 'I stopped.'))) === null,
+const UNRECORDED = executorReplyText('STEP-12', reply('none', 'none', 'I stopped.'))
+ok(recordTail(UNRECORDED) === null && stopSignal(UNRECORDED) === null,
     'structured: neither a record nor a signal settles unrecorded')
 ok(executorReplyText('STEP-12', null) === null,
     'structured: a null reply stays null for the null-recovery path')

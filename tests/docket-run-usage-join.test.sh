@@ -199,13 +199,13 @@ golden() {
 
 # ---- the golden diff ------------------------------------------------------------
 golden steps "" '[]'; rc=$?
-ok $([ "$rc" -eq 0 ] && echo 0 || echo 1) "steps mode: rows, overhead, skips and model observations equal the workflow's (rc ${rc})"
+ok "$rc" "steps mode: rows, overhead, skips and model observations equal the workflow's (rc ${rc})"
 golden seats "" '[]'; rc=$?
-ok $([ "$rc" -eq 0 ] && echo 0 || echo 1) "seats mode: rows, skips and model observations equal the workflow's (rc ${rc})"
+ok "$rc" "seats mode: rows, skips and model observations equal the workflow's (rc ${rc})"
 golden steps "STEP-9" '["STEP-9"]'; rc=$?
-ok $([ "$rc" -eq 0 ] && echo 0 || echo 1) "steps mode with an excluded step equals the workflow's (rc ${rc})"
+ok "$rc" "steps mode with an excluded step equals the workflow's (rc ${rc})"
 golden seats "alice" '["alice"]'; rc=$?
-ok $([ "$rc" -eq 0 ] && echo 0 || echo 1) "seats mode with an excluded seat equals the workflow's (rc ${rc})"
+ok "$rc" "seats mode with an excluded seat equals the workflow's (rc ${rc})"
 
 # ---- values that must not be wrong in both at once -------------------------------
 ROWS=$(uj "$WAVE" --mode steps)
@@ -251,7 +251,7 @@ ok $([ "$rc" -eq 2 ] && echo 0 || echo 1) "a steps-mode --exclude entry that is 
 ok $rc "a padded --exclude list is trimmed and excludes each step"
 # ---- the script carries the workflow's jq, and spawns no agent -----------------------
 ref x '[]' extract-jq > "$WORK/js-extract.jq" 2>/dev/null
-ok $(cmp -s "$WORK/js-extract.jq" "$SCRIPTS_DIR/usage_extract.jq" && echo 0 || echo 1) "usage_extract.jq is the workflow's EXTRACT_JQ verbatim"
+cmp -s "$WORK/js-extract.jq" "$SCRIPTS_DIR/usage_extract.jq"; ok $? "usage_extract.jq is the workflow's EXTRACT_JQ verbatim"
 ok $(! grep -q -e 'claude -' -e 'Workflow(' -e 'scriptPath' "$SCRIPTS_DIR/usage_join.sh" "$SCRIPTS_DIR/usage_extract.jq" "$SCRIPTS_DIR/usage_reduce.jq" && echo 0 || echo 1) "the reader names no agent launch"
 
 # ---- mutants: the golden diff must notice each ---------------------------------------

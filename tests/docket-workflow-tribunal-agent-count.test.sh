@@ -98,9 +98,7 @@ const agent = (brief, opts) => {
 // {throwErr} to make the whole workflow() call reject (tribunal.js never
 // ran, so it must add nothing to agentsLaunched).
 let WORKFLOW_SCRIPT = {}
-let WORKFLOW_CALLS = []
 const workflow = (path, a) => {
-    WORKFLOW_CALLS.push({ voters: a.voters.map((v) => v.seat), isRespawn: Boolean(a.isRespawn) })
     if (WORKFLOW_SCRIPT.throwErr !== undefined) return Promise.reject(new Error(WORKFLOW_SCRIPT.throwErr))
     const reply = Array.isArray(WORKFLOW_SCRIPT.replies) ? WORKFLOW_SCRIPT.replies.shift() : WORKFLOW_SCRIPT.replies
     return Promise.resolve(reply !== undefined ? reply : { voteId: a.voteId, seatsSpawned: a.voters.length, absorbed: [] })
@@ -110,9 +108,7 @@ JS
     cat "${WORK}/park.js"
     cat "${WORK}/chain.js"
     cat "${WORK}/gate.js"
-} > "${WORK}/suite.mjs"
-
-cat >> "${WORK}/suite.mjs" <<'JS'
+    cat <<'JS'
 
 let pass = 0
 let fail = 0
@@ -151,7 +147,6 @@ const APPROVED = envelope('done', 'approved', [])
 const run = async (script, wfScript, baseline) => {
     SCRIPT = script
     WORKFLOW_SCRIPT = wfScript || {}
-    WORKFLOW_CALLS = []
     CALLS = []
     LOG.length = 0
     agentsLaunched = baseline
@@ -226,6 +221,6 @@ const run = async (script, wfScript, baseline) => {
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS
+} > "${WORK}/suite.mjs"
 
 node "${WORK}/suite.mjs"
-exit $?

@@ -75,8 +75,7 @@ extract park-signals       > "${WORK}/park.js"          || fatal "bad or missing
 extract target-envelope    > "${WORK}/envelope.js"      || fatal "bad or missing TEST markers for target-envelope"
 extract fix-round-ancestry > "${WORK}/ancestry.js"      || fatal "bad or missing TEST markers for fix-round-ancestry"
 extract stage-ladder       > "${WORK}/ladder.js"        || fatal "bad or missing TEST markers for stage-ladder"
-grep -q 'concurrencyWeight' "${WORK}/ladder.js" || fatal "stage-ladder region no longer computes concurrencyWeight — has the weighted-admission fix changed shape?"
-grep -q 'function concurrencyWeight' "${WORK}/ladder.js" || fatal "concurrencyWeight is referenced but not defined in the extracted region"
+grep -q 'function concurrencyWeight' "${WORK}/ladder.js" || fatal "stage-ladder region no longer defines concurrencyWeight — has the weighted-admission fix changed shape?"
 
 {
     cat "${WORK}/configuration.js"
@@ -99,25 +98,25 @@ const settleFor = (row) => {
 }
 let HOLD = new Set()
 let OPEN = new Map()
-const spawn = (row) => {
-    SPAWNED.push(row.step)
-    const canned = settleFor(row) === undefined
-        ? { step: row.step, status: 'returned', text: `${row.step} recorded (done)` }
-        : settleFor(row)
+// Resolve with the row's canned result (or `fallback`), or hold it in OPEN
+// until finish() releases it.
+const holdable = (row, fallback) => {
+    const r = settleFor(row)
+    const canned = r === undefined ? fallback : r
     if (!HOLD.has(row.step)) return Promise.resolve(canned)
     return new Promise((resolve) => OPEN.set(row.step, () => resolve(canned)))
 }
+const spawn = (row) => {
+    SPAWNED.push(row.step)
+    return holdable(row, { step: row.step, status: 'returned', text: `${row.step} recorded (done)` })
+}
 // HOLDABLE runGate: unlike docket-workflow-issue-lanes.test.sh's stub (which always
-// resolves immediately), this one mirrors spawn()'s HOLD/OPEN pattern so a
+// resolves immediately), this one shares spawn()'s HOLD/OPEN pattern so a
 // vote row can be observed occupying its harness weight before it settles —
 // the exact window this suite needs to watch.
 const runGate = (row) => {
     GATES.push(row.step)
-    const canned = settleFor(row) === undefined
-        ? { step: row.step, status: 'gate-passed', text: '{"status":"done"}' }
-        : settleFor(row)
-    if (!HOLD.has(row.step)) return Promise.resolve(canned)
-    return new Promise((resolve) => OPEN.set(row.step, () => resolve(canned)))
+    return holdable(row, { step: row.step, status: 'gate-passed', text: '{"status":"done"}' })
 }
 let PROBED = []
 const probe = (_cmd, _label, _phase, step) => {

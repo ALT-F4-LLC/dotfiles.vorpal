@@ -44,32 +44,22 @@ impl Neovim {
             YamlLanguageServer::new().build(context).await?,
         ];
 
-        let mut ftplugins = vec![];
+        let markdown_vim_name = format!("{}-neovim-ftplugin-markdown-vim", self.name);
 
-        let markdown_vim = FileCreate::new(
-            &format!("{}-neovim-ftplugin-markdown-vim", self.name),
-            self.systems.clone(),
-            "setlocal wrap",
-        )
-        .build(context)
-        .await?;
+        let markdown_vim = FileCreate::new(&markdown_vim_name, self.systems, "setlocal wrap")
+            .build(context)
+            .await?;
 
-        ftplugins.push(markdown_vim.clone());
+        let symlinks = vec![(
+            format!("{}/{markdown_vim_name}", get_env_key(&markdown_vim)),
+            "${HOME}/.config/nvim/after/ftplugin/markdown.vim".to_string(),
+        )];
 
         let artifacts = binaries
             .into_iter()
-            .chain(ftplugins)
+            .chain([markdown_vim])
             .chain(language_servers)
             .collect();
-
-        let symlinks = vec![(
-            format!(
-                "{}/{}-neovim-ftplugin-markdown-vim",
-                get_env_key(&markdown_vim),
-                self.name
-            ),
-            "${HOME}/.config/nvim/after/ftplugin/markdown.vim".to_string(),
-        )];
 
         Ok((artifacts, symlinks))
     }

@@ -1,7 +1,7 @@
 [pipeline]
 description = "Small ordinary change, bound by the `small` label. Implement with the full gate list; one correctness judge routes a blocker straight to the fix loop. AC verification uses a single-seat tribunal on an unverifiable or out-of-scope AC, and the bounded fix loop re-enters at review. The conductor integrates commits; the operator publishes."
 name = "small-change"
-version = 17
+version = 18
 
 [match]
 labels_any = ["small"]
@@ -23,9 +23,9 @@ unless_labels = [
 ]
 
 [limits]
-"judge-correctness" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
+"judge-correctness" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"verify-ac" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 8, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

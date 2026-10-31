@@ -1,7 +1,7 @@
 [pipeline]
 description = "Security-track change: threat model first, security judge, abuse-case gate, vote-gated acceptance."
 name = "security-change"
-version = 57
+version = 58
 
 [match]
 labels_any = ["security-change", "security-load-bearing", "security"]
@@ -18,15 +18,15 @@ unless_labels = [
 ]
 
 [limits]
-"drain-highs" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"judge-architecture" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"judge-correctness" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"judge-security" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"judge-testing" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"synthesize-findings" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"threat-model" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
+"drain-highs" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-architecture" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-correctness" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-security" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-testing" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"synthesize-findings" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"threat-model" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"verify-ac" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 8, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

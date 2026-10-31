@@ -3,6 +3,12 @@
 Version history of `workflows/investigation.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 26
+
+Lowers the `max` concurrency limit from 16 to 8 for every `[limits]` entry.
+`lease_ttl` and `max_step_duration` are unchanged. No topology, routing, or
+reduction change.
+
 ## 25
 
 The `research` step's payload repoints from research-notes@2 to

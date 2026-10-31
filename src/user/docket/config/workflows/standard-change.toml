@@ -1,7 +1,7 @@
 [pipeline]
 description = "Implement, review, reconcile, and verify one ordinary change; the conductor integrates commits, the operator publishes."
 name = "standard-change"
-version = 56
+version = 57
 
 [match]
 unless_labels = [
@@ -24,13 +24,13 @@ unless_labels = [
 ]
 
 [limits]
-"drain-highs" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"judge-architecture" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"judge-correctness" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"judge-testing" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"synthesize-findings" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"verify-ac" = { max = 16, lease_ttl = "1h", max_step_duration = "1h" }
-"write" = { max = 16, lease_ttl = "2h", max_step_duration = "2h" }
+"drain-highs" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-architecture" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-correctness" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"judge-testing" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"synthesize-findings" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"verify-ac" = { max = 8, lease_ttl = "1h", max_step_duration = "1h" }
+"write" = { max = 8, lease_ttl = "2h", max_step_duration = "2h" }
 
 [[step]]
 after = []

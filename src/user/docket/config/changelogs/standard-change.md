@@ -3,6 +3,12 @@
 Version history of `workflows/standard-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 57
+
+Lowers the `max` concurrency limit from 16 to 8 for every `[limits]` entry.
+`lease_ttl` and `max_step_duration` are unchanged. No topology, routing, or
+reduction change.
+
 ## 56
 
 The reconcile aggregate declares `source_field = "member_sources"`, so the

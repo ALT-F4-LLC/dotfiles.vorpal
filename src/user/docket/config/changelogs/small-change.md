@@ -3,6 +3,12 @@
 Version history of `workflows/small-change.toml`, newest first. Each heading is
 the `[pipeline].version` the entry describes.
 
+## 18
+
+Lowers the `max` concurrency limit from 16 to 8 for every `[limits]` entry.
+`lease_ttl` and `max_step_duration` are unchanged. No topology, routing, or
+reduction change.
+
 ## 17
 
 Repoints the verify-ac payload to ac-report@4, a title and description

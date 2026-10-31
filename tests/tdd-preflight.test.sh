@@ -52,6 +52,11 @@ fatal() {
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/tdd-preflight-test.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 
+commit_all() { # <dir> <msg>
+    git -C "$1" add -A
+    git -C "$1" commit -qm "$2" || fatal "fixture commit failed in $1"
+}
+
 # fresh_repo <name>: a repo with one base commit holding the gate and a
 # well-named TDD. Prints the repo path.
 fresh_repo() {
@@ -64,14 +69,8 @@ fresh_repo() {
     cp "$(dirname "$GATE")/gate-range" "${dir}/.docket/bin/gate-range"
     chmod +x "${dir}/.docket/bin/tdd-preflight"
     printf '# Existing\n' > "${dir}/docs/tdd/existing-feature.md"
-    git -C "$dir" add -A
-    git -C "$dir" commit -qm base || fatal "fixture commit failed in ${dir}"
+    commit_all "$dir" base
     printf '%s\n' "$dir"
-}
-
-commit_all() { # <dir> <msg>
-    git -C "$1" add -A
-    git -C "$1" commit -qm "$2" || fatal "fixture commit failed in $1"
 }
 
 head_of() { git -C "$1" rev-parse HEAD; }

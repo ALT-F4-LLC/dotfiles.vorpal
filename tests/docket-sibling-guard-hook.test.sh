@@ -188,28 +188,7 @@ build_sub_input() {
         | if $a != "" then .agent_type = $a else . end'
 }
 
-# assert_sub_verdict <command> <agent_type> <agent_id> <session_id> <transcript_path> <ALLOW|DENY> <label>
-assert_sub_verdict() {
-    local got
-    got=$(verdict_of "$(build_sub_input "$1" "$2" "$3" "$4" "$5")")
-    if [ "$got" = "$6" ]; then
-        pass "$7 ($6)"
-    else
-        fail "$7 (want $6, got ${got})"
-    fi
-}
-
-# assert_verdict <command> <agent_type> <transcript> <ALLOW|DENY> <label>
-assert_verdict() {
-    local cmd="$1" agent="$2" transcript="$3" want="$4" label="$5" got
-    got=$(verdict_of "$(build_input "$cmd" "$agent" "$transcript")")
-    if [ "$got" = "$want" ]; then
-        pass "${label} (${want})"
-    else
-        fail "${label} (want ${want}, got ${got})"
-    fi
-}
-
+# assert_verdict_raw <hook input JSON> <ALLOW|DENY> <label>
 assert_verdict_raw() {
     local raw="$1" want="$2" label="$3" got
     got=$(verdict_of "$raw")
@@ -218,6 +197,21 @@ assert_verdict_raw() {
     else
         fail "${label} (want ${want}, got ${got})"
     fi
+}
+
+# assert_verdict <command> <agent_type> <transcript> <ALLOW|DENY> <label>
+assert_verdict() {
+    assert_verdict_raw "$(build_input "$1" "$2" "$3")" "$4" "$5"
+}
+
+# assert_sub_verdict <command> <agent_type> <agent_id> <session_id> <transcript_path> <ALLOW|DENY> <label>
+assert_sub_verdict() {
+    assert_verdict_raw "$(build_sub_input "$1" "$2" "$3" "$4" "$5")" "$6" "$7"
+}
+
+# run_hook_at <hook path> <input>: one unbounded run of a hook copy.
+run_hook_at() {
+    PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "$1" <<<"$2"
 }
 
 # The one place the suite reads stderr: a deny must carry the hook's fixed
@@ -580,13 +574,12 @@ case_engine_verbs() {
 # Each case plants a marker file with known bytes and checks it is untouched
 # after the hook ran, whatever the verdict.
 case_probe_never_acts() {
-    local marker="${WORK}/probe-marker" err got
+    local marker="${WORK}/probe-marker"
     plant() { printf 'twelve bytes' >"$marker"; }
     intact() { [ "$(cat "$marker" 2>/dev/null)" = "twelve bytes" ]; }
     check() { # <label> <want> <command>
         plant
-        got=$(verdict_of "$(build_input "$3" executor-write "$WAVE_42")")
-        [ "$got" = "$2" ] && pass "${1} (${2})" || fail "${1} (want ${2}, got ${got})"
+        assert_verdict "$3" executor-write "$WAVE_42" "$2" "$1"
         intact && pass "${1}: marker untouched" || fail "${1}: the probe altered the marker ($(cat "$marker" 2>/dev/null | head -c 40))"
     }
     check "structural redirect (: > file)" DENY ": > ${marker}"
@@ -602,8 +595,7 @@ case_probe_never_acts() {
     check "vetoed leaf redirect stays inspectable and inert" ALLOW "cat /dev/null > ${marker}"
     local step_tmp_marker
     step_tmp_marker="$(work_root_for "${WORK}/STEP-10355.d/tmp")/probe-marker"
-    got=$(verdict_of "$(build_input "cat /dev/null > ${step_tmp_marker}" executor-write "$WAVE_42")")
-    [ "$got" = ALLOW ] && pass "marker under a TMPDIR inside a foreign STEP-N.d stays allowed (ALLOW)" || fail "marker under a TMPDIR inside a foreign STEP-N.d stays allowed (want ALLOW, got ${got})"
+    assert_verdict "cat /dev/null > ${step_tmp_marker}" executor-write "$WAVE_42" ALLOW "marker under a TMPDIR inside a foreign STEP-N.d stays allowed"
     check "vetoed leaf redirect onto own dir" ALLOW "echo x > ${OWN_DIR}/note.txt"
     check "handler redefinition" DENY "_guard_probe() { return 0; }; rm -rf ${OWN_DIR}/x; cat /dev/null > ${marker}"
     check "handler redefinition, function keyword" DENY "function _guard_probe { :; }; cat /dev/null > ${marker}"
@@ -650,7 +642,6 @@ case_probe_never_acts() {
 # ran would hit EOF before the body was walked. Each read site is vetoed once,
 # so the body is walked, then runs and ends the loop.
 case_read_loops() {
-    local err
     assert_verdict "printf 'a\\nb\\n' | while read x; do echo \$x; done" executor-write "$WAVE_42" ALLOW "read loop over finite piped input ends"
     assert_verdict "git status --short | while IFS= read -r f; do echo \"\$f\"; done" executor-write "$WAVE_42" ALLOW "IFS= read -r loop over piped input ends"
     assert_verdict "ls | while read d; do rm -rf ${SIB_DIR}/\$d; done" executor-write "$WAVE_42" DENY "read loop body naming a sibling dir"
@@ -1334,32 +1325,22 @@ case_git_spellings() {
 # A sibling's checkout destroyed by path, keyed to the caller's cwd.
 case_checkout_paths() {
     local own_wt="/repo/.claude/worktrees/wf_own" sib_wt="/repo/.claude/worktrees/wf_sib"
-    with_cwd() { build_input "$1" executor-write "$WAVE_42" | jq -c --arg c "$2" '.cwd = $c'; }
-    got=$(verdict_of "$(with_cwd "rm -rf ${sib_wt}" "$own_wt")")
-    [ "$got" = "DENY" ] && pass "rm -rf of a sibling's checkout (DENY)" || fail "rm -rf of a sibling's checkout (want DENY, got ${got})"
-    got=$(verdict_of "$(with_cwd "rm -rf /repo/.git/worktrees/wf_sib" "$own_wt")")
-    [ "$got" = "DENY" ] && pass "rm -rf of a sibling's .git/worktrees entry (DENY)" || fail "rm -rf of a sibling's .git/worktrees entry (want DENY, got ${got})"
-    got=$(verdict_of "$(with_cwd "mv ${sib_wt} /tmp/x" "$own_wt")")
-    [ "$got" = "DENY" ] && pass "mv of a sibling's checkout (DENY)" || fail "mv of a sibling's checkout (want DENY, got ${got})"
-    got=$(verdict_of "$(with_cwd "rm -rf ${own_wt}/target" "$own_wt")")
-    [ "$got" = "ALLOW" ] && pass "rm -rf inside own checkout (ALLOW)" || fail "rm -rf inside own checkout (want ALLOW, got ${got})"
-    got=$(verdict_of "$(with_cwd "cat ${sib_wt}/src/main.rs" "$own_wt")")
-    [ "$got" = "ALLOW" ] && pass "a judge reads a sibling's checkout (ALLOW)" || fail "a judge reads a sibling's checkout (want ALLOW, got ${got})"
-    got=$(verdict_of "$(with_cwd "git -C ${sib_wt} diff HEAD~1" "$own_wt")")
-    [ "$got" = "ALLOW" ] && pass "git -C into a sibling's checkout for a diff (ALLOW)" || fail "git -C into a sibling's checkout (want ALLOW, got ${got})"
+    assert_in_own_wt() { # <command> <ALLOW|DENY> <label>
+        assert_verdict_raw "$(build_input "$1" executor-write "$WAVE_42" | jq -c --arg c "$own_wt" '.cwd = $c')" "$2" "$3"
+    }
+    assert_in_own_wt "rm -rf ${sib_wt}" DENY "rm -rf of a sibling's checkout"
+    assert_in_own_wt "rm -rf /repo/.git/worktrees/wf_sib" DENY "rm -rf of a sibling's .git/worktrees entry"
+    assert_in_own_wt "mv ${sib_wt} /tmp/x" DENY "mv of a sibling's checkout"
+    assert_in_own_wt "rm -rf ${own_wt}/target" ALLOW "rm -rf inside own checkout"
+    assert_in_own_wt "cat ${sib_wt}/src/main.rs" ALLOW "a judge reads a sibling's checkout"
+    assert_in_own_wt "git -C ${sib_wt} diff HEAD~1" ALLOW "git -C into a sibling's checkout for a diff"
     assert_verdict "rm -rf /repo/.claude/worktrees/wf_x" executor-write "$WAVE_42" DENY "rm -rf of a checkout with no cwd known"
-    got=$(verdict_of "$(with_cwd "cat /dev/null > ${sib_wt}/.git" "$own_wt")")
-    [ "$got" = "DENY" ] && pass "redirect into a sibling's gitdir pointer (DENY)" || fail "redirect into a sibling's gitdir pointer (want DENY, got ${got})"
-    got=$(verdict_of "$(with_cwd "echo x >> ${sib_wt}/src/main.rs" "$own_wt")")
-    [ "$got" = "DENY" ] && pass "append into a sibling's source file (DENY)" || fail "append into a sibling's source file (want DENY, got ${got})"
-    got=$(verdict_of "$(with_cwd "echo x >${sib_wt}/note" "$own_wt")")
-    [ "$got" = "DENY" ] && pass "glued redirect into a sibling's checkout (DENY)" || fail "glued redirect into a sibling's checkout (want DENY, got ${got})"
-    got=$(verdict_of "$(with_cwd "cargo build 2>&1 > ${own_wt}/build.log" "$own_wt")")
-    [ "$got" = "ALLOW" ] && pass "redirect into own checkout (ALLOW)" || fail "redirect into own checkout (want ALLOW, got ${got})"
-    got=$(verdict_of "$(with_cwd "cat ${sib_wt}/.git" "$own_wt")")
-    [ "$got" = "ALLOW" ] && pass "reading a sibling's gitdir pointer (ALLOW)" || fail "reading a sibling's gitdir pointer (want ALLOW, got ${got})"
-    got=$(verdict_of "$(with_cwd "diff ${own_wt}/a ${sib_wt}/a > ${own_wt}/d.patch" "$own_wt")")
-    [ "$got" = "ALLOW" ] && pass "sibling path as a read operand beside an own-dir redirect (ALLOW)" || fail "sibling read operand with own redirect (want ALLOW, got ${got})"
+    assert_in_own_wt "cat /dev/null > ${sib_wt}/.git" DENY "redirect into a sibling's gitdir pointer"
+    assert_in_own_wt "echo x >> ${sib_wt}/src/main.rs" DENY "append into a sibling's source file"
+    assert_in_own_wt "echo x >${sib_wt}/note" DENY "glued redirect into a sibling's checkout"
+    assert_in_own_wt "cargo build 2>&1 > ${own_wt}/build.log" ALLOW "redirect into own checkout"
+    assert_in_own_wt "cat ${sib_wt}/.git" ALLOW "reading a sibling's gitdir pointer"
+    assert_in_own_wt "diff ${own_wt}/a ${sib_wt}/a > ${own_wt}/d.patch" ALLOW "sibling path as a read operand beside an own-dir redirect"
     # `[n]<>` opens its target read-write and creates it, so it writes into
     # a sibling as surely as `>` does; a plain `<` only reads.
     local rw
@@ -1484,15 +1465,15 @@ case_prepass_installation() {
     local alone="${WORK}/alone" beside="${WORK}/beside" got
     mkdir -p "$alone" "$beside"
     cp "$HOOK" "${alone}/hook.sh"
-    got=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${alone}/hook.sh" >/dev/null 2>&1 <<<"$(build_input "ls" executor-write "$WAVE_42")"; [ $? -eq 2 ] && printf DENY || printf ALLOW)
+    got=$(run_hook_at "${alone}/hook.sh" "$(build_input "ls" executor-write "$WAVE_42")" >/dev/null 2>&1; [ $? -eq 2 ] && printf DENY || printf ALLOW)
     [ "$got" = "DENY" ] && pass "missing pre-pass file fails closed (DENY)" || fail "missing pre-pass file (want DENY, got ${got})"
     cp "$HOOK" "${beside}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${beside}/"
     cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${beside}/"
     cp "$(dirname "$HOOK")/docket-guard-probe.sh" "${beside}/"
-    got=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${beside}/hook.sh" >/dev/null 2>&1 <<<"$(build_input "rm -rf ${SIB_DIR}" executor-write "$WAVE_42")"; [ $? -eq 2 ] && printf DENY || printf ALLOW)
+    got=$(run_hook_at "${beside}/hook.sh" "$(build_input "rm -rf ${SIB_DIR}" executor-write "$WAVE_42")" >/dev/null 2>&1; [ $? -eq 2 ] && printf DENY || printf ALLOW)
     [ "$got" = "DENY" ] && pass "installed copy with pre-pass beside it denies a foreign dir (DENY)" || fail "installed copy with pre-pass (want DENY, got ${got})"
-    got=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${beside}/hook.sh" >/dev/null 2>&1 <<<"$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")"; [ $? -eq 2 ] && printf DENY || printf ALLOW)
+    got=$(run_hook_at "${beside}/hook.sh" "$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")" >/dev/null 2>&1; [ $? -eq 2 ] && printf DENY || printf ALLOW)
     [ "$got" = "ALLOW" ] && pass "installed copy with pre-pass beside it allows the own sweep (ALLOW)" || fail "installed copy own sweep (want ALLOW, got ${got})"
 }
 
@@ -1506,7 +1487,7 @@ case_leaf_lines_installation() {
     cp "$HOOK" "${no_leaf}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "${no_leaf}/"
     cp "$(dirname "$HOOK")/docket-guard-probe.sh" "${no_leaf}/"
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${no_leaf}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")")
+    err=$(run_hook_at "${no_leaf}/hook.sh" "$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")" 2>&1 >/dev/null)
     [ $? -eq 2 ] && got=DENY || got=ALLOW
     [ "$got" = "DENY" ] && pass "missing line-selection file fails closed on the own sweep (DENY)" || fail "missing line-selection file (want DENY, got ${got})"
     case "$err" in
@@ -1516,7 +1497,7 @@ case_leaf_lines_installation() {
     cp "$HOOK" "${no_prepass}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${no_prepass}/"
     cp "$(dirname "$HOOK")/docket-guard-probe.sh" "${no_prepass}/"
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${no_prepass}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "ls" executor-write "$WAVE_42")")
+    err=$(run_hook_at "${no_prepass}/hook.sh" "$(build_input "ls" executor-write "$WAVE_42")" 2>&1 >/dev/null)
     [ $? -eq 2 ] && got=DENY || got=ALLOW
     [ "$got" = "DENY" ] && pass "missing pre-pass file beside the line-selection file fails closed (DENY)" || fail "missing pre-pass file beside the line-selection file (want DENY, got ${got})"
     case "$err" in
@@ -1533,7 +1514,7 @@ case_probe_installation() {
     mkdir -p "$no_probe"
     cp "$HOOK" "${no_probe}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-prepass.awk" "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "${no_probe}/"
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${no_probe}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")")
+    err=$(run_hook_at "${no_probe}/hook.sh" "$(build_input "rm -rf ${OWN_DIR}" executor-write "$WAVE_42")" 2>&1 >/dev/null)
     [ $? -eq 2 ] && got=DENY || got=ALLOW
     [ "$got" = "DENY" ] && pass "missing probe file fails closed on the own sweep (DENY)" || fail "missing probe file (want DENY, got ${got})"
     case "$err" in
@@ -1555,7 +1536,7 @@ case_match_program_failure() {
         fail "unparseable match program: the fixture edit did not apply"
         return
     fi
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${broken}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "ls" executor-write "$WAVE_42")")
+    err=$(run_hook_at "${broken}/hook.sh" "$(build_input "ls" executor-write "$WAVE_42")" 2>&1 >/dev/null)
     [ $? -eq 2 ] && got=DENY || got=ALLOW
     [ "$got" = "DENY" ] && pass "unparseable match program fails closed (DENY)" || fail "unparseable match program (want DENY, got ${got})"
     case "$err" in
@@ -1574,7 +1555,7 @@ case_prepass_program_failure() {
     cp "$HOOK" "${broken}/hook.sh"
     cp "$(dirname "$HOOK")/docket-guard-leaf-lines.awk" "$(dirname "$HOOK")/docket-guard-probe.sh" "${broken}/"
     { cat "$(dirname "$HOOK")/docket-guard-prepass.awk"; printf '%s\n' 'BEGIN { x = = 1 }'; } >"${broken}/docket-guard-prepass.awk"
-    err=$(PATH="$TOOLS_DIR" HOME="${WORK}/home" "$BASH_BIN" "${broken}/hook.sh" 2>&1 >/dev/null <<<"$(build_input "ls" executor-write "$WAVE_42")")
+    err=$(run_hook_at "${broken}/hook.sh" "$(build_input "ls" executor-write "$WAVE_42")" 2>&1 >/dev/null)
     [ $? -eq 2 ] && got=DENY || got=ALLOW
     [ "$got" = "DENY" ] && pass "unparseable pre-pass program fails closed (DENY)" || fail "unparseable pre-pass program (want DENY, got ${got})"
     case "$err" in

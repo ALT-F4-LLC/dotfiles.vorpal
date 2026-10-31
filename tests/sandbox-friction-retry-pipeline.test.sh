@@ -163,9 +163,7 @@ const pipeline = (items, ...stages) => Promise.all(items.map(async (item, i) => 
 }))
 JS
     cat "${WORK}/region.js"
-} > "${WORK}/suite.mjs"
-
-cat >> "${WORK}/suite.mjs" <<'JS'
+    cat <<'JS'
 
 let pass = 0
 let fail = 0
@@ -181,7 +179,7 @@ const resolveHeld = (label, value) => {
     HOLD_RESOLVERS.delete(label)
     h(value)
 }
-const g = (subject, count) => ({ subject, kind: 'sandbox-denial', count: count || 1, bypasses: 0, repos: 1, example: 'echo hi', tool_name: 'Bash', agent_id: '', file_path: '' })
+const g = (subject) => ({ subject, kind: 'sandbox-denial', count: 1, bypasses: 0, repos: 1, example: 'echo hi', tool_name: 'Bash', agent_id: '', file_path: '' })
 
 // ---- (0) the filed description names the tool and the agent ------------
 {
@@ -265,6 +263,7 @@ const g = (subject, count) => ({ subject, kind: 'sandbox-denial', count: count |
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS
+} > "${WORK}/suite.mjs"
 
 node "${WORK}/suite.mjs"
 status=$?

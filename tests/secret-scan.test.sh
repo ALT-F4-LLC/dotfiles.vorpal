@@ -124,10 +124,16 @@ expect "env base: benign commit in range passes" 0 "secret-scan: clean" "$r" \
 # A git shim ahead of the real one on PATH fails `ls-files` only; every other
 # git call passes through. The enumeration's exit status used to vanish into a
 # process substitution, so this read as "no untracked files" and passed.
-SHIM="$WORK/shim"; mkdir -p "$SHIM"
 REAL_GIT=$(command -v git)
-printf '#!/bin/bash\nfor a in "$@"; do [ "$a" = ls-files ] && { echo "git: ls-files refused (shim)" >&2; exit 128; }; done\nexec %s "$@"\n' "$REAL_GIT" > "$SHIM/git"
-chmod +x "$SHIM/git"
+# git_shim <dir> <bash condition on the git args>
+git_shim() {
+    mkdir -p "$1"
+    printf '#!/bin/bash\nif %s; then echo "git: refused (shim)" >&2; exit 128; fi\nexec %s "$@"\n' \
+        "$2" "$REAL_GIT" > "$1/git"
+    chmod +x "$1/git"
+}
+SHIM="$WORK/shim"
+git_shim "$SHIM" '[[ " $* " == *" ls-files "* ]]'
 r=$(fresh_repo ls-files-fails); base=$(head_of "$r")
 printf 'key=%s\n' "$CREDENTIAL" > "$r/untracked.txt"
 expect "env base: a failing git ls-files fails closed" 1 "could not collect" "$r" \
@@ -141,13 +147,6 @@ expect "no gate: a failing git ls-files fails closed on a clean tree" 1 "could n
 # call passes through. The subcommand is matched by position so a path or ref
 # named `log` or `diff` cannot trigger it. On a clean tree a masked failure
 # reads as "no added lines to scan" and exits 0.
-# git_shim <dir> <bash condition on the git args>
-git_shim() {
-    mkdir -p "$1"
-    printf '#!/bin/bash\nif %s; then echo "git: refused (shim)" >&2; exit 128; fi\nexec %s "$@"\n' \
-        "$2" "$REAL_GIT" > "$1/git"
-    chmod +x "$1/git"
-}
 has_cached='[[ " $* " == *" --cached "* ]]'
 git_shim "$WORK/shim-log" '[ "$1" = log ]'
 git_shim "$WORK/shim-cached" "[ \"\$1\" = diff ] && $has_cached"

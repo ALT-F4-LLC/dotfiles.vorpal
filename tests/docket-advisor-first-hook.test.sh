@@ -54,10 +54,12 @@ exit 1
 EOF
 chmod +x "${BIN}/docket"
 
-SEQ=0
 # line <json>: append one transcript line.
 line() { printf '%s\n' "$1" >> "$TRANSCRIPT"; }
-nextid() { SEQ=$(cat "$WORK/seq" 2>/dev/null || echo 0); SEQ=$((SEQ + 1)); echo "$SEQ" > "$WORK/seq"; printf "toolu_%04d" "$SEQ"; }
+# nextid: the next tool_use id; the counter lives in a file because callers run it in $(...).
+nextid() { local seq; seq=$(($(cat "$WORK/seq") + 1)); echo "$seq" > "$WORK/seq"; printf "toolu_%04d" "$seq"; }
+# notice <aid> [status]: a task-notification body.
+notice() { printf '<task-notification><task-id>%s</task-id><status>%s</status></task-notification>' "$1" "${2:-completed}"; }
 # use <id> <name> <input json>: an assistant tool_use.
 use() { line "$(jq -cn --arg id "$1" --arg n "$2" --argjson i "$3" '{type:"assistant",message:{content:[{type:"tool_use",id:$id,name:$n,input:$i}]}}')"; }
 # result <id> <text>: a user tool_result.
@@ -89,18 +91,18 @@ advisor() {
     else
         result "$id" "Async agent launched successfully.
 agentId: ${aid} (internal ID)"
-        [ "$mode" = pending ] || text "<task-notification><task-id>${aid}</task-id><status>completed</status></task-notification>"
+        [ "$mode" = pending ] || text "$(notice "$aid")"
     fi
 }
 # result_err <id> <text>: a tool_result flagged as an error (a hook refusal or an operator rejection).
 result_err() { line "$(jq -cn --arg id "$1" --arg t "$2" '{type:"user",message:{content:[{type:"tool_result",tool_use_id:$id,is_error:true,content:$t}]}}')"; }
 # attach_done <aid>: a completion notice queued mid-turn, as an attachment line.
-attach_done() { line "$(jq -cn --arg t "<task-notification><task-id>$1</task-id><status>completed</status></task-notification>" '{type:"attachment",attachment:{type:"queued_command",prompt:$t}}')"; }
-queue_done() { line "$(jq -cn --arg t "<task-notification><task-id>$1</task-id><status>completed</status></task-notification>" '{type:"queue-operation",operation:"enqueue",content:$t}')"; }
+attach_done() { line "$(jq -cn --arg t "$(notice "$1")" '{type:"attachment",attachment:{type:"queued_command",prompt:$t}}')"; }
+queue_done() { line "$(jq -cn --arg t "$(notice "$1")" '{type:"queue-operation",operation:"enqueue",content:$t}')"; }
 handback() { line "$(jq -cn --arg a "$1" '{type:"user",origin:{kind:"peer",from:$a,handback:true},message:{content:"Another Claude session sent a message:\nreport"}}')"; }
 # launch_only <aid> <prompt>: an async launch with no completion yet.
 launch_only() { advisor "$1" "$2" pending; }
-# note <run> <text...>: run notes.
+# notes <run> <text...>: run notes.
 notes() { local r="$1"; shift; jq -cn --args '{ok:true,data:{notes:($ARGS.positional | map({text:.}))}}' "$@" > "$FIX/notes-$r.json"; }
 
 # ask_in <header> <question> [<header2> <question2>]
@@ -168,7 +170,7 @@ reset; : > "$TRANSCRIPT"
 run "a session that conducts no run is allowed" 0 "$(ask_in 'CI row' 'May I add the row?')"
 reset; : > "$TRANSCRIPT"; id=$(nextid); use "$id" Bash '{"command":"docket events list --run RUN-158 --kind step-routed"}'; result "$id" ok
 run "a read-only --run call does not make the session the conductor" 0 "$(ask_in 'CI row' 'May I add the row?')"
-reset; id=$(nextid); use "$id" Bash '{"command":"cat ~/.docket/conductor.d/RUN-158.token"}'; : > "$TRANSCRIPT"; use "$id" Bash '{"command":"cat ~/.docket/conductor.d/RUN-158.token"}'; result "$id" ok
+reset; : > "$TRANSCRIPT"; id=$(nextid); use "$id" Bash '{"command":"cat ~/.docket/conductor.d/RUN-158.token"}'; result "$id" ok
 run "the conductor token path makes the session the conductor" 2 "$(ask_in 'CI row' 'May I add the row?')"
 reset; printf '{"ok":true,"data":{"runs":[{"run":"RUN-159","status":"active"}],"total":1}}\n' > "$FIX/runs.json"
 run "a live run the session does not conduct is allowed" 0 "$(ask_in 'CI row' 'May I add the row?')"
@@ -192,7 +194,7 @@ PATH="/usr/bin:/bin" bash "$HOOK" < /dev/null >/dev/null 2>&1; [ $? -eq 0 ] && p
 reset; answered; launch_only b1 "Review header CI row."
 id=$(nextid); use "$id" AskUserQuestion '{"questions":[{"header":"CI row","question":"May I add the row?","options":[]}]}'
 result_err "$id" "PreToolUse:AskUserQuestion hook error: [bash ~/.claude/hooks/docket-advisor-first-hook.sh]: refused"
-text "<task-notification><task-id>b1</task-id><status>completed</status></task-notification>"
+text "$(notice b1)"
 run "a refused ask between the launch and its completion does not void the review" 0 "$(ask_in 'CI row' 'May I add the row?')"
 reset; answered; advisor b2 "Review header CI row."
 id=$(nextid); use "$id" AskUserQuestion '{"questions":[{"header":"CI row","question":"May I add the row?","options":[]}]}'
@@ -207,7 +209,7 @@ run "a completion notice in a queue-operation line counts" 0 "$(ask_in 'CI row' 
 reset; answered; launch_only c3 "Review header CI row."; handback c3
 run "a hand-back whose origin names the launch counts" 0 "$(ask_in 'CI row' 'May I add the row?')"
 reset; answered; launch_only c4 "Review header CI row."
-text "<task-notification><task-id>c4</task-id><status>killed</status></task-notification>"
+text "$(notice c4 killed)"
 run "a notice that is not a completed one does not count" 2 "$(ask_in 'CI row' 'May I add the row?')"
 reset; answered; launch_only c5 "Review header CI row."
 use "$(nextid)" Bash '{"command":"echo from=\"c5\""}'
@@ -229,7 +231,6 @@ reset; answered; notes RUN-158 "Advisor ruled STEP-123: skip."
 run "a run note about STEP-123 does not cover a question about STEP-12" 2 "$(ask_in 'Retry' 'Retry STEP-12?')"
 reset; answered; advisor d2 "Review the restart of STEP-12."
 run "a brief naming STEP-12 covers a question about STEP-12" 0 "$(ask_in 'Hold' 'Hold STEP-12?')"
-
 
 # 10. A header word elsewhere in an unrelated brief covers nothing; a header
 # introduced as one does.
@@ -277,7 +278,7 @@ line "$(jq -cn --arg id "$id" '{type:"user",message:{content:[{type:"tool_result
 run "an explicitly non-error advisor report allows" 0 "$(ask_in 'CI row' 'May I add the row?')"
 reset; answered; launch_only f3 "Review header CI row."; id=$(nextid)
 use "$id" TaskOutput '{"task_id":"f3"}'
-result_err "$id" '<task-notification><task-id>f3</task-id><status>completed</status></task-notification> from="f3"'
+result_err "$id" "$(notice f3) from=\"f3\""
 run "an error tool result cannot complete a pending advisor launch" 2 "$(ask_in 'CI row' 'May I add the row?')" "CI row"
 
 printf '%d passed, %d failed\n' "$PASS" "$FAIL"

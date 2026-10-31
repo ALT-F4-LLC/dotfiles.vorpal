@@ -1666,19 +1666,19 @@ platform = "aarch64-linux"
 
 [[sources]]
 name = "herdr"
+path = "https://github.com/herdrdev/herdr/releases/download/v0.9.5/herdr-linux-x86_64"
+includes = []
+excludes = []
+digest = "445bc401602c6d8f1614a721f545dc446f7dea338054347afd9a42f7f2b8e40b"
+platform = "x86_64-linux"
+
+[[sources]]
+name = "herdr"
 path = "https://github.com/herdrdev/herdr/releases/download/v0.9.5/herdr-macos-aarch64"
 includes = []
 excludes = []
 digest = "66f9ac47a2cd2e787745e3114bb4c565acf9a7439e79a3ac48efc97beb628a84"
 platform = "aarch64-darwin"
-
-[[sources]]
-name = "herdr"
-path = "https://github.com/herdrdev/herdr/releases/download/v0.9.3/herdr-linux-x86_64"
-includes = []
-excludes = []
-digest = "ce82b05e8f50efd0dabc3dd6696ff68cee5eb7000e3befd682639a951fe4b6c2"
-platform = "x86_64-linux"
 
 [[sources]]
 name = "hunk"

@@ -197,7 +197,7 @@ out.unsNoLedger = unsettledEntries(null, supPlan, supFresh).length
 out.unsNoneFresh = unsettledEntries(supLedger, supPlan, []).length
 process.stdout.write(JSON.stringify(out))
 JS
-{ cat "${WORK}/config.js"; cat "${WORK}/decide.js"; cat "${WORK}/cases.js"; } > "${WORK}/run.js"
+cat "${WORK}/config.js" "${WORK}/decide.js" "${WORK}/cases.js" > "${WORK}/run.js"
 node "${WORK}/run.js" > "${WORK}/out.json"
 ok $? 'the decision helpers evaluate outside a workflow run'
 

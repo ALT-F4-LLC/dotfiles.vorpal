@@ -78,14 +78,18 @@ build_input() {
     fi
 }
 
-assert_verdict() {
-    local tool="$1" key="$2" value="$3" cwd="$4" want="$5" label="$6" got
-    got=$(verdict_of "$(build_input "$tool" "$key" "$value" "$cwd")")
+check() {
+    local want="$1" got="$2" label="$3"
     if [ "$got" = "$want" ]; then
         pass "${label} (${want})"
     else
         fail "${label} (want ${want}, got ${got})"
     fi
+}
+
+assert_verdict() {
+    local tool="$1" key="$2" value="$3" cwd="$4" want="$5" label="$6"
+    check "$want" "$(verdict_of "$(build_input "$tool" "$key" "$value" "$cwd")")" "$label"
 }
 
 read_deny() { assert_verdict Read file_path "$1" "${2:-$REPO}" DENY "Read $1"; }
@@ -177,23 +181,13 @@ cp "$WAVE_7" "${SESS_DIR}/subagents/agent-a7.jsonl"
 
 # write_verdict <file_path> <agent_type or ""> <transcript or ""> <ALLOW|DENY> <label> [agent_id session_id]
 write_verdict() {
-    local path="$1" agent="$2" transcript="$3" want="$4" label="$5" id="${6:-}" session="${7:-}" input out got
+    local path="$1" agent="$2" transcript="$3" want="$4" label="$5" id="${6:-}" session="${7:-}" input
     input=$(jq -nc --arg p "$path" --arg a "$agent" --arg t "$transcript" --arg c "$REPO" --arg id "$id" --arg s "$session" '
         {hook_event_name:"PreToolUse",tool_name:"Write",tool_input:{file_path:$p,content:"x"},cwd:$c}
         | if $a != "" then .agent_type = $a else . end
         | if $t != "" then .transcript_path = $t else . end
         | if $id != "" then .agent_id = $id | .session_id = $s else . end')
-    out=$(HOME="$FAKE_HOME" TMPDIR="$SCRATCH_LINK" "$BASH_BIN" "$HOOK" 2>/dev/null <<<"$input")
-    if printf '%s' "$out" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' >/dev/null 2>&1; then
-        got=DENY
-    else
-        got=ALLOW
-    fi
-    if [ "$got" = "$want" ]; then
-        pass "${label} (${want})"
-    else
-        fail "${label} (want ${want}, got ${got})"
-    fi
+    check "$want" "$(TMPDIR="$SCRATCH_LINK" verdict_of "$input")" "$label"
 }
 
 case_executor_read_write_confined() {
@@ -234,23 +228,15 @@ case_other_callers_write_unconfined() {
 
 # The confinement is for Write alone: an executor-read seat reads the checkout.
 case_executor_read_reads_unconfined() {
-    local input got
+    local input
     input=$(jq -nc --arg p "${REPO}/src/main.rs" --arg t "$WAVE_7" --arg c "$REPO" \
         '{hook_event_name:"PreToolUse",tool_name:"Read",tool_input:{file_path:$p},agent_type:"executor-read",transcript_path:$t,cwd:$c}')
-    got=$(verdict_of "$input")
-    if [ "$got" = "ALLOW" ]; then
-        pass "executor-read Read in the checkout (ALLOW)"
-    else
-        fail "executor-read Read in the checkout (want ALLOW, got ${got})"
-    fi
+    check ALLOW "$(verdict_of "$input")" "executor-read Read in the checkout"
 }
 
 case_malformed_input_is_silent() {
-    local got
-    got=$(verdict_of '')
-    [ "$got" = "ALLOW" ] && pass "empty stdin (ALLOW)" || fail "empty stdin (want ALLOW, got ${got})"
-    got=$(verdict_of 'not json')
-    [ "$got" = "ALLOW" ] && pass "non-JSON stdin (ALLOW)" || fail "non-JSON stdin (want ALLOW, got ${got})"
+    check ALLOW "$(verdict_of '')" "empty stdin"
+    check ALLOW "$(verdict_of 'not json')" "non-JSON stdin"
 }
 
 # A deny must name the tool and the root so the model can see why and stop,

@@ -163,8 +163,8 @@ const ROW = {
 }
 const SEAT = { seat: 'judge-security', variant: 'std', model: 'm', effort: 'low' }
 const envelope = (sha, worktree) => JSON.stringify({
-    target_sha: sha === undefined ? null : sha,
-    target_worktree: worktree === undefined ? null : worktree,
+    target_sha: sha ?? null,
+    target_worktree: worktree ?? null,
 })
 // `docket gate status` envelopes, before and after the panel.
 const open = (target) => ({
@@ -191,7 +191,6 @@ const run = async (script) => {
     LOG.length = 0
     return runGate(ROW, 'stage 1 (1 row)')
 }
-const calls = (label) => CALLS.filter((c) => c === label).length
 const seatBriefs = () => Object.keys(BRIEFS)
     .filter((k) => k.includes('seat:'))
     .map((k) => BRIEFS[k])
@@ -214,24 +213,23 @@ ok(parseTargetRef(null) === null && parseTargetRef(undefined) === null,
 
 // `parsed` separates "the probe answered, there is no target" from "the probe
 // did not answer the question" — the two get DIFFERENT log lines.
-ok(readTargetEnvelope(envelope()).parsed === true &&
-   readTargetEnvelope(envelope()).target === null,
+const nullRead = readTargetEnvelope(envelope())
+ok(nullRead.parsed === true && nullRead.target === null,
     'readTargetEnvelope: the null envelope parsed, and named no target')
 ok(readTargetEnvelope('').parsed === false &&
    readTargetEnvelope('not json').parsed === false &&
    readTargetEnvelope('[1,2]').parsed === false &&
    readTargetEnvelope('{"target_sha":"x"}').parsed === false,
     'readTargetEnvelope: empty, prose, an array, and a half-envelope all fail to parse')
-ok(readTargetEnvelope(`banner text\n${envelope(REAL, '/w')}`).parsed === true &&
-   readTargetEnvelope(`banner text\n${envelope(REAL, '/w')}`).target.sha === REAL,
+const bannerRead = readTargetEnvelope(`banner text\n${envelope(REAL, '/w')}`)
+ok(bannerRead.parsed === true && bannerRead.target.sha === REAL,
     'readTargetEnvelope still reads an envelope behind a harness banner')
 
 // The command prints an envelope whether or not a target exists.
-ok(targetRefCommand('STEP-3187').startsWith('docket step context STEP-3187 --json |'),
+const refCommand = targetRefCommand('STEP-3187')
+ok(refCommand.startsWith('docket step context STEP-3187 --json |'),
     'targetRefCommand reads the step context bundle')
-ok(/jq -c/.test(targetRefCommand('STEP-3187')) &&
-   targetRefCommand('STEP-3187').includes('// null') &&
-   !/grep/.test(targetRefCommand('STEP-3187')),
+ok(/jq -c/.test(refCommand) && refCommand.includes('// null') && !/grep/.test(refCommand),
     'targetRefCommand is the jq envelope with null defaults — no grep, no empty output')
 
 // ======= NET 2: the gate path spends no target probe at all =======
@@ -353,8 +351,8 @@ ok(gateTarget({ target: { sha: '', worktree: '' } }) === null,
     'gateTarget: an envelope naming neither half is no target')
 ok(gateTarget({ target: { sha: REAL, worktree: '/w' } }).sha === REAL,
     'gateTarget: a 40-hex sha survives')
-ok(gateTarget({ target: { sha: PHANTOM.slice(0, 12), worktree: '/w' } }).sha === '' &&
-   gateTarget({ target: { sha: PHANTOM.slice(0, 12), worktree: '/w' } }).worktree === '/w',
+const abbreviated = gateTarget({ target: { sha: PHANTOM.slice(0, 12), worktree: '/w' } })
+ok(abbreviated.sha === '' && abbreviated.worktree === '/w',
     'gateTarget: an abbreviated sha is dropped while the worktree stays')
 ok(gateTarget({ target: { sha: REAL.toUpperCase(), worktree: '' } }) === null,
     'gateTarget: an uppercase sha is refused — the engine records lowercase hex')
@@ -362,17 +360,18 @@ ok(gateTarget({ target: { sha: REAL.toUpperCase(), worktree: '' } }) === null,
 // ---- judgeBrief's own shape check, behind the call site (mid-wave mode) ----
 const STEP = { step: ROW.step, instance: ROW.instance, issue: ROW.issue, run: ROW.run }
 const briefWith = (t) => judgeBrief(SEAT, 'DKT-V304', undefined, undefined, '/repo', false, STEP, t, null)
-ok(!briefWith({ sha: PHANTOM.slice(0, 12), worktree: '' }).includes('TARGET SHA:'),
+const shortBrief = briefWith({ sha: PHANTOM.slice(0, 12), worktree: '' })
+ok(!shortBrief.includes('TARGET SHA:'),
     'judgeBrief refuses a non-40-hex sha even if a caller routes around the gate path')
-ok(briefWith({ sha: PHANTOM.slice(0, 12), worktree: '' }).includes('NO target ref'),
+ok(shortBrief.includes('NO target ref'),
     'and says NO target ref instead')
-ok(briefWith(null).includes('NO target ref') &&
-   briefWith(null).includes('read your own HEAD'),
+const noTargetBrief = briefWith(null)
+ok(noTargetBrief.includes('NO target ref') && noTargetBrief.includes('read your own HEAD'),
     'judgeBrief(no target) tells the seat to read its own HEAD')
-ok(!/[0-9a-f]{40}/.test(briefWith(null)),
+ok(!/[0-9a-f]{40}/.test(noTargetBrief),
     'a no-target brief contains no 40-hex string at all')
-ok(briefWith({ sha: REAL, worktree: '' }).includes(`TARGET SHA:     ${REAL}`) &&
-   !briefWith({ sha: REAL, worktree: '' }).includes('NO target ref'),
+const realBrief = briefWith({ sha: REAL, worktree: '' })
+ok(realBrief.includes(`TARGET SHA:     ${REAL}`) && !realBrief.includes('NO target ref'),
     'a 40-hex sha renders the target block, and suppresses the NO-target wording')
 
 console.log(`\n${pass} passed, ${fail} failed`)

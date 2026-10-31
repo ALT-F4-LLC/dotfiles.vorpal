@@ -96,17 +96,15 @@ let HOLD = new Set()
 let OPEN = new Map()
 const spawn = (row) => {
     SPAWNED.push(row.step)
-    const canned = settleFor(row) === undefined
-        ? { step: row.step, status: 'returned', text: `${row.step} recorded (done)` }
-        : settleFor(row)
+    const canned = settleFor(row)
+        ?? { step: row.step, status: 'returned', text: `${row.step} recorded (done)` }
     if (!HOLD.has(row.step)) return Promise.resolve(canned)
     return new Promise((resolve) => OPEN.set(row.step, () => resolve(canned)))
 }
 const runGate = (row) => {
     GATES.push(row.step)
-    return Promise.resolve(settleFor(row) === undefined
-        ? { step: row.step, status: 'gate-passed', text: '{"status":"done"}' }
-        : settleFor(row))
+    return Promise.resolve(settleFor(row)
+        ?? { step: row.step, status: 'gate-passed', text: '{"status":"done"}' })
 }
 let PROBED = []
 const probe = (_cmd, _label, _phase, step) => {
@@ -143,6 +141,7 @@ const finish = async (step) => {
     r()
     await settle()
 }
+const finishAll = async () => { for (const r of rows) await finish(r.step) }
 const start = (theRows, harnessCap) => {
     rows = theRows
     input = harnessCap === undefined ? {} : { harnessCap }
@@ -159,6 +158,7 @@ const rowsOf = (n) => Array.from({ length: n }, (_, i) => ({
     step: `STEP-${i}`, stage: 0, kind: 'executor', executor: 'research', class: 'research',
 }))
 const logged = (frag) => LOG.some((l) => l.includes(frag))
+const capLines = () => JSON.stringify(LOG.filter((l) => l.includes('harness concurrency cap')))
 
 // ---- (1) a tighter harnessCap is honored ---------------------------------
 {
@@ -167,10 +167,10 @@ const logged = (frag) => LOG.some((l) => l.includes(frag))
     ok(SPAWNED.length === 6,
         `case 1: only 6 of 20 rows admit — the tighter harnessCap gates them (got ${SPAWNED.length})`)
     ok(logged('conductor reported 6, using 6') || logged('using 6 (min of that and the 16-agent ceiling)'),
-        `case 1: the log names the tighter effective cap (got ${JSON.stringify(LOG.filter((l) => l.includes('harness concurrency cap')))})`)
+        `case 1: the log names the tighter effective cap (got ${capLines()})`)
     ok(logged('6 of 6 harness slot(s) in flight (this row needs 1) — the harness runs at most 6 agents concurrently'),
         'case 1: a queued row is held on the tighter bound, not the loose 16')
-    for (const r of rowsOf(20)) await finish(r.step)
+    await finishAll()
     await run
 }
 
@@ -182,7 +182,7 @@ const logged = (frag) => LOG.some((l) => l.includes(frag))
     ok(SPAWNED.length === 16, `case 2a: harnessCap=16 admits exactly 16 of 20 (got ${SPAWNED.length})`)
     ok(!logged('harness concurrency cap — conductor reported'),
         'case 2a: no cap-override line when harnessCap equals the ceiling (nothing to narrow)')
-    for (const r of rowsOf(20)) await finish(r.step)
+    await finishAll()
     await run
 }
 {
@@ -191,7 +191,7 @@ const logged = (frag) => LOG.some((l) => l.includes(frag))
     ok(SPAWNED.length === 16, `case 2b: no harnessCap in args admits exactly 16 of 20, same as before this fix (got ${SPAWNED.length})`)
     ok(logged('no harnessCap in args, using the 16-agent ceiling'),
         'case 2b: the log says the loose bound is in force, advisory rather than a silent default')
-    for (const r of rowsOf(20)) await finish(r.step)
+    await finishAll()
     await run
 }
 
@@ -203,8 +203,8 @@ const logged = (frag) => LOG.some((l) => l.includes(frag))
     ok(SPAWNED.length === 16,
         `case 3: harnessCap=64 still admits only 16 — clamped to the HARNESS_CAP ceiling (got ${SPAWNED.length})`)
     ok(logged('conductor reported 64') && logged('clamped to the 16-agent ceiling'),
-        `case 3: the log names both the reported and the clamped figure (got ${JSON.stringify(LOG.filter((l) => l.includes('harness concurrency cap')))})`)
-    for (const r of rowsOf(20)) await finish(r.step)
+        `case 3: the log names both the reported and the clamped figure (got ${capLines()})`)
+    await finishAll()
     await run
 }
 
@@ -216,8 +216,8 @@ for (const [label, value] of [['zero', 0], ['negative', -3], ['non-integer', 2.5
     ok(SPAWNED.length === 16,
         `case 4 (${label}): a malformed harnessCap (${JSON.stringify(value)}) falls back to 16, never 0 or a crash (got ${SPAWNED.length})`)
     ok(logged('not a positive integer') && logged('ignoring it'),
-        `case 4 (${label}): the log says the value was rejected, not silently accepted (got ${JSON.stringify(LOG.filter((l) => l.includes('harness concurrency cap')))})`)
-    for (const r of rowsOf(20)) await finish(r.step)
+        `case 4 (${label}): the log says the value was rejected, not silently accepted (got ${capLines()})`)
+    await finishAll()
     await run
 }
 

@@ -87,22 +87,16 @@ const LOG = []
 const log = (m) => LOG.push(String(m))
 const phase = (t) => LOG.push(`__phase:${t}`)
 const CALLS = []          // every agent() label invoked, in call order
-const RESOLVE_ORDER = []  // labels in the order their promise SETTLED (not called) — proves overlap
 let SCRIPT = {}            // label -> {text} | {reject} | {hold: true}
 const HOLD_RESOLVERS = new Map()
 const agent = (brief, opts) => {
     CALLS.push(opts.label)
     const entry = SCRIPT[opts.label]
     if (entry && entry.hold) {
-        return new Promise((resolve, reject) => {
-            HOLD_RESOLVERS.set(opts.label, { resolve, reject })
-        }).then((v) => { RESOLVE_ORDER.push(opts.label); return v })
+        return new Promise((resolve) => HOLD_RESOLVERS.set(opts.label, resolve))
     }
-    if (entry && entry.reject !== undefined) {
-        return Promise.reject(new Error(entry.reject)).catch((e) => { RESOLVE_ORDER.push(opts.label); throw e })
-    }
-    const value = entry ? entry.text : null
-    return Promise.resolve(value).then((v) => { RESOLVE_ORDER.push(opts.label); return v })
+    if (entry && entry.reject !== undefined) return Promise.reject(new Error(entry.reject))
+    return Promise.resolve(entry ? entry.text : null)
 }
 function extractPrompt(f) { return `extract ${f.path}` }
 const EXTRACT_SCHEMA = {}
@@ -141,13 +135,13 @@ const ok = (cond, label) => {
     if (cond) { pass++; console.log(`PASS: ${label}`) }
     else { fail++; console.error(`FAIL: ${label}`) }
 }
-const reset = () => { LOG.length = 0; CALLS.length = 0; RESOLVE_ORDER.length = 0; HOLD_RESOLVERS.clear() }
+const reset = () => { LOG.length = 0; CALLS.length = 0; HOLD_RESOLVERS.clear() }
 const settle = () => new Promise((r) => setTimeout(r, 0))
 const resolveHeld = (label, value) => {
-    const h = HOLD_RESOLVERS.get(label)
-    if (!h) throw new Error(`resolveHeld(${label}): not held`)
+    const resolve = HOLD_RESOLVERS.get(label)
+    if (!resolve) throw new Error(`resolveHeld(${label}): not held`)
     HOLD_RESOLVERS.delete(label)
-    h.resolve(value)
+    resolve(value)
 }
 const f = (i, kind) => ({ path: `/t/session-${i}.jsonl`, kind: kind || 'main' })
 const COUNTS = { msgs: 1, out: 1, think: 0, think_msgs: 0, think_chars: 0, text_chars: 0, tool_uses: 0,
@@ -227,4 +221,3 @@ process.exit(fail === 0 ? 0 : 1)
 JS
 
 node "${WORK}/suite.mjs"
-exit $?

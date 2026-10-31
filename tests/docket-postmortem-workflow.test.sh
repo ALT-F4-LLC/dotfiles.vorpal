@@ -70,13 +70,19 @@ extract() { # <region> — body between the TEST-BEGIN/TEST-END markers
     ' "$POSTMORTEM"
 }
 
-extract docket-postmortem-config       > "${WORK}/config.js" || fatal "bad or missing TEST markers for docket-postmortem-config"
-extract docket-postmortem-refute-tally > "${WORK}/tally.js"  || fatal "bad or missing TEST markers for docket-postmortem-refute-tally"
-extract docket-postmortem-plan         > "${WORK}/plan.js"   || fatal "bad or missing TEST markers for docket-postmortem-plan"
-extract docket-postmortem-digest-jq    > "${WORK}/jq.js"     || fatal "bad or missing TEST markers for docket-postmortem-digest-jq"
-extract docket-postmortem-sampling     > "${WORK}/sampling.js"  || fatal "bad or missing TEST markers for docket-postmortem-sampling"
-extract docket-postmortem-inventory    > "${WORK}/inventory.js" || fatal "bad or missing TEST markers for docket-postmortem-inventory"
-extract docket-postmortem-condense-jq  > "${WORK}/condense.js" || fatal "bad or missing TEST markers for docket-postmortem-condense-jq"
+for pair in config:config refute-tally:tally plan:plan digest-jq:jq sampling:sampling inventory:inventory condense-jq:condense; do
+    region="docket-postmortem-${pair%%:*}"
+    extract "$region" > "${WORK}/${pair#*:}.js" || fatal "bad or missing TEST markers for ${region}"
+done
+
+raw_template() { # <constant> <region file> <out> — body of `const <constant> = String.raw\`...\``
+    node -e '
+const src = require("fs").readFileSync(process.argv[2], "utf8")
+const m = src.match(new RegExp("const " + process.argv[1] + " = String\\.raw`([\\s\\S]*?)`"))
+if (!m) { console.error(process.argv[1] + " not found in its region"); process.exit(1) }
+require("fs").writeFileSync(process.argv[3], m[1])
+' "$1" "$2" "$3" || fatal "could not extract $1"
+}
 
 # ---- Fixtures for the inventory read ---------------------------------------
 # A 528-line inventory like RUN-125's: 2 main transcripts, 526 workflow logs.
@@ -116,12 +122,7 @@ cat > "${WORK}/clean.jsonl" <<'JSONL'
 {"type":"assistant","timestamp":"2026-09-20T00:00:03Z","message":{"id":"m2","model":"claude-haiku-4-5-20251001","usage":{"input_tokens":5,"output_tokens":10,"cache_creation_input_tokens":0,"cache_read_input_tokens":100},"content":[{"type":"tool_use","id":"t2","name":"StructuredOutput","input":{"ok":true}}]}}
 JSONL
 
-node -e '
-const src = require("fs").readFileSync(process.argv[1], "utf8")
-const m = src.match(/const DIGEST_JQ = String\.raw`([\s\S]*?)`/)
-if (!m) { console.error("DIGEST_JQ not found in its region"); process.exit(1) }
-require("fs").writeFileSync(process.argv[2], m[1])
-' "${WORK}/jq.js" "${WORK}/digest.jq" || fatal "could not extract DIGEST_JQ"
+raw_template DIGEST_JQ "${WORK}/jq.js" "${WORK}/digest.jq"
 
 digest() { # <fixture> <line>
     jq -c -n -R --arg path "$1" --arg kind workflow --argjson line "$2" -f "${WORK}/digest.jq" "$1"
@@ -151,22 +152,12 @@ cat >> "${WORK}/transcript.jsonl" <<'JSONL'
 {"type":"user","uuid":"ar1","timestamp":"2026-09-20T00:05:07Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"s1","content":[{"type":"text","text":"part one"},{"type":"image"}]}]}}
 {"type":"user","uuid":"nm1","timestamp":"2026-09-20T00:05:08Z","message":null}
 JSONL
-node -e '
-const src = require("fs").readFileSync(process.argv[1], "utf8")
-const m = src.match(/const CONDENSE_JQ = String\.raw`([\s\S]*?)`/)
-if (!m) { console.error("CONDENSE_JQ not found in its region"); process.exit(1) }
-require("fs").writeFileSync(process.argv[2], m[1])
-' "${WORK}/condense.js" "${WORK}/condense.jq" || fatal "could not extract CONDENSE_JQ"
+raw_template CONDENSE_JQ "${WORK}/condense.js" "${WORK}/condense.jq"
 jq -c -n -R -f "${WORK}/condense.jq" "${WORK}/transcript.jsonl" > "${WORK}/condensed.jsonl" || fatal "the condensation program failed on the transcript fixture"
 jq -c -n -R '[foreach inputs as $r (0; . + 1; . as $n | (try ($r | fromjson) catch null) | select(type == "object" and .type == "assistant") | .message.content[]? | select(.type == "text") | {line: $n, text: .text})]' "${WORK}/transcript.jsonl" > "${WORK}/source.texts.json" || fatal "could not list the source assistant texts"
 
 {
-    cat "${WORK}/config.js"
-    cat "${WORK}/tally.js"
-    cat "${WORK}/plan.js"
-    cat "${WORK}/sampling.js"
-    cat "${WORK}/inventory.js"
-    cat "${WORK}/condense.js"
+    cat "${WORK}/config.js" "${WORK}/tally.js" "${WORK}/plan.js" "${WORK}/sampling.js" "${WORK}/inventory.js" "${WORK}/condense.js"
     printf 'const CONDENSED = %s\n' "$(jq -s -c . "${WORK}/condensed.jsonl")"
     printf 'const SOURCE_TEXTS = %s\n' "$(cat "${WORK}/source.texts.json")"
     printf 'const SOURCE_LINES = %s\n' "$(awk 'END { print NR }' "${WORK}/transcript.jsonl")"
@@ -485,6 +476,14 @@ JS
 
 # Wiring: the budget preflight must throw before the first digest agent is seated.
 wiring=0
+verdict() { # <label> [detail] — PASS when the preceding command succeeded
+    if [ $? -eq 0 ]; then
+        echo "PASS: $1"
+    else
+        echo "FAIL: $1${2:+ $2}"
+        wiring=1
+    fi
+}
 pre=$(grep -n 'need(budget.ok, budget.message)' "$POSTMORTEM" | head -1 | cut -d: -f1)
 call=$(grep -n 'const budget = planBudget(' "$POSTMORTEM" | head -1 | cut -d: -f1)
 args=$(sed -n "${call}p" "$POSTMORTEM")
@@ -495,26 +494,13 @@ refute=$(grep -c 'refuteSeatCap(spent, AGENT_CAP, AGENT_CAP_MARGIN, REFUTERS_PER
 [ "$refute" -eq 1 ] || { echo "FAIL: the refute stage is bounded by refuteSeatCap(spent, ...)"; wiring=1; }
 cstage=$(grep -n 'resolveCondensed(await seat(condenseBrief' "$POSTMORTEM" | head -1 | cut -d: -f1)
 cshard=$(grep -n 'const shardPlan = sessions.flatMap' "$POSTMORTEM" | head -1 | cut -d: -f1)
-if [ -n "$cstage" ] && [ -n "$cshard" ] && [ "$cstage" -lt "$cshard" ] && [ -n "$pre" ] && [ "$cshard" -lt "$pre" ] && grep -q 'condensed.get(s.sessionId)' "$POSTMORTEM" && grep -q 'condensed: source.condensed' "$POSTMORTEM" && grep -q 'planShards(source.lines, source.bytes, SHARD_BYTES)' "$POSTMORTEM" && ! grep -q 'planShards(s.lines' "$POSTMORTEM"; then
-    echo "PASS: the conductor shards are cut from the condensed copy, after condensation and before the budget preflight"
-else
-    echo "FAIL: the conductor shards are cut from the condensed copy, after condensation and before the budget preflight (condense line '${cstage}', shard line '${cshard}', preflight line '${pre}')"
-    wiring=1
-fi
-if grep -qF "jq -c -n -R -f '\${jqFile}' '\${session.transcript}' > '\${outFile}' &&" "$POSTMORTEM"; then
-    echo "PASS: the condensation relay runs the program with -R over the transcript and writes the out file"
-else
-    echo "FAIL: the condensation relay runs the program with -R over the transcript and writes the out file"
-    wiring=1
-fi
+[ -n "$cstage" ] && [ -n "$cshard" ] && [ "$cstage" -lt "$cshard" ] && [ -n "$pre" ] && [ "$cshard" -lt "$pre" ] && grep -q 'condensed.get(s.sessionId)' "$POSTMORTEM" && grep -q 'condensed: source.condensed' "$POSTMORTEM" && grep -q 'planShards(source.lines, source.bytes, SHARD_BYTES)' "$POSTMORTEM" && ! grep -q 'planShards(s.lines' "$POSTMORTEM"
+verdict "the conductor shards are cut from the condensed copy, after condensation and before the budget preflight" "(condense line '${cstage}', shard line '${cshard}', preflight line '${pre}')"
+grep -qF "jq -c -n -R -f '\${jqFile}' '\${session.transcript}' > '\${outFile}' &&" "$POSTMORTEM"
+verdict "the condensation relay runs the program with -R over the transcript and writes the out file"
 dig=$(grep -n 'parallel(digestBatches.map' "$POSTMORTEM" | head -1 | cut -d: -f1)
-
-if [ -n "$pre" ] && [ -n "$dig" ] && [ "$pre" -lt "$dig" ]; then
-    echo "PASS: the budget preflight throws before the first digest agent is seated"
-else
-    echo "FAIL: the budget preflight throws before the first digest agent is seated (preflight line '${pre}', first digest line '${dig}')"
-    wiring=1
-fi
+[ -n "$pre" ] && [ -n "$dig" ] && [ "$pre" -lt "$dig" ]
+verdict "the budget preflight throws before the first digest agent is seated" "(preflight line '${pre}', first digest line '${dig}')"
 
 # Seats return their notes; none is told to write a notes file. The sensitive-path
 # guard refuses a write into the audit directory from a seat, so a brief that
@@ -523,97 +509,45 @@ POSTMORTEM_SKILL="${POSTMORTEM_SKILL_FILE:-${SCRIPT_DIR}/../src/user/claude_code
 # Every line that interpolates the audit directory is a digest or condense path:
 # the two directory constants and the two jq program files those seats write.
 stray=$(grep -F '${auditDir}' "$POSTMORTEM" | grep -vE '^const (digestDir|condenseDir) = |^    const jqFile = `\$\{auditDir\}/(digest|condense)\.jq\.\$\{index\}`$' | grep -vE '^//' | head -3)
-if [ -z "$stray" ]; then
-    echo "PASS: only the digest and condense paths interpolate the audit directory"
-else
-    echo "FAIL: only the digest and condense paths interpolate the audit directory (stray: ${stray})"
-    wiring=1
-fi
+[ -z "$stray" ]
+verdict "only the digest and condense paths interpolate the audit directory" "(stray: ${stray})"
 boundary=$(awk 'index($0, "const BOUNDARY = `") { open = 1 } open { print } open && /`$/ { exit }' "$POSTMORTEM")
-if [ -n "$boundary" ] && ! printf '%s\n' "$boundary" | grep -qF '${auditDir}' && printf '%s\n' "$boundary" | grep -qF 'Write no file'; then
-    echo "PASS: the shared boundary text grants no write under the audit directory"
-else
-    echo "FAIL: the shared boundary text grants no write under the audit directory"
-    wiring=1
-fi
+[ -n "$boundary" ] && ! printf '%s\n' "$boundary" | grep -qF '${auditDir}' && printf '%s\n' "$boundary" | grep -qF 'Write no file'
+verdict "the shared boundary text grants no write under the audit directory"
 for fn in conductorBrief layerBrief deepBrief patternsBrief refuteBrief reconcileBrief; do
-    if awk -v s="function ${fn}(" 'index($0, s) { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -qF 'Write no file'; then
-        echo "PASS: ${fn} tells the seat to write no file"
-    else
-        echo "FAIL: ${fn} tells the seat to write no file"
-        wiring=1
-    fi
+    awk -v s="function ${fn}(" 'index($0, s) { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -qF 'Write no file'
+    verdict "${fn} tells the seat to write no file"
 done
 for schema in CANDIDATES_SCHEMA DEEP_SCHEMA VERDICT_SCHEMA RECONCILE_SCHEMA; do
-    if awk -v s="const ${schema} = {" 'index($0, s) { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -q '^        notes: { type'; then
-        echo "PASS: ${schema} carries a notes field"
-    else
-        echo "FAIL: ${schema} carries a notes field"
-        wiring=1
-    fi
+    awk -v s="const ${schema} = {" 'index($0, s) { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -q '^        notes: { type'
+    verdict "${schema} carries a notes field"
 done
-if awk 'index($0, "const VERDICT_SCHEMA = {") { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -E "^    required: " | grep -q notes; then
-    echo "FAIL: VERDICT_SCHEMA does not require notes (a refuter that omits them must still vote)"
-    wiring=1
-else
-    echo "PASS: VERDICT_SCHEMA does not require notes (a refuter that omits them must still vote)"
-fi
+! awk 'index($0, "const VERDICT_SCHEMA = {") { open = 1 } open { print } open && /^}/ { exit }' "$POSTMORTEM" | grep -E "^    required: " | grep -q notes
+verdict "VERDICT_SCHEMA does not require notes (a refuter that omits them must still vote)"
 missing=""
 for site in "keepNotes(name," 'keepNotes(`layer ' 'keepNotes(`deep ' "keepNotes('patterns'," 'keepNotes(`refute ' "keepNotes('reconcile',"; do
     grep -qF -- "$site" "$POSTMORTEM" || missing="${missing} ${site}"
 done
-if [ -z "$missing" ] && grep -q '^    seatNotes,$' "$POSTMORTEM"; then
-    echo "PASS: every note-returning seat feeds seatNotes and the return carries it"
-else
-    echo "FAIL: every note-returning seat feeds seatNotes and the return carries it (missing:${missing})"
-    wiring=1
-fi
-if grep -qF 'verdicts: votes.map((v) => (v == null ? v : (({ notes, ...rest }) => rest)(v)))' "$POSTMORTEM"; then
-    echo "PASS: refuter notes do not ride into the reconciler brief or a continuation"
-else
-    echo "FAIL: refuter notes do not ride into the reconciler brief or a continuation"
-    wiring=1
-fi
-if grep -qF 'const NOTES_MAX = 1200' "$POSTMORTEM" && grep -qF 'notes.slice(0, NOTES_MAX)' "$POSTMORTEM"; then
-    echo "PASS: a seat's notes are bounded before they reach the return"
-else
-    echo "FAIL: a seat's notes are bounded before they reach the return"
-    wiring=1
-fi
-if [ -f "$POSTMORTEM_SKILL" ] && grep -q 'seatNotes' "$POSTMORTEM_SKILL" && grep -qF 'notes-<launch ordinal>.md' "$POSTMORTEM_SKILL" && grep -qF 'with the Write tool, never a shell heredoc' "$POSTMORTEM_SKILL"; then
-    echo "PASS: the skill persists the returned notes with the Write tool, as data"
-else
-    echo "FAIL: the skill persists the returned notes with the Write tool, as data"
-    wiring=1
-fi
+[ -z "$missing" ] && grep -q '^    seatNotes,$' "$POSTMORTEM"
+verdict "every note-returning seat feeds seatNotes and the return carries it" "(missing:${missing})"
+grep -qF 'verdicts: votes.map((v) => (v == null ? v : (({ notes, ...rest }) => rest)(v)))' "$POSTMORTEM"
+verdict "refuter notes do not ride into the reconciler brief or a continuation"
+grep -qF 'const NOTES_MAX = 1200' "$POSTMORTEM" && grep -qF 'notes.slice(0, NOTES_MAX)' "$POSTMORTEM"
+verdict "a seat's notes are bounded before they reach the return"
+[ -f "$POSTMORTEM_SKILL" ] && grep -q 'seatNotes' "$POSTMORTEM_SKILL" && grep -qF 'notes-<launch ordinal>.md' "$POSTMORTEM_SKILL" && grep -qF 'with the Write tool, never a shell heredoc' "$POSTMORTEM_SKILL"
+verdict "the skill persists the returned notes with the Write tool, as data"
 
 # The opt-in is wired through the workflow body and the return, and the skill states
 # when it is allowed. Default full coverage must not change: without args.sampling
 # no log is dropped from the deep-read candidates.
-if grep -qF '.filter((line) => !unsampledSet.has(line))' "$POSTMORTEM" && grep -qF 'const unsampledSet = new Set(sampleSelection ? sampleSelection.flatMap((s) => s.unsampled) : [])' "$POSTMORTEM"; then
-    echo "PASS: only the sample's unsampled lines leave the deep-read candidates"
-else
-    echo "FAIL: only the sample's unsampled lines leave the deep-read candidates"
-    wiring=1
-fi
-if grep -qF 'for (const line of rescuedFlagged) unsampledSet.delete(line)' "$POSTMORTEM" && grep -qF 'flaggedRead: rescuedFlagged.size,' "$POSTMORTEM" && [ -f "$POSTMORTEM_SKILL" ] && grep -qF 'Every digest-flagged log is read whatever' "$POSTMORTEM_SKILL"; then
-    echo "PASS: a flagged log is read even when a stratum would sample it away"
-else
-    echo "FAIL: a flagged log is read even when a stratum would sample it away"
-    wiring=1
-fi
-if grep -q '^    sampling: sampled,$' "$POSTMORTEM" && grep -qF 'input.sampling || null' "$POSTMORTEM"; then
-    echo "PASS: args.sampling is read and the return carries sampling"
-else
-    echo "FAIL: args.sampling is read and the return carries sampling"
-    wiring=1
-fi
-if [ -f "$POSTMORTEM_SKILL" ] && grep -qF 'args.sampling' "$POSTMORTEM_SKILL" && grep -qF 'AskUserQuestion' "$POSTMORTEM_SKILL"; then
-    echo "PASS: the skill names args.sampling and leaves the choice to the operator"
-else
-    echo "FAIL: the skill names args.sampling and leaves the choice to the operator"
-    wiring=1
-fi
+grep -qF '.filter((line) => !unsampledSet.has(line))' "$POSTMORTEM" && grep -qF 'const unsampledSet = new Set(sampleSelection ? sampleSelection.flatMap((s) => s.unsampled) : [])' "$POSTMORTEM"
+verdict "only the sample's unsampled lines leave the deep-read candidates"
+grep -qF 'for (const line of rescuedFlagged) unsampledSet.delete(line)' "$POSTMORTEM" && grep -qF 'flaggedRead: rescuedFlagged.size,' "$POSTMORTEM" && [ -f "$POSTMORTEM_SKILL" ] && grep -qF 'Every digest-flagged log is read whatever' "$POSTMORTEM_SKILL"
+verdict "a flagged log is read even when a stratum would sample it away"
+grep -q '^    sampling: sampled,$' "$POSTMORTEM" && grep -qF 'input.sampling || null' "$POSTMORTEM"
+verdict "args.sampling is read and the return carries sampling"
+[ -f "$POSTMORTEM_SKILL" ] && grep -qF 'args.sampling' "$POSTMORTEM_SKILL" && grep -qF 'AskUserQuestion' "$POSTMORTEM_SKILL"
+verdict "the skill names args.sampling and leaves the choice to the operator"
 
 node "${WORK}/suite.mjs"
 suite=$?

@@ -51,6 +51,19 @@
 # lockfile version, with the source printed beside any hit: a fork at the
 # upstream version usually carries the upstream code, and a reader disposes of
 # the exception with the source in view.
+#
+# RANGE SCOPING. With DOCKET_GATE_BASE set (the engine exports it to completion
+# gates), only a vulnerability on a lockfile entry the range added or changed
+# fails: an entry is pre-existing when the same name, version, and source sit in
+# the base commit's Cargo.lock. Pre-existing matches are still queried and
+# printed, marked as such, so a newly published advisory on a crate already on
+# the base branch stays visible without halting an unrelated step. A base tree
+# with no Cargo.lock is an empty baseline: every entry counts as added. With
+# DOCKET_GATE_BASE unset or empty, the whole lockfile is the scope. A base that
+# does not resolve to a commit refuses to scan (gate-range set-base: exit 2 when
+# DOCKET_GATE is vuln-scan, exit 1 otherwise). A vulnerable crate that entered
+# the base branch outside any gated range passes every later step's gate; only
+# a whole-lockfile run reports it as a failure.
 
 set -euo pipefail
 
@@ -63,6 +76,8 @@ if ! repo_root="$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null)"; 
   exit 1
 fi
 cd "$repo_root"
+# shellcheck source=SCRIPTDIR/gate-range
+. "$script_dir/gate-range"
 
 readonly OSV_HOST="api.osv.dev"
 readonly OSV_BATCH_URL="https://${OSV_HOST}/v1/querybatch"
@@ -82,6 +97,11 @@ if [ ! -f Cargo.lock ]; then
   exit 1
 fi
 
+# set-base resolves the base to a sha, so an option-shaped value cannot reach
+# git as a flag; an unset or empty base leaves base_sha empty (whole lockfile).
+gate_range vuln-scan set-base
+base_sha="${GATE_RANGE%..HEAD}"
+
 work="$(mktemp -d "${TMPDIR:-/tmp}/vuln-scan.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
@@ -99,21 +119,42 @@ infra() {
 
 # Cargo.lock is generated, never hand-written: one [[package]] table per crate,
 # one key per line, values double-quoted. `[metadata]`, when present, ends the
-# package tables.
-awk -F'"' '
-  function flush() {
-    if (name != "") printf "%s\t%s\t%s\n", name, version, source
-    name = ""; version = ""; source = ""
-  }
-  /^\[\[package\]\]/      { flush(); in_pkg = 1; next }
-  /^\[/                   { flush(); in_pkg = 0; next }
-  in_pkg && /^name = /    { name = $2 }
-  in_pkg && /^version = / { version = $2 }
-  in_pkg && /^source = /  { source = $2 }
-  END { flush() }
-' Cargo.lock >"$work/packages.tsv"
+# package tables. Prints name, version, source per package, tab-separated.
+parse_lock() {
+  awk -F'"' '
+    function flush() {
+      if (name != "") printf "%s\t%s\t%s\n", name, version, source
+      name = ""; version = ""; source = ""
+    }
+    /^\[\[package\]\]/      { flush(); in_pkg = 1; next }
+    /^\[/                   { flush(); in_pkg = 0; next }
+    in_pkg && /^name = /    { name = $2 }
+    in_pkg && /^version = / { version = $2 }
+    in_pkg && /^source = /  { source = $2 }
+    END { flush() }
+  ' "$1"
+}
+
+parse_lock Cargo.lock >"$work/packages.tsv"
+
+# base.tsv: the base commit's packages, the set "pre-existing" is judged
+# against. A base without Cargo.lock leaves it empty; any other read failure
+# refuses to scan rather than guess at the baseline.
+: >"$work/base.tsv"
+if [ -n "$base_sha" ] && git cat-file -e "${base_sha}:Cargo.lock" 2>/dev/null; then
+  if ! git show "${base_sha}:Cargo.lock" >"$work/base.lock"; then
+    echo "vuln-scan FAILED: could not read Cargo.lock at DOCKET_GATE_BASE ${base_sha}." >&2
+    exit 2
+  fi
+  parse_lock "$work/base.lock" >"$work/base.tsv"
+fi
 
 awk -F'\t' '$3 != ""' "$work/packages.tsv" >"$work/deps.tsv"
+# added.tsv: dependencies absent from the baseline; with no base, all of them.
+# FILENAME, not NR==FNR, marks the first file: an empty base.tsv would
+# otherwise load deps.tsv as the baseline and pass everything.
+awk -F'\t' 'FILENAME == ARGV[1] { base[$0]; next } !($0 in base)' \
+  "$work/base.tsv" "$work/deps.tsv" >"$work/added.tsv"
 skipped="$(awk -F'\t' '$3 == "" { printf "%s %s  ", $1, $2 }' "$work/packages.tsv")"
 dep_count="$(wc -l <"$work/deps.tsv" | tr -d ' ')"
 
@@ -126,6 +167,9 @@ if [ "$dep_count" -eq 0 ]; then
 fi
 
 echo "vuln-scan: ${dep_count} crate(s) from Cargo.lock to check against OSV (crates.io)"
+if [ -n "$base_sha" ]; then
+  echo "vuln-scan: scoped to DOCKET_GATE_BASE ${base_sha}: $(wc -l <"$work/added.tsv" | tr -d ' ') crate(s) added or changed since; only those can fail"
+fi
 if [ -n "$skipped" ]; then
   echo "vuln-scan: skipping path package(s): ${skipped}"
 fi
@@ -186,6 +230,7 @@ awk -F'\t' '{ print $3 }' "$work/hits.sorted.tsv" | sort -u |
   awk '/^RUSTSEC-/ { print "0\t" $0; next } { print "1\t" $0 }' | sort | cut -f2 >"$work/ids.txt"
 
 vulns=0
+preexisting=0
 warnings=0
 seen_ids=""
 echo
@@ -228,6 +273,10 @@ while IFS= read -r id; do
     if [ -n "$withdrawn" ]; then
       kind="withdrawn"
     fi
+    if [ "$kind" = vulnerability ] && ! awk -F'\t' -v n="$name" -v v="$version" \
+      '$1 == n && $2 == v { found = 1; exit } END { exit !found }' "$work/added.tsv"; then
+      kind="vulnerability, pre-existing at DOCKET_GATE_BASE"
+    fi
     printf '  %-20s %s %s (%s)  %s  %s' "$id" "$name" "$version" "$origin" "$kind" "$summary"
     if [ -n "$alias_list" ]; then
       printf '  [%s]' "$alias_list"
@@ -235,6 +284,7 @@ while IFS= read -r id; do
     echo
     case "$kind" in
       vulnerability) vulns=$((vulns + 1)) ;;
+      vulnerability,*) preexisting=$((preexisting + 1)) ;;
       withdrawn) ;;
       *) warnings=$((warnings + 1)) ;;
     esac
@@ -243,8 +293,12 @@ done <"$work/ids.txt"
 
 echo
 if [ "$vulns" -gt 0 ]; then
+  scope="in Cargo.lock"
+  if [ -n "$base_sha" ]; then
+    scope="on crate(s) added or changed since DOCKET_GATE_BASE ${base_sha}"
+  fi
   cat >&2 <<EOF
-vuln-scan FAILED: ${vulns} vulnerability match(es) in Cargo.lock.
+vuln-scan FAILED: ${vulns} vulnerability match(es) ${scope}.
 
 Each row above names the crate, the version the lockfile pins, and the advisory.
 Move past the advisory's fixed version (cargo update -p <crate>, or bump the
@@ -255,10 +309,13 @@ EOF
   exit 1
 fi
 
+if [ "$preexisting" -gt 0 ]; then
+  echo "vuln-scan: ok — ${preexisting} vulnerability match(es) above on crate(s) already pinned at DOCKET_GATE_BASE ${base_sha}; none on a crate this range added or changed"
+fi
 if [ "$warnings" -gt 0 ]; then
   echo "vuln-scan: ok — ${warnings} informational advisory(ies) above (unmaintained, unsound, or notice); none is a vulnerability"
-  exit 0
 fi
-
-echo "vuln-scan: clean — the only matches were withdrawn advisories"
+if [ $((preexisting + warnings)) -eq 0 ]; then
+  echo "vuln-scan: clean — the only matches were withdrawn advisories"
+fi
 exit 0

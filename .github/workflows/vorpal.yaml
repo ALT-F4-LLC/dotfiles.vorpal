@@ -153,6 +153,8 @@ jobs:
 
       - run: bash tests/tribunal-seat-brief.test.sh
 
+      - run: bash tests/vuln-scan.test.sh
+
       - run: bash tests/docket-workflow-agent-budget.test.sh
 
       - run: bash tests/docket-workflow-bootstrap-owner-discriminator.test.sh

@@ -188,21 +188,11 @@ sentences() { # <file> — prose sentences, one per line, fenced blocks dropped
 /g'
 }
 
-find_block() { # <literal> — path of the joined block containing it
-    local b
+find_block() { # [-E] <literal | ERE> — path of the first joined block matching it
+    local b mode=-F
+    if [ "$1" = -E ]; then mode=-E; shift; fi
     for b in "$WORK"/block.*.joined; do
-        if grep -qF -- "$1" "$b"; then
-            printf '%s\n' "$b"
-            return 0
-        fi
-    done
-    return 1
-}
-
-find_block_re() { # <ERE> — path of the joined block matching it
-    local b
-    for b in "$WORK"/block.*.joined; do
-        if grep -qE -- "$1" "$b"; then
+        if grep -q "$mode" -- "$1" "$b"; then
             printf '%s\n' "$b"
             return 0
         fi
@@ -215,7 +205,7 @@ find_block_re() { # <ERE> — path of the joined block matching it
 # (.../pulls/<pr-number>/comments/<comment-id>/replies carries "pulls" as a
 # prefix too): the anchor requires "pulls" end the line or be followed only
 # by whitespace, never a "/".
-if publish=$(find_block_re 'gh api --method POST repos/<owner>/<repo>/pulls([[:space:]]|$)'); then
+if publish=$(find_block -E 'gh api --method POST repos/<owner>/<repo>/pulls([[:space:]]|$)'); then
     ok "publish block: gh api --method POST repos/<owner>/<repo>/pulls"
     for field in "-F 'title=@" "-F 'body=@"; do
         if grep -qF -- "$field" "$publish"; then
@@ -546,34 +536,31 @@ precondition_region=$?
 
 if [ "$precondition_region" -ne 0 ] || [ ! -s "${WORK}/precondition-5" ]; then
     bad "head-branch assertion: could not delimit precondition 5's paragraph"
-    head_hits=-1
 else
     sentences "${WORK}/precondition-5" > "${WORK}/skill-sentences"
-    head_hits=$(grep -cF -- 'assert it equals' "${WORK}/skill-sentences")
-fi
-
-if [ "$head_hits" -eq -1 ]; then
-    :
-elif [ "$head_hits" -ne 1 ]; then
-    bad "head-branch assertion: expected exactly one sentence carrying 'assert it equals', found ${head_hits}"
-else
-    ok "head-branch assertion: one sentence asserts the PR's head branch equals the checkout's"
     head_sentence=$(grep -F -- 'assert it equals' "${WORK}/skill-sentences")
+    head_hits=$(grep -cF -- 'assert it equals' <<<"$head_sentence")
 
-    # Matches the grammatical subject — "mismatch" followed by a refusal
-    # verb, allowing bold markup between them — not a bare *refus* substring,
-    # which matches inside "refusal" even when a negation ("is only noted,
-    # never a refusal", "with no refusal") governs it.
-    if printf '%s' "$head_sentence" | grep -qEi -- 'mismatch[^a-z]*\*{0,2}refuses'; then
-        ok "head-branch assertion: a mismatch refuses"
+    if [ "$head_hits" -ne 1 ]; then
+        bad "head-branch assertion: expected exactly one sentence carrying 'assert it equals', found ${head_hits}"
     else
-        bad "head-branch assertion: no refusal governs the mismatch — it is then merely reported"
-    fi
+        ok "head-branch assertion: one sentence asserts the PR's head branch equals the checkout's"
 
-    case "$head_sentence" in
-        *'<head-branch>'*) ok "head-branch assertion: the sentence names <head-branch>" ;;
-        *) bad "head-branch assertion: the sentence does not name <head-branch>" ;;
-    esac
+        # Matches the grammatical subject — "mismatch" followed by a refusal
+        # verb, allowing bold markup between them — not a bare *refus* substring,
+        # which matches inside "refusal" even when a negation ("is only noted,
+        # never a refusal", "with no refusal") governs it.
+        if printf '%s' "$head_sentence" | grep -qEi -- 'mismatch[^a-z]*\*{0,2}refuses'; then
+            ok "head-branch assertion: a mismatch refuses"
+        else
+            bad "head-branch assertion: no refusal governs the mismatch — it is then merely reported"
+        fi
+
+        case "$head_sentence" in
+            *'<head-branch>'*) ok "head-branch assertion: the sentence names <head-branch>" ;;
+            *) bad "head-branch assertion: the sentence does not name <head-branch>" ;;
+        esac
+    fi
 fi
 
 # (j) The title-validation paragraph carries the trailing-newline item and a

@@ -38,6 +38,7 @@ SESSION="11111111-2222-3333-4444-555555555555"
 PAD="${WORK}/claude-1/slug/${SESSION}/scratchpad"
 mkdir -p "$PAD"
 GLOB="${WORK}/claude-*/*/@SESSION@/scratchpad/docket-groom-*.json"
+LEDGER="${PAD}/docket-groom-docket-20261017T000000Z.json"
 TRANSCRIPT="${WORK}/t.jsonl"
 
 # transcript <assistant text>
@@ -55,7 +56,7 @@ run() {
     [ "$rc" -eq "$want" ] && pass "$name" || fail "${name}: exit ${rc}, want ${want}"
 }
 
-printf '{"reported": false}\n' > "${PAD}/docket-groom-docket-20261017T000000Z.json"
+printf '{"reported": false}\n' > "$LEDGER"
 
 transcript $'Round 2 applied.\nStill open for this pass: splits.'
 run "hand-back on an unreported ledger is blocked" 2
@@ -67,16 +68,15 @@ run "another session id is not blocked" 0 false "99999999-0000-0000-0000-0000000
 transcript "Round 2 applied. Asking the next batch."
 run "clean closing text is allowed" 0
 
-printf '{"reported": true}\n' > "${PAD}/docket-groom-docket-20261017T000000Z.json"
+printf '{"reported": true}\n' > "$LEDGER"
 transcript $'Final report.\nBlocked on the operator: x.\nStill open: none'
 run "reported ledger is not blocked" 0
 
-printf '{"reported": false}\n' > "${PAD}/docket-groom-docket-20261017T000000Z.json"
-rm -f "${PAD}"/docket-groom-*.json
+rm -f "$LEDGER"
 transcript "Still open: splits."
 run "no ledger is allowed" 0
 
-printf '{"reported": false}\n' > "${PAD}/docket-groom-docket-20261017T000000Z.json"
+printf '{"reported": false}\n' > "$LEDGER"
 rm -f "$TRANSCRIPT"
 run "unreadable transcript is allowed" 0
 

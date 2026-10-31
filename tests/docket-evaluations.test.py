@@ -22,6 +22,14 @@ def command(*args, stdin=None):
     return {"argv": ["docket", *args, "--json=v2"], "cwd": "$CHECKOUT", "stdin": stdin}
 
 
+def find(answer, case_id):
+    return next(row for row in answer["cases"] if row["id"] == case_id)
+
+
+def set_flag(argv, flag, value):
+    argv[argv.index(flag) + 1] = value
+
+
 def control():
     rows = [{"id": case["id"], "complete": case["id"] == "passed-gate", "commands": [], "files": []} for case in json.loads((EVAL.SKILL / "evals/cases.json").read_text())]
     by_id = {row["id"]: row for row in rows}
@@ -40,8 +48,7 @@ def control():
 class EvaluationTests(unittest.TestCase):
     def check_mutation(self, case_id, mutate):
         answer = control()
-        row = next(row for row in answer["cases"] if row["id"] == case_id)
-        mutate(row)
+        mutate(find(answer, case_id))
         report = EVAL.grade(answer)
         self.assertFalse(report["passed"])
         self.assertFalse(report["cases"][case_id]["passed"])
@@ -60,17 +67,11 @@ class EvaluationTests(unittest.TestCase):
         self.check_mutation("passed-gate", lambda r: r["commands"].append(command("step", "show", "STEP-12")))
 
     def test_voters_must_be_distinct(self):
-        def collide(row):
-            argv = row["commands"][1]["argv"]
-            argv[argv.index("--voter") + 1] = "judge-correctness"
-        self.check_mutation("voter-identity", collide)
+        self.check_mutation("voter-identity", lambda r: set_flag(r["commands"][1]["argv"], "--voter", "judge-correctness"))
 
     def test_vote_assessments_must_match(self):
-        def change(row, flag, value):
-            argv = row["commands"][0]["argv"]
-            argv[argv.index(flag) + 1] = value
         for flag, value in [("-v", "reject"), ("--role", "testing"), ("--confidence", "0.1"), ("--domain-relevance", "0.1")]:
-            self.check_mutation("voter-identity", lambda r: change(r, flag, value))
+            self.check_mutation("voter-identity", lambda r: set_flag(r["commands"][0]["argv"], flag, value))
 
     def test_unknown_and_conflicting_flags(self):
         self.check_mutation("wrong-project", lambda r: r["commands"][0]["argv"].append("--not-a-real-flag"))
@@ -98,29 +99,26 @@ class EvaluationTests(unittest.TestCase):
 
     def test_numeric_assessments_accept_equivalent_values(self):
         answer = control()
-        votes = next(r for r in answer["cases"] if r["id"] == "voter-identity")["commands"]
-        for c in votes:
-            c["argv"][c["argv"].index("--confidence") + 1] = "0.90"
-            c["argv"][c["argv"].index("--domain-relevance") + 1] = "8e-1"
+        for c in find(answer, "voter-identity")["commands"]:
+            set_flag(c["argv"], "--confidence", "0.90")
+            set_flag(c["argv"], "--domain-relevance", "8e-1")
         self.assertTrue(EVAL.grade(answer)["passed"])
         for value in ("nan", "inf", "not-a-number"):
-            self.check_mutation("voter-identity", lambda r: r["commands"][0]["argv"].__setitem__(r["commands"][0]["argv"].index("--confidence") + 1, value))
+            self.check_mutation("voter-identity", lambda r: set_flag(r["commands"][0]["argv"], "--confidence", value))
 
     def test_reading_the_proposal_record_before_casting_fails(self):
         # A seat casts from its assignment: the record prints every sibling
         # cast already landed, so reading it first is graded as a failure.
         for read in (command("vote", "show", "DKT-V1"), command("vote", "result", "DKT-V1")):
             answer = control()
-            row = next(r for r in answer["cases"] if r["id"] == "voter-identity")
-            row["commands"].insert(0, read)
+            find(answer, "voter-identity")["commands"].insert(0, read)
             report = EVAL.grade(answer)
             self.assertFalse(report["passed"])
             self.assertIn("no read of the proposal record", " ".join(report["cases"]["voter-identity"]["errors"]))
 
     def test_recovery_reads_are_valid(self):
         answer = control()
-        by_id = {row["id"]: row for row in answer["cases"]}
-        by_id["resume-inspection"]["commands"].extend([
+        find(answer, "resume-inspection")["commands"].extend([
             command("step", "list", "--run", "RUN-7"),
             command("step", "context", "STEP-12"),
             command("step", "artifact", "ARTIFACT-1"),
@@ -136,10 +134,8 @@ class EvaluationTests(unittest.TestCase):
     def test_documented_metadata_aliases_and_gap_paths_are_valid(self):
         for gap_path in ("./gap.md", "$CHECKOUT/gap.md"):
             answer = control()
-            by_id = {row["id"]: row for row in answer["cases"]}
-            argv = by_id["claim-attribution"]["commands"][0]["argv"]
-            argv[argv.index("--metadata") + 1] = json.dumps({"requested_model": "opus", "requested_effort": "high", "requested_variant": "opus-high"})
-            by_id["gap-headers"]["files"][0]["path"] = gap_path
+            set_flag(find(answer, "claim-attribution")["commands"][0]["argv"], "--metadata", json.dumps({"requested_model": "opus", "requested_effort": "high", "requested_variant": "opus-high"}))
+            find(answer, "gap-headers")["files"][0]["path"] = gap_path
             self.assertTrue(EVAL.grade(answer)["passed"])
 
     def test_gap_title_is_the_exact_first_line(self):
@@ -173,7 +169,7 @@ class EvaluationTests(unittest.TestCase):
                 database.assert_not_called()
 
     def test_fixture_execution_normalizes_leading_output_flags(self):
-        row = next(r for r in control()["cases"] if r["id"] == "literal-description")
+        row = find(control(), "literal-description")
         row["commands"][0]["argv"] = ["docket", "--json=v2", *row["commands"][0]["argv"][1:-1]]
         calls = []
         def execute(argv, **kwargs):

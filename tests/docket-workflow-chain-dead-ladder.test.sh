@@ -89,22 +89,16 @@ const budget = { total: null, spent: () => 0, remaining: () => Infinity }
 // result the scenario wants back for it.
 let SPAWNED = []
 let RESULTS = new Map()
-const settleFor = (row) => {
+const settleFor = (row, fallback) => {
+    SPAWNED.push(row.step)
     const r = RESULTS.get(row.step)
-    return typeof r === 'function' ? r(row) : r
+    const settled = typeof r === 'function' ? r(row) : r
+    return Promise.resolve(settled === undefined ? fallback : settled)
 }
-const spawn = (row) => {
-    SPAWNED.push(row.step)
-    return Promise.resolve(settleFor(row) === undefined
-        ? { step: row.step, status: 'returned', text: `${row.step} recorded (done)` }
-        : settleFor(row))
-}
-const runGate = (row) => {
-    SPAWNED.push(row.step)
-    return Promise.resolve(settleFor(row) === undefined
-        ? { step: row.step, status: 'gate-passed', text: '{"status":"done"}' }
-        : settleFor(row))
-}
+const spawn = (row) =>
+    settleFor(row, { step: row.step, status: 'returned', text: `${row.step} recorded (done)` })
+const runGate = (row) =>
+    settleFor(row, { step: row.step, status: 'gate-passed', text: '{"status":"done"}' })
 // The pre-claim probe. PROBES maps a step to the raw text `docket step show`
 // would have returned for it; an unlisted step probes empty (fail-open).
 let PROBES = new Map()
@@ -223,6 +217,8 @@ const blockedPayload = (reason) =>
 // The engine's CondPredecessors, verbatim (docket internal/engine/ready.go),
 // backticks and all.
 const AFTER_PRED = 'an `after` predecessor is not done'
+const logged = (text) => LOG.some((l) => l.includes(text))
+const saysDied = () => logged('chain died') && !logged('later stages deferred')
 
 out = await run(RUN43(), {
     'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked',
@@ -258,8 +254,7 @@ for (const reason of [
     out = await run(RUN43(), {
         'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked', text: blockedPayload(reason) },
     })
-    ok(LOG.some((l) => l.includes('later stages deferred')) &&
-       !LOG.some((l) => l.includes('chain died')),
+    ok(logged('later stages deferred') && !logged('chain died'),
         `DOT-1050: "${reason}" is a deferral, not a death`)
 }
 
@@ -270,8 +265,7 @@ for (const status of ['gate-rejected', 'spawn-failed', 'claim-conflict',
     out = await run(RUN43(), {
         'STEP-1547': { step: 'STEP-1547', status, text: blockedPayload(AFTER_PRED) },
     })
-    ok(LOG.some((l) => l.includes('chain died')) &&
-       !LOG.some((l) => l.includes('later stages deferred')),
+    ok(saysDied(),
         `DOT-1050 fence: ${status} still says the chain died, even carrying a progressing blocked_reason`)
 }
 
@@ -284,8 +278,7 @@ for (const reason of ['run is not active', 'the step is not pending',
     out = await run(RUN43(), {
         'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked', text: blockedPayload(reason) },
     })
-    ok(LOG.some((l) => l.includes('chain died')) &&
-       !LOG.some((l) => l.includes('later stages deferred')),
+    ok(saysDied(),
         `DOT-1050 fence: an unlisted blocked_reason ("${reason}") keeps the died wording`)
 }
 
@@ -296,8 +289,7 @@ for (const text of ['{"data":{"step":"STEP-1547","status":"pending"}}', '', null
     out = await run(RUN43(), {
         'STEP-1547': { step: 'STEP-1547', status: 'gate-blocked', text },
     })
-    ok(LOG.some((l) => l.includes('chain died')) &&
-       !LOG.some((l) => l.includes('later stages deferred')),
+    ok(saysDied(),
         `DOT-1050 fence: gate-blocked with no readable blocked_reason (${JSON.stringify(text)}) keeps the died wording`)
 }
 
@@ -305,12 +297,13 @@ for (const text of ['{"data":{"step":"STEP-1547","status":"pending"}}', '', null
 // skipped-not-claimable carrying the payload it read. (Same shape the DOT-560
 // block below uses: an ACTION at stage 0 so the chain is not dead, executors
 // behind it at stages 1 and 2.)
-const DEFER43 = () => [
-    { step: 'STEP-1540', issue: 'HRN-30', stage: 0, kind: 'action' },
+const act = (step, issue, stage) => ({ step, issue, stage, kind: 'action' })
+const PROBE43 = () => [
+    act('STEP-1540', 'HRN-30', 0),
     ex('STEP-1563', 'HRN-30', 1),
     ex('STEP-1572', 'HRN-30', 2),
 ]
-out = await run(DEFER43(), {}, {
+out = await run(PROBE43(), {}, {
     'STEP-1563': `{"data":{"step":"STEP-1563","status":"pending","blocked_reason":"${AFTER_PRED}"}}`,
 })
 ok(statusOf(out, 'STEP-1563') === 'skipped-not-claimable' &&
@@ -358,12 +351,6 @@ ok(SPAWNED.includes('STEP-2001'),
 // on exactly those two, and their probes run AFTER stage 0 was awaited — the
 // stage barrier has passed, so a 'pending' step can no longer become 'ready'
 // within this wave.
-const act = (step, issue, stage) => ({ step, issue, stage, kind: 'action' })
-const PROBE43 = () => [
-    act('STEP-1540', 'HRN-30', 0),
-    ex('STEP-1563', 'HRN-30', 1),
-    ex('STEP-1572', 'HRN-30', 2),
-]
 const st = (s) => `{"data":{"step":"STEP-x","status":"${s}"}}`
 
 out = await run(PROBE43(), {}, { 'STEP-1563': st('pending'), 'STEP-1572': st('pending') })

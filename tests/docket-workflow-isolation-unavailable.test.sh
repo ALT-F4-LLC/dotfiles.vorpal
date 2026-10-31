@@ -10,7 +10,7 @@
 # fallback fails here instead of relying on review.
 #
 # Needs only `node` and `awk`; it never runs a wave. WAVE_JS overrides the
-# The lane script path for mutant runs.
+# lane script path for mutant runs.
 
 set -uo pipefail
 
@@ -65,7 +65,7 @@ function settle(err, isolated, held) {
         row: { step: 'STEP-7' },
         isolated,
         log: () => {},
-        launch: (iso, retried) => { calls.launch.push(iso); return { step: 'STEP-7', status: 'relaunched' } },
+        launch: (iso) => { calls.launch.push(iso); return { step: 'STEP-7', status: 'relaunched' } },
         failed: () => { calls.failed++; return { step: 'STEP-7', status: 'spawn-failed' } },
         retryTransient: (e, iso) => { calls.retry.push(iso); return { step: 'STEP-7', status: 'retried' } },
         ...(held ? { held } : {}),

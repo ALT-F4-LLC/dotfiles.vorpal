@@ -415,8 +415,7 @@ ok(parseAncestryTargetSha('') === '' &&
        '3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca.') === '' &&
    parseAncestryTargetSha('"target_sha":"3ee9ca3cc3f5ada37eb46768efaebe0bea6a02ca"') === '',
     'parseAncestryTargetSha: empty, null envelope, and free prose are all "no target"')
-ok(SPAWNED !== undefined &&
-   ancestryProbeCommand('a'.repeat(7), 'b'.repeat(7)).startsWith('git merge-base'),
+ok(ancestryProbeCommand('a'.repeat(7), 'b'.repeat(7)).startsWith('git merge-base'),
     'ancestryProbeCommand is unchanged by the envelope switch')
 ok(!needsAncestryCheck({ kind: 'vote', issue: 'A', instance: 'gate@2#1' }, { A: 'abc123f' }),
     'needsAncestryCheck guards executor rows only')
@@ -425,9 +424,10 @@ ok(parseCherryPickOfTargetExit('cherrypick-of-target-exit=0\n') === 0 &&
    parseCherryPickOfTargetExit('') === null &&
    parseCherryPickOfTargetExit('ancestry-exit=0') === null,
     'parseCherryPickOfTargetExit reads its own marker and no other')
-ok(cherryPickOfTargetCommand('abc123f', 'def456a').startsWith('git log -1 --format=%B abc123f') &&
-   cherryPickOfTargetCommand('abc123f', 'def456a').includes('grep -q "cherry picked from commit def456a"') &&
-   !/[;&|]\s*rm|>/.test(cherryPickOfTargetCommand('abc123f', 'def456a').replace(/echo "cherrypick-of-target-exit=\$\?"/, '')),
+const selfCheckCmd = cherryPickOfTargetCommand('abc123f', 'def456a')
+ok(selfCheckCmd.startsWith('git log -1 --format=%B abc123f') &&
+   selfCheckCmd.includes('grep -q "cherry picked from commit def456a"') &&
+   !/[;&|]\s*rm|>/.test(selfCheckCmd.replace(/echo "cherrypick-of-target-exit=\$\?"/, '')),
     'cherryPickOfTargetCommand is a read-only trailer grep in the prior→target direction')
 // (that the status kills the chain is asserted structurally by AC-fail above,
 // and fenced predicate-level in tests/docket-workflow-park-signals.test.sh)

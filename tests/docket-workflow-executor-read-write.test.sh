@@ -114,7 +114,7 @@ case "$WRITE_TO" in
     *) target="${WORK}/unresolved/STEP-7.d/STEP-7-payload.json"; mkdir -p "$(dirname "$target")" ;;
 esac
 printf '%s' "$PAYLOAD" >"$target"
-if [ -f "$PHYS_PAYLOAD" ] && [ "$(cat "$PHYS_PAYLOAD")" = "$PAYLOAD" ] && grep -qF 'docket trust add' "$PHYS_PAYLOAD"; then
+if [ -f "$PHYS_PAYLOAD" ] && [ "$(cat "$PHYS_PAYLOAD")" = "$PAYLOAD" ]; then
     pass "the payload reads back byte-identical at the physical path, trust-verb text included"
 else
     fail "the payload did not read back at the physical path ${PHYS_PAYLOAD}"

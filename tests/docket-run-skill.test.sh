@@ -183,21 +183,29 @@ bad() {
     fail=1
 }
 
-# Every blank-line-delimited paragraph, flattened to one line each. Both the
-# paragraph anchors and the census read this, so line wrapping is never what a
-# ruling stands or falls on.
-awk '
-    function close_para() {
-        if (para != "") { print para; para = "" }
-    }
-    /^[[:space:]]*$/ { close_para(); next }
-    {
-        line = $0
-        sub(/^[[:space:]]+/, "", line)
-        para = (para == "" ? line : para " " line)
-    }
-    END { close_para() }
-' "$SKILL" > "${WORK}/flat"
+# Every blank-line-delimited paragraph of <file>, flattened to one line each.
+# Both the paragraph anchors and the census read this, so line wrapping is
+# never what a ruling stands or falls on.
+flatten() { # <file>
+    awk '
+        function close_para() {
+            if (para != "") { print para; para = "" }
+        }
+        /^[[:space:]]*$/ { close_para(); next }
+        {
+            line = $0
+            sub(/^[[:space:]]+/, "", line)
+            para = (para == "" ? line : para " " line)
+        }
+        END { close_para() }
+    ' "$1"
+}
+flatten "$SKILL" > "${WORK}/flat"
+
+# The <heading> section of SKILL.md up to the next `### ` heading.
+section() { # <heading>
+    sed -n "/^$1\$/,/^### /p" "$SKILL" | sed '$d'
+}
 
 # The one paragraph carrying <anchor>, written to <out>. Returns non-zero
 # unless exactly one paragraph carries it: zero means the anchor has drifted
@@ -467,8 +475,7 @@ fi
 #   p5 delete the exception sentence
 #   p6 restore the carve-out paragraph as at 233a3175 (no pause step, bare
 #      `just activate` mid-run; checked under (b) above)
-sed -n '/^### Escalating to the operator$/,/^### /p' "$SKILL" | sed '$d' | tr '\n' ' ' \
-    > "${WORK}/escalating"
+section '### Escalating to the operator' | tr '\n' ' ' > "${WORK}/escalating"
 activate_rule='An operator escalation never offers `just activate` or `just activate force=1` as a remedy while any run is non-terminal'
 if ! grep -qF -- '### Escalating to the operator' "${WORK}/escalating"; then
     bad "no activation offer: no '### Escalating to the operator' section in ${SKILL}"
@@ -1188,20 +1195,18 @@ fi
 #   t4 drop `--kind issue-promoted` from the post-activation check
 #   t5 drop `--kind gate-override-granted` from the grant report
 reaped_lookup='docket events list --run $RUN --kind lease-reaped --json=v2'
-awk '
+# One pass splits SKILL.md into the verbs heredoc and the body outside it.
+awk -v inside="${WORK}/verbs-heredoc" -v outside="${WORK}/verbs-outside" '
+    BEGIN { printf "" > inside; printf "" > outside }
     index($0, "cat > <scratchpad>/conductor.d/$RUN.verbs <<'"'"'EOF'"'"'") { on = 1; next }
     on && $0 == "EOF" { on = 0; next }
-    on { print }
-' "$SKILL" > "${WORK}/verbs-heredoc"
+    { print > (on ? inside : outside) }
+' "$SKILL"
 grep -F -- "$reaped_lookup" "${WORK}/verbs-heredoc" > "${WORK}/verbs-reaped"
 if [ "$(wc -l < "${WORK}/verbs-reaped")" -eq 1 ]; then
     ok "events by kind: the verbs checkpoint carries the lease-reaped seq lookup"
     reaped_line=$(cat "${WORK}/verbs-reaped")
-    taught=$(awk '
-        index($0, "cat > <scratchpad>/conductor.d/$RUN.verbs <<'"'"'EOF'"'"'") { on = 1; next }
-        on && $0 == "EOF" { on = 0; next }
-        !on { print }
-    ' "$SKILL" | grep -cxF -- "$reaped_line")
+    taught=$(grep -cxF -- "$reaped_line" "${WORK}/verbs-outside")
     if [ "$taught" -ge 1 ]; then
         ok "events by kind: the checkpoint's lease-reaped line matches the form the body teaches"
     else
@@ -1328,21 +1333,14 @@ fi
 #   x1 swap the hold offer for `docket run abandon $RUN --issue`
 #   x2 delete the never-abandon sentence
 #   x3 delete the hold line from the verbs heredoc
-awk '
-    function close_para() {
-        if (para != "") { print para; para = "" }
-    }
-    /^[[:space:]]*$/ { close_para(); next }
-    {
-        line = $0
-        sub(/^[[:space:]]+/, "", line)
-        para = (para == "" ? line : para " " line)
-    }
-    END { close_para() }
-' "$ESCALATION" > "${WORK}/esc-flat"
+flatten "$ESCALATION" > "${WORK}/esc-flat"
+# paragraph() over escalation.md's flattened paragraphs.
+esc_para() { # <anchor> <out>
+    [ "$(grep -cF -- "$1" "${WORK}/esc-flat")" -eq 1 ] || return 1
+    grep -F -- "$1" "${WORK}/esc-flat" > "$2"
+}
 hold_anchor='**A step that keeps failing is held; its issue is not abandoned.**'
-if [ "$(grep -cF -- "$hold_anchor" "${WORK}/esc-flat")" -eq 1 ]; then
-    grep -F -- "$hold_anchor" "${WORK}/esc-flat" > "${WORK}/hold"
+if esc_para "$hold_anchor" "${WORK}/hold"; then
     contains "step hold: a repeatedly failing step is offered docket step hold" \
         "${WORK}/hold" 'offer the operator `docket step hold` (above) for that step'
     contains "step hold: the hold parks one step and the issue runs on" \
@@ -1388,11 +1386,7 @@ for kind in step-deferred vote-reseated; do
         bad "run facts: the verbs checkpoint does not carry exactly one ${kind} fact line"
         continue
     fi
-    taught=$(awk '
-        index($0, "cat > <scratchpad>/conductor.d/$RUN.verbs <<'"'"'EOF'"'"'") { on = 1; next }
-        on && $0 == "EOF" { on = 0; next }
-        !on { print }
-    ' "$SKILL" | grep -cxF -- "$fact_line")
+    taught=$(grep -cxF -- "$fact_line" "${WORK}/verbs-outside")
     if [ "$taught" -ge 1 ]; then
         ok "run facts: the checkpoint's ${kind} line matches the form the body teaches"
     else
@@ -1528,7 +1522,7 @@ fi
 #       dispositions, the status-report line, or the no-tool sentence
 #   aa6 move the section's text under another heading
 advisor_heading='### Standing ruling: the advisor answers first'
-sed -n "/^${advisor_heading}\$/,/^### /p" "$SKILL" | sed '$d' > "${WORK}/advisor-section"
+section "$advisor_heading" > "${WORK}/advisor-section"
 tr '\n' ' ' < "${WORK}/advisor-section" | tr -s ' ' > "${WORK}/advisor"
 awk '
     /^[[:space:]]*```/ { open = !open; bash = open && ($0 ~ /^[[:space:]]*```bash[[:space:]]*$/); next }
@@ -1634,7 +1628,7 @@ fi
 # (aa2) Unattended mode is its own standing ruling: it adds to the advisor-first
 # text without widening what stays with the operator.
 unattended_heading='### Standing ruling: unattended mode'
-sed -n "/^${unattended_heading}\$/,/^### /p" "$SKILL" | sed '$d' | tr '\n' ' ' | tr -s ' ' > "${WORK}/unattended"
+section "$unattended_heading" | tr '\n' ' ' | tr -s ' ' > "${WORK}/unattended"
 if ! grep -qxF -- "$unattended_heading" "$SKILL"; then
     bad "unattended: no '${unattended_heading}' section in ${SKILL}"
 else
@@ -1690,10 +1684,6 @@ fi
 #   bb7 change a fenced advisor-first line's grant to `--authority operator`,
 #       or alter one character of it
 #   bb8 add "An answer is clear when ..." to escalation.md
-esc_para() { # <anchor> <out>
-    [ "$(grep -cF -- "$1" "${WORK}/esc-flat")" -eq 1 ] || return 1
-    grep -F -- "$1" "${WORK}/esc-flat" > "$2"
-}
 esc_para_number() { # <anchor>, printing 0 unless exactly one paragraph carries it
     if [ "$(grep -cF -- "$1" "${WORK}/esc-flat")" -eq 1 ]; then
         grep -nF -- "$1" "${WORK}/esc-flat" | cut -d: -f1

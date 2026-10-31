@@ -141,11 +141,11 @@ Flags:
 
     def test_flags_aliases_and_version_changes_are_drift(self):
         self.write()
+        original = json.dumps(self.data)
         for old, new in [("--limit int", "--limit string"),
                          ("(default 50)", "(default 20)"),
                          ("complete, record", "complete, record, finish")]:
             with self.subTest(change=new):
-                original = json.dumps(self.data)
                 self.data = json.loads(original.replace(old, new))
                 self.save()
                 result = self.run_tool("--check")
@@ -183,8 +183,7 @@ Flags:
     def test_missing_binary_and_invalid_inventory_fail(self):
         self.inventory.write_text("not json")
         self.assertEqual(self.run_tool("--check").returncode, 2)
-        result = self.run_tool("--binary", str(self.root / "missing"))
-        self.assertEqual(result.returncode, 2)
+        self.assertEqual(self.run_tool("--binary", str(self.root / "missing")).returncode, 2)
 
 
 unittest.main(argv=[sys.argv[0]], verbosity=2)

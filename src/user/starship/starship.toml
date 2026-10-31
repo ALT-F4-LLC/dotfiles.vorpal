@@ -31,7 +31,6 @@ $character"""
 [directory]
 read_only = " 󰌾"
 truncation_length = 2
-truncate_to_repo = true
 
 [direnv]
 disabled = false
@@ -41,16 +40,6 @@ symbol = " "
 ssh_symbol = " "
 ssh_only = false
 format = '[$hostname](bold) '
-trim_at = '.'
-disabled = false
-
-[username]
-style_user = 'white bold'
-style_root = 'black bold'
-format = '[$user]($style) '
-disabled = false
-show_always = true
-aliases = { "corpuser034g" = "matchai" }
 
 [os]
 disabled = false

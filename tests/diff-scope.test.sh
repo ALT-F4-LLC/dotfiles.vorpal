@@ -61,13 +61,9 @@ fresh_repo() {
 commit_all() { (cd "$1" && git add -A && git commit -qm change); }
 
 # expect <label> <track> <want-exit> <repo> [<want-output-substring>]
-# Runs the gate with DOCKET_GATE_BASE at the fixture's baseline commit.
+# expect_base with DOCKET_GATE_BASE at the fixture's baseline commit.
 expect() {
-    local label="$1" track="$2" want="$3" repo="$4" needle="${5:-}" out got
-    out=$(cd "$repo" && DOCKET_GATE_BASE=$(git rev-parse gate-base) "$GATE" "$track" 2>&1); got=$?
-    if [ "$got" -ne "$want" ]; then bad "$label (want exit $want, got $got): $out"
-    elif [ -n "$needle" ] && [[ "$out" != *"$needle"* ]]; then bad "$label (output lacks '$needle'): $out"
-    else ok "$label (exit $got)"; fi
+    expect_base "$1" "$2" "$3" "$4" "${5:-}" "$(cd "$4" && git rev-parse gate-base)"
 }
 
 # expect_base <label> <track> <want-exit> <repo> <want-output-substring> [<base>]
@@ -110,10 +106,10 @@ expect "trivial: an added file is refused" trivial 1 "$r"
 r=$(fresh_repo triv-del); rm "$r/src/a/other.rs"
 expect "trivial: a deleted file is refused" trivial 1 "$r"
 
-r=$(fresh_repo triv-long); for i in $(seq 1 12); do printf '// line %s\n' "$i" >> "$r/src/a/lib.rs"; done
+r=$(fresh_repo triv-long); seq -f '// line %g' 1 12 >> "$r/src/a/lib.rs"
 expect "trivial: twelve changed lines exceed the ten-line bound" trivial 1 "$r"
 
-r=$(fresh_repo triv-bound); for i in $(seq 1 12); do printf '// line %s\n' "$i" >> "$r/src/a/lib.rs"; done
+r=$(fresh_repo triv-bound); seq -f '// line %g' 1 12 >> "$r/src/a/lib.rs"
 out=$(cd "$r" && DOCKET_GATE_BASE=$(git rev-parse gate-base) DIFF_SCOPE_TRIVIAL_MAX_LINES=20 "$GATE" trivial 2>&1); got=$?
 [ "$got" -eq 0 ] && ok "trivial: the line bound is the env-configurable one" || bad "trivial: env bound not honored: $out"
 
@@ -209,14 +205,14 @@ expect "committed: a committed src/a edit plus an uncommitted src/b edit span tw
 r=$(fresh_repo com-small-add); printf 'fn n() {}\n' > "$r/src/a/new.rs"; commit_all "$r"
 expect "committed: a committed added file is refused on small" small 1 "$r" "small adds no file"
 
-r=$(fresh_repo com-triv-long); for i in $(seq 1 12); do printf '// line %s\n' "$i" >> "$r/src/a/lib.rs"; done; commit_all "$r"
+r=$(fresh_repo com-triv-long); seq -f '// line %g' 1 12 >> "$r/src/a/lib.rs"; commit_all "$r"
 expect "committed: twelve committed changed lines exceed the trivial bound" trivial 1 "$r" "12 changed lines; trivial allows 10"
 
 r=$(fresh_repo com-claude); mkdir -p "$r/.claude"; printf 'x\n' > "$r/.claude/x.sh"; commit_all "$r"
 expect "committed: a committed .claude/ file is not skipped on docs-only" docs-only 1 "$r" "not a document: .claude/x.sh"
 
-r=$(fresh_repo com-both); for i in $(seq 1 6); do printf '// c%s\n' "$i" >> "$r/src/a/lib.rs"; done; commit_all "$r"
-for i in $(seq 1 6); do printf '// w%s\n' "$i" >> "$r/src/a/lib.rs"; done
+r=$(fresh_repo com-both); seq -f '// c%g' 1 6 >> "$r/src/a/lib.rs"; commit_all "$r"
+seq -f '// w%g' 1 6 >> "$r/src/a/lib.rs"
 expect "committed: a path edited in both the range and the working tree counts both line sets" trivial 1 "$r" "12 changed lines; trivial allows 10"
 
 # ---- renames count the original path as removed ----------------------------

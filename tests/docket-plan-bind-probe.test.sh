@@ -84,18 +84,18 @@ out=$(row '[{"id":"A-4","labels":["ui","route-run"]}]')
 [ "$(field "$out" 3)" = "ui@1" ] && [ "$(field "$out" 4)" = 5 ] && [ "$(field "$out" 6)" = 2.5 ] && [ "$(field "$out" 7)" = 2 ] && [ "$(field "$out" 8)" = 7 ] \
   && pass "when-gated loop variants are alternatives in one round" || fail "ui costs: $out"
 
-out=$(printf '%s' '{"ok":true,"data":{"id":"A-5","labels":["route-run"]}}' | "$PROBE" --workflows "$TMPD/wf.json" 2>&1)
+out=$(row '{"ok":true,"data":{"id":"A-5","labels":["route-run"]}}')
 [ "$(field "$out" 1)" = "A-5" ] \
   && pass "reads an issue show envelope" || fail "show envelope: $out"
 
-out=$(printf '%s' '{"ok":true,"data":{"items":[{"id":"A-6","labels":["route-run"]}],"total":1}}' | "$PROBE" --workflows "$TMPD/wf.json" 2>&1)
+out=$(row '{"ok":true,"data":{"items":[{"id":"A-6","labels":["route-run"]}],"total":1}}')
 [ "$(field "$out" 1)" = "A-6" ] \
   && pass "reads an issue list envelope" || fail "list envelope: $out"
 
 out=$(printf '%s' '[{"id":"A-7","labels":[]}]' | "$PROBE" --workflows "$TMPD/empty.json" 2>&1); rc=$?
 [ "$rc" -ne 0 ] && pass "unreadable registry is a failure, not an empty table" || fail "missing registry exited 0: $out"
 
-printf '%s' 'not json' | "$PROBE" --workflows "$TMPD/wf.json" >/dev/null 2>&1; rc=$?
+row 'not json' >/dev/null; rc=$?
 [ "$rc" = 2 ] && pass "non-JSON input exits 2" || fail "non-JSON input exited $rc"
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

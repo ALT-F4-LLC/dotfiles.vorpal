@@ -36,7 +36,7 @@ command -v git >/dev/null 2>&1 || fatal "git is required"
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/docket-groom-ac-lint.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 REPO="${WORK}/repo"
-mkdir -p "${REPO}/src/user/claude_code/hooks" "${REPO}/other"
+mkdir -p "${REPO}/src/user/claude_code/hooks" "${REPO}/other" "${REPO}/more"
 awk 'BEGIN {
     for (i = 1; i <= 200; i++) {
         if (i == 168) print "    chunk = \"\""
@@ -46,16 +46,16 @@ awk 'BEGIN {
     }
 }' > "${REPO}/src/user/claude_code/hooks/docket-guard-prepass.awk"
 printf 'x\n' > "${REPO}/other/twin.sh"
-mkdir -p "${REPO}/more" && printf 'x\n' > "${REPO}/more/twin.sh"
+printf 'x\n' > "${REPO}/more/twin.sh"
 git -C "$REPO" init -q
 git -C "$REPO" -c user.email=t@t -c user.name=t add -A
 git -C "$REPO" -c user.email=t@t -c user.name=t commit -q -m fixture
 BASE=$(git -C "$REPO" rev-parse HEAD)
 P=src/user/claude_code/hooks/docket-guard-prepass.awk
 
-# lint <criterion text>: exit status in $RC, stdout in $OUT.
+# lint <criterion text> [extra lint args]: exit status in $RC, stdout in $OUT.
 lint() {
-    OUT=$(printf '%s\n' "$1" | bash "$LINT" --base "$BASE" --repo "$REPO" 2>&1)
+    OUT=$(printf '%s\n' "$1" | bash "$LINT" --base "$BASE" --repo "$REPO" "${@:2}" 2>&1)
     RC=$?
 }
 expect() { # <want-rc: 0 or nonzero> <label>
@@ -118,10 +118,7 @@ expect nonzero "a path that does not exist at the base"
 # `git merge-base HEAD main`, where a sibling's earlier commit had already
 # removed four assertion lines, so it read unmet whatever the fix did; the
 # amended text names the literal sha.
-lintShared() { # <criterion text>: --shared-base, exit status in $RC, stdout in $OUT.
-    OUT=$(printf '%s\n' "$1" | bash "$LINT" --base "$BASE" --repo "$REPO" --shared-base 2>&1)
-    RC=$?
-}
+lintShared() { lint "$1" --shared-base; }
 ORIG_AC3='- No assertion is dropped: Verify: `test "$(git diff -U0 $(git merge-base HEAD main) -- internal/engine/report_test.go | grep -cE '"'"'^-[^-].*(assert|require)'"'"')" -le 0` exits 0. Mutant: deleting one assertion line.'
 AMENDED_AC3='- No assertion is dropped: Verify: `test "$(git diff -U0 563519c -- internal/engine/report_test.go | grep -cE '"'"'^-[^-].*(assert|require)'"'"')" -le 0` exits 0. Mutant: deleting one assertion line.'
 lintShared "$ORIG_AC3"

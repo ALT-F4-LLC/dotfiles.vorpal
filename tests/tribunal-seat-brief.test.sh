@@ -72,9 +72,7 @@ const TARGET_SHA_RE = /^[0-9a-f]{40}$/
 JS
     cat "${WORK}/brief.js"
     cat "${WORK}/schema.js"
-} > "${WORK}/suite.mjs"
-
-cat >> "${WORK}/suite.mjs" <<'JS'
+    cat <<'JS'
 
 let pass = 0
 let fail = 0
@@ -126,9 +124,11 @@ const filterOf = (brief, verb) => {
 }
 const jq = (filter, input) => { try { return execFileSync('jq', ['-r', filter], { input, encoding: 'utf8' }).trim() } catch (e) { return `jq failed: ${e.message}` } }
 for (const [label, b] of [['mid-wave', mid], ['conversational', conv]]) {
-    ok(jq(filterOf(b, 'show'), SHOW) === 'done', `${label} brief: the step show filter prints done on a step show envelope (got ${JSON.stringify(jq(filterOf(b, 'show'), SHOW))})`)
-    ok(jq(filterOf(b, 'context'), CONTEXT) === 'ARTIFACT-1 findings\nARTIFACT-2 issue.body',
-        `${label} brief: the step context filter lists each input as artifact and kind (got ${JSON.stringify(jq(filterOf(b, 'context'), CONTEXT))})`)
+    const shown = jq(filterOf(b, 'show'), SHOW)
+    ok(shown === 'done', `${label} brief: the step show filter prints done on a step show envelope (got ${JSON.stringify(shown)})`)
+    const inputs = jq(filterOf(b, 'context'), CONTEXT)
+    ok(inputs === 'ARTIFACT-1 findings\nARTIFACT-2 issue.body',
+        `${label} brief: the step context filter lists each input as artifact and kind (got ${JSON.stringify(inputs)})`)
     ok(jq('.data.context.inputs[] | select(.payload) | .payload | fromjson | .[0].id', CONTEXT) === 'F1' && b.includes('select(.payload) | .payload | fromjson'),
         `${label} brief: the payload read it names parses a string payload and skips a null one`)
 }
@@ -201,5 +201,6 @@ for (const [label, b] of [['conversational', conv], ['mid-wave', mid]]) {
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail === 0 ? 0 : 1)
 JS
+} > "${WORK}/suite.mjs"
 
 node "${WORK}/suite.mjs"

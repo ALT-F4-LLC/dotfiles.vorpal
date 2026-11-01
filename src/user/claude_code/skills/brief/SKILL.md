@@ -112,8 +112,8 @@ automatically an approved deliverable or constraint.
 Use `AskUserQuestion` in successive rounds. Each round covers the current
 frontier: material questions whose prerequisites are settled, up to four
 per call. Prioritize decisions affecting security, docket tracking, Shape,
-and scope, then Role. For trivial one-shot work with checkable criteria,
-whether it runs now in this conversation or through a docket run is such a decision, since §3
+and scope, then Role. For trivial or bounded one-shot work with checkable
+criteria, whether it runs now in this conversation or through a docket run is such a decision, since §3
 rule 5 routes on it. Ask concrete questions about the work
 rather than asking the operator to classify its complexity. Offer a
 recommendation when evidence supports one; do not recommend guesses about
@@ -265,7 +265,11 @@ Apply these rules in order:
    or through
    `/docket-groom` — before `/docket-plan` can bind it. The same relabel
    need applies when rule 4 recommends `/docket-plan` for a `route-loop`
-   issue.
+   issue. The operator may override the requirement at confirmation (§4),
+   and an override is never the recommendation: record it under
+   Constraints, keep the conflict report, rebuild the handoff, and confirm
+   the revised brief again. A `route-run` label then needs relabeling to
+   `route-direct` through `/docket-groom`.
 2. **Docket tracking required:** follow the tracked issue's routing label.
    `route-run` means `/docket-plan` is required; an issue with no label
    reaches `/docket-plan` only when the operator names it explicitly (it
@@ -280,13 +284,13 @@ Apply these rules in order:
    loop contract is established, and its scheduling capabilities fit the
    requested lifetime. Recommend `/docket-plan` when a pass is larger or
    uncertain, or coordination across passes needs a plan.
-5. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial`:**
-   test in this order. Recommend `/goal` when the work leaves a
+5. **Shape `one-shot`, Security-sensitive `no`, Size hint `trivial` or
+   `bounded`:** test in this order. Recommend `/goal` when the work leaves a
    decision or judgment open, a criterion needs judgment to check, or the
    deliverable is an assessment. Otherwise recommend `/docket-plan` when the
    work can go through a docket run, and `/goal` when the operator wants it
-   now in this conversation. When the operator states neither, that choice decides the route:
-   ask it under §1.
+   now in this conversation. When the operator states neither, that choice
+   decides the route: ask it under §1, recommending `/goal`.
 6. **Other one-shot work:** recommend `/docket-plan`.
 
 **Documentation updates never go through a run.** When the whole scope is a
@@ -353,6 +357,9 @@ its passing output. It also carries these duties:
 
 - Create no docket issues, plan artifacts, schedules, or teams.
 - Verify each criterion with a suited check and show its output.
+- For a Security-sensitive `yes` brief routed here by an operator override
+  of rule 1, route the change's review through the advisor or a peer and
+  show its output.
 - For a `route-direct` issue, after verification show the output of
   `docket issue comment add <id> -m "<what landed and where>"` and then
   `docket issue close <id>`.
@@ -408,7 +415,11 @@ prepared handoff. For multiple briefs, confirm the set and its routes
 together. Put the recommendation first, eligible alternatives next in
 the order of the route list until the four-option cap is reached, and
 `Just give me the brief` last; the route list above carries any eligible
-route the cap leaves out. Keep choices concise; show the brief before
+route the cap leaves out. When rule 5 or 6 recommends `/docket-plan`,
+`/goal` is the first alternative. When rule 1 requires `/docket-plan`,
+`/goal` is the first alternative, labeled as an override that names each
+requirement it overrides (rule 1, and a `route-run` label), and never the
+recommendation. Keep choices concise; show the brief before
 the question rather than inside an option. Do not spend an
 option on a proposed Role: the operator swaps or strikes it through the
 free-text answer. Fold that in; repeat confirmation only when the answer

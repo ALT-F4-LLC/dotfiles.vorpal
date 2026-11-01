@@ -116,7 +116,7 @@ alias -- cat=bat
 alias -- dk=docket
 alias -- lg=lazygit
 alias -- ll=n
-alias -- s='doppler run --config "nixos" --project "$(whoami)"'
+alias -- s='doppler run --config "mac17-7" --project "$(whoami)"'
 alias -- wt='git worktree'
 
 ## Direnv

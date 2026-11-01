@@ -8,10 +8,12 @@
 # and this one is in that list. It needs only `node` and `awk` — no engine, no
 # database, no network, and it spawns no agent.
 #
-# WHY THIS EXISTS. The Workflow tool's real agent() concurrency cap is
-# min(16, CPUs-2) per invocation — this script cannot read the machine's own
+# WHY THIS EXISTS. The Workflow tool's agent() concurrency cap is 16 per
+# invocation and separate launches share none, so lane_units.py hands each
+# launch its share of the host's agent budget (max(1, cpus - 2) across the
+# launches running together). This script cannot read the machine's own
 # CPU count, so it used HARNESS_CAP=16 unconditionally as the loosest bound
-# it could assert. On any machine under 18 cores the real cap is tighter,
+# it could assert. On any machine under 18 cores the real budget is tighter,
 # and admission()'s own header comment names the failure this causes: judge
 # agents queuing behind a harness slot the wave believed was still open. The
 # fix lets the conductor pass the harnessCap that lane_units.py wrote into

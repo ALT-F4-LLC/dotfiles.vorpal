@@ -978,11 +978,17 @@ report it, never hunt for another copy or launch a different workflow's
 script in its place.
 
 **Pass the machine's own concurrency cap so the lane script does not have to guess
-it.** A wave script cannot read the CPU count itself. lane_units.py (Split the
-launches below) reads the CPU count itself (`os.cpu_count()`, overridable via
-`LANE_UNITS_CPUS`) and writes the cap, floored at 1, into every launches.json
-entry and every generated args object: launch i's `harnessCap` reaches
-the lane script inside `args-<i>.json`, as written, never a figure of your own.
+it, and so the dispatch as a whole does not overload the host.** A wave script
+cannot read the CPU count itself. lane_units.py (Split the launches below)
+reads the CPU count itself (`os.cpu_count()`, overridable via
+`LANE_UNITS_CPUS`) and works from one agent budget for the host,
+`max(1, cpus - 2)`, shared by every launch running at once. It launches at
+most as many lanes as the budget the running launches leave, and divides that
+budget among the lanes it launches: each launch's `harnessCap` is its share,
+at least 1 and at most 16, so a split's caps sum to no more than the budget.
+The cap goes into every launches.json entry and every generated args object:
+launch i's `harnessCap` reaches the lane script inside `args-<i>.json`, as
+written, never a figure of your own.
 The lane script uses `min(HARNESS_CAP, harnessCap)` as its own admission bound and
 logs which it used; omitting the field is never a refusal.
 
@@ -1003,8 +1009,13 @@ launches below.** One Workflow invocation runs at most 16 agents at once
 and 1000 over its life, and a nested workflow shares both with its
 parent; separate top-level launches share neither (20 ran concurrently,
 none refused or queued, measured). So each issue gets its own
-launch, 16 slots, and 1000-agent budget, and no issue's agents queue
-behind another's: a dispatch with six issues is six launches. Each launch
+launch and 1000-agent budget, with at most 16 agents at once, and no issue's agents
+queue behind another's: a dispatch with six issues is six launches. The
+host's CPU budget, not the tool, is what keeps those launches from
+overloading the machine, because separate launches share no cap: lane_units.py
+divides `max(1, cpus - 2)` agents among them, so each launch's `harnessCap`
+may be well under 16 (a 10-CPU host runs eight lanes at one agent each, not
+twenty lanes at eight). Each launch
 gets only its issue's rows and its `unit`; never merge two issues into
 one launch, which the lane script refuses. Writers the engine never co-staged run
 in separate launches, and the engine's claim check keeps them apart: the
@@ -1108,7 +1119,7 @@ python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$ROWS_FILE" "$LAUNCH_
 # a refill at a launch return splits the pending rows and names the lanes
 # still in flight, each by its key: the issue id, or row:<step> for a row
 # without an issue (add --integrated as above when the dispatch carries it):
-python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
+python3 ~/.claude/skills/docket-run/scripts/lane_units.py "$PENDING_FILE" "$LAUNCH_DIR" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --in-flight-cap "$IN_FLIGHT_CAP" --write-cap "$WRITE_CAP"
 ```
 
 Run it as its own Bash call, with no `jq -c` or other `-c` flag in the same
@@ -1131,7 +1142,9 @@ class's effective cap, `.data.limits.write` in this dispatch's
 `docket dispatch open --json` answer (`jq '.data.limits.write'` over the
 answer the kind filter reads). Pass `--write-cap` on every split, the
 refill's included, so launches never outgrow the write class's headroom;
-the script launches at most `min(20, $WRITE_CAP)`. When the answer has no
+the script launches at most `min(20, $WRITE_CAP)` lanes in all, and no more
+than the host's CPU budget leaves (`max(1, cpus - 2)` agents less those the
+running launches hold). When the answer has no
 `limits.write` key, the class is unbounded: omit `--write-cap` entirely,
 since the script exits on an empty or non-numeric value. `$INTEGRATED_FILE` holds the
 integrated map as one JSON object of issue to sha, written under the
@@ -1173,12 +1186,15 @@ teammate idle notification is not an event; speak only when the message
 carries content.
 
 **Refill freed launch slots each time a launch returns.** Parallelism
-stays at the 20-launch cap until no work remains: every launch return
-frees a slot, and you fill it in the same turn, never waiting for the
-slowest lane or for the dispatch close. At open, keep three files under
+stays at the launch cap or the host's CPU budget, whichever is lower, until
+no work remains: every launch return frees a slot and its share of the
+budget, and you fill them in the same turn, never waiting for the
+slowest lane or for the dispatch close. At open, keep four files under
 the session's scratchpad beside the kept rows file: `$SETTLED_FILE` and
-`$HELD_FILE`, each created empty with `cat /dev/null > <file>`, and
-`$PENDING_FILE`, a copy of the kept rows. `$SETTLED_FILE` lists the steps
+`$HELD_FILE`, each created empty with `cat /dev/null > <file>`,
+`$PENDING_FILE`, a copy of the kept rows, and `$CAPS_FILE`, created empty
+the same way, which records the `harnessCap` of every launch still running
+(**Track the running launches' caps** below). `$SETTLED_FILE` lists the steps
 that need no relaunch this dispatch, and `$HELD_FILE` the steps of
 refused lanes waiting for a return that can have freed their holder;
 every other row of the manifest of record is work that remains. Each time one launch returns while the dispatch is open, right after
@@ -1239,15 +1255,20 @@ launching its usage join (step 3), before waiting on the rest:
    `$LAUNCH_DIR`, with the same `--tribunal`, `--write-cap` (omitted when
    the open's answer has no `limits.write`), and `--integrated`, and
    `--in-flight` naming every lane whose launch is still running (the
-   refill form above). It emits launches only for lanes not in flight,
-   up to the write cap minus the in-flight count, and writes the rest to
-   `deferred.jsonl` for a later return.
+   refill form above), with `--in-flight-cap "$IN_FLIGHT_CAP"`, the sum of
+   those launches' `harnessCap` from `$CAPS_FILE`. It emits launches only
+   for lanes not in flight, up to the write cap minus the in-flight count
+   and no more than the CPU budget the running launches leave, and writes
+   the rest to `deferred.jsonl` for a later return. Without
+   `--in-flight-cap` it counts each running lane as one agent and says so on
+   stderr, which under-counts any launch holding more.
 6. Launch every unit it wrote, in one message exactly as above, each
    passing its `args-<i>.json` from the fresh `$LAUNCH_DIR`. That covers
    lanes deferred past the cap, every `skipped-not-ready` lane step 4
    left unheld with the rows behind it, rows appended to a lane that was
-   in flight at an earlier return, and every lane extend appended. Never
-   hold a deferred lane while fewer than 20 launches run. Relaunch a
+   in flight at an earlier return, and every lane extend appended. Record
+   each new launch's cap in `$CAPS_FILE` as below. Never hold a deferred
+   lane while a launch slot and CPU budget remain. Relaunch a
    `skipped-not-ready` lane only at a return where a holder released its
    scope (an in-dispatch launch returned having claimed or settled steps,
    or a dead holder was reaped at that return) or at a non-bounce launch
@@ -1261,7 +1282,7 @@ hand-run: write the returned launch's `statuses` array to `$STATUSES_FILE`,
 do step 3's reaps, then run, as its own Bash call from the run's work tree,
 
 ```bash
-bash ~/.claude/skills/docket-run/scripts/refill.sh --run "$RUN" --rows "$ROWS_FILE" --settled "$SETTLED_FILE" --held "$HELD_FILE" --pending "$PENDING_FILE" --launch-dir "$LAUNCH_DIR" --statuses "$STATUSES_FILE" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --write-cap "$WRITE_CAP"
+bash ~/.claude/skills/docket-run/scripts/refill.sh --run "$RUN" --rows "$ROWS_FILE" --settled "$SETTLED_FILE" --held "$HELD_FILE" --pending "$PENDING_FILE" --launch-dir "$LAUNCH_DIR" --statuses "$STATUSES_FILE" --workflows "$WORKFLOWS_FILE" --tribunal "<absolute installed path to tribunal.js>" --in-flight "<lane>,<lane>" --in-flight-cap "$IN_FLIGHT_CAP" --write-cap "$WRITE_CAP"
 ```
 
 adding `--reaped` when step 3 reaped a dead holder at this return (the
@@ -1283,6 +1304,32 @@ denies the next launch: verify it as under **`--ack-reap`** before step 6.
 Step 6 launches what the script wrote. Never pipe `docket dispatch
 extend` into a count or a filter by hand: an answer read that way did not
 reach the kept rows file, and its rows waited for the next dispatch.
+
+**Track the running launches' caps.** `$CAPS_FILE` holds one JSON line per
+launch still running, `{"lane": …, "cap": …}`, and `$IN_FLIGHT_CAP` is their
+sum. After every split whose launches you emit, the open's and each
+refill's, append that split's launches, each as its entry in `launches.json`
+reports it:
+
+```bash
+jq -c '.[] | {lane: .lanes[0], cap: .harnessCap}' "$LAUNCH_DIR/launches.json" >> "$CAPS_FILE"
+```
+
+At each launch return, before the refill, drop the returned launch's lane,
+and any launch step 2 or 3 found dead, then read the sum of those still
+running (run each as its own Bash call, once per lane to drop):
+
+```bash
+jq -c --arg lane "<returned lane>" 'select(.lane != $lane)' "$CAPS_FILE" > "$CAPS_FILE.next" && mv "$CAPS_FILE.next" "$CAPS_FILE"
+jq -s 'map(.cap) | add // 0' "$CAPS_FILE"
+```
+
+Pass that sum as `--in-flight-cap` (`$IN_FLIGHT_CAP`), with `--in-flight`
+naming the same lanes. The sum is what keeps a refill from adding
+launches on top of agents that still run: the new launches' caps and the
+running launches' caps together stay within `max(1, cpus - 2)`. A conductor
+that lost the file (a resumed session) rebuilds it from the `launches.json`
+of each split whose launches still run.
 
 Re-splitting all pending rows, never the appended rows alone, keeps both
 invariants lane_units.py computes: an appended write-class row never runs
@@ -1312,7 +1359,7 @@ concurrency headroom in its class" is a headroom refusal and frees the
 lane once any named holder has left claimed, running, and gated, since one
 free slot admits the claim. For each lane kept held, append its steps to
 `$HELD_FILE` and run the script again with the same other flags
-(`--tribunal`, `--in-flight`, `--write-cap`, `--integrated`) but without
+(`--tribunal`, `--in-flight`, `--in-flight-cap`, `--write-cap`, `--integrated`) but without
 `--statuses` or `--reaped` (it leaves the hold alone), into a fresh
 `--launch-dir`; it extends again, so keep its rows and verify any `reap
 hold` line as for the first run. Step 6 launches that run's files. A

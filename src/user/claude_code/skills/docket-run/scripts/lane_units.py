@@ -2,7 +2,8 @@
 
 Usage: python3 lane_units.py <rows-file> <out-dir> [--workflows FILE]
                               [--tribunal PATH] [--integrated FILE]
-                              [--in-flight LANES] [--write-cap N]
+                              [--in-flight LANES] [--in-flight-cap N]
+                              [--write-cap N]
 
 <rows-file> holds the rows the conductor kept after the kind filter, either
 as one JSON array or as one JSON object per line; a file holding a single
@@ -64,7 +65,8 @@ therefore run in separate launches, and the engine's claim check keeps them
 in stage order: a writer claimed while another lane's uncertified writer
 holds its scope is refused, and the lane script settles that refusal as
 skipped-not-ready, which a later refill relaunches. The free slots are the
-launch cap minus the lanes in flight, never below zero. Past them, the
+launch cap minus the lanes in flight, never below zero, and never more than
+the remaining CPU budget (below). Past them, the
 earliest lanes in manifest order launch and the rest go to deferred.jsonl,
 named on stderr; the conductor launches them from a later re-split as
 running launches return.
@@ -75,9 +77,19 @@ rows, so this script computes that count and gives each launch holding the
 class its share: the count divided among the holders, the remainder to the
 lowest-ranked holders, never below one.
 
-Harness cap. Every launches.json entry carries harnessCap =
-min(HARNESS_CAP, max(1, cpus - 2)), the value the conductor passes as the
-launch's harnessCap arg. cpus is os.cpu_count(), or LANE_UNITS_CPUS when set.
+CPU budget. The host's agent budget is max(1, cpus - 2), where cpus is
+os.cpu_count(), or LANE_UNITS_CPUS when set. It bounds the agents running at
+once across the whole dispatch, not one launch. --in-flight-cap is the sum of
+the harnessCap of every launch still running, a non-negative integer; when it
+is absent each in-flight lane counts as one agent, and stderr says so. It is
+never taken below the number of lanes in flight. The remaining budget is the
+host budget minus that sum, never below zero. A split launches at most
+min(free launch slots, remaining budget) lanes and defers the rest, so the
+lanes in flight never exceed the host budget. Every launch of one split
+carries harnessCap = min(HARNESS_CAP, max(1, remaining budget // lanes
+launched)), the value the conductor passes as the launch's harnessCap arg, so
+the harnessCaps of the new launches sum to at most the remaining budget. When
+no lane is in flight the remaining budget is the host budget, at least 1.
 
 This file exists because an inline heredoc (`python3 - <<'PY'`) is an
 interpreter code argument the auto-mode deny rule refuses before it runs.
@@ -146,11 +158,13 @@ def certified_classes(rows):
     return best
 
 
-def split(rows, in_flight=frozenset(), launch_cap=LAUNCH_CAP):
+def split(rows, in_flight=frozenset(), launch_cap=LAUNCH_CAP, budget=None):
     """One launch per lane not in flight, in manifest order, up to the free
-    slots; the lanes past them defer."""
+    slots and the remaining CPU budget (when given); the lanes past them defer."""
     order = [l for l in dict.fromkeys(lane(r) for r in rows) if l not in in_flight]
     free = max(0, launch_cap - len(in_flight))
+    if budget is not None:
+        free = min(free, max(0, budget))
     launched, deferred = order[:free], order[free:]
     launch_of = {l: i for i, l in enumerate(launched)}
     kept = [r for r in rows if lane(r) in launch_of]
@@ -181,7 +195,8 @@ def split(rows, in_flight=frozenset(), launch_cap=LAUNCH_CAP):
     return launches, [r for r in rows if lane(r) in deferred_set], deferred
 
 
-def harness_cap():
+def cpu_budget():
+    """The host's agent budget, max(1, cpus - 2), shared by every launch."""
     override = os.environ.get("LANE_UNITS_CPUS")
     if override is None:
         cpus = os.cpu_count() or 1
@@ -190,7 +205,12 @@ def harness_cap():
             cpus = int(override)
         except ValueError:
             raise SystemExit(f"lane_units: LANE_UNITS_CPUS={override!r} is not an integer")
-    return min(HARNESS_CAP, max(1, cpus - 2))
+    return max(1, cpus - 2)
+
+
+def launch_harness_cap(remaining, launched):
+    """Each launch's share of the remaining budget, at least 1, at most HARNESS_CAP."""
+    return min(HARNESS_CAP, max(1, remaining // max(1, launched)))
 
 
 def write_rows(path, rows):
@@ -237,7 +257,7 @@ def write_module(packets, digest, rows):
 
 
 USAGE = ("usage: lane_units.py <rows-file> <out-dir> [--workflows FILE] [--tribunal PATH] "
-         "[--integrated FILE] [--in-flight LANES] [--write-cap N]")
+         "[--integrated FILE] [--in-flight LANES] [--in-flight-cap N] [--write-cap N]")
 
 
 def workflow_name(ref):
@@ -289,12 +309,20 @@ def write_cap(value):
     return int(value)
 
 
+def in_flight_cap(value):
+    """--in-flight-cap's value as a non-negative int, or exit naming the flag."""
+    if not (value.isascii() and value.isdecimal()):
+        raise SystemExit(f"lane_units: --in-flight-cap {value!r} is not a non-negative integer")
+    return int(value)
+
+
 def parse_args(argv):
     positional, options = [], {}
     rest = list(argv[1:])
     while rest:
         arg = rest.pop(0)
-        if arg in ("--workflows", "--tribunal", "--integrated", "--in-flight", "--write-cap"):
+        if arg in ("--workflows", "--tribunal", "--integrated", "--in-flight", "--in-flight-cap",
+                   "--write-cap"):
             if not rest:
                 raise SystemExit(USAGE)
             options[arg[2:]] = rest.pop(0)
@@ -308,14 +336,19 @@ def parse_args(argv):
     launch_cap = LAUNCH_CAP
     if "write-cap" in options:
         launch_cap = min(LAUNCH_CAP, write_cap(options["write-cap"]))
+    flight_cap = in_flight_cap(options["in-flight-cap"]) if "in-flight-cap" in options else None
     return (positional[0], positional[1], options.get("workflows"), options.get("tribunal"),
-            options.get("integrated"), in_flight, launch_cap)
+            options.get("integrated"), in_flight, flight_cap, launch_cap)
 
 
 def main(argv):
     (rows_file, out, workflows_file, tribunal, integrated_file,
-     in_flight, launch_cap) = parse_args(argv)
-    cap = harness_cap()
+     in_flight, flight_cap, launch_cap) = parse_args(argv)
+    budget = cpu_budget()
+    # The agents the running launches hold: the reported sum, never fewer than
+    # one per lane in flight.
+    held = max(len(in_flight), flight_cap if flight_cap is not None else 0)
+    remaining = max(0, budget - held)
     rows = load_rows(rows_file)
     roster = load_workflows(workflows_file) if workflows_file is not None else None
     integrated = None
@@ -326,7 +359,8 @@ def main(argv):
             raise SystemExit(f"lane_units: {integrated_file} holds no JSON object of issue -> sha")
     top = git_toplevel()
     packets = os.path.join(top, PACKET_DIR)
-    launches, deferred_rows, deferred_lanes = split(rows, in_flight, launch_cap)
+    launches, deferred_rows, deferred_lanes = split(rows, in_flight, launch_cap, remaining)
+    cap = launch_harness_cap(remaining, len(launches))
     if roster is not None:
         unresolved = [launch["lanes"][0] for launch in launches
                       if launch["lanes"][0] not in roster]
@@ -380,11 +414,24 @@ def main(argv):
     if absent:
         print("lane_units: in flight but in no row: " + ", ".join(absent) +
               "; each still holds a launch slot", file=sys.stderr)
+    if in_flight and flight_cap is None:
+        print(f"lane_units: no --in-flight-cap given, so each of the {len(in_flight)} lane(s) in "
+              "flight counts as one agent; pass the sum of their harnessCap", file=sys.stderr)
+    if launches:
+        print(f"cpu budget: {budget} agent(s) for the host, {held} held by launches in flight, "
+              f"{len(launches)} launch(es) at harnessCap {cap}", file=sys.stderr)
     if deferred_lanes:
-        print(f"deferred: {len(deferred_lanes)} lane(s) past the {launch_cap}-launch cap "
-              f"with {len(in_flight)} in flight, {len(deferred_rows)} row(s) in "
-              f"deferred.jsonl; launch them as launches return: " + ", ".join(deferred_lanes),
-              file=sys.stderr)
+        free_by_launch = max(0, launch_cap - len(in_flight))
+        if remaining < free_by_launch:
+            print(f"deferred: {len(deferred_lanes)} lane(s) past the {remaining}-agent cpu budget "
+                  f"({budget} for the host, {held} held by {len(in_flight)} launch(es) in flight), "
+                  f"{len(deferred_rows)} row(s) in deferred.jsonl; launch them as launches "
+                  "return: " + ", ".join(deferred_lanes), file=sys.stderr)
+        else:
+            print(f"deferred: {len(deferred_lanes)} lane(s) past the {launch_cap}-launch cap "
+                  f"with {len(in_flight)} in flight, {len(deferred_rows)} row(s) in "
+                  f"deferred.jsonl; launch them as launches return: " + ", ".join(deferred_lanes),
+                  file=sys.stderr)
 
 
 if __name__ == "__main__":

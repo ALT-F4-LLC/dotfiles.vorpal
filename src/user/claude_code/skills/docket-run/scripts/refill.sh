@@ -7,7 +7,8 @@
 # Usage: refill.sh --run RUN-N --rows FILE --settled FILE --held FILE
 #                  --pending FILE --launch-dir DIR
 #                  [--statuses FILE] [--reaped] [--workflows FILE] [--tribunal PATH]
-#                  [--integrated FILE] [--in-flight LANES] [--write-cap N]
+#                  [--integrated FILE] [--in-flight LANES] [--in-flight-cap N]
+#                  [--write-cap N]
 #
 # This is docket-run's refill loop (the skill's steps 1, 2, 4 and 5) as one
 # command, so the bookkeeping that once failed by hand cannot: a conductor
@@ -31,7 +32,9 @@
 #   4. Rebuilds --pending: every row of --rows whose step is in neither
 #      --settled nor --held.
 #   5. Runs lane_units.py (the sibling file) over --pending into
-#      --launch-dir with --workflows, --tribunal, --integrated, --in-flight and
+#      --launch-dir with --workflows, --tribunal, --integrated, --in-flight,
+#      --in-flight-cap (the sum of the harnessCap of every launch still
+#      running, which lane_units.py subtracts from the host's CPU budget) and
 #      --write-cap as given. The launch count N is the only stdout.
 #
 # The reap itself (the skill's step 3) stays the conductor's: it needs the
@@ -56,12 +59,12 @@
 set -euo pipefail
 
 usage() {
-    printf 'usage: refill.sh --run RUN-N --rows FILE --settled FILE --held FILE --pending FILE --launch-dir DIR [--statuses FILE] [--reaped] [--workflows FILE] [--tribunal PATH] [--integrated FILE] [--in-flight LANES] [--write-cap N]\n' >&2
+    printf 'usage: refill.sh --run RUN-N --rows FILE --settled FILE --held FILE --pending FILE --launch-dir DIR [--statuses FILE] [--reaped] [--workflows FILE] [--tribunal PATH] [--integrated FILE] [--in-flight LANES] [--in-flight-cap N] [--write-cap N]\n' >&2
     exit 2
 }
 
 run="" rows="" settled="" held="" pending="" launch_dir=""
-statuses="" reaped=0 workflows="" tribunal="" integrated="" in_flight="" write_cap=""
+statuses="" reaped=0 workflows="" tribunal="" integrated="" in_flight="" in_flight_cap="" write_cap=""
 while [ $# -gt 0 ]; do
     case "$1" in
         --run) [ $# -ge 2 ] || usage; run="$2"; shift 2 ;;
@@ -76,6 +79,7 @@ while [ $# -gt 0 ]; do
         --tribunal) [ $# -ge 2 ] || usage; tribunal="$2"; shift 2 ;;
         --integrated) [ $# -ge 2 ] || usage; integrated="$2"; shift 2 ;;
         --in-flight) [ $# -ge 2 ] || usage; in_flight="$2"; shift 2 ;;
+        --in-flight-cap) [ $# -ge 2 ] || usage; in_flight_cap="$2"; shift 2 ;;
         --write-cap) [ $# -ge 2 ] || usage; write_cap="$2"; shift 2 ;;
         -h | --help) usage ;;
         *) usage ;;
@@ -154,6 +158,7 @@ args=("$pending" "$launch_dir")
 [ -z "$tribunal" ] || args+=(--tribunal "$tribunal")
 [ -z "$integrated" ] || args+=(--integrated "$integrated")
 [ -z "$in_flight" ] || args+=(--in-flight "$in_flight")
+[ -z "$in_flight_cap" ] || args+=(--in-flight-cap "$in_flight_cap")
 [ -z "$write_cap" ] || args+=(--write-cap "$write_cap")
 npending=$(wc -l < "$pending" | tr -d ' ')
 printf 'refill: appended %s row(s) to %s; %s pending\n' "$appended" "$rows" "$npending" >&2

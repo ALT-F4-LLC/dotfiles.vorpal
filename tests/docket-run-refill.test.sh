@@ -36,6 +36,10 @@ done
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/refill.XXXXXX") || fatal "mktemp failed"
 trap 'rm -rf "$WORK"' EXIT
 export GIT_CEILING_DIRECTORIES="$WORK"
+# lane_units.py budgets agents at max(1, cpus - 2) for the host, so the host's
+# CPU count would decide how many lanes a refill launches. Pin it high; the
+# CPU-budget cases set their own LANE_UNITS_CPUS.
+export LANE_UNITS_CPUS=64
 git init -q "$WORK/repo" || fatal "git init failed"
 
 # A stub `docket`: `dispatch extend` prints
@@ -249,6 +253,22 @@ ok $([ "$RC" -eq 0 ] && [ "$(jq -r '.integrated' "$WORK/launch/args-0.json")" !=
 SKILL="${DOCKET_RUN_SKILL:-${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run/SKILL.md}"
 ok $(grep -q 'bash ~/.claude/skills/docket-run/scripts/refill.sh --run "\$RUN" --rows "\$ROWS_FILE" --settled "\$SETTLED_FILE" --held "\$HELD_FILE" --pending "\$PENDING_FILE" --launch-dir "\$LAUNCH_DIR" --statuses "\$STATUSES_FILE"' "$SKILL" && echo 0 || echo 1) "SKILL.md carries the refill.sh command with every state file"
 ok $(grep -q -- '--reaped' "$SKILL" && grep -q 'Never pipe `docket dispatch' "$SKILL" && echo 0 || echo 1) "SKILL.md names --reaped and forbids a hand-piped extend"
+
+# ---- --in-flight-cap: a refill spends only the CPU budget the running launches leave
+# cpus 10 is a budget of 8 agents. Two launches hold all 8 (harnessCap 4 each),
+# so nothing launches and the four other lanes defer; one launch holding 4
+# leaves 4 for the five other lanes, one agent each, 4 + 4 within the budget.
+reset
+{ for i in 1 2 3 4 5 6; do row "STEP-$i" "ISS-$i" executor 1; done; } > "$ROWS"
+answer 1 ""
+LANE_UNITS_CPUS=10 refill --in-flight "ISS-1,ISS-2" --in-flight-cap 8
+ok $([ "$RC" -eq 0 ] && [ "$OUT" = 0 ] && [ -z "$(launched_lanes)" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = 4 ] && echo 0 || echo 1) "launches holding the whole budget: refill launches nothing and defers 4 lanes (rc ${RC}, out '${OUT}', err ${ERR})"
+reset
+{ for i in 1 2 3 4 5 6; do row "STEP-$i" "ISS-$i" executor 1; done; } > "$ROWS"
+answer 1 ""
+LANE_UNITS_CPUS=10 refill --in-flight "ISS-1" --in-flight-cap 4
+ok $([ "$RC" -eq 0 ] && [ "$OUT" = 4 ] && [ "$(jq -c '[.[].harnessCap] | unique' "$WORK/launch/launches.json")" = "[1]" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = 1 ] && echo 0 || echo 1) "4 of 8 agents held: refill launches 4 lanes at harnessCap 1 and defers 1 (rc ${RC}, out '${OUT}', err ${ERR})"
+ok $([ "$(( $(jq '[.[].harnessCap] | add' "$WORK/launch/launches.json") + 4 ))" -le 8 ] && echo 0 || echo 1) "the new launches' harnessCaps plus the running launches' 4 stay within the budget of 8"
 
 # ---- usage -------------------------------------------------------------------
 OUT=$(cd "$WORK/repo" && bash "$REFILL" --run RUN-1 2>&1); RC=$?

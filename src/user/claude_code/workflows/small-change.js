@@ -108,7 +108,9 @@ const LANE = { workflow: 'small-change' }
 // verb it records with.
 // `harnessCap` is the per-invocation agent() concurrency cap, computed by
 // lane_units.py and carried in its generated args (this script
-// cannot read the machine's CPU count itself); when present and a positive
+// cannot read the machine's CPU count itself). lane_units.py divides the
+// host's agent budget among the launches running at once, so the figure is
+// this launch's share of that budget, not the host's whole cap; when present and a positive
 // integer, the wave admits against min(16, harnessCap) instead of the loose
 // 16-agent ceiling it would otherwise assume, and logs which bound it used
 // either way — a caller that omits the field is not refused. On a dispatch
@@ -2806,9 +2808,11 @@ if (lanes.size > 1) {
 const inFlight = new Map()   // step -> row, executor rows launched and unsettled
 const waiting = []           // { row, seq, resolve, held }
 let submitted = 0
-// The Workflow tool's agent() concurrency cap is min(16, CPUs-2) per launch.
-// This script cannot read the CPU count, so HARNESS_CAP is the loosest bound
-// it can assert; the conductor passes the real figure as `input.harnessCap`.
+// The Workflow tool caps one launch's agent() concurrency at 16, and separate
+// launches share no cap. This script cannot read the CPU count, so HARNESS_CAP
+// is the loosest bound it can assert; the conductor passes lane_units.py's
+// figure as `input.harnessCap`, this launch's share of the host's agent
+// budget, so the launches running together stay within it.
 // Admission is bounded to the cap so the queue stays in `waiting`, where
 // pump() flushes it the moment a park lands. A caller that omits the field
 // keeps the loose bound and is not refused.

@@ -54,6 +54,10 @@ command -v jq >/dev/null 2>&1 || fatal "jq is required to run this test"
 # this checkout. GIT_CEILING_DIRECTORIES keeps the outside-work-tree case from
 # finding a repository above $WORK.
 export GIT_CEILING_DIRECTORIES="$WORK"
+# The CPU budget is max(1, cpus - 2), so the host's CPU count would decide how
+# many lanes launch. Pin it high enough that the 20-launch cap binds; the
+# budget cases below set their own LANE_UNITS_CPUS.
+export LANE_UNITS_CPUS=64
 git init -q "$WORK/repo" || fatal "git init failed"
 mkdir -p "$WORK/repo/sub/deeper" "$WORK/outside"
 TOP=$(git -C "$WORK/repo" rev-parse --show-toplevel) || fatal "fixture toplevel lookup failed"
@@ -261,26 +265,98 @@ ok $? "a top-level scalar is still exit 1 naming the accepted shapes (rc=$rc)"
 out=$(count "[$(w 1 A 0),$(r 2 B 0)]")
 [ "$(printf '%s' "$out" | wc -l | tr -d ' ')" = "0" ] && [ "$out" = "2" ]; ok $? "stdout carries the number alone, so \$(…) capture is clean (got '$out')"
 
-# ---- harnessCap: min(16, max(1, cpus - 2)) on every launches.json entry -------
-# LANE_UNITS_CPUS stands in for os.cpu_count() so the host does not decide.
-for pair in 1:1 2:1 10:8 18:16 64:16; do
-    cpus=${pair%%:*} want=${pair##*:}
+# ---- CPU budget: max(1, cpus - 2) agents shared by every launch of a split ------
+# LANE_UNITS_CPUS stands in for os.cpu_count() so the host does not decide. The
+# budget bounds the lanes launched together and divides among them: each
+# launch's harnessCap is min(16, max(1, budget // launched)), so the caps of
+# one split sum to at most the budget.
+# three single-row lanes: cpus:launched:harnessCap
+for triple in 1:1:1 2:1:1 4:2:1 10:3:2 18:3:5 64:3:16; do
+    IFS=: read -r cpus want_n want <<< "$triple"
     out=$(LANE_UNITS_CPUS=$cpus count "[$(w 1 A 0),$(r 2 B 0),$(r 3 C 0)]")
     got=$(summary 'sorted({x["harnessCap"] for x in s})')
-    [ "$out" = "3" ] && [ "$got" = "[$want]" ] && [ "$(summary 'len(s)')" = "3" ]
-    ok $? "LANE_UNITS_CPUS=$cpus gives every launch harnessCap $want, stdout still N alone (got '$out', caps $got)"
+    [ "$out" = "$want_n" ] && [ "$got" = "[$want]" ] && [ "$(summary 'len(s)')" = "$want_n" ] &&
+        [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "$((3 - want_n))" ]
+    ok $? "LANE_UNITS_CPUS=$cpus over 3 lanes launches $want_n at harnessCap $want, stdout still N alone (got '$out', caps $got)"
 done
-# Without the override the cap follows the host's online CPUs, checked against
+# twelve single-row lanes: the budget, not the 20-launch cap, bounds the lanes
+twelve=""
+for i in $(seq 1 12); do twelve="${twelve:+$twelve,}$(r "$i" "L$i" 0)"; done
+for triple in 4:2:1 10:8:1 18:12:1 30:12:2 64:12:5; do
+    IFS=: read -r cpus want_n want <<< "$triple"
+    out=$(LANE_UNITS_CPUS=$cpus count "[$twelve]")
+    got=$(summary 'sorted({x["harnessCap"] for x in s})')
+    budget=$((cpus - 2)); [ "$budget" -lt 1 ] && budget=1
+    [ "$out" = "$want_n" ] && [ "$got" = "[$want]" ] && [ "$((want_n * want))" -le "$budget" ] &&
+        [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "$((12 - want_n))" ]
+    ok $? "LANE_UNITS_CPUS=$cpus over 12 lanes launches $want_n at harnessCap $want, within the budget of $budget (got '$out', caps $got)"
+done
+# The per-launch ceiling still holds: one lane on a large host gets 16, not 62.
+out=$(LANE_UNITS_CPUS=64 count "[$(r 1 A 0)]")
+[ "$out" = "1" ] && [ "$(summary 'sorted({x["harnessCap"] for x in s})')" = "[16]" ]
+ok $? "one lane on 64 CPUs keeps harnessCap at the 16-agent ceiling (got '$out')"
+# The deferral names the CPU budget when it, not the launch cap, bounds the split.
+LANE_UNITS_CPUS=10 count "[$twelve]" > /dev/null
+grep -q 'deferred: 4 lane(s) past the 8-agent cpu budget (8 for the host, 0 held by 0 launch(es) in flight)' "$WORK/err" && grep -q 'L12' "$WORK/err"
+ok $? 'a deferral bound by the CPU budget names the budget, not the launch cap'
+# Without the override the budget follows the host's online CPUs, checked against
 # getconf rather than lane_units.py. PYTHON_CPU_COUNT (Python 3.13+) would
 # steer os.cpu_count() away from getconf, so it is unset too.
 online=$(getconf _NPROCESSORS_ONLN)
-want=$((online - 2)); [ "$want" -lt 1 ] && want=1; [ "$want" -gt 16 ] && want=16
+budget=$((online - 2)); [ "$budget" -lt 1 ] && budget=1
+want_n=3; [ "$budget" -lt 3 ] && want_n=$budget
+want=$((budget / want_n)); [ "$want" -gt 16 ] && want=16
 printf '%s' "[$(w 1 A 0),$(r 2 B 0),$(r 3 C 0)]" > "$WORK/rows.json"
 rm -rf "$WORK/launch"
 out=$(cd "$WORK/repo" && env -u LANE_UNITS_CPUS -u PYTHON_CPU_COUNT python3 "$SCRIPT" "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err")
 got=$(summary 'sorted({x["harnessCap"] for x in s})')
-[ "$out" = "3" ] && [ "$got" = "[$want]" ] && [ "$(summary 'len(s)')" = "3" ]
-ok $? "with LANE_UNITS_CPUS unset every launch has harnessCap min(16, max(1, $online - 2)) = $want (got '$out', caps $got)"
+[ "$out" = "$want_n" ] && [ "$got" = "[$want]" ] && [ "$(summary 'len(s)')" = "$want_n" ]
+ok $? "with LANE_UNITS_CPUS unset $want_n launch(es) share the host budget $budget at harnessCap $want (got '$out', caps $got)"
+
+# ---- --in-flight-cap: a refill spends only what the running launches leave -------
+# cpus 10 is a budget of 8. Two lanes run at harnessCap 4 each (--in-flight-cap
+# 8) so nothing is left; with one returned (--in-flight-cap 4) four agents are
+# left, shared by the lanes launched.
+printf '%s' "[$twelve]" > "$WORK/rows.json"
+rm -rf "$WORK/launch"
+n=$(LANE_UNITS_CPUS=10 lu "$WORK/rows.json" "$WORK/launch" --in-flight L1,L2 --in-flight-cap 8 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "0" ] && [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "10" ] &&
+    grep -q 'deferred: 10 lane(s) past the 0-agent cpu budget (8 for the host, 8 held by 2 launch(es) in flight)' "$WORK/err"
+ok $? "in-flight launches holding the whole budget leave 0 launches and 10 lanes deferred (rc=$rc, got '$n': $(head -c 300 "$WORK/err"))"
+rm -rf "$WORK/launch"
+n=$(LANE_UNITS_CPUS=10 lu "$WORK/rows.json" "$WORK/launch" --in-flight L1 --in-flight-cap 4 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "4" ] && [ "$(summary 'sorted({x["harnessCap"] for x in s})')" = "[1]" ] &&
+    [ "$(wc -l < "$WORK/launch/deferred.jsonl" | tr -d ' ')" = "7" ] && grep -q 'cpu budget: 8 agent(s) for the host, 4 held by launches in flight, 4 launch(es) at harnessCap 1' "$WORK/err"
+ok $? "4 of 8 agents held launches 4 lanes at harnessCap 1 and defers 7; the new caps plus 4 stay within 8 (rc=$rc, got '$n': $(head -c 300 "$WORK/err"))"
+rm -rf "$WORK/launch"
+n=$(LANE_UNITS_CPUS=10 lu "$WORK/rows.json" "$WORK/launch" --in-flight L1,L2,L3,L4 --in-flight-cap 4 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "4" ] && [ "$(summary 'sorted({x["harnessCap"] for x in s})')" = "[1]" ]
+ok $? "a cap sum below the lanes in flight counts one agent per lane: 4 in flight hold 4 of 8, 4 launch (rc=$rc, got '$n')"
+rm -rf "$WORK/launch"
+n=$(LANE_UNITS_CPUS=64 lu "$WORK/rows.json" "$WORK/launch" --in-flight L1,L2 --in-flight-cap 30 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "10" ] && [ "$(summary 'sorted({x["harnessCap"] for x in s})')" = "[3]" ]
+ok $? "62 agents less 30 held leaves 32 for 10 lanes at harnessCap 3 (rc=$rc, got '$n': $(head -c 200 "$WORK/err"))"
+# no flag: each in-flight lane counts as one agent, and stderr says so
+rm -rf "$WORK/launch"
+n=$(LANE_UNITS_CPUS=10 lu "$WORK/rows.json" "$WORK/launch" --in-flight L1,L2 2> "$WORK/err"); rc=$?
+[ "$rc" -eq 0 ] && [ "$n" = "6" ] && grep -q 'no --in-flight-cap given, so each of the 2 lane(s) in flight counts as one agent' "$WORK/err"
+ok $? "without --in-flight-cap each in-flight lane counts as one agent and stderr says so (rc=$rc, got '$n')"
+rm -rf "$WORK/launch"
+n=$(LANE_UNITS_CPUS=10 lu "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err")
+! grep -q 'no --in-flight-cap given' "$WORK/err"; ok $? 'with nothing in flight the missing --in-flight-cap is not mentioned'
+for bad in -1 1.5 x ''; do
+    rm -rf "$WORK/out-cap"
+    flag=(--in-flight-cap); [ -n "$bad" ] && flag+=("$bad")
+    lu "$WORK/rows.json" "$WORK/out-cap" "${flag[@]}" > "$WORK/out" 2> "$WORK/err"; rc=$?
+    [ "$rc" -ne 0 ] && grep -q -- '--in-flight-cap' "$WORK/err" && [ ! -e "$WORK/out-cap" ] && [ ! -s "$WORK/out" ]
+    ok $? "--in-flight-cap ${bad:-with no value} exits non-zero naming --in-flight-cap and writes nothing (rc=$rc: $(head -c 200 "$WORK/err"))"
+done
+# the launch cap still bounds a big host: 64 CPUs, 25 lanes, 20 launch
+rm -rf "$WORK/launch"
+printf '%s' "[$many]" > "$WORK/rows.json"
+n=$(LANE_UNITS_CPUS=64 lu "$WORK/rows.json" "$WORK/launch" 2> "$WORK/err")
+[ "$n" = "20" ] && [ "$(summary 'sorted({x["harnessCap"] for x in s})')" = "[3]" ] && grep -q 'deferred: 5 lane(s) past the 20-launch cap' "$WORK/err"
+ok $? "64 CPUs and 25 lanes launch 20 at harnessCap 3, still named as the launch cap (got '$n')"
 
 # ---- Generated launch args: a rows module by reference, never inline rows ------
 # The conductor passes args-<i>.json to the lane script unedited, so the object is
@@ -324,7 +400,7 @@ for i in 0 1 2 3 4 5; do  # the fixture's six lanes, whatever the script printed
     ok $? "launch $i: cwd is the git toplevel, not the subdirectory it ran in (got $(jq -r '.cwd' "$args"), want $TOP)"
     [ "$(jq -c '.unit' "$args")" = "$(jq -c --argjson i "$i" '.[$i] | {index, of, classCap}' "$WORK/gen/launches.json")" ] &&
         [ "$(jq '.unit.of' "$args")" = "$n" ] && [ "$(jq '.unit.index' "$args")" = "$i" ] &&
-        [ "$(jq '.harnessCap' "$args")" = "8" ] &&
+        [ "$(jq '.harnessCap' "$args")" = "1" ] &&
         [ "$(jq '.harnessCap' "$args")" = "$(jq --argjson i "$i" '.[$i].harnessCap' "$WORK/gen/launches.json")" ]
     ok $? "launch $i: unit {index, of, classCap} and harnessCap match launches.json (got unit $(jq -c '.unit' "$args"), harnessCap $(jq '.harnessCap' "$args"))"
     [ "$(jq -r '.tribunal' "$args")" = "$TRIBUNAL" ] && [ "$(jq -cS '.integrated' "$args")" = "$(jq -cS . "$WORK/integrated.json")" ]
@@ -439,8 +515,13 @@ grep -qF -- '"$PENDING_FILE" "$LAUNCH_DIR" --workflows "$WORKFLOWS_FILE" --tribu
     'SKILL.md re-splits the pending rows with --in-flight at a launch return'
 # Prose pins match across line wraps.
 skill_text=$(tr -s ' \n' '  ' < "$SKILL")
-printf '%s' "$skill_text" | grep -qF 'Never hold a deferred lane while fewer than 20 launches run'; ok $? \
-    'SKILL.md never holds a deferred lane while a slot is free'
+printf '%s' "$skill_text" | grep -qF 'Never hold a deferred lane while a launch slot and CPU budget remain'; ok $? \
+    'SKILL.md never holds a deferred lane while a slot and CPU budget are free'
+# The refill passes the running launches' summed harnessCap, so a refill spends
+# only the CPU budget they leave.
+grep -qF -- '--in-flight "<lane>,<lane>" --in-flight-cap "$IN_FLIGHT_CAP"' "$SKILL" &&
+    printf '%s' "$skill_text" | grep -qF "**Track the running launches' caps.**"; ok $? \
+    'SKILL.md passes --in-flight-cap on the refill and documents how the sum is tracked'
 # A refused lane relaunches only at a return that can have freed its holder,
 # never at a bounce: relaunching at every return spun refused lanes against a
 # live holder. Both the refill step and the paragraph after it must say so.

@@ -14,10 +14,14 @@
 #     appended instead of replaced, or never cleared), so `go` resolves to the
 #     wrong dev shell or to one the directory does not have.
 #   LOST ENV   - another hook's exports are dropped, or a failed export wipes
-#     a working block, so later Bash commands lose `go`.
+#     a working block, or a move into a directory without a `.envrc` unloads
+#     the dev shell the launch environment already holds (`direnv exec .
+#     claude`), so later Bash commands lose `go` and `cargo`.
 #
 # SEAM. A fake `direnv` on PATH, steered by FAKE_DIRENV_MODE, records the
-# directory it ran in; the hook's stdout and the env file are the verdict.
+# directory each `export` ran in; `status --json` reports the directory's
+# `.envrc` as foundRC, as real direnv does, unless FAKE_DIRENV_STATUS=fail.
+# The hook's stdout and the env file are the verdict.
 
 set -uo pipefail
 
@@ -63,9 +67,23 @@ FAKE="$WORK/fake"
 mkdir -p "$FAKE"
 cat >"$FAKE/direnv" <<'EOF'
 #!/bin/bash
+if [ "${1:-}" = status ]; then
+    [ "${FAKE_DIRENV_STATUS:-ok}" = fail ] && exit 1
+    d=$PWD
+    while [ -n "$d" ] && [ ! -f "$d/.envrc" ]; do d=${d%/*}; done
+    if [ -n "$d" ]; then
+        printf '{"state":{"foundRC":{"path":"%s/.envrc","allowed":0},"loadedRC":null}}\n' "$d"
+    else
+        printf '{"state":{"foundRC":null,"loadedRC":null}}\n'
+    fi
+    exit 0
+fi
 pwd >>"$FAKE_DIRENV_LOG"
 case "${FAKE_DIRENV_MODE:-load}" in
     load) printf 'export PATH=%s;\n' "'/dev-shell/${FAKE_DIRENV_TAG:-a}/bin:/usr/bin'" ;;
+    # What real direnv prints outside any .envrc when the harness env carries
+    # DIRENV_DIFF from the launch: the launch dev shell, reverted.
+    unload) printf 'unset DIRENV_DIFF;export PATH=%s;\n' "'/usr/bin:/bin'" ;;
     empty) ;;
     blocked)
         echo 'direnv: error /x/.envrc is blocked. Run `direnv allow` to approve its content' >&2
@@ -81,7 +99,19 @@ chmod +x "$FAKE/direnv"
 
 DIR_A="$WORK/repo-a"
 DIR_B="$WORK/repo-b"
-mkdir -p "$DIR_A" "$DIR_B"
+DIR_PLAIN="$WORK/scratch"
+mkdir -p "$DIR_A" "$DIR_B" "$DIR_PLAIN"
+printf 'use vorpal\n' >"$DIR_A/.envrc"
+printf 'use vorpal\n' >"$DIR_B/.envrc"
+
+# The launch environment of `direnv exec <DIR_A> claude`: the dev shell is on
+# PATH and direnv's state variables name it.
+LAUNCH_ENV=(
+    "DIRENV_DIR=-$DIR_A"
+    "DIRENV_FILE=$DIR_A/.envrc"
+    "DIRENV_DIFF=launch-diff"
+    "DIRENV_WATCHES=launch-watches"
+)
 
 ENV_FILE="$WORK/env"
 LOG="$WORK/direnv.log"
@@ -94,6 +124,17 @@ run_hook() {
     : >"$LOG"
     PATH="$FAKE:$BASE_PATH" CLAUDE_ENV_FILE="$ENV_FILE" FAKE_DIRENV_MODE="$mode" \
         FAKE_DIRENV_TAG="$tag" FAKE_DIRENV_LOG="$LOG" \
+        "$BASH_BIN" "$HOOK" <<<"$json" >"$OUT" 2>/dev/null
+}
+
+# run_hook_launched <mode> <json> [status] — run_hook under LAUNCH_ENV, with
+# the dev shell already on PATH; status=fail makes `direnv status` fail.
+run_hook_launched() {
+    local mode="$1" json="$2" status="${3:-ok}"
+    : >"$LOG"
+    env "${LAUNCH_ENV[@]}" PATH="/dev-shell/a/bin:$FAKE:$BASE_PATH" \
+        CLAUDE_ENV_FILE="$ENV_FILE" FAKE_DIRENV_MODE="$mode" \
+        FAKE_DIRENV_STATUS="$status" FAKE_DIRENV_LOG="$LOG" \
         "$BASH_BIN" "$HOOK" <<<"$json" >"$OUT" 2>/dev/null
 }
 
@@ -266,6 +307,77 @@ case_malformed_input_falls_back_to_pwd() {
     fi
 }
 
+case_launch_env_same_repo_writes_nothing() {
+    printf 'export OTHER_HOOK=1\n' >"$ENV_FILE"
+    run_hook_launched empty "$(session_start "$DIR_A")"
+    local rc=$?
+    if [ "$rc" -eq 0 ] && [ "$(cat "$ENV_FILE")" = "export OTHER_HOOK=1" ] && [ ! -s "$OUT" ]; then
+        pass "launch env holds the dev shell: SessionStart in that repo writes no block"
+    else
+        fail "launch env holds the dev shell: SessionStart in that repo changed the file or printed (rc=$rc)"
+    fi
+}
+
+case_launch_env_survives_move_out_of_repo() {
+    printf 'export OTHER_HOOK=1\n' >"$ENV_FILE"
+    run_hook_launched unload "$(cwd_changed "$DIR_A" "$DIR_PLAIN")"
+    local rc=$?
+    if [ "$rc" -eq 0 ] && [ "$(block_count)" = "0" ] && ! grep -q 'DIRENV_DIFF' "$ENV_FILE" \
+        && grep -qxF 'export OTHER_HOOK=1' "$ENV_FILE"; then
+        pass "launch env holds the dev shell: a move to a dir without .envrc writes no unload block"
+    else
+        fail "launch env holds the dev shell: a move to a dir without .envrc unloaded it (rc=$rc, blocks=$(block_count))"
+    fi
+    if [ ! -s "$LOG" ]; then
+        pass "a dir without .envrc: direnv export does not run"
+    else
+        fail "a dir without .envrc: direnv export ran in '$(cat "$LOG")'"
+    fi
+}
+
+case_launch_env_move_clears_other_repo_block() {
+    rm -f "$ENV_FILE"
+    run_hook_launched load "$(cwd_changed "$DIR_A" "$DIR_B")"
+    run_hook_launched unload "$(cwd_changed "$DIR_B" "$DIR_PLAIN")"
+    if [ "$(block_count)" = "0" ] && ! grep -q '/dev-shell/' "$ENV_FILE" \
+        && grep -q 'cleared the loaded environment' "$OUT"; then
+        pass "leaving another repo for a dir without .envrc returns to the launch env"
+    else
+        fail "leaving another repo for a dir without .envrc left blocks=$(block_count)"
+    fi
+}
+
+case_launch_env_other_repo_still_loads() {
+    rm -f "$ENV_FILE"
+    run_hook_launched load "$(cwd_changed "$DIR_A" "$DIR_B")"
+    if [ "$(block_count)" = "1" ] && [ "$(cat "$LOG")" = "$(cd "$DIR_B" && pwd)" ]; then
+        pass "launch env holds the dev shell: a move into another repo still loads its .envrc"
+    else
+        fail "launch env holds the dev shell: a move into another repo loaded nothing (blocks=$(block_count))"
+    fi
+}
+
+case_launch_repo_subdir_still_exports() {
+    mkdir -p "$DIR_A/sub"
+    rm -f "$ENV_FILE"
+    run_hook_launched empty "$(cwd_changed "$DIR_A" "$DIR_A/sub")"
+    if [ "$(cat "$LOG")" = "$(cd "$DIR_A/sub" && pwd)" ] && [ "$(block_count)" = "0" ]; then
+        pass "a subdirectory of the launch repo finds the parent .envrc and runs the export"
+    else
+        fail "a subdirectory of the launch repo skipped the export (log='$(cat "$LOG")')"
+    fi
+}
+
+case_status_failure_falls_back_to_export() {
+    rm -f "$ENV_FILE"
+    run_hook_launched load "$(cwd_changed "$DIR_A" "$DIR_PLAIN")" fail
+    if [ "$(cat "$LOG")" = "$(cd "$DIR_PLAIN" && pwd)" ] && [ "$(block_count)" = "1" ]; then
+        pass "direnv status unavailable: the hook falls back to direnv export"
+    else
+        fail "direnv status unavailable: export did not run (log='$(cat "$LOG")')"
+    fi
+}
+
 case_no_env_file_is_a_noop
 case_no_direnv_is_a_noop
 case_session_start_loads_block
@@ -278,6 +390,12 @@ case_blocked_envrc_leaves_file
 case_failed_export_leaves_file
 case_missing_directory_is_a_noop
 case_malformed_input_falls_back_to_pwd
+case_launch_env_same_repo_writes_nothing
+case_launch_env_survives_move_out_of_repo
+case_launch_env_move_clears_other_repo_block
+case_launch_env_other_repo_still_loads
+case_launch_repo_subdir_still_exports
+case_status_failure_falls_back_to_export
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

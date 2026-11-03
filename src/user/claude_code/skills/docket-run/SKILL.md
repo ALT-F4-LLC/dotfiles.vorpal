@@ -500,8 +500,9 @@ carries `go` only when the target repo's Vorpal dev shell is loaded: Claude
 was launched from a shell where direnv loaded the repo's `.envrc`, or the
 direnv-env hook loaded it at session start or on a `cd` into the repo. When
 the target repo has a `go.mod`, run `command -v go` from this session before
-each dispatch into it: the hook unloads the dev shell when the session's
-directory moves to one without that `.envrc`. If it prints nothing, dispatch nothing: tell the
+each dispatch into it: the hook keeps the launch dev shell across moves into
+directories without a `.envrc`, but a move into another repo with its own
+`.envrc` swaps that repo's dev shell in. If it prints nothing, dispatch nothing: tell the
 operator the session lacks the repo's dev shell, and that the fix is to
 launch Claude in the repo (after `direnv allow` there) or `cd` into it
 within the session's working directories. Never point executors at

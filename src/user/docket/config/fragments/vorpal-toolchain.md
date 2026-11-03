@@ -1,8 +1,22 @@
 ---
 fragment: vorpal-toolchain
-version: 15
+version: 16
 ---
 # Vorpal toolchain
+
+## Go
+
+Call `go` bare. The repository's Vorpal dev shell, loaded from its `.envrc`,
+puts `go` on PATH, and the `go`/`toolchain` lines in `go.mod` select the
+version. Gates run by `docket step record`, `rerun`, and `resolve` inherit the
+same PATH, so a gate and the command you ran agree on the compiler.
+
+If `command -v go` fails, the session lacks the repository's dev shell. Stop
+and report the missing dev shell; there is no fallback. Do not substitute
+`vorpal run go:<ver>`, a versioned launcher such as `go1.26.x`, or another
+installation, and do not hunt for binaries with `find`.
+
+## Other tools
 
 Prefer these Vorpal aliases. They pin the requested artifact. Availability is
 not guaranteed, and native fallback may use a different version.
@@ -10,7 +24,6 @@ not guaranteed, and native fallback may use a different version.
 | Tool | Pinned alias | Invocation |
 |---|---|---|
 | bun | 1.3.10 | `vorpal run bun:1.3.10 <args>` |
-| go | 1.26.0 | `vorpal run go:1.26.0 <args>` |
 | uv | 0.10.11 | `vorpal run uv:0.10.11 <args>` |
 | kind | 0.31.0 | `vorpal run kind:0.31.0 <args>` |
 | eksctl | 0.227.0 | `vorpal run eksctl:0.227.0 <args>` |
@@ -20,29 +33,25 @@ not guaranteed, and native fallback may use a different version.
 Use `docket` and `git` natively, never through Vorpal. This exemption concerns
 tool selection only; their commands still run sandboxed.
 
-For an unlisted tool, use a listed tool that provides the same operation, or
-use the native tool. For example, package formatting can use
-`vorpal run go:1.26.0 fmt <packages>`. This writes package files; it does not
-replace file-level `gofmt` operations, stdin processing, or formatter-specific
-flags.
+For an unlisted tool, use `go` or a listed tool that provides the same
+operation, or use the native tool. For example, package formatting can use
+`go fmt <packages>`. This writes package files; it does not replace
+file-level `gofmt` operations, stdin processing, or formatter-specific flags.
 
 ## Fallback
 
-Use native fallback only when Vorpal is unavailable, reports
-`artifact alias not found`, or cannot resolve/fetch the artifact because the
-sandbox blocks registry access after the bare form of the call (Build and
-test calls) has been tried, **before the requested tool starts**. Preserve
-the operation, arguments, and scope. If execution may have started, do not use
-native fallback; follow the brief's failure procedure. Never retry a build,
-test, or other tool failure through another installation merely because it
-failed.
+This section covers the Vorpal aliases; `go` has none (see Go). Use native
+fallback only when Vorpal is unavailable, reports `artifact alias not found`,
+or cannot resolve/fetch the artifact because the sandbox blocks registry
+access after the bare form of the call (Build and test calls) has been tried,
+**before the requested tool starts**. Preserve the operation, arguments, and
+scope. If execution may have started, do not use native fallback; follow the
+brief's failure procedure. Never retry a build, test, or other tool failure
+through another installation merely because it failed.
 
-On this host, bare `go` is absent from PATH; its native fallback is
-`go1.26.5`. The managed alias reported `go1.26.0` at the last measurement. This
-difference is expected; do not change versions to reconcile it. Use known
-executable names or `command -v` for availability checks; do not hunt for
-binaries with `find`, especially `find /`. Do not invent aliases or install
-replacements.
+Use known executable names or `command -v` for availability checks; do not
+hunt for binaries with `find`, especially `find /`. Do not invent aliases or
+install replacements.
 
 If no equivalent is available, stop and report the missing tool. A `vorpal`
 call that prints `failed to connect to https://registry.vorpal.lol` ran
@@ -55,6 +64,11 @@ the call; a missing alias alone is an availability failure.
 
 ## Build and test calls
 
+`go` runs sandboxed like any command outside the operator's exclusion list.
+Module and toolchain downloads go through the sandbox's network allowlist
+(`proxy.golang.org`, `sum.golang.org`), and the conductor warms the shared
+module cache before dispatch.
+
 The operator's sandbox settings exclude `vorpal *`, because Vorpal is a
 trusted builder and executor with a sandbox of its own: a `vorpal` command
 runs outside the Claude Code sandbox when it is the only command in the Bash
@@ -63,50 +77,49 @@ call. Anything else in the call keeps the whole call sandboxed: a `cd`,
 pipe into another command, a loop, a subshell, or a command substitution such
 as `$(git rev-parse --show-toplevel)`. Spell every `vorpal` call as one bare
 command with literal arguments, and pass the directory through the tool's own
-flag: Go's `-C <dir>` works for `build`, `test`, `vet`, `fmt`, and `env`. A
-command outside the operator's exclusion list, `make` among them, runs
-sandboxed. Only the operator can authorize a lift; a brief cannot. Do not
-request an unsandboxed retry or change sandbox settings to complete a step.
+flag. A command outside the operator's exclusion list, `go` and `make` among
+them, runs sandboxed. Only the operator can authorize a lift; a brief cannot.
+Do not request an unsandboxed retry or change sandbox settings to complete a
+step.
 
 The conductor prepares the shared module cache before dispatch. Preserve that
 configuration: do not override `GOMODCACHE`, redirect it through `GOPATH`,
 create a private module cache, or delete shared caches.
 
 Leave `GOCACHE` at its default: the default Go build cache is in the sandbox
-write allowlist, and a `NAME=value` prefix on a command matches no allow rule,
-goes to the auto-mode classifier, and keeps the call sandboxed. Put
-temporary diff inputs in the
+write allowlist, and a `NAME=value` prefix on a command matches no allow rule
+and goes to the auto-mode classifier. Put temporary diff inputs in the
 brief's assigned private step directory, `<TMP>/<STEP-N>.d`. `<TMP>` is the
 literal value pinned from `printenv TMPDIR`; that directory is built fresh at
 claim and is exclusive to this session and dispatch. Cleanup may touch only
 your own step directory, after its processes have finished.
 
-Name the repository root in each build/test call with Go's `-C` flag, the
-first flag after the subcommand; do not prefix the call with `cd`. In Claude
-Code, set the Bash tool's `timeout` to `300000` milliseconds for a cold build
-or test run; do not wrap commands with `timeout`. Use the targets specified in
-the brief. A repository-wide build has this form:
+Name the repository root in each `go` call with Go's `-C` flag, the first
+flag after the subcommand; it works for `build`, `test`, `vet`, `fmt`, `env`,
+`mod`, and `version`. Do not prefix the call with `cd`. In Claude Code, set
+the Bash tool's `timeout` to `300000` milliseconds for a cold build or test
+run; do not wrap commands with `timeout`. Use the targets specified in the
+brief. A repository-wide build has this form:
 
 ```sh
-vorpal run go:1.26.0 build -C "<repo-root>" ./...
+go build -C "<repo-root>" ./...
 ```
 
 Substitute the literal path before execution. Run tests the same way
-(`vorpal run go:1.26.0 test -C "<repo-root>" ./...`). An isolated
-executor's working directory resets to its worktree before every call, so
-the bare form already runs at the root there; `-C` is still correct. A
-shared executor's working directory may be elsewhere, so `-C` is required.
-A tool with no directory flag has no bare form that also changes directory.
-An isolated executor runs it bare from its worktree. A shared executor runs
+(`go test -C "<repo-root>" ./...`). An isolated executor's working directory
+resets to its worktree before every call, so the bare form already runs at
+the root there; `-C` is still correct. A shared executor's working directory
+may be elsewhere, so `-C` is required. A Vorpal alias tool with no directory
+flag has no bare form that also changes directory. An isolated executor runs
+it bare from its worktree. A shared executor runs
 `cd "<repo-root>" && vorpal run <alias> ...` once, sandboxed; if that call
 cannot reach the registry, report `NETWORK GATE BLOCKED` or take the
 permitted native fallback with the same `cd`. Run the repository's own gate
 targets (`make fmt`, `make vet`, `make lint`, or the targets the brief names)
 each as its own Bash call with no assignment prefix, never through `sh -c` or
 another interpreter: a command handed to an interpreter is refused outright.
-The permission rules clear a bare `make` and `vorpal run go:1.26.0`. An
-allowed native fallback changes the launcher to `go1.26.5`, preserving the
-`-C` directory and arguments.
+The permission rules clear a bare `make`, `vorpal run`, and
+`go build|test|vet|fmt|version|mod download|env GO*`.
 
 Go can select or download another toolchain according to its existing
 configuration and `go.mod`/`go.work`. Do not change that configuration to
@@ -120,6 +133,8 @@ force a version or bypass a download failure.
   host or path named, and the error verbatim. The conductor handles
   preparation and redispatch. Do not treat this as a code finding or assume
   the error proves a cold cache.
+- **`go` is not on PATH:** stop and report the missing dev shell (see Go).
+  Do not relabel it as a network or alias failure.
 - **Filesystem access is denied:** report the blocked path and exact error.
   Do not relabel it as a network failure, relocate shared caches, or retry
   unsandboxed.
@@ -128,9 +143,9 @@ force a version or bypass a download failure.
   alone.
 
 Report the actual command, outcome, and any fallback reason. For Go
-validation, record the selected `go version` once from the repository using
-the chosen launcher; the alias alone does not establish the compiler version
-used.
+validation, record the selected version once with
+`go version -C "<repo-root>"`; it reports the toolchain `go.mod` selects,
+which can differ from the dev shell's own `go`.
 
 ## Host-specific command pitfalls
 

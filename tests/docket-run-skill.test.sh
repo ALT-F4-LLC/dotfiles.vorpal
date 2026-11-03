@@ -91,10 +91,10 @@
 #          lifted"; reds the states() check on the ruling sentence and the
 #          census both, since the mutated sentence names a lift that no
 #          pinned sentence grants
-#   (d) module-cache unsandboxed retry
+#   (d) module-cache warm, sandboxed
 #       p-d reword the paragraph's anchor sentence
-#       d1 delete "the unsandboxed retry is sanctioned here because it fills
-#          the shared cache every executor reads"
+#       d1 delete "It runs sandboxed, through the network allowlist"
+#       d2 delete "is an environment finding for the operator"
 #   (e) lift census
 #       e1 insert a new paragraph granting an unconditioned lift
 #       e2 insert the same unconditioned-lift sentence INSIDE one of the
@@ -541,13 +541,15 @@ else
     bad "stale entry: no single paragraph carries 'The stale metadata directory is inert'"
 fi
 
-# (d) The module-cache retry is the fourth relaxation ruling in the file, and
-# the only one granted to the conductor alone (dispatched before any executor
-# exists, so no executor-side equivalent could apply).
+# (d) The conductor warms the Go module cache sandboxed, before any executor
+# exists. The paragraph grants no lift: a TLS or blocked-host error is an
+# environment finding, not a reason to retry unsandboxed or to park.
 if paragraph 'Warm the Go module cache before dispatching into a Go repo' "${WORK}/modcache"; then
     ok "module cache: exactly one paragraph rules on warming the cache"
-    states "module cache: the unsandboxed retry is sanctioned here" \
-        "${WORK}/modcache" 'the unsandboxed retry is sanctioned here because it fills the shared cache every executor reads'
+    states "module cache: the warm runs sandboxed" \
+        "${WORK}/modcache" 'It runs sandboxed, through the network allowlist'
+    states "module cache: a fetch failure is an environment finding" \
+        "${WORK}/modcache" 'is an environment finding for the operator'
 else
     bad "module cache: no single paragraph carries 'Warm the Go module cache before dispatching into a Go repo'"
 fi

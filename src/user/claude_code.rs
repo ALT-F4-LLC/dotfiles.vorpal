@@ -301,9 +301,10 @@ const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
 /// the org's trusted builder and executor with a sandbox of its own, and its
 /// client cannot reach registry.vorpal.lol from inside this sandbox even
 /// though the host is in the network allowlist. The cost is stated plainly:
-/// whatever an unsandboxed `vorpal run go test ./...` executes sees the host
+/// whatever an unsandboxed `vorpal run <alias> ...` executes sees the host
 /// filesystem without the write allowlist, the read-deny list, or the
-/// network filter.
+/// network filter. Go is not routed through Vorpal: the corpus calls `go`
+/// bare from the repository's dev shell, and that call stays sandboxed.
 ///
 /// CAUSE (registry.vorpal.lol): the sandbox injects HTTPS_PROXY (an authenticated 127.0.0.1 filtering proxy) and curl through it reaches the registry (200), but a sandboxed `vorpal --level trace run go version` shows tonic's hyper-util HttpConnector connecting to host=registry.vorpal.lol itself (never the proxy address) and then failing; the client builds that channel with `Channel::builder(uri).connect()` (sdk/rust/src/context.rs), which has no proxy handling, so the direct TCP egress is what the sandbox refuses ("Operation not permitted (os error 1)" in the 2026-10-25 measurement).
 /// DECISION (registry.vorpal.lol): keep the `vorpal *` exclusion; a client change that honors the proxy lies outside this repo, and no sandbox setting admits direct egress without dropping the network filter for every command.
@@ -427,8 +428,11 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "Bash(git worktree list:*)",
     "Bash(go build:*)",
     "Bash(go env GO*)",
+    "Bash(go fmt:*)",
+    "Bash(go mod download:*)",
     "Bash(go test:*)",
     "Bash(go tool golangci-lint:*)",
+    "Bash(go version:*)",
     "Bash(go vet:*)",
     "Bash(gofmt:*)",
     "Bash(just --list)",
@@ -696,6 +700,24 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             None,
             "bash ~/.claude/hooks/docket-session-start-hook.sh",
             "command",
+        )
+        // Loads the session directory's direnv environment (a Vorpal dev
+        // shell) into CLAUDE_ENV_FILE, so bare `go` reaches every Bash call,
+        // executor, and docket gate even when Claude was launched outside
+        // that shell. The timeout bounds a cold `vorpal build` in `.envrc`.
+        .with_hook_timeout(
+            "SessionStart",
+            None,
+            "bash ~/.claude/hooks/direnv-env-hook.sh",
+            "command",
+            300,
+        )
+        .with_hook_timeout(
+            "CwdChanged",
+            None,
+            "bash ~/.claude/hooks/direnv-env-hook.sh",
+            "command",
+            300,
         )
         // A hook runs outside the Bash sandbox, which refuses the in-session
         // prune of a wave worktree's metadata directory.
@@ -1452,9 +1474,10 @@ mod tests {
 
     #[test]
     fn permission_allow_rules_cover_the_corpus_hygiene_shapes() {
-        // The vorpal-toolchain fragment prescribes `vorpal run go:<alias>
-        // ...` and the repository's own `make <target>` gates, each as its
-        // own top-level command. A bare invocation of either must match a
+        // The vorpal-toolchain fragment prescribes bare `go <sub> -C
+        // "<repo-root>"`, `vorpal run <alias> ...` for the other tools, and
+        // the repository's own `make <target>` gates, each as its own
+        // top-level command. A bare invocation of any of them must match a
         // deterministic allow rule: one that matches none lands in front of
         // the classifier, which refused an executor's hygiene gates 76 times
         // in one session and cost an operator gate. The `GOCACHE=` prefix
@@ -1463,27 +1486,36 @@ mod tests {
         // expands. The sandbox excludes `vorpal *`, and that exclusion covers
         // a Bash call only when every command in it is excluded (see
         // SANDBOX_EXCLUDED_COMMANDS): a `cd` prefix or an assignment prefix
-        // in the fragment's shell examples would keep vorpal sandboxed.
+        // in the fragment's shell examples would keep vorpal sandboxed, and
+        // keeps the example from being the bare call it teaches.
         let fragment = include_str!("docket/config/fragments/vorpal-toolchain.md");
-        let alias = fragment
-            .lines()
-            .find(|line| line.starts_with("| go "))
-            .and_then(|line| line.split('`').nth(1))
-            .and_then(|invocation| invocation.strip_prefix("vorpal run "))
-            .and_then(|invocation| invocation.split(' ').next())
-            .expect("the fragment's table pins the go alias");
-        for rule in ["Bash(make:*)", "Bash(vorpal run:*)"] {
+        assert!(
+            !fragment.lines().any(|line| line.starts_with("| go ")),
+            "go is called bare from the dev shell, not pinned to a vorpal alias"
+        );
+        assert!(
+            !fragment.contains("vorpal run go:1"),
+            "the fragment never routes go through a pinned vorpal alias"
+        );
+        assert!(
+            fragment.contains("go build -C \"<repo-root>\" ./..."),
+            "the fragment's build example calls go bare and names the root with -C"
+        );
+        for rule in [
+            "Bash(go build:*)",
+            "Bash(go fmt:*)",
+            "Bash(go mod download:*)",
+            "Bash(go test:*)",
+            "Bash(go version:*)",
+            "Bash(go vet:*)",
+            "Bash(make:*)",
+            "Bash(vorpal run:*)",
+        ] {
             assert!(
                 PERMISSION_ALLOW_RULES.contains(&rule),
                 "missing allow rule: {rule}"
             );
         }
-        assert!(
-            fragment.contains(&format!(
-                "vorpal run {alias} build -C \"<repo-root>\" ./..."
-            )),
-            "the fragment's build example uses the pinned alias and names the root with -C"
-        );
         assert!(
             SANDBOX_EXCLUDED_COMMANDS.contains(&"vorpal *"),
             "vorpal is excluded from the sandbox"
@@ -1504,7 +1536,7 @@ mod tests {
                 let name = segment.split('=').next().unwrap_or_default();
                 assert!(
                     !matches!(segment.split(' ').next(), Some("cd" | "pushd" | "popd")),
-                    "the fragment's sh block changes directory, which keeps vorpal sandboxed: {segment}"
+                    "the fragment's sh block changes directory instead of passing -C: {segment}"
                 );
                 assert!(
                     !segment.contains('=')
@@ -2041,6 +2073,24 @@ mod tests {
 
         assert_eq!(friction.len(), 1);
         assert!(friction[0].get("matcher").is_none());
+    }
+
+    #[test]
+    fn direnv_env_hook_runs_on_session_start_and_cwd_change() {
+        // The hook loads the session directory's dev shell into
+        // CLAUDE_ENV_FILE on both events, with no matcher (neither event
+        // matches on a tool) and a timeout that covers a cold `vorpal build`
+        // in `.envrc`.
+        for event in ["SessionStart", "CwdChanged"] {
+            let entries = hook_entries_running(event, "bash ~/.claude/hooks/direnv-env-hook.sh");
+
+            assert_eq!(entries.len(), 1, "{event} registers the hook once");
+            assert!(
+                entries[0].get("matcher").is_none(),
+                "{event} has no matcher"
+            );
+            assert_eq!(entries[0]["hooks"][0]["timeout"], 300, "{event} timeout");
+        }
     }
 
     #[test]

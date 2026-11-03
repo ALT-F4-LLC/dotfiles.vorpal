@@ -493,15 +493,29 @@ note naming the tracking issue and the disposition before the next
 are not briefed to search the backlog, so without the note every later
 verify-ac step refiles the same gap.
 
-**Warm the Go module cache before dispatching into a Go repo.** Sandboxed
-Go cannot verify TLS on this machine (`x509: OSStatus -26276`) even though
-`curl` succeeds. The shared `GOMODCACHE` is the defense: an uncached
-module fails all gates with a TLS error that reads like an environment
-defect. When the target repo has a `go.mod`, run `go mod download` in it
-from this session before the first dispatch; the unsandboxed retry is
-sanctioned here because it fills the shared cache every executor reads.
-`x509: OSStatus` in a wave gate always means cold cache: warm it and
-redispatch, never park for review.
+**Confirm bare `go` before dispatching into a Go repo.** Executors and
+gates call `go` bare (fragments/vorpal-toolchain.md), and every executor's
+Bash and every gate `docket` runs inherit this session's PATH. That PATH
+carries `go` only when the target repo's Vorpal dev shell is loaded: Claude
+was launched from a shell where direnv loaded the repo's `.envrc`, or the
+direnv-env hook loaded it at session start or on a `cd` into the repo. When
+the target repo has a `go.mod`, run `command -v go` from this session before
+each dispatch into it: the hook unloads the dev shell when the session's
+directory moves to one without that `.envrc`. If it prints nothing, dispatch nothing: tell the
+operator the session lacks the repo's dev shell, and that the fix is to
+launch Claude in the repo (after `direnv allow` there) or `cd` into it
+within the session's working directories. Never point executors at
+`vorpal run go:<ver>` or a versioned `go1.x` launcher instead.
+
+**Warm the Go module cache before dispatching into a Go repo.** The shared
+module cache is the one every executor and gate reads, and a module or
+toolchain missing from it costs each gate a download. When the target repo
+has a `go.mod`, run `go mod download -C "<repo-root>"` once from this
+session before the first dispatch; `go.mod`'s toolchain line makes it fetch
+the selected toolchain too. It runs sandboxed, through the network
+allowlist's `proxy.golang.org` and `sum.golang.org`. A TLS or blocked-host
+error from it is an environment finding for the operator, not a reason to
+park the run's issues.
 
 **Warm the Cargo registry cache before dispatching into a Rust repo.**
 Cargo gates run `--locked --offline`, so they read only the shared

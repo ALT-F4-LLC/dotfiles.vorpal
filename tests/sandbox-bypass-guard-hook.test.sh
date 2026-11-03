@@ -87,19 +87,19 @@ assert_verdict() {
     check_verdict "$(build_input "$1" "$2" "$3")" "$4" "$5"
 }
 
-GOCMD='vorpal run go:1.26.0 test ./... -C "/work/repo"'
+GOCMD='go test -C "/work/repo" ./...'
 
 case_executor_lift_denies() {
-    assert_verdict "$GOCMD" executor-write true DENY "executor-write: vorpal go test with lift"
-    assert_verdict "$GOCMD" executor-read true DENY "executor-read: vorpal go test with lift"
-    assert_verdict "$GOCMD" executor-research true DENY "executor-research: vorpal go test with lift"
+    assert_verdict "$GOCMD" executor-write true DENY "executor-write: go test with lift"
+    assert_verdict "$GOCMD" executor-read true DENY "executor-read: go test with lift"
+    assert_verdict "$GOCMD" executor-research true DENY "executor-research: go test with lift"
     assert_verdict "ls" executor-write true DENY "executor-write: harmless command, lift still denied"
     assert_verdict "cargo test" executor-write true DENY "executor-write: cargo test with lift"
 }
 
 case_executor_sandboxed_allows() {
-    assert_verdict "$GOCMD" executor-write absent ALLOW "executor-write: vorpal go test, flag absent"
-    assert_verdict "$GOCMD" executor-write false ALLOW "executor-write: vorpal go test, flag false"
+    assert_verdict "$GOCMD" executor-write absent ALLOW "executor-write: go test, flag absent"
+    assert_verdict "$GOCMD" executor-write false ALLOW "executor-write: go test, flag false"
     assert_verdict "$GOCMD" executor-read absent ALLOW "executor-read: flag absent"
     assert_verdict "$GOCMD" executor-research false ALLOW "executor-research: flag false"
 }
@@ -139,6 +139,10 @@ case_deny_reason_is_fixed() {
     case "$err" in
         *'vorpal run <alias> <subcommand> -C'*) pass "deny reason names the bare vorpal call shape" ;;
         *) fail "deny reason no longer names the bare vorpal call shape" ;;
+    esac
+    case "$err" in
+        *'go <subcommand> -C'*) pass "deny reason names the bare go call shape" ;;
+        *) fail "deny reason no longer names the bare go call shape" ;;
     esac
 }
 

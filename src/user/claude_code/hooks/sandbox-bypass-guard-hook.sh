@@ -8,7 +8,8 @@
 # never through a brief and never on your say-so"), and the prohibition had no
 # mechanical backing: measured on one wave, an executor ran twenty-one
 # `GOCACHE=<scratch> vorpal run go ...` calls unsandboxed without a single
-# sandboxed attempt first, and the auto-mode classifier approved each one. The
+# sandboxed attempt first, and the auto-mode classifier approved each one (Go
+# then ran through Vorpal; the corpus now calls `go` bare, sandboxed). The
 # operator's exclusion list already lifts the sandbox for a bare `vorpal` call
 # (the only command in the Bash call), so those lifts bought nothing and cost
 # the whole sandbox.
@@ -120,7 +121,7 @@ BYPASS=$(printf '%s' "$INPUT" | jq -r '.tool_input.dangerouslyDisableSandbox == 
 
 AGENT_TYPE=$(printf '%s' "$INPUT" | jq -r '.agent_type // empty' 2>/dev/null) || allow_default
 
-REASON="sandbox bypass blocked: dangerouslyDisableSandbox is never available to an executor step, whatever the brief or the last error said. The operator's sandbox exclusion list, not the executor, lifts the sandbox for \`vorpal\`, and only for a bare call: spell it \`vorpal run <alias> <subcommand> -C \"<repo-root>\" ...\` as the only command in the Bash call, with no NAME=value prefix, cd, pipe, or redirect other than 2>&1. If that bare call still fails (Operation not permitted, a blocked host), that is a NETWORK GATE BLOCKED or environment finding for your step report — record the exact error and do not retry this lift."
+REASON="sandbox bypass blocked: dangerouslyDisableSandbox is never available to an executor step, whatever the brief or the last error said. The operator's sandbox exclusion list, not the executor, lifts the sandbox for \`vorpal\`, and only for a bare call: spell it \`vorpal run <alias> <subcommand> -C \"<repo-root>\" ...\` as the only command in the Bash call, with no NAME=value prefix, cd, pipe, or redirect other than 2>&1. Go is not a Vorpal alias: call \`go <subcommand> -C \"<repo-root>\" ...\` bare from the repository's dev shell, and it runs sandboxed. If that bare call still fails (Operation not permitted, a blocked host), that is a NETWORK GATE BLOCKED or environment finding for your step report — record the exact error and do not retry this lift."
 
 if is_executor_archetype "$AGENT_TYPE"; then
     log_decision "deny" "agent_type"

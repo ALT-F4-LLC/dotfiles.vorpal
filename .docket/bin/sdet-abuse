@@ -106,6 +106,7 @@ ENFORCING=(
   sensitive-path-guard-hook.sh
 )
 ADVISORY=(
+  direnv-env-hook.sh
   docket-session-start-hook.sh
   docket-workflow-audit-hook.sh
   git-worktree-prune-hook.sh

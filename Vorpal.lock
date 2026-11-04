@@ -1505,6 +1505,14 @@ digest = "4c08acf32a9dd52cb4f64d1835bade4128af51dd85742245987643cde0aeb9b1"
 platform = "aarch64-linux"
 
 [[sources]]
+name = "gitleaks"
+path = "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_darwin_arm64.tar.gz"
+includes = []
+excludes = []
+digest = "5eb87258163e30b4bf75ff75a52829797ab6ebd68bdae902910e88ebe80eb2bc"
+platform = "aarch64-darwin"
+
+[[sources]]
 name = "glibc"
 path = "https://sdk.vorpal.build/source/glibc-2.42.tar.gz"
 includes = []
@@ -2326,6 +2334,14 @@ path = "https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep-1
 includes = []
 excludes = []
 digest = "eb0c1779060a651e1288e5a3a6f3d5e3460a2955b64f9d71feefa444ceb52b54"
+platform = "aarch64-darwin"
+
+[[sources]]
+name = "rumdl"
+path = "https://github.com/rvben/rumdl/releases/download/v0.3.2/rumdl-v0.3.2-aarch64-apple-darwin.tar.gz"
+includes = []
+excludes = []
+digest = "dcc79bd92b78834f444c7c32c41f412115a3eda3e6aa4b9e045ff94262fb4cfd"
 platform = "aarch64-darwin"
 
 [[sources]]

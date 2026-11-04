@@ -1,10 +1,10 @@
 use anyhow::Result;
 use vorpal_artifacts::artifact::{
     awscli2::Awscli2, azure_cli::AzureCli, bottom::Bottom, delta::Delta, direnv::Direnv,
-    doppler::Doppler, fd::Fd, fzf::Fzf, gum::Gum, herdr::Herdr, hunk::Hunk, jj::Jj, jq::Jq,
-    just::Just, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, op::Op, pi::Pi, ripgrep::Ripgrep,
-    sesh::Sesh, starship::Starship, terraform::Terraform, tmux::Tmux, uv::Uv, yq::Yq,
-    zoxide::Zoxide,
+    doppler::Doppler, fd::Fd, fzf::Fzf, gitleaks::Gitleaks, gum::Gum, herdr::Herdr, hunk::Hunk,
+    jj::Jj, jq::Jq, just::Just, kubectl::Kubectl, lazygit::Lazygit, nnn::Nnn, op::Op, pi::Pi,
+    ripgrep::Ripgrep, rumdl::Rumdl, sesh::Sesh, starship::Starship, terraform::Terraform,
+    tmux::Tmux, uv::Uv, yq::Yq, zoxide::Zoxide,
 };
 use vorpal_sdk::{
     artifact::{gh::Gh, git::Git, nodejs::NodeJS},
@@ -36,6 +36,7 @@ pub async fn build(context: &mut ConfigContext) -> Result<Vec<String>> {
         Fd::new().build(context).await?,
         Fzf::new().build(context).await?,
         Git::new().build(context).await?,
+        Gitleaks::new().build(context).await?,
         Gum::new().build(context).await?,
         Herdr::new().build(context).await?,
         Hunk::new().build(context).await?,
@@ -45,6 +46,7 @@ pub async fn build(context: &mut ConfigContext) -> Result<Vec<String>> {
         Lazygit::new().build(context).await?,
         Nnn::new().build(context).await?,
         Ripgrep::new().build(context).await?,
+        Rumdl::new().build(context).await?,
         Sesh::new().build(context).await?,
         Starship::new().build(context).await?,
         Tmux::new().build(context).await?,

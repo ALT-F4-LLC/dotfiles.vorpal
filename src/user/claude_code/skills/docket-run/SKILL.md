@@ -753,7 +753,10 @@ bash ~/.claude/skills/docket-run/scripts/lane_roster.sh "$RUN" > "<scratchpad>/c
 The script finds the store the way the engine does, through the
 `db_path` of `docket config --json`, and opens it read-only through
 `sqlite3`, so it holds
-no lock and migrates nothing. A lane whose issue the file does not name
+no lock and migrates nothing. An idle WAL store has no `-wal` or `-shm` file
+and no plain read-only open can read it; the script then reads it with a
+guarded `immutable=1` open and exits 1 when the store changed during the
+read, so a re-run is the answer, not a hand-written roster. A lane whose issue the file does not name
 makes lane_units.py exit 1 before writing anything; that is a file older
 than the dispatch or a stop-and-report, never a script picked by hand. A
 row with no issue (a `row:<step>` lane) has no binding, so no lane script

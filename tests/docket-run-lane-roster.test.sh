@@ -179,5 +179,97 @@ ok $? "a WAL-mode store is read, with its latest write (rc ${rc})"
 [ "$(sqlite3 "$WORK/wal.db" 'PRAGMA journal_mode;')" = "wal" ]
 ok $? "...and reading left it in WAL mode"
 
+# ---- 5. a WAL store in a directory nobody can write ------------------------
+# A read-only SQLite connection cannot create the WAL index, so a WAL-mode
+# store reads only while its -wal and -shm files exist. Both fixtures sit in a
+# directory the test makes unwritable. The first keeps the sidecars (a copy
+# taken while a writer's connection is open, the state of an engine-held
+# store): it is read, with the write that is still in the WAL, and the
+# directory is left as it was. The second has them removed after a clean
+# checkpoint (the state upstream SQLite leaves on last close; Apple's sqlite3
+# keeps them, so the test removes them itself): no plain read-only open can
+# read it (SQLite error 14), so the script falls back to a guarded immutable=1
+# read and prints the roster, in the unwritable directory. The guard is
+# pinned too: a store written under 2 s ago, a -journal beside it, and a store
+# that changes during the read (a sqlite3 stub that touches it) are not read.
+build_wal_fixture() { # <dir> <sidecars: keep|drop>
+    local dir="$1" keep="$2" live="$WORK/live-$2.db"
+    mkdir -p "$dir"
+    cp "$DB" "$live"
+    # the session stays open while .shell copies, so -wal and -shm exist then
+    printf '%s\n' \
+        'PRAGMA journal_mode=WAL;' \
+        'UPDATE run_issues SET workflow_id = 102 WHERE run_id = 1 AND issue_id = 10;' \
+        'SELECT 1;' \
+        ".shell cp '$live' '$dir/store.db'" \
+        ".shell if [ -e '$live-wal' ]; then cp '$live-wal' '$dir/store.db-wal'; fi" \
+        ".shell if [ -e '$live-shm' ]; then cp '$live-shm' '$dir/store.db-shm'; fi" \
+        | sqlite3 "$live" > /dev/null 2>&1
+    if [ "$keep" = drop ]; then
+        # fold the WAL into the main file, then remove whatever the closing
+        # connection left, as upstream SQLite does on last close
+        sqlite3 "$dir/store.db" 'PRAGMA wal_checkpoint(TRUNCATE);' > /dev/null 2>&1
+        rm -f "$dir/store.db-wal" "$dir/store.db-shm"
+    fi
+}
+ls_dir() { (cd "$1" && ls -la | sed '1d' | awk '{ $6=$7=$8=""; print }'); }
+
+build_wal_fixture "$WORK/walkeep" keep
+[ -f "$WORK/walkeep/store.db-wal" ] && [ -f "$WORK/walkeep/store.db-shm" ]
+ok $? "fixture: the WAL store keeps its -wal and -shm"
+chmod 555 "$WORK/walkeep"
+keep_before=$(ls_dir "$WORK/walkeep"); keep_cksum=$(cksum "$WORK/walkeep/store.db" "$WORK/walkeep/store.db-wal" | tr '\n' ' ')
+run_roster RUN-1 --store "$WORK/walkeep/store.db"; rc=$?
+[ $rc -eq 0 ] && [ "$(jq -r '.[0].workflow' "$WORK/out")" = "ui-change@7" ] && [ "$(jq 'length' "$WORK/out")" = "3" ]
+ok $? "an unwritable directory with the sidecars: rc 0 and the roster, with the WAL's write (rc ${rc})"
+[ "$keep_before" = "$(ls_dir "$WORK/walkeep")" ] && [ "$keep_cksum" = "$(cksum "$WORK/walkeep/store.db" "$WORK/walkeep/store.db-wal" | tr '\n' ' ')" ]
+ok $? "...and the directory listing, the database and its WAL are unchanged by the read (the -shm index is scratch a reader marks)"
+chmod 755 "$WORK/walkeep"
+
+build_wal_fixture "$WORK/waldrop" drop
+[ -f "$WORK/waldrop/store.db" ] && [ ! -e "$WORK/waldrop/store.db-wal" ] && [ ! -e "$WORK/waldrop/store.db-shm" ] \
+    && [ "$(head -c 20 "$WORK/waldrop/store.db" | od -An -tx1 -j18 -N2 | tr -d ' \n')" = "0202" ]
+ok $? "fixture: a WAL-mode store with no -wal and no -shm"
+sqlite3 -readonly "$WORK/waldrop/store.db" 'select 1' > /dev/null 2>&1; rc=$?
+[ $rc -ne 0 ]; ok $? "fixture: a plain read-only open of it fails (rc ${rc})"
+touch -t 202001010000 "$WORK/waldrop/store.db"   # older than the 2 s guard
+cp -R "$WORK/waldrop" "$WORK/walljournal"; : > "$WORK/walljournal/store.db-journal"
+cp -R "$WORK/waldrop" "$WORK/walfresh"; touch -t 209901010000 "$WORK/walfresh/store.db"
+cp -R "$WORK/waldrop" "$WORK/walmut"; touch -t 202001010000 "$WORK/walmut/store.db"
+touch -t 202001010000 "$WORK/walljournal/store.db"   # cp -R stamps the copies with now
+chmod 555 "$WORK/waldrop"
+drop_before=$(ls_dir "$WORK/waldrop"); drop_cksum=$(cksum "$WORK/waldrop/store.db" | tr '\n' ' ')
+run_roster RUN-1 --store "$WORK/waldrop/store.db"; rc=$?
+[ $rc -eq 0 ] && [ "$(jq -r '.[0].workflow' "$WORK/out")" = "ui-change@7" ] && [ "$(jq 'length' "$WORK/out")" = "3" ]
+ok $? "an unwritable directory without the sidecars: rc 0 and the roster (rc ${rc}: $(head -n 1 "$WORK/err" | cut -c1-120))"
+[ "$drop_before" = "$(ls_dir "$WORK/waldrop")" ] && [ "$drop_cksum" = "$(cksum "$WORK/waldrop/store.db" | tr '\n' ' ')" ]
+ok $? "...and the read left the directory listing and the store unchanged"
+run_roster RUN-4 --store "$WORK/waldrop/store.db"; rc=$?
+[ $rc -eq 1 ] && grep -q 'RUN-4 does not exist' "$WORK/err" && [ ! -s "$WORK/out" ]
+ok $? "...and the run-exists check reads the same way (rc ${rc})"
+chmod 755 "$WORK/waldrop"
+
+chmod 555 "$WORK/walljournal"
+run_roster RUN-1 --store "$WORK/walljournal/store.db"; rc=$?
+[ $rc -eq 1 ] && [ ! -s "$WORK/out" ] && grep -q 'sqlite3 failed' "$WORK/err"
+ok $? "a -journal beside the store: not read, rc 1, nothing on stdout (rc ${rc})"
+chmod 755 "$WORK/walljournal"
+
+chmod 555 "$WORK/walfresh"
+run_roster RUN-1 --store "$WORK/walfresh/store.db"; rc=$?
+[ $rc -eq 1 ] && [ ! -s "$WORK/out" ] && grep -q 'less than 2 s ago' "$WORK/err"
+ok $? "a store written less than 2 s ago: not read, rc 1, the reason named (rc ${rc})"
+chmod 755 "$WORK/walfresh"
+
+# a writer that lands during the read: a sqlite3 stub that touches the store
+# right after the immutable read, so size/mtime/ctime differ across it
+mkdir -p "$WORK/binmut"
+REAL_SQLITE3=$(command -v sqlite3)
+printf '#!/bin/bash\n"%s" "$@"; rc=$?\ncase "$*" in *immutable=1*) touch -t 202101010000 "$MUT_STORE";; esac\nexit $rc\n' "$REAL_SQLITE3" > "$WORK/binmut/sqlite3"
+chmod 755 "$WORK/binmut/sqlite3"
+MUT_STORE="$WORK/walmut/store.db" PATH="$WORK/binmut:$PATH" run_roster RUN-1 --store "$WORK/walmut/store.db"; rc=$?
+[ $rc -eq 1 ] && [ ! -s "$WORK/out" ] && grep -q 'changed during the read' "$WORK/err"
+ok $? "a store that changes during the read: discarded, rc 1, nothing on stdout (rc ${rc}: $(head -n 1 "$WORK/err" | cut -c1-200))"
+
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

@@ -592,6 +592,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_status_line("bash ~/.claude/statusline.sh")
         .with_status_line_padding(0)
         .with_teammate_mode("in-process")
+        .with_theme("auto")
         .with_tui("fullscreen")
         .with_worktree_base_ref("head")
         .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)

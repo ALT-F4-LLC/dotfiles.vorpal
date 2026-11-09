@@ -4,6 +4,11 @@ use vorpal_sdk::{api::artifact::ArtifactSystem, artifact::get_env_key, context::
 
 mod settings;
 
+const ANTHROPIC_FABLE_MODEL: &str = "claude-fable-5-2";
+const ANTHROPIC_HAIKU_MODEL: &str = "claude-haiku-5-5";
+const ANTHROPIC_OPUS_MODEL: &str = "claude-opus-5-5";
+const ANTHROPIC_SONNET_MODEL: &str = "claude-sonnet-5-5";
+
 // Git expands only a leading `~/`; activation expands `${HOME}`. The install
 // spelling derives from this one through `home_install`, so the symlink and
 // the git config always name the same file.
@@ -561,19 +566,19 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_isolate_peer_machines(true)
         .with_model("sonnet")
         .with_model_setting(
-            "claude-fable-5-2",
+            ANTHROPIC_FABLE_MODEL,
             serde_json::json!({ "effortLevel": "high" }), // default: high
         )
         .with_model_setting(
-            "claude-haiku-5-5",
+            ANTHROPIC_HAIKU_MODEL,
             serde_json::json!({ "effortLevel": "medium" }), // default: medium
         )
         .with_model_setting(
-            "claude-opus-5-5",
+            ANTHROPIC_OPUS_MODEL,
             serde_json::json!({ "effortLevel": "medium" }), // default: medium
         )
         .with_model_setting(
-            "claude-sonnet-5-5",
+            ANTHROPIC_SONNET_MODEL,
             serde_json::json!({ "effortLevel": "high" }), // default: high
         )
         // Docket queue and run reads routinely exceed the 30000 default; at
@@ -599,10 +604,10 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
         .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
         .with_env("ANTHROPIC_BASE_URL", ANTHROPIC_BASE_URL_GATEWAY)
-        .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", "claude-fable-5-1")
-        .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", "claude-haiku-5-5")
-        .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", "claude-opus-5-5")
-        .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", "claude-sonnet-5-5")
+        .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", ANTHROPIC_FABLE_MODEL)
+        .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", ANTHROPIC_HAIKU_MODEL)
+        .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", ANTHROPIC_OPUS_MODEL)
+        .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", ANTHROPIC_SONNET_MODEL)
         .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
         .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
         .with_env("ENABLE_TOOL_SEARCH", "true") // REASON: Deferred MCP tool loading is off when ANTHROPIC_BASE_URL is not a first-party host

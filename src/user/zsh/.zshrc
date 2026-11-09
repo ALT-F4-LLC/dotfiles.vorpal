@@ -125,6 +125,72 @@ eval "$(direnv hook zsh)"
 ## Starship
 eval "$(starship init zsh)"
 
+## Completion
+# Interactive shells only; the shells that source this file without a prompt
+# have no use for a completion system. This must stay above `zoxide init`,
+# which registers the `z` completion only when `compdef` already exists.
+if [[ -o interactive ]]; then
+  # Plugin symlinks, one per plugin, each pointing at its Vorpal store path
+  # (src/user/zsh.rs). ZSH_PLUGIN_ROOT overrides the directory.
+  ZSH_PLUGIN_ROOT=${ZSH_PLUGIN_ROOT:-${HOME}/.config}
+  _zsh_cache=${XDG_CACHE_HOME:-${HOME}/.cache}/zsh
+  _zsh_comp_dir=${_zsh_cache}/completions
+  mkdir -p ${_zsh_comp_dir}
+
+  # Writes the completion script a tool generates itself to
+  # ${_zsh_comp_dir}/_<tool>. A tool whose script is current is not run: the
+  # script is current while the tool resolves to the same path (a new store
+  # path after an upgrade changes it) and the binary is not newer than the
+  # script (an in-place upgrade outside the store). The path sits in a dot
+  # file because compinit reads every `_*` file in fpath. A tool that is
+  # absent, fails, or prints something other than a `#compdef` script leaves
+  # any earlier script alone, and is tried again at the next shell start.
+  _zsh_comp_gen () {
+    emulate -L zsh
+    local tool=$1; shift
+    local bin=${commands[$tool]}
+    local file=${_zsh_comp_dir}/_${tool} stamp=${_zsh_comp_dir}/.src-${tool}
+    [[ -n $bin ]] || return 0
+    if [[ -s $file && -f $stamp && "$(<$stamp)" == "$bin" && ! $bin -nt $file ]]; then
+      return 0
+    fi
+    local out
+    out=$("$bin" "$@" 2>/dev/null) || return 0
+    [[ $out == '#compdef'* ]] || return 0
+    print -r -- "$out" >| $file && print -r -- "$bin" >| $stamp
+  }
+
+  _zsh_comp_gen kubectl completion zsh
+  _zsh_comp_gen gh completion -s zsh
+  _zsh_comp_gen just --completions zsh
+  _zsh_comp_gen starship completions zsh
+  _zsh_comp_gen uv generate-shell-completion zsh
+  _zsh_comp_gen k9s completion zsh
+  _zsh_comp_gen rg --generate complete-zsh
+  _zsh_comp_gen fd --gen-completions zsh
+  _zsh_comp_gen docket completion zsh
+  _zsh_comp_gen delta --generate-completion zsh
+  _zsh_comp_gen bat --completion zsh
+  _zsh_comp_gen gum completion zsh
+  _zsh_comp_gen jj util completion zsh
+  _zsh_comp_gen yq completion zsh
+  _zsh_comp_gen sesh completion zsh
+  _zsh_comp_gen gitleaks completion zsh
+  _zsh_comp_gen rumdl completions zsh
+  _zsh_comp_gen op completion zsh
+  _zsh_comp_gen doppler completion zsh
+
+  # fpath must be complete before compinit reads it.
+  fpath=(${_zsh_comp_dir} $fpath)
+  # zsh-completions is a plugin, so the Claude Code agent shell skips it too.
+  [[ -z ${CLAUDECODE-} ]] && fpath=(${ZSH_PLUGIN_ROOT}/zsh-completions/src $fpath)
+  autoload -Uz compinit
+  compinit -d ${_zsh_cache}/zcompdump-${ZSH_VERSION}
+
+  zstyle ':completion:*' menu select
+  zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+fi
+
 ## Zoxide
 eval "$(zoxide init zsh)"
 
@@ -152,6 +218,19 @@ bindkey -M viins '^[b' backward-word
 bindkey -M viins '^[d' kill-word
 bindkey -M viins '^[f' forward-word
 bindkey -M viins '^[.' insert-last-word
+
+## Plugins
+# Sourced from store paths through the symlinks in ZSH_PLUGIN_ROOT, never
+# fetched at shell start. After compinit (Completion, above) and after the
+# key bindings, so fzf-tab and autosuggestions bind into the vi-mode keymap.
+# Order matters: fzf-tab first, autosuggestions last, because autosuggestions
+# wraps the widgets the others bind. The Claude Code agent shell loads none.
+if [[ -o interactive && -z ${CLAUDECODE-} ]]; then
+  [[ -r ${ZSH_PLUGIN_ROOT}/fzf-tab/fzf-tab.plugin.zsh ]] \
+    && source ${ZSH_PLUGIN_ROOT}/fzf-tab/fzf-tab.plugin.zsh
+  [[ -r ${ZSH_PLUGIN_ROOT}/zsh-autosuggestions/zsh-autosuggestions.zsh ]] \
+    && source ${ZSH_PLUGIN_ROOT}/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
 
 # END MIGRATION: Needs to be moved to Vorpal
 

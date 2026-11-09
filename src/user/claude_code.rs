@@ -561,7 +561,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_isolate_peer_machines(true)
         .with_model("sonnet")
         .with_model_setting(
-            "claude-fable-5-1",
+            "claude-fable-5-2",
             serde_json::json!({ "effortLevel": "high" }), // default: high
         )
         .with_model_setting(

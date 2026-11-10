@@ -564,7 +564,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_include_git_instructions(false)
         .with_input_needed_notif_enabled(true)
         .with_isolate_peer_machines(true)
-        .with_model("sonnet")
+        .with_model("opus")
         .with_model_setting(
             ANTHROPIC_FABLE_MODEL,
             serde_json::json!({ "effortLevel": "high" }), // default: high

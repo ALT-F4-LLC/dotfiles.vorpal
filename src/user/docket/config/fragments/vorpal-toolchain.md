@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 16
+version: 17
 ---
 # Vorpal toolchain
 
@@ -124,6 +124,39 @@ The permission rules clear a bare `make`, `vorpal run`, and
 Go can select or download another toolchain according to its existing
 configuration and `go.mod`/`go.work`. Do not change that configuration to
 force a version or bypass a download failure.
+
+## Vorpal projects
+
+A repository with a `Vorpal.toml` builds through Vorpal. `Vorpal.toml` sets
+the config program's language and source files; the program itself (for
+example `src/vorpal.rs` or `cmd/vorpal/main.go`) declares the repository's
+artifacts, including the dev shell its `.envrc` loads. `Vorpal.lock` pins
+each remote source per platform.
+
+- A bare `vorpal build` or `vorpal prepare` runs the config program outside
+  the sandbox. Run one only when your change touches the config program, an
+  artifact it declares, or `Vorpal.lock`, or when a gate names it. Outside
+  the repository root, pass `--config "<repo-root>/Vorpal.toml"` and
+  `--context "<repo-root>"`: a missing config silently loads defaults.
+- `Vorpal.lock` is a generated file under scope-discipline: it must be in the
+  brief's declared files, or route an amendment first. Change it only
+  through `vorpal prepare <artifact>`, never by hand: one bare call per
+  platform the lockfile covers, with `--system <platform>` for each
+  non-host platform. A dependency-lock change that adds or bumps a tool
+  counts as a bump.
+- The CLI's `--unlock` hint is not authorization. An error
+  `source '<name>' is unpinned` after a source your change added is
+  resolved by `vorpal prepare`. An error `source '<name>' changed` with no
+  intended bump is drift: report it and do not re-pin.
+- Quote every `mint:` and `update:` line `vorpal prepare` prints in your
+  report; each accepts new content as trusted. A `mint:` or `update:` line
+  for a source your change did not touch is a discovery to report, not a
+  pin to commit.
+- Never run `vorpal system`, `vorpal login`, `vorpal config set`, or
+  `vorpal-activate`.
+- After editing the dev shell, confirm it builds with `vorpal build <shell>`
+  and report that the session must reload it. PATH does not change within
+  the step; do not source an activation script.
 
 ## Failure handling and reporting
 

@@ -2777,6 +2777,14 @@ digest = "57a236c749f441ed62ef456b2836171600601ceb8d0858e472e54b2dce3a68ed"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "user-zsh-plugin-fzf-tab"
+path = "https://github.com/Aloxaf/fzf-tab/archive/d7e0234614dbe5369fdd760907d12c0e05a4dccc.tar.gz"
+includes = []
+excludes = []
+digest = "57a236c749f441ed62ef456b2836171600601ceb8d0858e472e54b2dce3a68ed"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "user-zsh-plugin-zsh-autosuggestions"
 path = "https://github.com/zsh-users/zsh-autosuggestions/archive/e52ee8ca55bcc56a17c828767a3f98f22a68d4eb.tar.gz"
 includes = []
@@ -2785,12 +2793,28 @@ digest = "13464a5c87b71f9997eb952b1f693658d570c70f2d87cb33e75a4ef3d7b61650"
 platform = "aarch64-darwin"
 
 [[sources]]
+name = "user-zsh-plugin-zsh-autosuggestions"
+path = "https://github.com/zsh-users/zsh-autosuggestions/archive/e52ee8ca55bcc56a17c828767a3f98f22a68d4eb.tar.gz"
+includes = []
+excludes = []
+digest = "13464a5c87b71f9997eb952b1f693658d570c70f2d87cb33e75a4ef3d7b61650"
+platform = "x86_64-linux"
+
+[[sources]]
 name = "user-zsh-plugin-zsh-completions"
 path = "https://github.com/zsh-users/zsh-completions/archive/28c5bdcaf81bb89e56d0df8267d822c3b8aed9e0.tar.gz"
 includes = []
 excludes = []
 digest = "717d4df047e3fa193bfab95bde4a8a5bd894999b4f7e1b7333ce0f68d18ba03c"
 platform = "aarch64-darwin"
+
+[[sources]]
+name = "user-zsh-plugin-zsh-completions"
+path = "https://github.com/zsh-users/zsh-completions/archive/28c5bdcaf81bb89e56d0df8267d822c3b8aed9e0.tar.gz"
+includes = []
+excludes = []
+digest = "717d4df047e3fa193bfab95bde4a8a5bd894999b4f7e1b7333ce0f68d18ba03c"
+platform = "x86_64-linux"
 
 [[sources]]
 name = "util-linux"

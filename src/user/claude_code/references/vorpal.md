@@ -106,8 +106,10 @@ already cached locally or in the registry.
 
 A locked build fails closed in three ways:
 
-- `source '<name>' is unpinned` means a remote source has no lock entry
-  yet. After an intended addition, `vorpal prepare` resolves it.
+- `source '<name>' is unpinned` means a remote source without an inline
+  digest has no lock entry for this platform. After an intended addition,
+  `vorpal prepare` resolves it; otherwise, such as a platform never pinned,
+  report it, because minting a pin is a trust decision.
 - `source '<name>' changed` means the config's definition of the source
   (URL or path, includes, excludes, or inline digest) differs from its lock
   entry. After an intended bump, including a dependency bump that moves a

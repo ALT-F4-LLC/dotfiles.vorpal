@@ -68,6 +68,7 @@ jobs:
       - run: bash tests/docket-advisor-first-hook.test.sh
       - run: bash tests/docket-run-lane-units.test.sh
       - run: bash tests/docket-run-refill.test.sh
+      - run: bash tests/docket-run-proc-supervise.test.sh
       - run: bash tests/docket-run-served-pair.test.sh
       - run: bash tests/docket-run-lane-scripts.test.sh
       - run: bash tests/docket-run-lane-roster.test.sh
@@ -82,6 +83,7 @@ jobs:
       - run: bash tests/zsh-agent-nomatch.test.sh
 
       - run: bash tests/docket-sibling-guard-hook.test.sh
+      - run: bash tests/docket-proc-guard-hook.test.sh
 
       - run: bash tests/docket-spawn-guard-hook.test.sh
 

@@ -119,6 +119,23 @@ notification and `SendMessage`; its idle notification is not an event.
 `TaskStop` it the moment its report is in hand. A helper never runs an
 engine mutating verb, a trust verb, or a launch; those stay yours.
 
+**Shells.** `TaskStop` reaches only your own tasks, and the sandbox refuses
+every signal. When shells pile up or load climbs, run
+`bash ~/.claude/skills/docket-run/scripts/proc_supervise.sh inventory`. The
+docket-proc-guard hook runs it outside the sandbox and returns the full
+table. Every shell of this session, its helpers and its seats reads
+own-shell. A detached (`nohup`) process is attributed only when its
+environment carries this session's id; without it the process is counted
+in `foreign=` and `kill` refuses it `not-listed`, so hand its recorded pid
+to the operator. Sibling sessions' and unknown owners'
+processes are reported and never touched. Preview with `kill --dry-run --pid
+<root pid>`, then stop with `kill --pid <root pid>`; the hook runs both
+outside the sandbox while this session's scratchpad holds a run's
+`conductor.d` token. Check each shell's `step=` owner first. Never stop a
+shell on its age. When you launch anything with `nohup` or `&`, record its
+pid. Use and audited scenarios are in
+[proc-supervise](references/proc-supervise.md).
+
 ## The conductor capability
 
 The engine binds the CONDUCTOR VERBS to a run-scoped CONDUCTOR CAPABILITY:
@@ -293,7 +310,9 @@ other conductor verb.
 it (a same-session resume needs it; a new session re-mints and retires it
 anyway); a done or abandoned run, or a `finish`, removes it (`rm
 <scratchpad>/conductor.d/$RUN.token`, and `$RUN.mode`, `$RUN.queue`, and the verbs file). A helper you spawn never receives
-the path or the token; every ruling stays yours.
+the path or the token; every ruling stays yours. Stop this run's leftover
+shells (**Shells** under **Seat**) before removing the token: the
+docket-proc-guard hook runs the kill only while the scratchpad holds one.
 
 ## Which run
 
@@ -2964,8 +2983,10 @@ a `PreToolUse:Bash hook error` is a hook's exit 2, decided before the
 permission layer, which no permission mode or allow rule changes);
 reconcile with `dispatch verify` and `docket step show STEP-N` for every
 launched step, reaping the holders you have established are dead (**A
-dead spawn is reaped**); then **Pause mode**. Report the executors' actual
-blocker and every live lease, never a diagnosis read off settings alone.
+dead spawn is reaped**); stop the shells a stopped launch left running
+with `proc_supervise.sh kill --pid` (**Shells**); then **Pause mode**.
+Report the executors' actual blocker and every live lease, never a
+diagnosis read off settings alone.
 
 **A session that walks away from a conversational gate closes its own
 proposal.** `run abandon` auto-closes only ballots the run's own vote

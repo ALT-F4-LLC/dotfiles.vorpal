@@ -98,6 +98,7 @@ ENFORCING=(
   docket-denied-reissue-guard-hook.sh
   docket-groom-turn-guard-hook.sh
   docket-park-notice-hook.sh
+  docket-proc-guard-hook.sh
   docket-run-guard-hook.sh
   docket-sibling-guard-hook.sh
   docket-spawn-guard-hook.sh

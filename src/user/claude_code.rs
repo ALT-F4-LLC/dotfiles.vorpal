@@ -775,6 +775,16 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "bash ~/.claude/hooks/docket-sibling-guard-hook.sh",
             "command",
         )
+        // The sandbox refuses every signal, so a docket conductor's exact
+        // `proc_supervise.sh` inventory, dry run or `kill --pid N` call is run
+        // here, outside it, and the kill is denied to subagents and to every
+        // other session.
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/docket-proc-guard-hook.sh",
+            "command",
+        )
         .with_auto_mode(settings::AutoMode {
             allow: expand(AUTO_MODE_ALLOW_RULES),
             environment: expand(AUTO_MODE_ENVIRONMENT_CONTEXT),

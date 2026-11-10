@@ -70,6 +70,13 @@ question, or when the user asks. Routine work needs only what follows.
   `ruby`) given code as an argument, on stdin, or in a heredoc, and no
   instruction clears that refusal.
 
+## Reference material
+
+- `~/.claude/references/vorpal.md` explains how Vorpal builds, pins, and
+  ships tools. Read it when a repository has a `Vorpal.toml` and the work
+  touches its build, dev shell, `Vorpal.lock`, or tool versions, or when a
+  tool is missing from its shell.
+
 # Prose rules
 
 These wording rules apply to all prose you author: chat replies, PR titles and

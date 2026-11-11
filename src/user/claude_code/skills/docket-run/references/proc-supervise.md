@@ -135,12 +135,19 @@ escalation noted:
   `TZ=UTC`). In that table no session descendant showed
   `CLAUDE_CODE_SESSION_ID` in `ps -E`. A later probe found the cause:
   `ps -E` shows no environment for a process in the Bash sandbox, though
-  the variable is set there and the argv is visible. Only an unsandboxed
-  process (a `!` command) showed the id, and a run without `LC_ALL=C`
-  matched the same, so `sed` was not at fault. Every Bash-tool shell is
-  sandboxed, so on Darwin own-detached (S5, S7) never fires. A detached process without the id
+  the variable is set there and the argv is visible. The `!` shell has
+  the variable too, so it was not the cause. The operator's three
+  diagnostics, run through `!` with a live Bash-tool session:
+  `printenv CLAUDE_CODE_SESSION_ID` printed the session id;
+  `ps -axww -E -o pid=,command= | grep -c CLAUDE_CODE_SESSION_ID` printed
+  `4` (unsandboxed `!` pipeline processes, the `grep` among them); the
+  snapshot's column-5 session-id count printed `1`. Only unsandboxed
+  processes showed the id, and a run without `LC_ALL=C` matched the same,
+  so `sed` was not at fault. Every Bash-tool shell is sandboxed, so on
+  Darwin own-detached (S5, S7) never fires. A detached process without the id
   is not listed, is counted in `foreign=`, and `kill --pid` refuses it
-  `not-listed`; the conductor hands its recorded pid to the operator.
+  `not-listed`; the conductor hands its recorded pid to the operator. A
+  design follow-up for attributing detached processes exists.
 - A nested session whose title is neither `claude` nor a version (`node
   cli.js -p`) and that has no child with its own id is not recognised; its
   tree reads as own-shell. With no session id in the environment (as in

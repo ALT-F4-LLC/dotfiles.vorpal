@@ -124,8 +124,8 @@ every signal. When shells pile up or load climbs, run
 `bash ~/.claude/skills/docket-run/scripts/proc_supervise.sh inventory`. The
 docket-proc-guard hook runs it outside the sandbox and returns the full
 table. Every shell of this session, its helpers and its seats reads
-own-shell. A detached (`nohup`) process is attributed only when its
-environment carries this session's id; without it the process is counted
+own-shell. A detached (`nohup`) process cannot be attributed on Darwin,
+where the sandbox hides its environment from `ps`: it is counted
 in `foreign=` and `kill` refuses it `not-listed`, so hand its recorded pid
 to the operator. Sibling sessions' and unknown owners'
 processes are reported and never touched. Preview with `kill --dry-run --pid

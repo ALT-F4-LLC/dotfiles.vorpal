@@ -9,8 +9,8 @@
 # background shell. So a conductor cannot stop an Agent subagent's runaway
 # test loops. The operator once had to run `! pkill` by hand while fan noise
 # and a load of 6.7 went on. A `nohup` watcher outside task tracking is
-# attributed only when `ps -E` shows its session id, which no real table has
-# yet shown; otherwise it stays foreign and unstoppable here. A hook runs outside the
+# attributed only when `ps -E` shows its session id, which Darwin hides for a
+# sandboxed process; so it stays foreign and unstoppable here. A hook runs outside the
 # sandbox, so this hook is the one place where
 # skills/docket-run/scripts/proc_supervise.sh reads the full `ps` table and
 # can signal. The operator chose this event, matcher and action (PreToolUse,

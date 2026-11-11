@@ -15,7 +15,8 @@
 #                 table (no argv) any shell child of the session counts.
 #   own-detached  carries the current session's id but no longer descends from
 #                 it (`nohup ... &`, setsid). Action `stop`. Needs the id in
-#                 the `ps -E` environment; unobserved on a real Darwin table.
+#                 the `ps -E` environment, which Darwin hides for a process in
+#                 the Bash sandbox, so on Darwin this class never fires.
 #                 Without the id a detached process is foreign: not listed,
 #                 counted in `foreign=`, and refused `not-listed` by kill.
 #

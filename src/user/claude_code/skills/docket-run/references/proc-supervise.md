@@ -137,13 +137,15 @@ escalation noted:
   `ps -E` shows no environment for a process in the Bash sandbox, though
   the variable is set there and the argv is visible. The `!` shell has
   the variable too, so it was not the cause. The operator's three
-  diagnostics, run through `!` with a live Bash-tool session:
-  `printenv CLAUDE_CODE_SESSION_ID` printed the session id;
-  `ps -axww -E -o pid=,command= | grep -c CLAUDE_CODE_SESSION_ID` printed
-  `4` (unsandboxed `!` pipeline processes, the `grep` among them); the
-  snapshot's column-5 session-id count printed `1`. Only unsandboxed
-  processes showed the id, and a run without `LC_ALL=C` matched the same,
-  so `sed` was not at fault. Every Bash-tool shell is sandboxed, so on
+  diagnostics, run through `!`: `printenv CLAUDE_CODE_SESSION_ID` printed
+  the session id; `ps -axww -E -o pid=,command= | grep -c
+  CLAUDE_CODE_SESSION_ID` printed `4` (an upper bound: `grep` also matches
+  argv, its own included, and no pids were captured); the snapshot's
+  column-5 session-id count printed `1`. These rule out the `!` shell and
+  the snapshot pipeline. The sandbox finding rests on the earlier per-pid
+  probe: a sandboxed `sleep` showed no session id, and only an
+  unsandboxed process (a `!` command) did. A run without `LC_ALL=C`
+  matched the same, so `sed` was not at fault. Every Bash-tool shell is sandboxed, so on
   Darwin own-detached (S5, S7) never fires. A detached process without the id
   is not listed, is counted in `foreign=`, and `kill --pid` refuses it
   `not-listed`; the conductor hands its recorded pid to the operator. A

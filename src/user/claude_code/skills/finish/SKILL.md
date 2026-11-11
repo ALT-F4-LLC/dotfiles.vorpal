@@ -57,8 +57,11 @@ no `dispatch close`, and never `dispatch abandon`; that verb discards live
 work unconditionally and belongs to pause's hard halt alone. Do not
 re-derive pause's steps here.
 
-Once the pause completes, remove the run's conductor files so no later
-session inherits the capability: `rm <scratchpad>/conductor.d/RUN-N.token
+Once the pause completes, stop this run's leftover shells first
+(docket-run's **Shells** under **Seat**): the docket-proc-guard hook runs
+`proc_supervise.sh kill` only while the run's conductor token exists.
+Then remove the run's conductor files so no later session inherits the
+capability: `rm <scratchpad>/conductor.d/RUN-N.token
 <scratchpad>/conductor.d/RUN-N.mode <scratchpad>/conductor.d/RUN-N.queue`,
 plus the run's verbs file. Pause keeps them; finish owns their removal.
 

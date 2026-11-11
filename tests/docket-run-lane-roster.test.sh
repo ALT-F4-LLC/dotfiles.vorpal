@@ -187,8 +187,9 @@ ok $? "...and reading left it in WAL mode"
 # store): it is read, with the write that is still in the WAL, and the
 # directory is left as it was. The second has them removed after a clean
 # checkpoint (the state upstream SQLite leaves on last close; Apple's sqlite3
-# keeps them, so the test removes them itself): no plain read-only open can
-# read it (SQLite error 14), so the script falls back to a guarded immutable=1
+# keeps them, so the test removes them itself): in the unwritable directory no
+# plain read-only open can read it (SQLite error 14 on 3.54, SQLITE_READONLY on
+# 3.45), so the script falls back to a guarded immutable=1
 # read and prints the roster, in the unwritable directory. The guard is
 # pinned too: a store written under 2 s ago, a -journal beside it, and a store
 # that changes during the read (a sqlite3 stub that touches it) are not read.

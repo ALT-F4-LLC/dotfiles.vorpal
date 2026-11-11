@@ -211,6 +211,11 @@ bash "$PS_SCRIPT" kill --dry-run --pid 170 --snapshot "$WORK/snap-noenv" --sessi
     row 960 1 960 "$L1" - - "sh -c sh -c inner; exit \$? docket-session=$CUR"
     row 961 960 960 "$L1" - - "sh -c sleep 5; exit \$? docket-session=$SIB"
     row 962 961 960 "$L1" - - "sleep 5"
+    row 963 1 963 "$L1" - - "sh -c sh -c inner; exit \$? docket-session=$SIB"
+    row 964 963 963 "$L1" - - "sh -c sleep 5; exit \$? docket-session=$CUR"
+    row 965 964 963 "$L1" - - "sleep 5"
+    # A marker as the final argument of a non-shell process.
+    row 945 1 945 "$L1" - - "python3 -c pass docket-session=$CUR"
     # The current id in the environment under another session's marker.
     row 970 1 970 "$L1" "$CUR" - "sh -c make; exit \$? docket-session=$SIB"
     row 971 970 970 "$L1" "$CUR" - "make"
@@ -230,24 +235,24 @@ grep -q $'^own-detached\tstop\t910\t1\t'"$CUR"$'\targv-marker,registry-live\t' "
     && pass "S5/S7 argv marker: this session's detached wrapper and child without an env id are own-detached/stop, wrapper first" \
     || fail "S5/S7 argv marker own: $(grep -E '^(own|summary\tsource)' "$WORK/inv-mark" | tr '\n' ' ') | $(plan "$WORK/dry-mark-own")"
 ! awk -F '\t' '($3 == 920 || $3 == 921) && $1 != "summary"' "$WORK/inv-mark" | grep -q . \
-    && grep -q $'^summary\tsource=ps\t.*\tforeign=9$' "$WORK/inv-mark" \
+    && grep -q $'^summary\tsource=ps\t.*\tforeign=13$' "$WORK/inv-mark" \
     && grep -q $'^refuse\t920\t-\tnot-listed$' "$WORK/dry-mark-sib" && grep -q $'^refuse\t921\t-\tnot-listed$' "$WORK/dry-mark-sib" \
     && ! grep -q '^would-signal' "$WORK/dry-mark-sib" \
     && pass "S5/S7 argv marker: another session's marked job is foreign and refused not-listed" \
     || fail "S5/S7 argv marker another session: $(grep -E '^(sibling|own-detached|summary\tsource)' "$WORK/inv-mark" | tr '\n' ' ') | $(plan "$WORK/dry-mark-sib")"
 ! awk -F '\t' '($3 == 930 || $3 == 940) && $1 != "summary"' "$WORK/inv-mark" | grep -q . \
-    && grep -q $'^summary\tsource=ps\t.*\tforeign=9$' "$WORK/inv-mark" \
+    && grep -q $'^summary\tsource=ps\t.*\tforeign=13$' "$WORK/inv-mark" \
     && grep -q $'^refuse\t930\t-\tnot-listed$' "$WORK/dry-mark-none" && grep -q $'^refuse\t940\t-\tnot-listed$' "$WORK/dry-mark-none" \
     && ! grep -q '^would-signal' "$WORK/dry-mark-none" \
     && pass "S5/S7 argv marker: a detached job with no marker (or one not in final position) is foreign and refused not-listed" \
     || fail "S5/S7 argv marker none: $(grep -E '^(own-detached|summary\tsource)' "$WORK/inv-mark" | tr '\n' ' ') | $(plan "$WORK/dry-mark-none")"
 mclass() { awk -F '\t' -v p="$1" '$3 == p && $1 != "summary" { print $1 "/" $2 }' "$WORK/inv-mark"; }
 g=""
-for e in 950:unknown/report 951:unknown/report 952: 960:own-detached/stop 961: 962: \
+for e in 950:unknown/report 951:unknown/report 952: 960:own-detached/stop 961: 962: 963: 964: 965: 945: \
          970:unknown/report 971:unknown/report 980:sibling-detached/report 981: 982:; do
     [ "$(mclass "${e%%:*}")" = "${e#*:}" ] || g="$g ${e%%:*}=$(mclass "${e%%:*}")"
 done
-[ -z "$g" ] && pass "S5/S7 argv marker guards: nested session, disagreeing markers and env ids never make a stop" \
+[ -z "$g" ] && pass "S5/S7 argv marker guards: a nested session, a marker disagreeing with one nearer the root or with an env id, and a non-shell marker never stop" \
     || fail "S5/S7 argv marker guards:$g"
 printf '200\t%s\t%s\n' "$SIB" "$L2" > "$WORK/sess-mark-nocur"
 bash "$PS_SCRIPT" inventory --snapshot "$WORK/snap-mark" --sessions-tsv "$WORK/sess-mark-nocur" --session "$CUR" > "$WORK/inv-mark-nocur" 2>&1

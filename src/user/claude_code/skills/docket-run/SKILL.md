@@ -132,7 +132,8 @@ own-detached. Launched any other way, or after a double fork or an `exec`
 in the command, it is counted in `foreign=` and `kill` refuses it
 `not-listed`, so hand its recorded pid to the operator. Sibling sessions'
 and unknown owners' processes are reported and never touched. Preview
-with `kill --dry-run --pid <root pid>`, then stop with `kill --pid <root pid>`; the hook runs both
+with `kill --dry-run --pid <root pid>`, then stop with
+`kill --pid <root pid>`; the hook runs both
 outside the sandbox while this session's scratchpad holds a run's
 `conductor.d` token. Check each shell's `step=` owner first. Never stop a
 shell on its age. When you launch anything with `nohup` or `&`, use that

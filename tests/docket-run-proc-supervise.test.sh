@@ -182,6 +182,101 @@ bash "$PS_SCRIPT" kill --dry-run --pid 170 --snapshot "$WORK/snap-noenv" --sessi
     && ! grep -q '^would-signal' "$WORK/dry-noenv" \
     && pass "S5/S7 a detached watcher without its id in the environment is foreign and refused not-listed" \
     || fail "S5/S7 no-env watcher: $(grep summary "$WORK/inv-noenv" | head -1) | $(cat "$WORK/dry-noenv")"
+# S5/S7 under the argv-marker launch convention. No row below carries an id in
+# the environment column, as on Darwin for a sandboxed process; the wrappers
+# carry `docket-session=<uuid>` as the final argument of `sh -c`.
+{
+    printf '#self\t151\n#source\tps\n'
+    row 1 0 1 "$L0N" - - /sbin/launchd
+    row 50 1 50 "$L0N" - - -zsh
+    row 100 50 100 "$L1" - - 2.1.322
+    row 150 100 150 "$L1" - - "$SNAP 'bash proc_supervise.sh inventory'"
+    row 151 150 150 "$L1" - - "bash proc_supervise.sh inventory"
+    row 200 1 200 "$L2" - - 2.1.322
+    # This session's detached gate run: the wrapper and its child.
+    row 910 1 910 "$L1" - - "sh -c go test ./...; exit \$? docket-session=$CUR"
+    row 911 910 910 "$L1" - - "go1.26.9 test -timeout 60m ./..."
+    # Another session's detached job, under its marker.
+    row 920 1 920 "$L2" - - "sh -c sleep 600; exit \$? docket-session=$SIB"
+    row 921 920 920 "$L2" - - "sleep 600"
+    # A detached job with no attribution evidence.
+    row 930 1 930 "$L1" - - "bash /private/tmp/claude-501/watcher2.sh"
+    # This session's id in the command text, but not as the final argument.
+    row 940 1 940 "$L1" - - "sh -c echo docket-session=$CUR; sleep 9"
+    # Guards. A wrapper around a nested `claude -p`, and the nested child.
+    row 950 1 950 "$L1" - - "sh -c claude -p x; exit \$? docket-session=$CUR"
+    row 951 950 950 "$L1" - - "claude -p x"
+    row 952 951 952 "$L1" - - "make"
+    # Nested wrappers whose markers disagree.
+    row 960 1 960 "$L1" - - "sh -c sh -c inner; exit \$? docket-session=$CUR"
+    row 961 960 960 "$L1" - - "sh -c sleep 5; exit \$? docket-session=$SIB"
+    row 962 961 960 "$L1" - - "sleep 5"
+    # The current id in the environment under another session's marker.
+    row 970 1 970 "$L1" "$CUR" - "sh -c make; exit \$? docket-session=$SIB"
+    row 971 970 970 "$L1" "$CUR" - "make"
+    # A current-session marker under another session's environment id.
+    row 980 1 980 "$L2" "$SIB" - "bash job.sh"
+    row 981 980 980 "$L2" - - "sh -c y; exit \$? docket-session=$CUR"
+    row 982 981 980 "$L2" - - "sleep 1"
+} > "$WORK/snap-mark"
+mrun() { bash "$PS_SCRIPT" "$@" --snapshot "$WORK/snap-mark" --sessions-tsv "$WORK/sess" --session "$CUR"; }
+mrun inventory > "$WORK/inv-mark" 2>&1
+mrun kill --dry-run --pid 910 > "$WORK/dry-mark-own" 2>&1
+mrun kill --dry-run --pid 920 --pid 921 > "$WORK/dry-mark-sib" 2>&1
+mrun kill --dry-run --pid 930 --pid 940 > "$WORK/dry-mark-none" 2>&1
+grep -q $'^own-detached\tstop\t910\t1\t'"$CUR"$'\targv-marker,registry-live\t' "$WORK/inv-mark" \
+    && grep -q $'^own-detached\tstop\t911\t910\t'"$CUR"$'\targv-marker,registry-live\t' "$WORK/inv-mark" \
+    && [ "$(grep '^would-signal' "$WORK/dry-mark-own" | cut -f3 | tr '\n' ' ')" = "910 911 " ] \
+    && pass "S5/S7 argv marker: this session's detached wrapper and child without an env id are own-detached/stop, wrapper first" \
+    || fail "S5/S7 argv marker own: $(grep -E '^(own|summary\tsource)' "$WORK/inv-mark" | tr '\n' ' ') | $(plan "$WORK/dry-mark-own")"
+! awk -F '\t' '($3 == 920 || $3 == 921) && $1 != "summary"' "$WORK/inv-mark" | grep -q . \
+    && grep -q $'^summary\tsource=ps\t.*\tforeign=9$' "$WORK/inv-mark" \
+    && grep -q $'^refuse\t920\t-\tnot-listed$' "$WORK/dry-mark-sib" && grep -q $'^refuse\t921\t-\tnot-listed$' "$WORK/dry-mark-sib" \
+    && ! grep -q '^would-signal' "$WORK/dry-mark-sib" \
+    && pass "S5/S7 argv marker: another session's marked job is foreign and refused not-listed" \
+    || fail "S5/S7 argv marker another session: $(grep -E '^(sibling|own-detached|summary\tsource)' "$WORK/inv-mark" | tr '\n' ' ') | $(plan "$WORK/dry-mark-sib")"
+! awk -F '\t' '($3 == 930 || $3 == 940) && $1 != "summary"' "$WORK/inv-mark" | grep -q . \
+    && grep -q $'^summary\tsource=ps\t.*\tforeign=9$' "$WORK/inv-mark" \
+    && grep -q $'^refuse\t930\t-\tnot-listed$' "$WORK/dry-mark-none" && grep -q $'^refuse\t940\t-\tnot-listed$' "$WORK/dry-mark-none" \
+    && ! grep -q '^would-signal' "$WORK/dry-mark-none" \
+    && pass "S5/S7 argv marker: a detached job with no marker (or one not in final position) is foreign and refused not-listed" \
+    || fail "S5/S7 argv marker none: $(grep -E '^(own-detached|summary\tsource)' "$WORK/inv-mark" | tr '\n' ' ') | $(plan "$WORK/dry-mark-none")"
+mclass() { awk -F '\t' -v p="$1" '$3 == p && $1 != "summary" { print $1 "/" $2 }' "$WORK/inv-mark"; }
+g=""
+for e in 950:unknown/report 951:unknown/report 952: 960:own-detached/stop 961: 962: \
+         970:unknown/report 971:unknown/report 980:sibling-detached/report 981: 982:; do
+    [ "$(mclass "${e%%:*}")" = "${e#*:}" ] || g="$g ${e%%:*}=$(mclass "${e%%:*}")"
+done
+[ -z "$g" ] && pass "S5/S7 argv marker guards: nested session, disagreeing markers and env ids never make a stop" \
+    || fail "S5/S7 argv marker guards:$g"
+printf '200\t%s\t%s\n' "$SIB" "$L2" > "$WORK/sess-mark-nocur"
+bash "$PS_SCRIPT" inventory --snapshot "$WORK/snap-mark" --sessions-tsv "$WORK/sess-mark-nocur" --session "$CUR" > "$WORK/inv-mark-nocur" 2>&1
+grep -q $'^unknown\treport\t910\t.*\targv-marker,registry-unusable\t' "$WORK/inv-mark-nocur" \
+    && ! grep -q '^own-detached' "$WORK/inv-mark-nocur" \
+    && pass "S5/S7 argv marker with an unusable registry is unknown, never a stop" \
+    || fail "S5/S7 argv marker unusable registry: $(grep -E '^(own-detached|unknown)' "$WORK/inv-mark-nocur" | tr '\n' ' ')"
+# The live Darwin reader: `ps -E` shows the wrapper's argv and no environment,
+# and an unsandboxed process's environment. Only the latter fills the
+# environment column; the marker stays argv.
+mkdir -p "$WORK/mbin"
+cat > "$WORK/mbin/ps" <<STUB
+#!/bin/bash
+case "\$*" in
+    *-E*) printf '%s\n' "910 sh -c go test ./...; exit \\\$? docket-session=$CUR" "911 go test ./..." "990 bash job.sh CLAUDE_CODE_SESSION_ID=$SIB" ;;
+    *) printf '%s\n' "    1     0     1 $L0N /sbin/launchd" "  100     1   100 $L1 2.1.322" \
+           "  910     1   910 $L1 sh -c go test ./...; exit \\\$? docket-session=$CUR" "  911   910   910 $L1 go test ./..." "  990     1   990 $L2 bash job.sh" ;;
+esac
+STUB
+printf '#!/bin/sh\nexit 0\n' > "$WORK/mbin/lsof"
+printf '#!/bin/sh\necho Darwin\n' > "$WORK/mbin/uname"
+chmod +x "$WORK/mbin/ps" "$WORK/mbin/lsof" "$WORK/mbin/uname"
+PATH="$WORK/mbin:$PATH" bash "$PS_SCRIPT" snapshot > "$WORK/snap-mlive" 2>&1
+bash "$PS_SCRIPT" inventory --snapshot "$WORK/snap-mlive" --sessions-tsv "$WORK/sess" --session "$CUR" > "$WORK/inv-mlive" 2>&1
+awk -F "\t" -v s="$SIB" '$1 == 910 && $5 == "-" { a = 1 } $1 == 990 && $5 == s { b = 1 } END { exit !(a && b) }' "$WORK/snap-mlive" \
+    && grep -q $'^own-detached\tstop\t910\t.*\targv-marker,registry-live\t' "$WORK/inv-mlive" \
+    && grep -q $'^own-detached\tstop\t911\t.*\targv-marker,registry-live\t' "$WORK/inv-mlive" \
+    && pass "S5/S7 live Darwin reader fills the environment column from env ids only, never from the argv marker" \
+    || fail "S5/S7 live reader: $(tr '\n' ' ' < "$WORK/snap-mlive") | $(grep -v '^summary' "$WORK/inv-mlive" | tr '\n' ' ')"
 # S8: a cleanup across sessions moves only this session's named shells.
 run kill --dry-run --pid 111 --pid 211 --pid 220 > "$WORK/dry8" 2>&1
 grep -q $'^would-signal\tTERM\t111\t' "$WORK/dry8" && ! grep -q $'^would-signal\tTERM\t2[12]' "$WORK/dry8" \

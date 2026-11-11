@@ -14,11 +14,25 @@
 #                 status-line or MCP `sh -c` is own-service. With an `lsof`
 #                 table (no argv) any shell child of the session counts.
 #   own-detached  carries the current session's id but no longer descends from
-#                 it (`nohup ... &`, setsid). Action `stop`. Needs the id in
-#                 the `ps -E` environment, which Darwin hides for a process in
-#                 the Bash sandbox, so on Darwin this class never fires.
-#                 Without the id a detached process is foreign: not listed,
-#                 counted in `foreign=`, and refused `not-listed` by kill.
+#                 it (`nohup ... &`, setsid). Action `stop`. The id comes from
+#                 the `ps -E` environment or, where the environment is hidden
+#                 (Darwin hides it for a process in the Bash sandbox), from
+#                 the ARGV MARKER: a `docket-session=<uuid>` token that is the
+#                 final argument of a shell `-c` process on the chain from
+#                 the process up to its orphan root. The launch convention is
+#                   nohup sh -c '<cmd>; exit $?' "docket-session=$CLAUDE_CODE_SESSION_ID" >log 2>&1 &
+#                 (setsid on Linux); the trailing `exit` keeps the wrapper
+#                 alive, so its children inherit the marker by ancestry. The
+#                 marker counts only when every marker and every environment
+#                 id on the chain name the current session; evidence
+#                 `argv-marker`. It is read from the `ps` argv only, so the
+#                 lsof table never shows it, and a double fork, an `exec` in
+#                 the command, or a wrapper that dies first loses it. A
+#                 conflicting marker never makes a stop: beside the current
+#                 id in the environment it gives unknown. A detached process
+#                 with neither id nor marker, or with another session's
+#                 marker, is foreign: not listed, counted in `foreign=`, and
+#                 refused `not-listed`.
 #
 # Every other class is reported and never signalled:
 #
@@ -47,8 +61,8 @@
 # as own-shell. Where no process shows its session id in the environment,
 # no child differs, so only the title protects.
 #
-# Processes with no Claude ancestry and no session id are counted as foreign
-# and never listed.
+# Processes with no Claude ancestry, no session id and no argv marker naming
+# the current session are counted as foreign and never listed.
 #
 # DEATH TEST. A session counts as dead (dead-owner) when all four hold:
 #   1. the registry works: ~/.claude/sessions/<pid>.json lists the current
@@ -286,6 +300,27 @@ classify() { # <snapshot file> <sessions file>
         w = c; sub(/ .*/, "", w); sub(/.*\//, "", w); sub(/^-/, "", w)
         return (w == "zsh" || w == "bash" || w == "sh" || w == "dash" || w == "fish")
     }
+    # The argv marker on the chain from p to its orphan root: the session id,
+    # "" when there is none, or "conflict" when two markers disagree or an
+    # environment id on the chain differs from the marker. Called only for a
+    # process with no live-session or nested-session ancestor.
+    function marker(p,   q, g, n, a, t, m, e) {
+        m = ""; e = ""; q = p; g = 0
+        while (q != "" && q != "0" && q != "1" && (q in ppid) && g++ < 4096) {
+            if (sid[q] != "-" && sid[q] != "") e = e " " sid[q]
+            n = split(cmd[q], a, " ")
+            if (shellish(cmd[q]) && n >= 3 && a[2] == "-c") {
+                t = a[n]
+                if (length(t) == 51 && t ~ /^docket-session=[0-9a-fA-F-]+$/) {
+                    t = substr(t, 16)
+                    if (m == "") m = t; else if (m != t) return "conflict"
+                }
+            }
+            q = ppid[q]
+        }
+        if (m != "") { n = split(e, a, " "); for (g = 1; g <= n; g++) if (a[g] != m) return "conflict" }
+        return m
+    }
     END {
         # A registry entry is live when its pid is in the table with the
         # recorded start time. In lsof mode the start time is unknown, so pid
@@ -361,12 +396,20 @@ classify() { # <snapshot file> <sessions file>
                 # inherited: never a stop target of this session.
                 cls = "unknown"; act = "report"; owner = s; ev = "env,under-session-process=" nested
             } else if (s == "-" || s == "") {
-                foreign++; continue
+                # No id in the environment: only an argv marker naming the
+                # current session attributes it. A marker naming another
+                # session, or no marker, leaves it foreign.
+                if (nested != "" || cur == "" || marker(p) != cur) { foreign++; continue }
+                owner = cur
+                if (!registry_ok) { cls = "unknown"; act = "report"; ev = "argv-marker,registry-unusable" }
+                else { cls = "own-detached"; act = "stop"; ev = "argv-marker,registry-live" }
             } else if (!registry_ok) {
                 cls = "unknown"; act = "report"; owner = s; ev = "registry-unusable"
             } else if (s in live_sid) {
                 cls = (s == cur ? "own-detached" : "sibling-detached"); act = (s == cur ? "stop" : "report")
                 owner = s; ev = "env,registry-live"
+                mk = (nested == "" ? marker(p) : "")
+                if (mk != "" && mk != s) { cls = "unknown"; act = "report"; ev = "env,argv-marker-conflict" }
             } else if (s in attached) {
                 cls = "unregistered"; act = "report"; owner = s; ev = "env,live-parent"
             } else if (ppid[root] == "1" && (s in gone_sid) && !(s in maybe_sid)) {

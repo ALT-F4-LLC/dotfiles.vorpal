@@ -745,6 +745,16 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "command",
             10,
         )
+        // `rex skill setup` writes this entry; the command must match its
+        // template so setup reports it current and does not rewrite the
+        // installed file. Fails open when rex is absent.
+        .with_hook_timeout(
+            "SessionStart",
+            None,
+            "/bin/sh -c 'rex __internal session-start --agent claude --feature-session-naming=false 2>/dev/null || true'",
+            "command",
+            5,
+        )
         .with_hook(
             "PostToolUse",
             Some("Bash"),
@@ -2107,6 +2117,23 @@ mod tests {
             );
             assert_eq!(entries[0]["hooks"][0]["timeout"], 300, "{event} timeout");
         }
+    }
+
+    #[test]
+    fn rex_session_start_hook_is_registered_once() {
+        // The command must match `rex skill setup`'s template, or setup no
+        // longer reports the hook current and rewrites the installed file.
+        let entries = hook_entries_running(
+            "SessionStart",
+            "/bin/sh -c 'rex __internal session-start --agent claude --feature-session-naming=false 2>/dev/null || true'",
+        );
+
+        assert_eq!(entries.len(), 1, "registered once");
+        assert!(entries[0].get("matcher").is_none(), "no matcher");
+        let hooks = entries[0]["hooks"].as_array().expect("a hook list");
+        assert_eq!(hooks.len(), 1);
+        assert_eq!(hooks[0]["type"], "command");
+        assert_eq!(hooks[0]["timeout"], 5);
     }
 
     #[test]

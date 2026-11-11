@@ -124,16 +124,20 @@ every signal. When shells pile up or load climbs, run
 `bash ~/.claude/skills/docket-run/scripts/proc_supervise.sh inventory`. The
 docket-proc-guard hook runs it outside the sandbox and returns the full
 table. Every shell of this session, its helpers and its seats reads
-own-shell. A detached (`nohup`) process cannot be attributed on Darwin,
-where the sandbox hides its environment from `ps`: it is counted
-in `foreign=` and `kill` refuses it `not-listed`, so hand its recorded pid
-to the operator. Sibling sessions' and unknown owners'
-processes are reported and never touched. Preview with `kill --dry-run --pid
-<root pid>`, then stop with `kill --pid <root pid>`; the hook runs both
+own-shell. On Darwin the sandbox hides a detached (`nohup`) process's
+environment from `ps`, so the hook's table attributes it through an argv
+marker: launched as `nohup sh -c '<cmd>; exit $?'
+"docket-session=$CLAUDE_CODE_SESSION_ID" >log 2>&1 &`, it reads
+own-detached. Launched any other way, or after a double fork or an `exec`
+in the command, it is counted in `foreign=` and `kill` refuses it
+`not-listed`, so hand its recorded pid to the operator. Sibling sessions'
+and unknown owners' processes are reported and never touched. Preview
+with `kill --dry-run --pid <root pid>`, then stop with `kill --pid <root pid>`; the hook runs both
 outside the sandbox while this session's scratchpad holds a run's
 `conductor.d` token. Check each shell's `step=` owner first. Never stop a
-shell on its age. When you launch anything with `nohup` or `&`, record its
-pid. Use and audited scenarios are in
+shell on its age. When you launch anything with `nohup` or `&`, use that
+marker convention and record its pid. Use, the attribution design and
+audited scenarios are in
 [proc-supervise](references/proc-supervise.md).
 
 ## The conductor capability

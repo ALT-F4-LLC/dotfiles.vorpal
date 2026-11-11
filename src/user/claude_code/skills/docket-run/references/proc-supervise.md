@@ -8,10 +8,11 @@ this file holds when the conductor uses it and the evidence it was built from.
 ## Contents
 
 - [What it is for](#what-it-is-for) (13 lines)
-- [Use](#use) (48 lines)
+- [Use](#use) (50 lines)
+- [Attributing a detached process](#attributing-a-detached-process) (37 lines)
 - [Audited scenarios](#audited-scenarios) (18 lines)
 - [Capabilities with no audited scenario](#capabilities-with-no-audited-scenario) (21 lines)
-- [Limits](#limits) (40 lines)
+- [Limits](#limits) (56 lines)
 
 ## What it is for
 
@@ -43,7 +44,9 @@ else (a subagent, a non-conductor, any other spelling) it runs in the
 sandbox, where the table comes from `lsof`. That table lists every process
 of the user with cwd and command name, but no argv or environment. A
 detached process (S5, S7) is in it but cannot be attributed and is counted
-foreign, so a seat that launches one with `nohup` or `&` records its pid. A
+foreign: the argv marker is read only from the hook's `ps` table. So a seat
+that launches one with `nohup` or `&` follows the launch convention in
+**Attributing a detached process** and records its pid. A
 `step=STEP-N` in the evidence column, from argv or cwd, ties a shell to a
 lane step; in the sandbox it comes from the cwd alone. The `summary count`
 rows count processes by class, which is the answer to "why are there N
@@ -76,6 +79,44 @@ the permission mode binds only the sandboxed call, not what this hook ran.
 no audited scenario**). Re-run the inventory to confirm: a child a loop
 forked after the snapshot is not in the plan.
 
+## Attributing a detached process
+
+On Darwin the Bash sandbox hides a process's environment from `ps -E` but
+not its argv, so the chosen source is an argv marker launch convention: a
+`docket-session=<uuid>` token that is the final argument of a shell `-c`
+wrapper, where the wrapper is the detached process or one of its ancestors
+up to its orphan root. A seat that detaches a job launches it as
+`nohup sh -c '<cmd>; exit $?' "docket-session=$CLAUDE_CODE_SESSION_ID" >log 2>&1 &`,
+with `setsid` in place of `nohup` on Linux. The trailing `exit $?` keeps the
+wrapper alive, so its children carry the marker through ancestry, and the
+convention spells the variable, never a literal id. The token is not
+`CLAUDE_CODE_SESSION_ID=<uuid>`, because the Darwin `ps -E` reader matches
+that string anywhere on the line and would read the launching shell as a
+session process. Six candidates were rejected. `env
+CLAUDE_CODE_SESSION_ID=$ID nohup <cmd>`: `env` and `nohup` exec their
+command, so the marker is gone from the surviving argv. The pgid of a live
+own-shell root: while that shell lives, ancestry already classes the tree
+own-shell; after it dies, the pgid names a dead, reusable pid, and `setsid`
+changes the pgid anyway. A launcher pid file: the sandboxed launcher cannot
+read its child's start time, so the file cannot rule out pid reuse, and the
+real kill would have to trust a caller-written file. A marker as a trailing
+argument of the command itself: any command that rejects an extra argument
+fails. The stdout fd or cwd under the session scratchpad: cwd alone is not
+ownership, and an fd source needs a new snapshot column and an unverified
+`lsof` read. `exec -a` renaming argv[0]: a shebang script loses it.
+
+A detached process with no environment id is own-detached (`stop`,
+evidence `argv-marker,registry-live`) only when the walk from it to its
+orphan root meets no nested session process and every marker and
+environment id on that chain names the current session. With the registry
+unusable it is `unknown`. A marker naming another session, markers that
+disagree, a differing environment id on the chain, a marker on a non-shell
+process, or no marker leaves it foreign: counted in `foreign=` and refused
+`not-listed`. A process whose environment carries the current id beside
+another session's marker is `unknown`, so a conflict never makes a stop.
+Ancestry outranks the marker: a tree under a live session process is
+classed by that session.
+
 ## Audited scenarios
 
 Every row is an intervention found in `~/.claude`; the `~/.docket` audit
@@ -90,9 +131,9 @@ case label). H is `~/.claude/history.jsonl`; P is
 | S2 | "I see a lot of shells right now running": `tail -f \| grep -m1` followers of finished test runs, load 25 to 56 | P`docket-git-feature-engine-improvements/1b58c2fd-3b00-4ff3-8a6e-9f1a7eeb3965.jsonl:18014` | lists the followers as own-shell with argv; stop by pid. Staleness is the conductor's call |
 | S3 | The conductor stopped nine live executor shells as "left over from before the context reset"; their tests died with exit 137 | same transcript, `:23468` to `:23705` | no blanket stop (`kill` needs `--pid`); `step=` and cwd columns attribute each shell; the conductor checks the step first |
 | S4 | A Bash call blocked on inherited stdin (`python3 -`) was auto-backgrounded and hung until "I see a shell process running" | P`docket-git-feature-docket-daemon/959a6484-7575-44dc-8a38-b3025f8ffdbe.jsonl:869`, `:964`, `:996` | lists it as own-shell; stop by pid. Hang detection is the conductor's call |
-| S5 | "Why are there 14 shells running?": one conductor watcher, the rest executor and detached engine gate runs | P`docket-git-feature-docket-daemon/bd10139a-b6e3-4d11-b496-e8508cdd6cd2.jsonl:1137` | `summary count` rows by class; detached runs whose environment carries this session's id are own-detached in the hook's `ps` table (never on Darwin, where the sandbox hides it; see **Limits**); without the id a detached run is not listed, is counted in `foreign=`, and `kill --pid` refuses it `not-listed` |
+| S5 | "Why are there 14 shells running?": one conductor watcher, the rest executor and detached engine gate runs | P`docket-git-feature-docket-daemon/bd10139a-b6e3-4d11-b496-e8508cdd6cd2.jsonl:1137` | `summary count` rows by class; in the hook's `ps` table a detached run is own-detached when its environment carries this session's id or, on Darwin where the sandbox hides the environment, when it was launched under the argv marker convention (**Attributing a detached process**); a run with neither, or with another session's marker, is not listed, is counted in `foreign=`, and `kill --pid` refuses it `not-listed` |
 | S6 | A watcher loop never fired; "The task was hung." and a hard halt | H`:6662` to `:6664` (transcript purged) | lists the loop as own-shell; stop by pid |
-| S7 | A watcher started with `nohup &` escaped task tracking; `pkill -f watcher2.sh` was refused by the sandbox | P`docket-git-feature-engine-improvements/b29ca600-bd41-47bf-bdc9-c0cd9062c20a.jsonl:724` | classes it own-detached (this session's id in its environment, reparented) in the hook's `ps` table, never on Darwin (see **Limits**); without the id it is not listed, is counted in `foreign=`, and `kill --pid` refuses it `not-listed`, so the conductor hands the recorded pid to the operator |
+| S7 | A watcher started with `nohup &` escaped task tracking; `pkill -f watcher2.sh` was refused by the sandbox | P`docket-git-feature-engine-improvements/b29ca600-bd41-47bf-bdc9-c0cd9062c20a.jsonl:724` | classes it own-detached in the hook's `ps` table when it was launched as `nohup sh -c '<cmd>; exit $?' "docket-session=$CLAUDE_CODE_SESSION_ID"` (the argv marker; on Darwin the sandbox hides its environment id); on Darwin a bare `nohup watcher2.sh &` shows neither id nor marker, so it is not listed, is counted in `foreign=`, and `kill --pid` refuses it `not-listed`, and the conductor hands the recorded pid to the operator |
 | S8 | "There are 37 shells open right now. This needs to be cleaned up." and seven more cleanup asks | H`:1472`, `:1543`, `:1663`, `:1669`, `:1726`, `:1759`, `:1982`, `:1990` (transcripts purged) | inventory across sessions; only this session's named pids move, a sibling's are refused |
 
 ## Capabilities with no audited scenario
@@ -145,11 +186,18 @@ escalation noted:
   the snapshot pipeline. The sandbox finding rests on the earlier per-pid
   probe: a sandboxed `sleep` showed no session id, and only an
   unsandboxed process (a `!` command) did. A run without `LC_ALL=C`
-  matched the same, so `sed` was not at fault. Every Bash-tool shell is sandboxed, so on
-  Darwin own-detached (S5, S7) never fires. A detached process without the id
-  is not listed, is counted in `foreign=`, and `kill --pid` refuses it
-  `not-listed`; the conductor hands its recorded pid to the operator. A
-  design follow-up for attributing detached processes exists.
+  matched the same, so `sed` was not at fault. Every Bash-tool shell is
+  sandboxed, so on Darwin own-detached (S5, S7) comes from the argv marker
+  alone (**Attributing a detached process**). Its limits all fail safe to
+  foreign: a double fork, an `exec` inside the command string, or a wrapper
+  that dies before its child loses the marker; the sandboxed `lsof` table
+  has no argv, so only the hook's `ps` table attributes the job; and a job
+  launched without the convention is still not listed, is counted in
+  `foreign=`, and `kill --pid` refuses it `not-listed`, so the conductor
+  hands its recorded pid to the operator. The marker is as forgeable as the
+  environment variable by any same-user process, so the conductor still
+  names each pid. The marker path is fixture-tested only: no live hook `ps`
+  table for a job launched by the convention has been inspected.
 - A nested session whose title is neither `claude` nor a version (`node
   cli.js -p`) and that has no child with its own id is not recognised; its
   tree reads as own-shell. With no session id in the environment (as in

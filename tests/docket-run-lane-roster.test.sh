@@ -230,14 +230,18 @@ build_wal_fixture "$WORK/waldrop" drop
 [ -f "$WORK/waldrop/store.db" ] && [ ! -e "$WORK/waldrop/store.db-wal" ] && [ ! -e "$WORK/waldrop/store.db-shm" ] \
     && [ "$(head -c 20 "$WORK/waldrop/store.db" | od -An -tx1 -j18 -N2 | tr -d ' \n')" = "0202" ]
 ok $? "fixture: a WAL-mode store with no -wal and no -shm"
-sqlite3 -readonly "$WORK/waldrop/store.db" 'select 1' > /dev/null 2>&1; rc=$?
-[ $rc -ne 0 ]; ok $? "fixture: a plain read-only open of it fails (rc ${rc})"
 touch -t 202001010000 "$WORK/waldrop/store.db"   # older than the 2 s guard
 cp -R "$WORK/waldrop" "$WORK/walljournal"; : > "$WORK/walljournal/store.db-journal"
 cp -R "$WORK/waldrop" "$WORK/walfresh"; touch -t 209901010000 "$WORK/walfresh/store.db"
 cp -R "$WORK/waldrop" "$WORK/walmut"; touch -t 202001010000 "$WORK/walmut/store.db"
 touch -t 202001010000 "$WORK/walljournal/store.db"   # cp -R stamps the copies with now
 chmod 555 "$WORK/waldrop"
+# in the unwritable directory every sqlite3 fails this open: 3.54 with error
+# 14, older releases (3.45 on Ubuntu) with SQLITE_READONLY; in a writable
+# directory older releases create the -shm and succeed. The probe reads the
+# schema, since 3.45 opens lazily and `select 1` never touches the file
+sqlite3 -readonly "$WORK/waldrop/store.db" 'SELECT COUNT(*) FROM sqlite_master;' > /dev/null 2>&1; rc=$?
+[ $rc -ne 0 ]; ok $? "fixture: a plain read-only open of it fails (rc ${rc})"
 drop_before=$(ls_dir "$WORK/waldrop"); drop_cksum=$(cksum "$WORK/waldrop/store.db" | tr '\n' ' ')
 run_roster RUN-1 --store "$WORK/waldrop/store.db"; rc=$?
 [ $rc -eq 0 ] && [ "$(jq -r '.[0].workflow' "$WORK/out")" = "ui-change@7" ] && [ "$(jq 'length' "$WORK/out")" = "3" ]
@@ -267,9 +271,11 @@ mkdir -p "$WORK/binmut"
 REAL_SQLITE3=$(command -v sqlite3)
 printf '#!/bin/bash\n"%s" "$@"; rc=$?\ncase "$*" in *immutable=1*) touch -t 202101010000 "$MUT_STORE";; esac\nexit $rc\n' "$REAL_SQLITE3" > "$WORK/binmut/sqlite3"
 chmod 755 "$WORK/binmut/sqlite3"
+chmod 555 "$WORK/walmut"
 MUT_STORE="$WORK/walmut/store.db" PATH="$WORK/binmut:$PATH" run_roster RUN-1 --store "$WORK/walmut/store.db"; rc=$?
 [ $rc -eq 1 ] && [ ! -s "$WORK/out" ] && grep -q 'changed during the read' "$WORK/err"
 ok $? "a store that changes during the read: discarded, rc 1, nothing on stdout (rc ${rc}: $(head -n 1 "$WORK/err" | cut -c1-200))"
+chmod 755 "$WORK/walmut"
 
 printf '\n%d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]

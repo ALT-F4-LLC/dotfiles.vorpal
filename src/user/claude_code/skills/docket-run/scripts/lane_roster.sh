@@ -37,6 +37,10 @@
 # as an unwritable one; the sandbox is not the cause. Reproduced with sqlite3
 # 3.54.0: `-readonly`, `mode=ro`, `nolock=1`, `readonly_shm=1`, `-vfs
 # unix-excl` and `-deserialize` all fail, and only `immutable=1` opens it.
+# Older releases differ: sqlite3 3.45.1 (Ubuntu 24.04) creates the -shm and
+# reads the store in a writable directory, and in an unwritable one fails
+# with SQLITE_READONLY, "attempt to write a readonly database"; the fallback
+# below takes either error.
 # With the two files present, even stale and in an unwritable directory,
 # `-readonly` reads the store, WAL included. The engine's SQLite deletes them
 # when its last connection closes, which happens after every docket verb,
@@ -110,7 +114,8 @@ ORDER BY ri.issue_id;"
 # option and the SQL in, the output in $ro_out. On failure it exits 1 itself.
 #
 # 1. `sqlite3 -readonly`. Used whenever it opens the store.
-# 2. Only when that fails with "unable to open database file" on a WAL-mode
+# 2. Only when that fails with "unable to open database file" (or, on older
+#    sqlite3, "attempt to write a readonly database") on a WAL-mode
 #    store with no -wal, -shm or -journal file, and only then: no connection
 #    holds the store and every committed write is in the main file, so
 #    `immutable=1` reads it. The result is kept only if the store was at least
@@ -144,7 +149,7 @@ read_ro() { # [format-option] <sql>
     ro_out=$(sqlite3 -readonly ${fmt:+"$fmt"} "$store" "$sql" 2>&1)
     status=$?
     [ "$status" -ne 0 ] || return 0
-    if printf '%s' "$ro_out" | grep -q 'unable to open database file' \
+    if printf '%s' "$ro_out" | grep -qE 'unable to open database file|attempt to write a readonly database' \
         && [ "$(wal_header)" = "0202" ] && no_sidecars; then
         case "$store" in /*) abs="$store" ;; *) abs="$PWD/$store" ;; esac
         uri="file:$(uri_encode "$abs")?mode=ro&immutable=1"

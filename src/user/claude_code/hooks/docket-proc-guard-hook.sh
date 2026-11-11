@@ -8,9 +8,13 @@
 # process outside the call are refused, even `kill -0` to this session's own
 # background shell. So a conductor cannot stop an Agent subagent's runaway
 # test loops. The operator once had to run `! pkill` by hand while fan noise
-# and a load of 6.7 went on. A `nohup` watcher outside task tracking is
-# attributed only when `ps -E` shows its session id, which Darwin hides for a
-# sandboxed process; so it stays foreign and unstoppable here. A hook runs outside the
+# and a load of 6.7 went on. A detached job (`nohup`, setsid) outside task
+# tracking is attributed by its session id in the `ps -E` environment or,
+# where the sandbox hides the environment (Darwin), by the `docket-session=`
+# argv marker launch convention in
+# skills/docket-run/references/proc-supervise.md. The marker is read only
+# from this hook's `ps` table; a job with neither stays foreign and
+# `kill --pid` refuses it. A hook runs outside the
 # sandbox, so this hook is the one place where
 # skills/docket-run/scripts/proc_supervise.sh reads the full `ps` table and
 # can signal. The operator chose this event, matcher and action (PreToolUse,

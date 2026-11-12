@@ -344,7 +344,7 @@ dependencies = [
  "tokio",
  "toml",
  "vorpal-artifacts",
- "vorpal-sdk",
+ "vorpal-sdk 0.5.0",
 ]
 
 [[package]]
@@ -2013,7 +2013,7 @@ dependencies = [
  "anyhow",
  "indoc",
  "tokio",
- "vorpal-sdk",
+ "vorpal-sdk 0.4.1",
 ]
 
 [[package]]
@@ -2023,6 +2023,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfa57039b80dd835135f95e0a3e4225df6b40ffb653e3ed4b10f40e7ce591c35"
 dependencies = [
  "anyhow",
+ "clap",
+ "http",
+ "hyper-util",
+ "indoc",
+ "oauth2",
+ "prost",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha256",
+ "tokio",
+ "toml",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+ "tower",
+ "tracing",
+]
+
+[[package]]
+name = "vorpal-sdk"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "292181fba199909df0ff387170f84ae2c5f6a2f24c3032edda7c9de2105eba71"
+dependencies = [
+ "anyhow",
+ "base64",
  "clap",
  "http",
  "hyper-util",

@@ -92,39 +92,21 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
     "$defaults",
     "Bash(docket:*) in ALT-F4-LLC repositories — high-frequency org CLI; includes registry and run-state verbs (workflow register --all-projects/--project, run activate, dispatch backfill-usage, issue comment, step claim) and read-only SELECTs against the docket store at ~/.docket/issues.db, plus `~/.docket/bin/docket-workflow-claim`, the corpus-shipped script a wave's claim agent runs to claim one step and write its packet module; `docket trust add`/`docket trust rm` write the store that authorizes a step's own gates and stay outside this rule",
     "Bash(cargo:*) in ALT-F4-LLC repositories — build/test/fmt/check/clippy, including invocations prefixed with CARGO_HOME/CARGO_TARGET_DIR/GOCACHE-style cache overrides; writes only to build caches",
-    "Local git operations in trusted repositories — add, commit, worktree, cherry-pick, stash, archive, cat-file, rev-parse, and other repo-local verbs, whether run from the checkout or via `git -C <trusted checkout>`, with commit messages passed inline, via a heredoc, or via `-F <file under the scratch root>`; `git push` publishes and stays outside this rule",
+    "Git operations in trusted repositories — every git verb, repo-local (add, commit, worktree, cherry-pick, rebase, stash, archive, cat-file, rev-parse) or network (fetch, pull, ls-remote, remote update, and `git push <remote> <branch>` to a branch that is not the default branch, a repeat push or a `--force-with-lease` of the session's own branch included), whether run from the checkout or via `git -C <trusted checkout>`, with commit messages passed inline, via a heredoc, or via `-F <file under the scratch root>`; a push to a default branch and anything that overrides a git or GitHub permission stay outside this rule, and this rule clears the verb only: what a push publishes still answers to the secret and data rules",
     "Bash(vorpal:*) in ALT-F4-LLC repositories — the org's own build tool, same standing as docket",
     "Read-only cluster reads against bulbasaur — kubectl get/describe/logs, flux get; mutations against the cluster stay outside this rule (production)",
     "Read-only search and inspection inside trusted checkouts and the Claude scratch roots ({scratch_roots}, $TMPDIR) — grep, rg, find, ls, cat, head, tail, sed -n, wc, diff, strings, jq — including a relative path or glob after `cd` into one of those roots; the sensitive home paths (~/.ssh, ~/.aws, ~/.gnupg, credential stores) are refused by the sandbox at the syscall level and by the sensitive-path-guard hook, and a relative path under these roots cannot reach them; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
     "File operations confined to the Claude scratch roots ({scratch_roots}, $TMPDIR) — mkdir, cp -R, rm -rf, mv, tar/git-archive mirrors of a trusted checkout, and in-place edits (sed -i) of files under them; these are per-session throwaway workspaces the sandbox already lets every session write, so deleting or mutating them affects no repo; interpreter code arguments and exec wrappers are shell indirection and stay outside this rule",
     "Read-only inspection under ~/.claude — session transcripts and tool-results under ~/.claude/projects, the friction ledger, installed skills, workflows, and hooks — the operator's own harness state; edits there stay outside this rule (source-only, installed via `just activate`)",
-    "Read-only gh reads against ALT-F4-LLC repositories — gh pr view/checks/list/diff, gh run list/view, gh issue view/list; every other gh verb, including every one on an ask rule, stays outside this rule",
+    "gh commands against ALT-F4-LLC repositories — reads in every command group (gh pr view/checks/list/diff, gh run list/view/watch, gh issue view/list, gh repo view, gh search, gh release view/list, `gh api` GET), the pull-request and issue workflow (gh pr create/edit/comment/ready/close/review/checkout, gh issue create/comment/edit/close, `gh api` writes to pull-request and issue endpoints), and routine repository work (gh run rerun/cancel, gh workflow run, gh label, gh cache, gh variable, gh repo clone, `gh repo edit` of a description, topic or merge setting, `gh api` writes that create, move or delete a tag or a branch other than the default branch); merging a pull request, writing to a default branch, and anything that overrides a git or GitHub permission stay outside this rule, a command that publishes to a public surface (a new public repository, a release, a gist) or changes a secret still answers to the built-in rules, and this rule clears the verb only: the text a command publishes still answers to the secret and data rules",
     "Editing Claude Code and Docket definition source in the dotfiles.vorpal checkout — src/user/claude_code/{skills,agents,workflows,references}/**, src/user/claude_code/CLAUDE.md, and src/user/docket/config/** — is routine project work, not self-modification: it is source only and stays inert until the operator runs `just activate`; settings.rs, claude_code.rs, src/user/claude_code/hooks/**, the permission, sandbox and autoMode rules, and the installed trees (~/.claude, ~/.docket/config) stay outside this rule",
 ];
 
 /// The docket verbs that write the trust store authorizing a step's own
 /// gates: they ask before running, and no auto-mode allow rule may clear
-/// them. The ask rules and the guard test read this table beside
-/// PUBLISHING_ASK_VERBS, so a verb added here is excluded by test.
+/// them. The ask rules and the guard test read this table, so a verb added
+/// here is excluded by test.
 const TRUST_STORE_ASK_VERBS: &[&str] = &["docket trust add", "docket trust rm"];
-
-/// Verbs that publish or read secrets: they ask before running, and no
-/// auto-mode allow rule may clear them. Every `gh pr` verb the `pr` skill
-/// invokes that publishes text or changes who can act on a PR is listed, so
-/// the human sees the bytes before they are public; a skill that adds a
-/// publishing `gh` verb adds a row here. `gh run view` is deliberately
-/// absent: it only reads CI logs, and the `pr` skill already treats that
-/// output as untrusted data rather than instructions.
-const PUBLISHING_ASK_VERBS: &[&str] = &[
-    "gh api",
-    "gh pr close",
-    "gh pr comment",
-    "gh pr create",
-    "gh pr edit",
-    "gh pr merge",
-    "gh pr ready",
-    "git push",
-];
 
 /// Shell indirection: an interpreter handed code as an argument, or a wrapper
 /// that runs its argument as a command the permission rules never see. A
@@ -192,8 +174,27 @@ const SHELL_INDIRECTION_DENY_PATTERNS: &[&str] = &[
 /// spellings they cannot, such as code on stdin or an absolute path to the
 /// same interpreter. `$defaults` keeps the built-in exfiltration rule: a list
 /// without it replaces the section.
+///
+/// The three rows after `$defaults` are the operator's rule for git and the
+/// GitHub CLI: every command is allowed except these three. No ask row stands in front
+/// of git or gh; `git-gh-guard-hook.sh` exits 2 on each exception before the
+/// permission flow, in every seat, and the operator runs an excepted command
+/// with `! <command>`. The rows are the classifier's copy of the same rule,
+/// for the unsandboxed calls it judges whose spelling the hook's text reading
+/// does not name. They sit here and not under `soft_deny` because a
+/// `soft_deny` row yields to stated user intent and to an allow rule, and the
+/// operator asked for a block that holds everywhere.
+///
+/// RESIDUAL: a sandboxed Bash call is auto-allowed and never reaches the
+/// classifier, and sandboxed `gh` reads its keyring token and reaches
+/// api.github.com. A script file can therefore merge or write a ref where
+/// neither the hook nor this prose reads it; server-side branch protection
+/// is what stands there.
 const AUTO_MODE_HARD_DENY_RULES: &[&str] = &[
     "$defaults",
+    "Pushing to a default branch is never allowed: any command that writes commits to `main`, `master`, or the branch GitHub reports as a repository's default — `git push` with that branch as a destination, a refspec, `HEAD`, a symbolic name or a configured upstream that resolves to it, `gh repo sync` of a remote repository, a `gh api` or GraphQL write to that branch's ref or contents — in any spelling, including one reached through a script, a variable, an alias, or a wrapper; a push to any other branch is fine, and no allow rule and no user instruction clears a push to a default branch",
+    "Merging a pull request is never allowed: `gh pr merge`, enabling auto-merge, adding a pull request to a merge queue, a `gh api` or GraphQL call that merges a pull request (`pulls/<n>/merge`, `mergePullRequest`, `enablePullRequestAutoMerge`) or merges a branch into a default branch (`merges`, `merge-upstream`), or a comment that tells a bot to merge, in any spelling, including one reached through a script, a variable, an alias, or a wrapper; `gh pr merge --disable-auto` turns auto-merge off and is fine, and no allow rule and no user instruction clears a merge",
+    "Overriding a git or GitHub permission that exists outside the sandbox is never allowed: signing in or out or reading a token (`gh auth` other than `status`, `git credential`), adding or removing SSH, GPG or deploy keys, `gh alias` or `gh extension` installs, config or environment that reroutes or re-authenticates git (`GIT_CONFIG*`, `GIT_SSH*`, `core.sshCommand`, `core.hooksPath`, `url.*.insteadOf`, `credential.*`, remote URL edits, set with `-c`, `--config-env` or `git config`), skipping hooks or signing in a repository of record (`--no-verify`, `--no-gpg-sign`), `gh pr merge --admin`, and any change to a repository's default branch, visibility, branch protection, rulesets, collaborators, team or organization membership, or Actions permissions; a throwaway repository under a scratch root is exempt from the hook and signing items, ordinary repository administration (`gh repo edit` of a description or a merge setting, secrets, variables, workflows) is not a permission override, and no allow rule and no user instruction clears an override",
     "Shell indirection is never allowed, in any spelling: a shell or interpreter handed code as an argument (`bash -c`, `sh -c`, `zsh -c`, `dash -c`, `eval`, `source` or `.`, `python -c`, `perl -e`, `node -e`/`-p`, `ruby -e`, `osascript -e`), code fed to an interpreter on stdin or through a heredoc, and wrappers that run their argument as a command the permission rules cannot see (`env`, `xargs` with flags, `find -exec`/`-execdir`/`-delete`, `sudo`, `watch`, `setsid`, `flock`, `script`). A combined-flag spelling (`bash -lc`, `perl -pi -e`) or an absolute path to the same interpreter (`/bin/bash -c`) is the same command and is refused the same way; no allow rule and no user instruction clears it",
 ];
 
@@ -333,15 +334,56 @@ const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
 /// gone, so a corpus that wants a listed command unsandboxed has to spell it
 /// as the only command in the Bash call (the vorpal-toolchain fragment does).
 /// An excluded command still goes through the permission flow: an allow rule
-/// or, in auto mode, the classifier. `git` stays absent: local git needs no
-/// network (`github.com`/`api.github.com` are in the network allowlist for
-/// what does), and outside the sandbox git obeys config and hooks that a
-/// sandboxed command may have written into the checkout.
+/// or, in auto mode, the classifier.
+///
+/// GIT. The excluded git forms are the ones the sandbox stops, by operator
+/// ruling. Over SSH: `git push`, `git fetch`, `git ls-remote`, `git pull`,
+/// `git clone` and `git remote update|prune`; sandboxed they fail with
+/// `Host key verification failed` (2026-11-12, Claude Code 2.1.323), since
+/// `~/.ssh` is read-denied and no SSH agent socket is allowed, so only a
+/// call made of excluded commands reaches the operator's SSH agent. Over SSH
+/// and the repository `config`: `git submodule update|init|sync`. On the
+/// read-only `worktrees` directory: `git worktree add|remove|move|prune`. On
+/// the write-denied repository `config`: `git branch` with an upstream flag
+/// and `git config set|unset`. The rows name the subcommand so that
+/// reads (`git worktree list`, `git config --get`, `git remote -v`,
+/// `git branch --show-current`) stay sandboxed; `git config <key> <value>`
+/// without `set` stays sandboxed and fails on the repository config.
+/// MEASURED (2026-11-12, Claude Code 2.1.323): `git fetch *` also matches a
+/// bare `git fetch`. Every other git verb stays sandboxed:
+/// local git needs no network. Outside the sandbox git obeys config and
+/// hooks that a sandboxed command may have written into the checkout, so
+/// `git-gh-guard-hook.sh` reads every such call first: the repository must
+/// be the session's project repository, its local config may hold only
+/// allowlisted keys, no hook a push, fetch or checkout runs may exist, the
+/// remote must be a github.com repository, and a push destination must be a
+/// literal branch that is not a default branch. The hook's OUT_NAMES list
+/// holds the first word of every entry here, by test.
 const SANDBOX_EXCLUDED_COMMANDS: &[&str] = &[
     "aws *",
     "docker *",
     "doppler *",
     "gh *",
+    "git branch --set-upstream-to *",
+    "git branch --set-upstream-to=*",
+    "git branch --unset-upstream *",
+    "git branch -u *",
+    "git clone *",
+    "git config set *",
+    "git config unset *",
+    "git fetch *",
+    "git ls-remote *",
+    "git pull *",
+    "git push *",
+    "git remote prune *",
+    "git remote update *",
+    "git submodule init *",
+    "git submodule sync *",
+    "git submodule update *",
+    "git worktree add *",
+    "git worktree move *",
+    "git worktree prune *",
+    "git worktree remove *",
     "kubectl *",
     "terraform *",
     "vorpal *",
@@ -370,11 +412,19 @@ const SANDBOX_NETWORK_ALLOWED_DOMAINS: &[&str] = &[
 /// scratch roots join this list so test suites that listen on a unix socket
 /// under their step directory run sandboxed; with only these two service
 /// sockets, every such bind was refused.
+///
+/// The 1Password SSH agent socket is absent on purpose. It holds the
+/// operator's GitHub key, and any sandboxed process that can connect to it
+/// can push to a default branch with its own `ssh` options, where no hook
+/// reads the command. Network git reaches the agent through the excluded
+/// git calls in `SANDBOX_EXCLUDED_COMMANDS`, which run outside the sandbox
+/// and need no entry here. The other excluded commands (`doppler`,
+/// `docker`, `vorpal` and the rest) also run outside it, so what they start
+/// can reach the agent too, with only the classifier in front.
 const SANDBOX_UNIX_SOCKETS: &[&str] = &[
     "/var/lib/vorpal/vorpal.sock",
     "/private/var/lib/vorpal/vorpal.sock",
     "~/.orbstack/run/docker.sock",
-    "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock",
 ];
 
 /// Git configuration every session carries, exported as the
@@ -424,7 +474,6 @@ const PERMISSION_ALLOW_RULES: &[&str] = &[
     "Bash(docket workflow list:*)",
     "Bash(docket workflow show:*)",
     "Bash(git add:*)",
-    "Bash(git branch:*)",
     "Bash(git commit:*)",
     "Bash(git diff:*)",
     "Bash(git log:*)",
@@ -795,6 +844,15 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "bash ~/.claude/hooks/docket-proc-guard-hook.sh",
             "command",
         )
+        // Every git and gh command is allowed except a push to a default
+        // branch, a pull-request merge, and a permission override; this hook
+        // exits 2 on those three in every seat.
+        .with_hook(
+            "PreToolUse",
+            Some("Bash"),
+            "bash ~/.claude/hooks/git-gh-guard-hook.sh",
+            "command",
+        )
         .with_auto_mode(settings::AutoMode {
             allow: expand(AUTO_MODE_ALLOW_RULES),
             environment: expand(AUTO_MODE_ENVIRONMENT_CONTEXT),
@@ -814,7 +872,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
     for root in &scratch_roots {
         builder = builder.with_permission_allow(&format!("Edit({root}/**)"));
     }
-    for verb in TRUST_STORE_ASK_VERBS.iter().chain(PUBLISHING_ASK_VERBS) {
+    for verb in TRUST_STORE_ASK_VERBS {
         builder = builder.with_permission_ask(&format!("Bash({verb}:*)"));
     }
     for pattern in sensitive_path_edit_deny_patterns() {
@@ -952,8 +1010,8 @@ mod tests {
         claude_home, component_name, home_install, owned, sandbox_filesystem_deny_read_paths,
         sandbox_just_tempdir, sandbox_scratch_roots, settings, settings_with, HostInputs,
         AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        GIT_IDENTITY_EMAIL, GIT_IDENTITY_NAME, PERMISSION_ALLOW_RULES, PUBLISHING_ASK_VERBS,
-        SANDBOX_ALLOW_READ_PATHS, SANDBOX_EXCLUDED_COMMANDS, SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS,
+        GIT_IDENTITY_EMAIL, GIT_IDENTITY_NAME, PERMISSION_ALLOW_RULES, SANDBOX_ALLOW_READ_PATHS,
+        SANDBOX_EXCLUDED_COMMANDS, SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS,
         SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
         SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS, TRUST_STORE_PATHS,
     };
@@ -1772,12 +1830,12 @@ mod tests {
     }
 
     #[test]
-    fn auto_mode_allow_rules_never_clear_publishing_or_secret_verbs() {
-        // Every rule that names a publishing or secret-bearing verb must name
-        // it as excluded. The classifier reads these as prose, so the check is
-        // textual: the verb may appear only alongside "outside" or "ask".
+    fn auto_mode_allow_rules_never_clear_an_excepted_or_secret_verb() {
+        // The classifier reads these rows as prose, so the check is textual.
+        // A rule that names a trust-store verb must name it as excluded, and
+        // no rule may name a pull-request merge at all.
         for rule in AUTO_MODE_ALLOW_RULES {
-            for verb in TRUST_STORE_ASK_VERBS.iter().chain(PUBLISHING_ASK_VERBS) {
+            for verb in TRUST_STORE_ASK_VERBS {
                 if rule_names_verb(rule, verb) {
                     assert!(
                         rule.contains("outside") || rule.contains("ask"),
@@ -1788,23 +1846,333 @@ mod tests {
             for verb in ["doppler", "op read", "op run"] {
                 assert!(!rule.contains(verb), "{verb} must never be allow-listed");
             }
+            assert!(
+                !rule_names_verb(rule, "gh pr merge"),
+                "an allow rule names a pull-request merge: {rule}"
+            );
         }
 
-        // The `gh` rule names none of PUBLISHING_ASK_VERBS's three-word `gh
-        // pr` phrases as substrings (it lists `gh pr view/checks/list/diff`
-        // in slash-compressed form), so the loop above never executes for
-        // it. Assert on it unconditionally instead: deleting its exclusion
-        // clause must fail this test even though no verb string matches.
-        let gh_rules: Vec<&&str> = AUTO_MODE_ALLOW_RULES
-            .iter()
-            .filter(|r| r.starts_with("Read-only gh reads"))
+        // The git and gh rules clear every verb except the operator's three
+        // exceptions. Each must name its exceptions after the verb list and
+        // say that it clears the verb, not the content.
+        let cases: [(&str, &[&str]); 2] = [
+            (
+                "Git operations in trusted repositories",
+                &[
+                    "a push to a default branch",
+                    "overrides a git or GitHub permission",
+                ],
+            ),
+            (
+                "gh commands against ALT-F4-LLC repositories",
+                &[
+                    "merging a pull request",
+                    "writing to a default branch",
+                    "overrides a git or GitHub permission",
+                ],
+            ),
+        ];
+        for (prefix, exceptions) in cases {
+            let rules: Vec<&&str> = AUTO_MODE_ALLOW_RULES
+                .iter()
+                .filter(|r| r.starts_with(prefix))
+                .collect();
+            assert_eq!(rules.len(), 1, "expected exactly one rule: {prefix}");
+            let (_, excluded) = rules[0]
+                .split_once(';')
+                .expect("the rule names its exceptions after a semicolon");
+            for exception in exceptions {
+                assert!(
+                    excluded.contains(exception),
+                    "{prefix}: the rule does not except `{exception}`"
+                );
+            }
+            assert!(excluded.contains("stay outside this rule"));
+            assert!(excluded.contains("clears the verb only"));
+        }
+    }
+
+    #[test]
+    fn emitted_ask_rules_equal_an_explicit_literal_set() {
+        // Independent ground truth: this literal set is NOT derived from the
+        // ask-verb table, so a verb quietly dropped from it, or an ask row
+        // added anywhere in `settings()`, changes the emitted array relative
+        // to a set that never moves with it. git and gh carry no ask row:
+        // the git-gh-guard hook decides the three exceptions, and an ask row
+        // would prompt on every push an agent is meant to make unattended.
+        let mut expected = vec![
+            "Bash(docket trust add:*)".to_string(),
+            "Bash(docket trust rm:*)".to_string(),
+        ];
+        let mut actual = strings(&emitted_settings()["permissions"]["ask"]);
+        expected.sort_unstable();
+        actual.sort_unstable();
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn no_permission_rule_decides_a_gh_or_network_git_command() {
+        // An allow rule resolves before the classifier and an ask row prompts
+        // in auto mode. Neither may stand in front of gh or an excluded git
+        // verb: the guard hook and the classifier judge them. `git branch`
+        // has no rule for that reason: its upstream flags leave the sandbox.
+        let emitted = emitted_settings();
+        for list in ["allow", "ask"] {
+            for rule in strings(&emitted["permissions"][list]) {
+                for prefix in [
+                    "Bash(gh",
+                    "Bash(git push",
+                    "Bash(git fetch",
+                    "Bash(git ls-remote",
+                    "Bash(git pull",
+                    "Bash(git clone",
+                    "Bash(git remote",
+                    "Bash(git submodule",
+                    "Bash(git branch",
+                    "Bash(git config",
+                    "Bash(git worktree:",
+                    "Bash(git worktree *",
+                    "Bash(git worktree add",
+                    "Bash(git worktree remove",
+                    "Bash(git worktree move",
+                    "Bash(git worktree prune",
+                    "Bash(git:",
+                    "Bash(git *",
+                ] {
+                    assert!(
+                        !rule.starts_with(prefix),
+                        "permissions.{list} decides a guarded command: {rule}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn git_gh_guard_hook_is_registered_on_bash() {
+        let guard = hook_entries_running("PreToolUse", "bash ~/.claude/hooks/git-gh-guard-hook.sh");
+
+        assert_eq!(guard.len(), 1);
+        assert_eq!(guard[0]["matcher"], "Bash");
+    }
+
+    #[test]
+    fn git_gh_guard_out_names_equal_the_excluded_commands() {
+        // The hook treats a call as one that may leave the sandbox unless it
+        // runs a command outside this list. A command excluded here and
+        // missing there would let `<new> x && git fetch <anything>` run
+        // unsandboxed with only the loose checks.
+        let hook = include_str!("claude_code/hooks/git-gh-guard-hook.sh");
+        let line = hook
+            .lines()
+            .find(|line| line.starts_with("OUT_NAMES='"))
+            .expect("the hook assigns OUT_NAMES on one line");
+        let mut names: Vec<&str> = line
+            .trim_start_matches("OUT_NAMES='")
+            .trim_end_matches('\'')
+            .split_whitespace()
             .collect();
-        assert_eq!(gh_rules.len(), 1, "expected exactly one gh reads rule");
-        assert!(
-            gh_rules[0].contains("outside") || gh_rules[0].contains("ask"),
-            "the gh reads rule must exclude every other gh verb: {}",
-            gh_rules[0]
+        let mut expected: Vec<&str> = SANDBOX_EXCLUDED_COMMANDS
+            .iter()
+            .map(|entry| {
+                entry
+                    .split_whitespace()
+                    .next()
+                    .expect("an entry names a command")
+            })
+            .collect();
+        names.sort_unstable();
+        expected.sort_unstable();
+        expected.dedup();
+
+        assert_eq!(names, expected);
+    }
+
+    #[test]
+    fn sandbox_excludes_only_the_git_verbs_the_guard_hook_checks() {
+        // Every other git verb stays sandboxed: outside the sandbox git obeys
+        // config and hooks a sandboxed command may have written, and the
+        // guard hook checks the repository only for these. A row added here
+        // needs a strict check in git-gh-guard-hook.sh in the same change.
+        let git: Vec<&str> = SANDBOX_EXCLUDED_COMMANDS
+            .iter()
+            .copied()
+            .filter(|entry| entry.starts_with("git"))
+            .collect();
+        assert_eq!(
+            git,
+            [
+                "git branch --set-upstream-to *",
+                "git branch --set-upstream-to=*",
+                "git branch --unset-upstream *",
+                "git branch -u *",
+                "git clone *",
+                "git config set *",
+                "git config unset *",
+                "git fetch *",
+                "git ls-remote *",
+                "git pull *",
+                "git push *",
+                "git remote prune *",
+                "git remote update *",
+                "git submodule init *",
+                "git submodule sync *",
+                "git submodule update *",
+                "git worktree add *",
+                "git worktree move *",
+                "git worktree prune *",
+                "git worktree remove *",
+            ]
         );
+
+        // The hook names each excluded form in its dispatch.
+        let hook = include_str!("claude_code/hooks/git-gh-guard-hook.sh");
+        for form in [
+            "pull | clone) out=$sub",
+            "update | prune) out=\"remote $w\"",
+            "add | remove | move | prune) out=\"worktree $w\"",
+            "set | unset) out=\"config $w\"",
+            "update | init | sync) out=\"submodule $w\"",
+            "-u | -u?* | --set-upstream-to | --set-upstream-to=* | --unset-upstream) out=branch",
+        ] {
+            assert!(hook.contains(form), "the hook checks `{form}`");
+        }
+
+        let emitted = strings(&emitted_settings()["sandbox"]["excludedCommands"]);
+        assert_eq!(emitted, owned(SANDBOX_EXCLUDED_COMMANDS));
+    }
+
+    #[test]
+    fn sandbox_admits_no_ssh_agent_socket() {
+        // A sandboxed process that reaches the operator's SSH agent can push
+        // to a default branch with its own ssh options, unread by any hook.
+        let sockets = strings(&emitted_settings()["sandbox"]["network"]["allowUnixSockets"]);
+        assert!(!sockets.is_empty());
+        for socket in sockets {
+            let lower = socket.to_lowercase();
+            assert!(
+                !lower.contains("1password") && !lower.contains("agent.sock"),
+                "the sandbox admits an SSH agent socket: {socket}"
+            );
+        }
+    }
+
+    #[test]
+    fn auto_mode_hard_deny_names_the_three_git_and_gh_exceptions() {
+        // The three exceptions sit under hard_deny, the list no allow rule
+        // and no stated intent clears. soft_deny stays unset, so the
+        // built-in rules that question a force push and a public-surface gh
+        // command apply unchanged.
+        assert_eq!(AUTO_MODE_HARD_DENY_RULES.len(), 5);
+        let emitted = emitted_settings();
+        assert_eq!(
+            strings(&emitted["autoMode"]["hard_deny"]),
+            owned(AUTO_MODE_HARD_DENY_RULES)
+        );
+        assert!(emitted["autoMode"].get("soft_deny").is_none());
+
+        let cases: [&[&str]; 3] = [
+            &[
+                "Pushing to a default branch is never allowed",
+                "`main`",
+                "`master`",
+                "a symbolic name",
+                "a script, a variable, an alias, or a wrapper",
+                "a push to any other branch is fine",
+            ],
+            &[
+                "Merging a pull request is never allowed",
+                "`gh pr merge`",
+                "auto-merge",
+                "`mergePullRequest`",
+                "a script, a variable, an alias, or a wrapper",
+                "`gh pr merge --disable-auto`",
+            ],
+            &[
+                "Overriding a git or GitHub permission",
+                "`gh auth`",
+                "`git credential`",
+                "`--no-verify`",
+                "`core.hooksPath`",
+                "default branch",
+                "visibility",
+                "branch protection",
+                "rulesets",
+                "is not a permission override",
+            ],
+        ];
+        for (row, phrases) in AUTO_MODE_HARD_DENY_RULES[1..4].iter().zip(cases) {
+            for phrase in phrases {
+                assert!(row.contains(phrase), "hard_deny row lacks {phrase}: {row}");
+            }
+            assert!(
+                row.contains("no allow rule and no user instruction clears"),
+                "hard_deny row does not say it is unconditional: {row}"
+            );
+        }
+    }
+
+    #[test]
+    fn the_pr_skill_follows_the_git_and_gh_rule() {
+        // The skill is the corpus's one user of the guarded verbs. It must
+        // push and fetch as bare calls, name the head branch when it opens a
+        // pull request, and hand the merge to the operator.
+        let skill = include_str!("claude_code/skills/pr/SKILL.md");
+
+        // Every spelled-out merge is the operator's `!` command or the one
+        // form the hook accepts.
+        let mut merges = 0;
+        for line in skill.lines() {
+            if !line.contains("gh pr merge <pr-number>") {
+                continue;
+            }
+            merges += 1;
+            assert!(
+                line.contains("! gh pr merge <pr-number>") || line.contains("--disable-auto"),
+                "the pr skill gives an agent a merge to run: {line}"
+            );
+        }
+        assert!(
+            merges >= 2,
+            "the pr skill spells out the merge and its undo"
+        );
+
+        // Odd segments of a split on backticks are code spans. A push the
+        // skill spells out is the whole call: nothing chained, piped or
+        // substituted beside it.
+        let mut pushes = 0;
+        for (index, span) in skill.split('`').enumerate() {
+            if index % 2 == 0 || !span.starts_with("git push") {
+                continue;
+            }
+            pushes += 1;
+            assert!(
+                !["&&", ";", "|", "$("].iter().any(|t| span.contains(t)),
+                "a push in the pr skill is not a bare call: {span}"
+            );
+            assert!(
+                !span.contains("--no-verify"),
+                "a push in the pr skill skips the pre-push hook: {span}"
+            );
+        }
+        assert!(pushes >= 3, "the pr skill spells out its pushes");
+        assert!(
+            skill.contains("every push is its own Bash call")
+                || skill.contains("its own Bash call"),
+            "the pr skill says a push runs alone"
+        );
+
+        for call in skill.split("gh pr create ").skip(1) {
+            let block = call.split("```").next().unwrap_or_default();
+            if block.contains("--title") {
+                assert!(
+                    block.contains("--head"),
+                    "a `gh pr create` invocation in the pr skill lacks --head"
+                );
+            }
+        }
+        assert!(skill.contains("AUTO_MODE_HARD_DENY_RULES"));
+        assert!(!skill.contains("AUTO_MODE_SOFT_DENY_RULES"));
     }
 
     #[test]
@@ -1830,74 +2198,6 @@ mod tests {
         expected.sort_unstable();
 
         assert_eq!(roster, expected);
-    }
-
-    #[test]
-    fn emitted_ask_rules_equal_an_explicit_literal_set() {
-        // Independent ground truth: this literal set is NOT derived from the
-        // ask-verb tables, so a verb quietly dropped from either, or an ask
-        // row added anywhere in `settings()`, changes the emitted array
-        // relative to a set that never moves with it.
-        let mut expected = vec![
-            "Bash(docket trust add:*)".to_string(),
-            "Bash(docket trust rm:*)".to_string(),
-            "Bash(gh api:*)".to_string(),
-            "Bash(gh pr close:*)".to_string(),
-            "Bash(gh pr comment:*)".to_string(),
-            "Bash(gh pr create:*)".to_string(),
-            "Bash(gh pr edit:*)".to_string(),
-            "Bash(gh pr merge:*)".to_string(),
-            "Bash(gh pr ready:*)".to_string(),
-            "Bash(git push:*)".to_string(),
-        ];
-        let mut actual = strings(&emitted_settings()["permissions"]["ask"]);
-        expected.sort_unstable();
-        actual.sort_unstable();
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
-    fn every_publishing_gh_verb_the_pr_skill_invokes_has_an_ask_row() {
-        // Cross-check against the skill's own text rather than against
-        // PUBLISHING_ASK_VERBS itself: a mutant that deletes rows from the
-        // constant still leaves this assertion something independent to
-        // fail against, since the skill file the verbs are extracted from
-        // does not move when the constant does. `gh pr view`, `checks`,
-        // `list`, and `diff` are read verbs (the exact set the gh reads rule
-        // in AUTO_MODE_ALLOW_RULES lists); every OTHER `gh pr <verb>` the
-        // skill invokes, plus a bare `gh api`, must have an ask row.
-        const READ_GH_PR_VERBS: &[&str] = &["view", "checks", "list", "diff"];
-
-        let skill = include_str!("claude_code/skills/pr/SKILL.md");
-        let ask_patterns = strings(&emitted_settings()["permissions"]["ask"]);
-
-        let mut publishing_verbs: Vec<String> = skill
-            .split("gh pr ")
-            .skip(1)
-            .map(|after| {
-                after
-                    .split(|c: char| !c.is_ascii_lowercase())
-                    .next()
-                    .unwrap_or_default()
-            })
-            .filter(|verb| !verb.is_empty() && !READ_GH_PR_VERBS.contains(verb))
-            .map(|verb| format!("gh pr {verb}"))
-            .chain(skill.contains("gh api").then(|| "gh api".to_string()))
-            .collect();
-        publishing_verbs.sort_unstable();
-        publishing_verbs.dedup();
-
-        assert!(
-            !publishing_verbs.is_empty(),
-            "expected the pr skill to invoke at least one publishing gh verb"
-        );
-        for verb in publishing_verbs {
-            let pattern = format!("Bash({verb}:*)");
-            assert!(
-                ask_patterns.contains(&pattern),
-                "{verb} is invoked by the pr skill but has no permission-ask row"
-            );
-        }
     }
 
     #[test]

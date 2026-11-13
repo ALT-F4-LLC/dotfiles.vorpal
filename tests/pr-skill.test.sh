@@ -249,8 +249,8 @@ for b in "$WORK"/block.*.joined; do
     fi
 done
 
-# (a2) No publish path wraps gh in a launcher: an ask rule is a prefix match
-# on the command as written, so a wrapper removes the ask it appears to keep.
+# (a2) No publish path wraps gh in a launcher: git-gh-guard-hook.sh reads the
+# command as written, so a wrapper hides the verb from the one check left.
 xargs_hits=0
 for b in "$WORK"/block.*.joined; do
     if grep -qF -- 'xargs' "$b"; then

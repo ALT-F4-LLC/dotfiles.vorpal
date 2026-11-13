@@ -76,6 +76,10 @@ question, or when the user asks. Routine work needs only what follows.
   ships tools. Read it when a repository has a `Vorpal.toml` and the work
   touches its build, dev shell, `Vorpal.lock`, or tool versions, or when a
   tool is missing from its shell.
+- `~/.claude/references/git-gh-guard.md` lists the git and gh commands an
+  agent may not run, the forms that leave the sandbox, and the spellings
+  that work. Read it when `git-gh-guard-hook.sh` refuses a command or a git
+  or gh command fails in the sandbox.
 
 # Prose rules
 

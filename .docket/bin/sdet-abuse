@@ -103,6 +103,7 @@ ENFORCING=(
   docket-sibling-guard-hook.sh
   docket-spawn-guard-hook.sh
   docket-trust-guard-hook.sh
+  git-gh-guard-hook.sh
   sandbox-bypass-guard-hook.sh
   sensitive-path-guard-hook.sh
 )

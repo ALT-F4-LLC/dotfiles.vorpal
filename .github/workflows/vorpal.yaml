@@ -13,65 +13,40 @@ jobs:
       - uses: actions/checkout@v7
 
       - run: bash tests/ci-suite-wiring.test.sh
-
       - run: bash tests/citation-check.test.sh
-
       - run: bash tests/commit-skill-attribution.test.sh
-
       - run: bash tests/contract-cluster-keys.test.sh
-
       - run: bash tests/contract-corpus.test.sh
-
       - run: bash tests/contract-includes.test.sh
-
-      - run: bash tests/docket-prune-decide.test.sh
-
       - run: bash tests/crossref-check.test.sh
-
       - run: bash tests/diff-scope.test.sh
-
       - run: bash tests/direnv-env-hook.test.sh
-
       - run: bash tests/doc-validate.test.sh
-
+      - run: bash tests/docket-advisor-first-hook.test.sh
       - run: bash tests/docket-cli-inventory.test.sh
-
       - run: bash tests/docket-cli-sweep.test.sh
-
+      - run: bash tests/docket-commit-guard-hook.test.sh
+      - run: bash tests/docket-denied-reissue-guard-hook.test.sh
       - run: bash tests/docket-evaluations.test.sh
-
-      - run: bash tests/docket-groom-schema-budget.test.sh
-
       - run: bash tests/docket-groom-ac-lint.test.sh
-
-      - run: bash tests/docket-groom-scope-lint.test.sh
-
       - run: bash tests/docket-groom-open-deps.test.sh
       - run: bash tests/docket-groom-report-lint.test.sh
-
-      - run: bash tests/docket-plan-bind-probe.test.sh
-
-      - run: bash tests/docket-commit-guard-hook.test.sh
-
-      - run: bash tests/docket-denied-reissue-guard-hook.test.sh
-
-      - run: bash tests/docket-reconcile-plan.test.sh
-
-      - run: bash tests/docket-run-done-gate.test.sh
-
-      - run: bash tests/docket-run-gate-repro.test.sh
-
-      - run: bash tests/docket-run-guard-hook.test.sh
-
+      - run: bash tests/docket-groom-schema-budget.test.sh
+      - run: bash tests/docket-groom-scope-lint.test.sh
       - run: bash tests/docket-groom-turn-guard-hook.test.sh
       - run: bash tests/docket-park-notice-hook.test.sh
-      - run: bash tests/docket-advisor-first-hook.test.sh
-      - run: bash tests/docket-run-lane-units.test.sh
-      - run: bash tests/docket-run-refill.test.sh
-      - run: bash tests/docket-run-proc-supervise.test.sh
-      - run: bash tests/docket-run-served-pair.test.sh
-      - run: bash tests/docket-run-lane-scripts.test.sh
+      - run: bash tests/docket-plan-bind-probe.test.sh
+      - run: bash tests/docket-prune-decide.test.sh
+      - run: bash tests/docket-reconcile-plan.test.sh
+      - run: bash tests/docket-run-done-gate.test.sh
+      - run: bash tests/docket-run-gate-repro.test.sh
+      - run: bash tests/docket-run-guard-hook.test.sh
       - run: bash tests/docket-run-lane-roster.test.sh
+      - run: bash tests/docket-run-lane-scripts.test.sh
+      - run: bash tests/docket-run-lane-units.test.sh
+      - run: bash tests/docket-run-proc-supervise.test.sh
+      - run: bash tests/docket-run-refill.test.sh
+      - run: bash tests/docket-run-served-pair.test.sh
 
       - run: sudo apt-get update && sudo apt-get install -y zsh
 
@@ -80,139 +55,75 @@ jobs:
       - run: bash tests/docket-run-usage-join.test.sh
 
       # Needs the zsh installed above.
-      - run: bash tests/zsh-agent-nomatch.test.sh
-
-      - run: bash tests/docket-sibling-guard-hook.test.sh
-      - run: bash tests/docket-proc-guard-hook.test.sh
-
-      - run: bash tests/docket-spawn-guard-hook.test.sh
-
-      - run: bash tests/docket-trust-guard-hook.test.sh
-
-      - run: bash tests/finish-skill.test.sh
-
-      - run: bash tests/frozen-drift-check.test.sh
-
-      - run: bash tests/gate-range.test.sh
-
-      - run: bash tests/git-gh-guard-hook.test.sh
-
-      - run: bash tests/justfile-activate-review-guard.test.sh
-
-      - run: bash tests/justfile-tests-parallel.test.sh
-
-      - run: bash tests/justfile-tests-reuse.test.sh
-
-      - run: bash tests/punch-list-skill.test.sh
-
-      - run: bash tests/mutant-rule-crossref.test.sh
-
-      - run: bash tests/peer-skill.test.sh
-
-      - run: bash tests/pr-skill.test.sh
-
-      - run: bash tests/python-code-flag-deny.test.sh
-
-      - run: bash tests/reserved-name-check.test.sh
-
-      - run: bash tests/sandbox-bypass-guard-hook.test.sh
-
-      - run: bash tests/sandbox-friction-hook.test.sh
-
-      - run: bash tests/sandbox-friction-retry-pipeline.test.sh
-
-      - run: bash tests/sdet-abuse.test.sh
-
-      - run: bash tests/seat-brief-inline-interpreter.test.sh
-
-      - run: bash tests/secret-scan.test.sh
-
-      - run: bash tests/sensitive-path-guard-hook.test.sh
-
-      - run: bash tests/session-census-agent-cap.test.sh
-
-      - run: bash tests/session-census-dedupe.test.sh
-
-      - run: bash tests/session-census-extract-retry-pipeline.test.sh
-
       - run: bash tests/docket-postmortem-workflow.test.sh
-
-      - run: bash tests/simplify-code-decide.test.sh
-
-      - run: bash tests/simplify-corpus-decide.test.sh
-
+      - run: bash tests/docket-proc-guard-hook.test.sh
+      - run: bash tests/docket-sibling-guard-hook.test.sh
+      - run: bash tests/docket-spawn-guard-hook.test.sh
+      - run: bash tests/docket-trust-guard-hook.test.sh
       - run: bash tests/filing-skills-contract.test.sh
+      - run: bash tests/finish-skill.test.sh
+      - run: bash tests/frozen-drift-check.test.sh
+      - run: bash tests/gate-range.test.sh
+      - run: bash tests/git-gh-guard-hook.test.sh
+      - run: bash tests/justfile-activate-review-guard.test.sh
+      - run: bash tests/justfile-tests-parallel.test.sh
+      - run: bash tests/justfile-tests-reuse.test.sh
+      - run: bash tests/mutant-rule-crossref.test.sh
+      - run: bash tests/peer-skill.test.sh
+      - run: bash tests/pr-skill.test.sh
+      - run: bash tests/punch-list-skill.test.sh
+      - run: bash tests/python-code-flag-deny.test.sh
+      - run: bash tests/reserved-name-check.test.sh
+      - run: bash tests/sandbox-bypass-guard-hook.test.sh
+      - run: bash tests/sandbox-friction-hook.test.sh
+      - run: bash tests/sandbox-friction-retry-pipeline.test.sh
+      - run: bash tests/sdet-abuse.test.sh
+      - run: bash tests/seat-brief-inline-interpreter.test.sh
+      - run: bash tests/secret-scan.test.sh
+      - run: bash tests/sensitive-path-guard-hook.test.sh
+      - run: bash tests/session-census-agent-cap.test.sh
+      - run: bash tests/session-census-dedupe.test.sh
+      - run: bash tests/session-census-extract-retry-pipeline.test.sh
+      - run: bash tests/simplify-code-decide.test.sh
+      - run: bash tests/simplify-corpus-decide.test.sh
+      - run: bash tests/zsh-agent-nomatch.test.sh
 
       - run: yq --version | grep -Eq 'mikefarah/yq.* version v4\.'
 
-      - run: bash tests/simplify-corpus-dry-run.test.sh
-
-      - run: bash tests/simplify-corpus-scripts.test.sh
-
-      - run: bash tests/tdd-preflight.test.sh
-
-      - run: bash tests/tighten-decide.test.sh
-
-      - run: bash tests/tighten-dry-run.test.sh
-
-      - run: bash tests/tribunal-cast-error-surfaced.test.sh
-
-      - run: bash tests/tribunal-seat-brief.test.sh
-
-      - run: bash tests/vuln-scan.test.sh
-
       - run: bash tests/docket-workflow-agent-budget.test.sh
-
       - run: bash tests/docket-workflow-bootstrap-owner-discriminator.test.sh
-
       - run: bash tests/docket-workflow-bootstrap-render.test.sh
-
       - run: bash tests/docket-workflow-chain-dead-ladder.test.sh
-
-      - run: bash tests/docket-workflow-claim.test.sh
-
       - run: bash tests/docket-workflow-claim-path.test.sh
-
-      - run: bash tests/docket-workflow-executor-read-write.test.sh
-
+      - run: bash tests/docket-workflow-claim.test.sh
       - run: bash tests/docket-workflow-classifier-retry.test.sh
-
+      - run: bash tests/docket-workflow-executor-read-write.test.sh
       - run: bash tests/docket-workflow-fix-round-ancestry.test.sh
-
       - run: bash tests/docket-workflow-harness-cap.test.sh
-
       - run: bash tests/docket-workflow-isolation-unavailable.test.sh
-
       - run: bash tests/docket-workflow-issue-lanes.test.sh
-
       - run: bash tests/docket-workflow-launch-unit.test.sh
-
       - run: bash tests/docket-workflow-model-attribution.test.sh
-
       - run: bash tests/docket-workflow-orphaned-claim.test.sh
-
       - run: bash tests/docket-workflow-packet.test.sh
-
       - run: bash tests/docket-workflow-park-signals.test.sh
-
       - run: bash tests/docket-workflow-target-envelope.test.sh
-
       - run: bash tests/docket-workflow-token-budget.test.sh
-
       - run: bash tests/docket-workflow-tribunal-agent-count.test.sh
-
       - run: bash tests/docket-workflow-usage-probe-overhead.test.sh
-
       - run: bash tests/docket-workflow-usage-recheck-pipeline.test.sh
-
       - run: bash tests/docket-workflow-vote-harness-weight.test.sh
-
       - run: bash tests/docket-workflow-vote-retry-report.test.sh
-
+      - run: bash tests/simplify-corpus-dry-run.test.sh
+      - run: bash tests/simplify-corpus-scripts.test.sh
+      - run: bash tests/tdd-preflight.test.sh
+      - run: bash tests/tighten-decide.test.sh
+      - run: bash tests/tighten-dry-run.test.sh
+      - run: bash tests/tribunal-cast-error-surfaced.test.sh
+      - run: bash tests/tribunal-seat-brief.test.sh
+      - run: bash tests/vuln-scan.test.sh
       - run: bash tests/workflow-changelog-version.test.sh
-
       - run: bash tests/workflow-module-parse.test.sh
-
       - run: bash tests/workflow-structured-output.test.sh
 
       # CI has no docket install; the skip is reserved for this row.
@@ -237,7 +148,7 @@ jobs:
         with:
           registry-backend: "s3"
           registry-backend-s3-bucket: "altf4llc-vorpal-registry"
-          version: "0.3.0"
+          version: "0.5.0"
         env:
           AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
           AWS_DEFAULT_REGION: "${{ vars.AWS_DEFAULT_REGION }}"
@@ -265,7 +176,7 @@ jobs:
         with:
           registry-backend: "s3"
           registry-backend-s3-bucket: "altf4llc-vorpal-registry"
-          version: "0.3.0"
+          version: "0.5.0"
         env:
           AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
           AWS_DEFAULT_REGION: "${{ vars.AWS_DEFAULT_REGION }}"

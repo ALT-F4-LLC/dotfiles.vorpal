@@ -2008,7 +2008,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vorpal-artifacts"
 version = "0.1.0"
-source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#1cb2a208c38299f27b21ff10bcb537f09fe79913"
+source = "git+https://github.com/ALT-F4-LLC/artifacts.vorpal.git?branch=main#c99c12a25b7b684c57a5928b3967fd29a2d0a946"
 dependencies = [
  "anyhow",
  "indoc",
@@ -2018,9 +2018,9 @@ dependencies = [
 
 [[package]]
 name = "vorpal-sdk"
-version = "0.5.0"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "292181fba199909df0ff387170f84ae2c5f6a2f24c3032edda7c9de2105eba71"
+checksum = "49a420f6ff5d2d72c57bb560bb2b6c5699bef65ec696568aa585b6a524a25e1c"
 dependencies = [
  "anyhow",
  "base64",

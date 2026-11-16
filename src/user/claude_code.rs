@@ -422,9 +422,10 @@ const SANDBOX_NETWORK_ALLOWED_DOMAINS: &[&str] = &[
 /// `docker`, `vorpal` and the rest) also run outside it, so what they start
 /// can reach the agent too, with only the classifier in front.
 const SANDBOX_UNIX_SOCKETS: &[&str] = &[
-    "/var/lib/vorpal/vorpal.sock",
     "/private/var/lib/vorpal/vorpal.sock",
+    "/var/lib/vorpal/vorpal.sock",
     "~/.orbstack/run/docker.sock",
+    "~/Library/Application Support/rex/server.sock",
 ];
 
 /// Git configuration every session carries, exported as the

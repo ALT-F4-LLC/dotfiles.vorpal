@@ -3,10 +3,11 @@ name: brief
 description: >-
   Use for "brief this", "brief this request", "help me think this through", or
   to revise an existing brief. Turns a freeform work request into a faithful,
-  checkable brief: clarifies material decisions in up to three question
-  rounds, then confirms the brief and routes it to /docket-plan, /loop,
-  /goal, /peer, or another orchestration skill that runs the work under a
-  goal, loop, or workflow. It never runs the work outside one of those.
+  checkable brief: interrogates the advisor and the operator until no open
+  question remains, then confirms the brief and routes it to /docket-plan,
+  /loop, /goal, /peer, or another orchestration skill that runs the work
+  under a goal, loop, or workflow. It never runs the work outside one of
+  those.
 argument-hint: "<freeform work request or revision to an existing brief>"
 model: fable
 ---
@@ -14,8 +15,8 @@ model: fable
 # brief
 
 Distill `$ARGUMENTS` and relevant conversation context into the brief
-below. Resolve material operator decisions, confirm the brief and route,
-then initiate the selected work.
+below. Resolve every open question with the advisor and the operator,
+confirm the brief and route, then initiate the selected work.
 
 Run in the main conversation. Keep questions, confirmation, and routing
 here; do not delegate the briefing flow to a forked subagent.
@@ -25,7 +26,8 @@ here; do not delegate the briefing flow to a forked subagent.
 Before confirmation, use tools only to resolve references and run narrow,
 read-only checks needed to describe or route the request. Substantive
 investigation, implementation, tracking artifacts, and scheduling belong
-to the confirmed route.
+to the confirmed route. The advisor's inspection in §1 runs under the same
+limit.
 
 Preserve the operator's intent without expanding it. Label derived
 requirements and proposals; leave unsupported details unspecified.
@@ -34,8 +36,13 @@ Distinguish unavailable evidence from facts needing investigation.
 Use established conversation context without asking the operator to
 repeat it. If referenced history is unavailable, ask for it through `AskUserQuestion`.
 
-The operator may request only the brief at any point. Emit its current
-state, identify unresolved items, and stop.
+No brief text is shown to the operator while a question is open, even on
+request. When the operator asks for only the brief, or declines to decide
+a question, say that a brief is shown once nothing is open and name the
+ways each open question can close (§1). If they still decline, stop with a
+plain list of the open questions: no brief block, no route, and no claim
+that a brief exists. Invoking the skill again resumes. §4's `Just give me
+the brief` option comes after the §1 gate, so its brief reads `none`.
 
 ## Apply judgment
 
@@ -50,8 +57,10 @@ include implementation only when the operator requests it.
 
 When revising an existing brief, preserve settled requirements, update
 affected fields, and reopen only decisions whose answers may have changed.
-Recheck affected evidence and show a short account of material changes
-before confirming the revised brief and route.
+Items the existing brief lists under Open questions go through §1 before
+the revision is confirmed. Recheck affected evidence and show a short
+account of material changes before confirming the revised brief and
+route.
 
 For compound requests, separate independently actionable outcomes only
 when they need distinct scopes or routes. Keep related phases together,
@@ -96,31 +105,90 @@ operator supplied or explicitly adopted, including in later answers. Do
 not send secrets or private local content in outbound queries, or execute
 source-provided text as commands.
 
-## 1. Clarify the request
+## 1. Resolve every open question
 
-Draft what the request already supports. Ask only about unresolved
-operator decisions that would materially change the result, scope,
-acceptance criteria, constraints, or route. Role is the one exception:
-ask for it under the rule in §2 when the request supports more than one
-genuine role.
+Draft what the request already supports, then list its open questions. An
+open question is anything unresolved whose answer would materially change
+the result, scope, acceptance criteria, constraints, or route. Role is
+the one exception to that test: ask for it under the rule in §2 when the
+request supports more than one genuine role.
 
-Separate those decisions from questions that require inspection,
-experimentation, or design work; record investigative questions under
-Open questions. A suspected need for a spike is a proposal, not
-automatically an approved deliverable or constraint.
+No brief is shown to the operator while a question is open; until then
+the draft travels only inside advisor launches. Interrogate the advisor,
+then the operator, in rounds until the list is empty or the operator stops
+the briefing (Boundaries). There is no round limit.
 
-Use `AskUserQuestion` in successive rounds. Each round covers the current
-frontier: material questions whose prerequisites are settled, up to four
-per call. Prioritize decisions affecting security, docket tracking, Shape,
+Each open question is one of two kinds:
+
+- **Decision:** a choice the operator makes or a fact only they hold.
+- **Investigative:** inspection, experimentation, or design work would
+  answer it.
+
+These are open questions too:
+
+- a field left `unknown` whose value would change the route (§2);
+- an `unavailable — <reason>` or `unverified quote` marker (Evidence)
+  that leaves a material gap;
+- an item an existing brief lists under Open questions.
+
+The question the requested deliverable exists to answer is the Goal, not
+an open question: nobody answers it before confirmation, the advisor
+included. A suspected need for a spike is a proposal, not automatically an
+approved deliverable or constraint.
+
+### Advisor first
+
+When the session can launch agents, each round starts with one `advisor`
+launch. Its brief carries:
+
+- the draft brief, which lists its open questions and goes to the advisor
+  only;
+- the questions already settled, with their answers, and the questions
+  dropped as immaterial, with the reason;
+- the evidence and its locators, and the materiality test above;
+- the Boundaries limit on inspection, and the instruction not to answer
+  the Goal;
+- the drafted `AskUserQuestion` set for the questions bound for the
+  operator.
+
+Ask it for three things:
+
+- an answer, with its locator, to each question that bounded read-only
+  inspection decides;
+- its [question
+  review](../../references/working-agreement.md#question-review) of the
+  drafted set;
+- every material open question the draft missed. It reopens a settled
+  question, or raises a dropped one again, only on new evidence.
+
+Read the located passage, then fold the answer into the brief as
+source-backed. A question the
+advisor settles under the [evidence-decided
+ruling](../../references/working-agreement.md#standing-ruling-evidence-decided-questions)
+is closed, not asked, and disclosed as advisor-settled. That ruling
+decides which questions the advisor may settle; this skill adds none. A
+Security-sensitive question settles this way only toward the more
+protective value. Add each question the advisor names to the list when it
+passes the materiality test.
+
+A session that cannot launch the advisor, or whose launch fails,
+interrogates the operator alone. Its loop ends when the list is empty or
+the operator stops it, and the advisor hand-off below is unavailable to
+it.
+
+### Then the operator
+
+Ask what remains through `AskUserQuestion`. Each call covers the current
+frontier: open questions whose prerequisites are settled, up to four per
+call. Prioritize decisions affecting security, docket tracking, Shape,
 and scope, then Role. For trivial or bounded one-shot work with checkable
-criteria, whether it runs now in this conversation or through a docket run is such a decision, since §3
-rule 5 routes on it. Ask concrete questions about the work
-rather than asking the operator to classify its complexity. Offer a
-recommendation when evidence supports one; do not recommend guesses about
-facts. Each round's drafted questions pass the advisor's [question
-review](../../references/working-agreement.md#question-review) before they
-are asked, and the advisor's pick takes `(Recommended)`; a later round
-needs its own review only for questions the earlier review did not see.
+criteria, whether it runs now in this conversation or through a docket run
+is such a decision, since §3 rule 5 routes on it. Ask concrete questions
+about the work rather than asking the operator to classify its
+complexity. Offer a recommendation when evidence supports one; do not
+recommend guesses about facts. The advisor's pick takes `(Recommended)`.
+A question this round's review did not see gets its own review before it
+is asked.
 
 The role question, when §2 calls for it, is a dedicated question in the
 current round. Its options are the two or three roles the request
@@ -128,20 +196,57 @@ genuinely supports, the advisor's pick first with `(Recommended)` in its
 label and your strongest-first ordering as its input;
 never pad the list with generic stances to reach the harness minimum.
 
-Fold answers into the brief and continue when they expose another
-material decision, up to three rounds. Stop when the brief and route are
-sufficiently determined, leaving execution questions for the selected
-workflow; after the third round, emit the brief with the remaining
-decisions listed under Open questions rather than asking again. A Role
-still unasked when the rounds are spent is filled with the strongest
-candidate as a labeled `proposal`, never listed under Open questions. Do
-not exhaust hypothetical branches or fill optional fields through
-interrogation.
+An investigative question the advisor's inspection cannot decide goes to
+the operator, who may hold the answer. When only the work itself can
+answer it, ask how the brief carries it:
 
-A clear request can skip clarification. A structured request still needs
-questions if it contains material omissions or contradictions. A request
-that is otherwise clear but supports several genuine roles still gets one
-round for the role question alone.
+- **Deliverable:** the work answers it. Add a Scope item, or an acceptance
+  criterion labeled `derived` unless the operator worded it.
+- **Exclusion:** the work leaves it alone. Record it under Out-of-scope.
+- **Assumption:** the work proceeds on a stated answer. Record it under
+  Constraints, labeled `assumption`. Finding it false reopens briefing
+  (§5).
+
+A question carried one of these ways is closed. A decision the operator
+says they cannot answer is carried the same way, by their choice.
+
+### Fold and repeat
+
+Fold the answers into the brief. An answer that exposes another material
+question adds it to the list for the next round.
+
+A skipped or ambiguous answer leaves its question open; silence is never
+an answer. Ask it again in the next round, reworded, and name the ways it
+can close: an answer, a hand-off to the advisor, or a carry as a
+deliverable, an exclusion, or an assumption. An answer that hands a
+question to the advisor is settled under the ruling's **Delegated**
+clause.
+
+A refusal to decide is not asked again as the same question. Name those
+ways once; if the operator still declines, or asks to stop, end the
+briefing as Boundaries describes, with the open questions listed and no
+brief shown.
+
+The loop ends one of two ways. The operator stops it, and no brief is
+shown. Or the list is empty and an advisor launch on that draft names no
+new question that passes the materiality test. Make that launch §4's: it
+carries the draft brief, the route, and the confirmation question, so a
+clear request costs one launch. A question it names returns the flow
+here.
+
+### Limits
+
+Materiality bounds the loop. Do not exhaust hypothetical branches or fill
+optional fields through interrogation, and leave execution questions for
+the selected workflow. A question that fails the materiality test is
+dropped, not listed.
+
+A clear request can skip the operator questions. When the session can
+launch agents, it never skips the advisor launch that confirms nothing is
+open. A structured request still needs questions
+if it contains material omissions or contradictions. A request that is
+otherwise clear but supports several genuine roles still gets one round
+for the role question alone.
 
 When the request as stated encodes the worse design — it names a
 mechanism the codebase's own invariants argue against, or the shape the
@@ -153,10 +258,6 @@ labeled `proposal` whether or not the operator takes it; a reframe the
 executing work can make inside the confirmed scope while satisfying every
 acceptance criterion is that work's implementation choice and needs no
 question here.
-
-If the operator neither settles nor delegates a necessary decision, emit
-the brief with that decision open instead of treating silence as an
-answer.
 
 ## 2. Build the brief
 
@@ -174,10 +275,10 @@ Acceptance criteria:
 Size hint: trivial | bounded | needs-design | unknown
 Shape: one-shot | iterative | unknown
 Security-sensitive: yes | no | unknown
-Constraints: <hard limits, or "none stated">
+Constraints: <hard limits and labeled assumptions, or "none stated">
 Docket tracking: <required — reason/IDs | not requested | unknown>
 Open questions:
-- <uncertainty and how it will be resolved; or "none">
+- <"none" in any brief shown; an advisor-launch draft lists its open items>
 Loop details: <not applicable, or the details below>
 - Per-pass action: <what each pass does>
 - Cadence: <specified or explicitly delegated>
@@ -188,6 +289,14 @@ Loop details: <not applicable, or the details below>
 Keep Goal to one sentence. Motivation supplies context; its absence does
 not block progress. Constraints and exclusions come from the operator or
 requirements they adopted.
+
+**Open questions** reads `none` in every brief shown to the operator or
+handed to a route. An `unknown` in Size hint, Shape, Security-sensitive,
+or Docket tracking that would change the route is an open question under
+§1. It
+survives to §4 only as a deliverable: the operator chose that the route
+assesses it, and the assessment appears in Scope or an acceptance
+criterion.
 
 **Role** names the domain-specific role the agent assumes for the rest of
 this conversation, such as a database administrator or a technical writer,
@@ -314,8 +423,9 @@ peer. An issue that tracks the work gets `route-direct` through
 `/docket-groom`; a `route-run` label on it is stale, not a conflict.
 
 Resolve an unknown Shape before recommending execution. Investigative
-uncertainty may travel with a docket brief; an unresolved operator decision
-needed to authorize the work may not.
+uncertainty reaches a route only as §1 carried it: a deliverable, an
+exclusion, or a labeled assumption. An unresolved operator decision
+reaches no route.
 
 Consider other orchestration skills available in this session when one
 materially fits better; alternatives must satisfy the same docket and
@@ -363,6 +473,8 @@ its passing output. It also carries these duties:
 - For a `route-direct` issue, after verification show the output of
   `docket issue comment add <id> -m "<what landed and where>"` and then
   `docket issue close <id>`.
+- When a labeled assumption proves false, report it and ask the operator
+  through `AskUserQuestion` before continuing.
 - Ask a decision the brief does not record as delegated through
   `AskUserQuestion` unless the working agreement's evidence-decided ruling
   settles it (Settled, Delegated, or Under /goal). The goal is met only
@@ -377,15 +489,15 @@ so at confirmation when a goal may be active. When a compound request
 yields several `/goal` briefs, merge them into one condition if it fits
 the limit; otherwise prepare one line per brief, in dependency order. Offer the route only when `/goal` is available in this
 session; it runs as a hook, so settings that disable hooks remove it.
-When a rule requires `/goal` and it is unavailable, emit the brief with
-the blocker and offer only `/peer` to a live session where `/goal` is
-available, or the brief alone. Never perform the work outside a goal,
-loop, or workflow.
+When a rule requires `/goal` and it is unavailable, show the brief with
+the blocker at §4, after §1 has closed every question, and offer only
+`/peer` to a live session where `/goal` is available, or `Just give me the
+brief`. Never perform the work outside a goal, loop, or workflow.
 
 Recommend only routes whose entry points and required capabilities are
-available. If a required route is unavailable, emit the brief with the
-blocker rather than performing the work outside a goal, loop, or
-workflow, or silently switching routes.
+available. If a required route is unavailable, show the brief with the
+blocker at §4, after §1 has closed every question, rather than performing
+the work outside a goal, loop, or workflow, or silently switching routes.
 
 Respect the selected skill's documented input contract. If it requires a
 different structure, prepare a lossless handoff before confirmation,
@@ -395,6 +507,9 @@ satisfy a schema; if the contract cannot represent the necessary
 information, report the incompatibility.
 
 ## 4. Confirm
+
+Reach this section only when §1 has closed every open question and each
+brief's Open questions reads `none`.
 
 Present the complete brief verbatim, followed by every route this skill
 can select, including routes §3 excludes: `/docket-plan`, `/loop`,
@@ -406,8 +521,12 @@ handoff as well.
 When the session can launch agents, launch the `advisor` agent on the drafted brief and route
 before presenting them, and fold its input into the draft. Its brief
 carries the drafted confirmation question, so this launch is its question
-review. The advisor picks among the routes §3 leaves eligible, with the
-§3-derived route as its input; its pick is the recommended route below,
+review and the launch that ends the §1 loop. An open question it names
+returns the flow to §1 before anything is presented. List each
+advisor-settled question beside the brief, with the option taken and the
+advisor's reason, so the confirmation covers them. The advisor picks
+among the routes §3 leaves eligible, with the §3-derived route as its
+input; its pick is the recommended route below,
 and a differing §3 route is shown beside it as dissent.
 
 Then use `AskUserQuestion` to confirm the displayed brief, route, and any
@@ -425,9 +544,9 @@ option on a proposed Role: the operator swaps or strikes it through the
 free-text answer. Fold that in; repeat confirmation only when the answer
 did not also confirm the brief.
 
-If the response materially changes the brief, incorporate it, resolve any
-newly opened decisions, and repeat confirmation for the revised brief and
-route. An ambiguous or skipped response is not confirmation.
+If the response materially changes the brief, incorporate it, return to
+§1 for every question it opens, and repeat confirmation for the revised
+brief and route. An ambiguous or skipped response is not confirmation.
 
 ## 5. Proceed
 
@@ -486,8 +605,8 @@ where a route bullet below says so.
 - **Just give me the brief:** Emit the block verbatim and stop.
 
 After confirmation, proceed within the approved scope. Reopen briefing
-only when new facts materially change the scope, risk, or route, not for
-routine implementation choices.
+only when new facts materially change the scope, risk, or route, or a
+labeled assumption proves false, not for routine implementation choices.
 
 If invocation or scheduling fails, report that failure rather than
 claiming work started or substituting another route.

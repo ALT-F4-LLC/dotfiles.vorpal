@@ -498,11 +498,12 @@ own_transcript_path() {  # <transcript_path> <agent_id> <session_id>
 
 # --- Wall-clock bound. ----------------------------------------------------
 #
-# The harness cancels a hook that reaches its registered timeout (600 s) and
-# then runs the Bash call unchecked, so a check that outlived the timeout
-# would fail open. This hook therefore runs its whole check in a child copy
-# of itself under a wall-clock bound of DOCKET_GUARD_BOUND_SECONDS seconds
-# (default 60; a value other than a whole number from 1 to 300 reads as 60)
+# The harness cancels a hook that reaches its registered timeout (600 s). A
+# hook registered with onFailure "block" (this one is) then blocks the call; one
+# without it runs the call unchecked, outside Code Mode. This hook still runs
+# its whole check in a child copy of itself under a wall-clock bound of
+# DOCKET_GUARD_BOUND_SECONDS seconds (default 60; a value other than a whole
+# number from 1 to 300 reads as 60)
 # and denies, naming the bound, when the bound fires. The probe's
 # signal-death deny below stays: it covers a probe a signal ends inside the
 # bound.

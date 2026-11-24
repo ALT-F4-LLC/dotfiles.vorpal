@@ -220,9 +220,10 @@ SPACED=${SPACED//[\'\"\\]/ }
 
 # --- Wall-clock bound. ----------------------------------------------------
 # The harness runs the Bash call unchecked when a hook outlives its timeout,
-# so the check runs in a child under a bound and a fired bound denies. The
-# default-branch lookup is the only step that waits on the network. Same
-# construction as docket-commit-guard-hook.sh.
+# unless the hook is registered with onFailure "block", as this one is. The
+# check also runs in a child under a bound, so a fired bound gives a named
+# denial. The default-branch lookup is the only step that waits on the
+# network. Same construction as docket-commit-guard-hook.sh.
 if [ -z "${GIT_GH_GUARD_BOUNDED:-}" ]; then
     GUARD_BOUND=${GIT_GH_GUARD_BOUND_SECONDS:-30}
     case $GUARD_BOUND in

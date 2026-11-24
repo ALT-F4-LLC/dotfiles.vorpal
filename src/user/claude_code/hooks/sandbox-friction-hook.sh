@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# sandbox-friction — PostToolUse: Bash; PermissionDenied: any tool.
+# sandbox-friction — PostToolUse: Bash|REPL; PermissionDenied: any tool.
 #
 # The evidence half of the sandbox self-improving loop (operator ruling).
 # The allowlist is EVIDENCE-ONLY, which is only honest if evidence
@@ -13,7 +13,7 @@
 # launched with `file: true`) turns that ledger into DOT issues. Nothing
 # here files, prompts, blocks, or writes to the observed repo.
 #
-# THREE ABSOLUTES, because this runs after EVERY Bash call in every session:
+# THREE ABSOLUTES, because this runs after EVERY Bash and REPL call in every session:
 #   1. It must never block. Every path exits 0. A hook that can deny is a hook
 #      that can wedge an unattended executor, which is the failure this whole
 #      configuration exists to avoid.
@@ -27,7 +27,7 @@
 #
 # It is registered on TWO events, because sandbox friction has two shapes and
 # only one of them leaves a command output to read:
-#   PostToolUse:Bash      — the command ran and hit the sandbox boundary, or ran
+#   PostToolUse:Bash|REPL — the command ran and hit the sandbox boundary, or ran
 #                           with dangerouslyDisableSandbox. Evidence for the
 #                           filesystem and network allowlists.
 #   PermissionDenied      — auto mode's classifier refused the call, so the
@@ -79,7 +79,10 @@ if [ "$EVENT" = "PermissionDenied" ]; then
 else
     # tool_response shape varies by tool; for Bash it carries stdout/stderr.
     # Take the whole blob as text rather than guessing field names by version.
-    RESPONSE=$(printf '%s' "$INPUT" | jq -r '.tool_response // empty | if type == "string" then . else tojson end' 2>/dev/null || true)
+    # A REPL response echoes the script in .code and can repeat a refused
+    # call's input in .refusedCalls; neither is output, so a REPL response is
+    # read from result, stdout, stderr and error alone.
+    RESPONSE=$(printf '%s' "$INPUT" | jq -r '.tool_response // empty | if type == "object" and has("code") then {result, stdout, stderr, error} else . end | if type == "string" then . else tojson end' 2>/dev/null || true)
     if [ "$(printf '%s' "$INPUT" | jq -r '.tool_input.dangerouslyDisableSandbox // false' 2>/dev/null || echo false)" = "true" ]; then
         BYPASSED=true
         KIND="unsandboxed-retry"

@@ -200,6 +200,17 @@ case_classifier_denial_records_agent_id() {
         "main-thread classifier refusal without agent_id still logs one row"
 }
 
+case_repl_reads_output_not_the_script() {
+    local row got
+    row=$(new_row "$(jq -nc '{hook_event_name:"PostToolUse",tool_name:"REPL",session_id:"s",cwd:"/repo",tool_input:{code:"x"},tool_response:{code:"x",result:"",stdout:"",stderr:"cat: /p/.kube/config: Operation not permitted"}}')")
+    assert_row "$row" '.kind == "sandbox-denial" and .tool_name == "REPL"' \
+        "a REPL stderr denial logs one row"
+    got=$(run_hook "$(jq -nc '{hook_event_name:"PostToolUse",tool_name:"REPL",session_id:"s",cwd:"/repo",tool_input:{code:"x"},tool_response:{code:"cat f: Operation not permitted",result:"ok",stdout:"",stderr:""}}')")
+    [ "$got" = "NONE" ] && pass "denial text only in the REPL script logs no row" || fail "REPL script text recorded (got ${got})"
+    got=$(run_hook "$(jq -nc '{hook_event_name:"PostToolUse",tool_name:"REPL",session_id:"s",cwd:"/repo",tool_input:{code:"x"},tool_response:{code:"x",result:"ok",stdout:"",stderr:"",refusedCalls:[{input:{command:"grep -r \"unable to open database file\" ."}}]}}')")
+    [ "$got" = "NONE" ] && pass "denial text only in refusedCalls logs no row" || fail "refusedCalls text recorded (got ${got})"
+}
+
 case_never_blocks() {
     local got
     got=$(run_hook '')
@@ -217,6 +228,7 @@ case_classifier_outage_is_not_a_denial
 case_classifier_denial_without_usable_reason_is_recorded
 case_classifier_denial_on_edit_records_file_path
 case_classifier_denial_records_agent_id
+case_repl_reads_output_not_the_script
 case_never_blocks
 
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"

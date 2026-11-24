@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# sensitive-path-guard — PreToolUse: Read|Grep|Glob, and Write once
-# claude_code.rs registers it for that tool.
+# sensitive-path-guard — PreToolUse: Read|Grep|Glob|Write|Edit|NotebookEdit.
+# Edit and NotebookEdit cover a Code Mode script's edit() and notebook calls,
+# which run outside the sandbox and whose computed path no classifier sees.
 #
 # Replaces the `Read(<sensitive path>)` permission deny rules. Those rules did
 # two things: refuse the Read/Grep/Glob tools on credential stores, and make
@@ -62,16 +63,17 @@ CWD=$(printf '%s' "$INPUT" | jq -r '.cwd // ""' 2>/dev/null || true)
 [ -n "$CWD" ] || CWD=$PWD
 
 case "$TOOL" in
-    Read | Write) TARGET=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null || true) ;;
+    Read | Write | Edit) TARGET=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null || true) ;;
+    NotebookEdit) TARGET=$(printf '%s' "$INPUT" | jq -r '.tool_input.notebook_path // ""' 2>/dev/null || true) ;;
     Grep | Glob) TARGET=$(printf '%s' "$INPUT" | jq -r '.tool_input.path // ""' 2>/dev/null || true) ;;
     *) exit 0 ;;
 esac
 
 if [ -z "$TARGET" ]; then
-    # Read or Write without a path is a tool error, not an access. Grep/Glob
+    # A file tool without a path is a tool error, not an access. Grep/Glob
     # without a path search the working directory, so that is the path to
     # judge.
-    [ "$TOOL" = "Read" ] || [ "$TOOL" = "Write" ] && exit 0
+    case "$TOOL" in Grep | Glob) ;; *) exit 0 ;; esac
     TARGET=$CWD
 fi
 

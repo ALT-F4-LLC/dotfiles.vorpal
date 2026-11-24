@@ -923,9 +923,11 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "command",
             5,
         )
+        // A Code Mode script's sandbox denial can surface in the REPL result
+        // as well as in the Bash call it ran, so the ledger watches both.
         .with_hook(
             "PostToolUse",
-            Some("Bash"),
+            Some("Bash|REPL"),
             "bash ~/.claude/hooks/sandbox-friction-hook.sh",
             "command",
         )
@@ -937,7 +939,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         )
         .with_hook(
             "PreToolUse",
-            Some("Read|Grep|Glob|Write"),
+            Some("Read|Grep|Glob|Write|Edit|NotebookEdit"),
             "bash ~/.claude/hooks/sensitive-path-guard-hook.sh",
             "command",
         )
@@ -1289,6 +1291,23 @@ mod tests {
         assert_eq!(sandbox["failIfUnavailable"], true);
         assert_eq!(sandbox["allowUnsandboxedCommands"], false);
         assert_eq!(sandbox["autoAllowBashIfSandboxed"], true);
+
+        // Teammates run in Code Mode only in the in-process display mode; a
+        // split-pane teammate starts without it.
+        assert_eq!(emitted["teammateMode"], "in-process");
+
+        // A sandbox denial can surface in a script's REPL result, so the
+        // friction ledger hook matches REPL as well as Bash.
+        let friction = hook_entries_running(
+            "PostToolUse",
+            "bash ~/.claude/hooks/sandbox-friction-hook.sh",
+        );
+        assert!(
+            friction.iter().any(|entry| entry["matcher"]
+                .as_str()
+                .is_some_and(|m| m.split('|').any(|t| t == "REPL"))),
+            "the friction hook misses REPL: {friction:?}"
+        );
 
         // An `ask` rule on REPL prompts for every script and stops one from
         // starting a subagent or running in the background.
@@ -2814,6 +2833,9 @@ mod tests {
             .split('|')
             .collect();
         tools.sort_unstable();
-        assert_eq!(tools, ["Glob", "Grep", "Read", "Write"]);
+        assert_eq!(
+            tools,
+            ["Edit", "Glob", "Grep", "NotebookEdit", "Read", "Write"]
+        );
     }
 }

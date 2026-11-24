@@ -156,7 +156,17 @@ case_ordinary_reads_allow() {
 
 case_other_tools_allow() {
     assert_verdict Bash command 'cat ~/.ssh/id_ed25519' "$REPO" ALLOW "Bash is the sandbox's job"
-    assert_verdict Edit file_path '~/.ssh/config' "$REPO" ALLOW "Edit is covered by Edit() rules"
+}
+
+# Edit and NotebookEdit run outside the sandbox, and a Code Mode script's
+# edit() computes its path where no classifier reads it.
+case_edit_tools_deny_sensitive_roots() {
+    assert_verdict Edit file_path '~/.ssh/config' "$REPO" DENY "Edit under a sensitive root"
+    assert_verdict Edit file_path '~/.aws/credentials' "$REPO" DENY "Edit of the aws credentials"
+    assert_verdict NotebookEdit notebook_path '~/.aws/n.ipynb' "$REPO" DENY "NotebookEdit under a sensitive root"
+    assert_verdict Edit file_path "${REPO}/src/main.rs" "$REPO" ALLOW "Edit in the checkout"
+    assert_verdict NotebookEdit notebook_path "${REPO}/n.ipynb" "$REPO" ALLOW "NotebookEdit in the checkout"
+    assert_verdict Edit '' '' "$REPO" ALLOW "Edit with no path is a tool error"
 }
 
 # ---- Write: sensitive roots for every caller, own STEP-N.d for executor-read
@@ -256,6 +266,7 @@ case_alternate_spellings_deny
 case_grep_and_glob_deny
 case_ordinary_reads_allow
 case_other_tools_allow
+case_edit_tools_deny_sensitive_roots
 case_executor_read_write_confined
 case_other_callers_write_unconfined
 case_executor_read_reads_unconfined

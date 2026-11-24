@@ -9,6 +9,13 @@ const ANTHROPIC_HAIKU_MODEL: &str = "claude-haiku-5-5";
 const ANTHROPIC_OPUS_MODEL: &str = "claude-opus-5-5";
 const ANTHROPIC_SONNET_MODEL: &str = "claude-sonnet-5-5";
 
+/// LSP plugins whose servers (clangd, sourcekit-lsp) come from the Xcode
+/// command line tools in /usr/bin, so only macOS hosts enable them.
+const MACOS_ONLY_LSP_PLUGINS: &[&str] = &[
+    "clangd-lsp@claude-plugins-official",
+    "swift-lsp@claude-plugins-official",
+];
+
 // Git expands only a leading `~/`; activation expands `${HOME}`. The install
 // spelling derives from this one through `home_install`, so the symlink and
 // the git config always name the same file.
@@ -599,6 +606,9 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
     let mut builder = settings::ClaudeCodeSettings::default()
         .with_agent_push_notif_enabled(true)
         .with_always_thinking_enabled(false)
+        // An unanswered question auto-continues after 10 minutes idle,
+        // submitting whatever is selected, which may be nothing.
+        .with_ask_user_question_timeout("10m")
         .with_attribution_commit("")
         .with_attribution_pr("")
         .with_attribution_session_url(false)
@@ -635,6 +645,9 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         // the 128000 ceiling they return inline instead of to a file that
         // invites interpreter post-processing the hard_deny refuses.
         .with_bash_output_max_chars(128000)
+        // Wrap reply prose at 100 columns in wide fullscreen panes; tables
+        // and code blocks keep the full width.
+        .with_max_prose_width(100)
         .with_output_style("Concise")
         .with_permission_default_mode("auto")
         .with_permission_disable_bypass_permissions_mode("disable")
@@ -649,12 +662,19 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_teammate_mode("in-process")
         .with_theme("auto")
         .with_tui("fullscreen")
+        // Plan a workflow for each substantive task without being asked.
+        .with_ultracode(true)
         .with_voice(settings::Voice {
             enabled: Some(true),
             mode: Some("hold".to_string()),
             auto_submit: Some(true),
         })
+        // The docket lane and audit workflows fan out past the 10-agent
+        // `medium` default; `large` allows up to about 50.
+        .with_workflow_size_guideline("large")
         .with_worktree_base_ref("head")
+        // lua-language-server ships with the neovim artifact on every host.
+        .with_enabled_plugin("lua-lsp@claude-plugins-official", true)
         .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
         .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
         .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
@@ -896,7 +916,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
     // refused instead by the sandbox denyRead list for Bash and by the
     // sensitive-path-guard hook for Read/Grep/Glob.
 
-    let builder = builder
+    let mut builder = builder
         .with_sandbox_allow_unsandboxed_commands(false)
         .with_sandbox_auto_allow_bash(true)
         .with_sandbox_fail_if_unavailable(true)
@@ -922,6 +942,14 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         ))
         .with_sandbox_network_allow_mach_lookup(owned(["com.apple.trustd.agent"]))
         .with_sandbox_network_allow_local_binding(true);
+
+    // macOS only: clangd and sourcekit-lsp come from the Xcode command line
+    // tools in /usr/bin; no Linux host provides them.
+    if !linux {
+        for plugin in MACOS_ONLY_LSP_PLUGINS {
+            builder = builder.with_enabled_plugin(plugin, true);
+        }
+    }
 
     // Linux only: seccomp otherwise refuses socket(AF_UNIX) everywhere,
     // including the allowUnixSockets paths above. macOS enforces that
@@ -1016,8 +1044,8 @@ mod tests {
         claude_home, component_name, home_install, owned, sandbox_filesystem_deny_read_paths,
         sandbox_just_tempdir, sandbox_scratch_roots, settings, settings_with, HostInputs,
         AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        GIT_IDENTITY_EMAIL, GIT_IDENTITY_NAME, PERMISSION_ALLOW_RULES, SANDBOX_ALLOW_READ_PATHS,
-        SANDBOX_EXCLUDED_COMMANDS, SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS,
+        GIT_IDENTITY_EMAIL, GIT_IDENTITY_NAME, MACOS_ONLY_LSP_PLUGINS, PERMISSION_ALLOW_RULES,
+        SANDBOX_ALLOW_READ_PATHS, SANDBOX_EXCLUDED_COMMANDS, SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS,
         SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
         SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS, TRUST_STORE_PATHS,
     };
@@ -1215,16 +1243,25 @@ mod tests {
     #[test]
     fn sandbox_keeps_per_path_unix_sockets_on_macos() {
         // macOS enforces the per-path list; the blanket switch would open
-        // docker.sock and the 1Password agent. Apart from that key, the
-        // two hosts emit identical settings.
-        let macos = settings_on(Some(TEST_RUNTIME_DIR), false);
+        // docker.sock and the 1Password agent. Apart from that key and the
+        // macOS-only LSP plugins, the two hosts emit identical settings.
+        let mut macos = settings_on(Some(TEST_RUNTIME_DIR), false);
         assert!(
             macos["sandbox"]["network"]
                 .get("allowAllUnixSockets")
                 .is_none(),
             "macOS settings carry allowAllUnixSockets"
         );
+        let plugins = macos["enabledPlugins"]
+            .as_object_mut()
+            .expect("an enabledPlugins object");
+        for plugin in MACOS_ONLY_LSP_PLUGINS {
+            assert_eq!(plugins.remove(*plugin), Some(serde_json::Value::Bool(true)));
+        }
         let mut linux = emitted_settings();
+        for plugin in MACOS_ONLY_LSP_PLUGINS {
+            assert!(linux["enabledPlugins"].get(*plugin).is_none(), "{plugin}");
+        }
         linux["sandbox"]["network"]
             .as_object_mut()
             .expect("a network object")

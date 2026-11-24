@@ -1,6 +1,6 @@
 use crate::user::{
     bat::Bat, claude_code::ClaudeCode, docket::Docket, ghostty::Ghostty, git::Git, go::Go,
-    k9s::K9s, neovim::Neovim, zsh::Zsh,
+    k9s::K9s, neovim::Neovim, rex::Rex, zsh::Zsh,
 };
 use anyhow::{bail, Result};
 use std::collections::BTreeSet;
@@ -14,6 +14,7 @@ mod git;
 mod go;
 mod k9s;
 mod neovim;
+mod rex;
 mod utilities;
 mod zsh;
 
@@ -82,6 +83,10 @@ impl UserEnvironment {
             .build(context)
             .await?;
 
+        let rex = Rex::new(&self.name, self.systems.clone())
+            .build(context)
+            .await?;
+
         let zsh = Zsh::new(&self.name, self.systems.clone())
             .build(context)
             .await?;
@@ -96,6 +101,7 @@ impl UserEnvironment {
             .chain(go.0)
             .chain(k9s.0)
             .chain(neovim.0)
+            .chain(rex.0)
             .chain(zsh.0)
             .collect();
 
@@ -109,6 +115,7 @@ impl UserEnvironment {
             .chain(go.1)
             .chain(k9s.1)
             .chain(neovim.1)
+            .chain(rex.1)
             .chain(zsh.1)
             .collect();
 

@@ -84,6 +84,7 @@ The build creates the following symlinks on the host filesystem:
 | K9s skin | `~/Library/Application Support/k9s/skins/tokyo_night.yaml` |
 | Neovim markdown ftplugin | `~/.config/nvim/after/ftplugin/markdown.vim` |
 | OpenCode config | `~/.config/opencode/opencode.json` |
+| Rex config | `~/.config/rex/init.lua` |
 | Vorpal binary | `~/.vorpal/bin/vorpal` |
 
 ## Prerequisites

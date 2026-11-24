@@ -55,6 +55,18 @@ local CAP = { hosts = 5, list = 10, open = 20 }
 local CREATE_DEADLINE = 6
 local PWD_WAIT = 5
 
+-- The longest session label, which bounds the worktree names the action can
+-- open and so how deep the picker looks.
+local MAX_LABEL = 128
+
+-- A probe removes its own session after PROBE_LIFETIME seconds, longer than
+-- any run, so a worker killed by its timeout leaves nothing behind. The
+-- text is constant; rex sets REX_SESSION in each terminal.
+local PROBE_LIFETIME = 30
+local PROBE_COMMAND = {
+  "/bin/sh", "-c", "sleep " .. PROBE_LIFETIME .. '; exec rex kill "$REX_SESSION"',
+}
+
 -- When the action must finish by, moved later by time spent in prompts.
 local deadline = nil
 
@@ -148,7 +160,7 @@ local function connect(ctx, label)
   end
   local host = setmetatable({
     label = label, server = server, host_id = host_id,
-    local_id = local_id, attached = {}, probe = nil, leftovers = {},
+    local_id = local_id, attached = {}, probe = nil, leftovers = {}, skipped = {},
   }, Host)
   table.insert(HOSTS, host)
   return host
@@ -193,9 +205,27 @@ function Host:sessions()
   return self:call("session.list", {}).sessions or {}
 end
 
+-- Removes dead probes: sessions labelled PROBE_LABEL with no windows and no
+-- blocks. A live probe always has its block, so these are probes whose
+-- program exited without removing its session, as when rex wasn't on its
+-- PATH. Failures here are ignored; the sweep only tidies.
+function Host:sweep_probes(sessions)
+  if FORCE_PROBE then sessions = self:sessions() end
+  for _, s in ipairs(sessions) do
+    if s.label == PROBE_LABEL then
+      local view = self.server.call("session.view", { session_id = s.session_id })
+      local list = self.server.call("session.list_blocks", { session_id = s.session_id })
+      if view and list and #(view.windows or {}) == 0 and #(list.blocks or {}) == 0 then
+        self:destroy(s.session_id)
+      end
+    end
+  end
+end
+
 -- A terminal block to list directories through. Prefer a session this
 -- action keeps, then any session, then a probe session made for the listing.
--- list_dir only reads; nothing is typed into a borrowed block.
+-- list_dir only reads; nothing is typed into a borrowed block. Another run's
+-- probe is never borrowed, since it removes itself on its own schedule.
 function Host:lister()
   if self.list_block then return self.list_block end
   -- probe=true (worker only) skips borrowing, to test the probe path.
@@ -206,15 +236,19 @@ function Host:lister()
     return ao and not bo
   end)
   for _, s in ipairs(sessions) do
-    local blocks = terminal_blocks(self:attach(s.session_id))
+    local blocks = s.label ~= PROBE_LABEL and terminal_blocks(self:attach(s.session_id)) or {}
     if blocks[1] then
       self.list_block = { session_id = s.session_id, block_id = blocks[1].block_id }
       return self.list_block
     end
   end
+  self:sweep_probes(sessions)
   local created = self:call("session.create", {
     label = PROBE_LABEL,
-    initial_windows = { { layout = { block = { flavor = SHELL_FLAVOR } } } },
+    initial_windows = { { layout = { block = {
+      flavor = SHELL_FLAVOR,
+      options = { shell = "none", command = PROBE_COMMAND },
+    } } } },
   })
   self.probe = created.session_id
   self:attach(created.session_id)
@@ -225,10 +259,19 @@ function Host:lister()
   return self.list_block
 end
 
+local function not_found(err)
+  return tostring(err):find("session_not_found", 1, true) ~= nil
+end
+
+-- Destroys a session, treating one that is already gone, such as a probe
+-- that removed itself, as destroyed. Never raises, so cleanup always runs.
 function Host:destroy(session_id)
-  self:attach(session_id)
+  if not self.attached[session_id] then
+    local _, aerr = self.server.call("session.attach", { session_id = session_id })
+    if aerr ~= nil and not not_found(aerr) then return aerr end
+  end
   local _, err = self.server.call("session.destroy", { session_id = session_id })
-  if err ~= nil then return err end
+  if err ~= nil and not not_found(err) then return err end
   self.attached[session_id] = nil
   return nil
 end
@@ -245,11 +288,12 @@ function Host:cleanup()
   end
 end
 
-function Host:list_dir(path, files, allow_truncated)
+-- prefix narrows the listing to names that start with it, ignoring case.
+function Host:list_dir(path, files, allow_truncated, prefix)
   local b = self:lister()
   local r = self:call(TERMINAL .. ".list_dir", {
     session_id = b.session_id, block_id = b.block_id,
-    args = { path = path, files = files or false },
+    args = { path = path, files = files or false, prefix = prefix },
   })
   r.entries = r.entries or {}
   if r.truncated and not allow_truncated then
@@ -278,24 +322,50 @@ end
 
 -- Worktrees ----------------------------------------------------------------
 
+-- The .git entry of dir, read through a listing narrowed to names starting
+-- with .git, so the directory's size doesn't matter. Returns nil and why
+-- when there is none: "truncated" if the narrowed listing still didn't fit.
+function Host:git_entry(dir)
+  local r = self:list_dir(dir, true, true, ".git")
+  if r.status ~= "ok" or r.path ~= dir then return nil, tostring(r.status) end
+  local e = find_entry(r, ".git")
+  if e then return e end
+  return nil, r.truncated and "truncated" or "missing"
+end
+
 -- Lists the worktrees of one project as names relative to <project>.git.
+-- It looks as deep as names the action can open, and only at names it
+-- accepts. Directories too big to list are recorded in skipped.
 function Host:worktrees(project)
   local base = self:root() .. "/" .. project .. ".git"
   local found = {}
   local function walk(rel, depth)
-    -- A directory too big to list in one reply isn't a worktree namespace.
-    local r = self:list_dir(rel == "" and base or (base .. "/" .. rel), true, true)
-    if r.status ~= "ok" or r.truncated then return end
-    local git = find_entry(r, ".git")
-    if git and git.file and not git.symlink and rel ~= "" then
-      table.insert(found, rel)
+    if deadline and os.time() >= deadline - 1 then
+      fail(string.format("ran out of time listing worktrees on %s at %s", self.label,
+        rel == "" and base or (base .. "/" .. rel)))
+    end
+    local dir = rel == "" and base or (base .. "/" .. rel)
+    local r = self:list_dir(dir, true, true)
+    if r.status ~= "ok" then return end
+    if rel ~= "" then
+      local git = find_entry(r, ".git")
+      if not git and r.truncated then git = self:git_entry(dir) end
+      if git and git.file and not git.symlink then
+        table.insert(found, rel)
+        return
+      end
+    end
+    if r.truncated then
+      table.insert(self.skipped, dir)
       return
     end
-    if depth >= 4 then return end
     for _, e in ipairs(r.entries) do
+      local child = rel == "" and e.name or (rel .. "/" .. e.name)
       if not e.file and not e.symlink and e.name:sub(1, 1) ~= "."
+          and e.name:match("^[%w._@+-]+$")
+          and #project + 1 + #child <= MAX_LABEL
           and not (depth == 0 and GIT_INTERNAL[e.name]) then
-        walk(rel == "" and e.name or (rel .. "/" .. e.name), depth + 1)
+        walk(child, depth + 1)
       end
     end
   end
@@ -326,8 +396,11 @@ function Host:resolve(project, parts)
   local names = { project .. ".git" }
   for _, p in ipairs(parts) do table.insert(names, p) end
   for _, name in ipairs(names) do
-    local r = self:list_dir(dir, true)
+    local r = self:list_dir(dir, true, true, name)
     local e = r.status == "ok" and find_entry(r, name)
+    if not e and r.truncated then
+      fail(string.format("listing %s on %s for %s was truncated", dir, self.label, name))
+    end
     if not e or e.file then
       fail(string.format("%s/%s does not exist on %s", dir, name, self.label))
     end
@@ -336,11 +409,12 @@ function Host:resolve(project, parts)
     end
     dir = dir .. "/" .. name
   end
-  local r = self:list_dir(dir, true)
-  if r.status ~= "ok" or r.path ~= dir then
-    fail(string.format("%s is not readable on %s (%s)", dir, self.label, tostring(r.status)))
+  local git, why = self:git_entry(dir)
+  if why == "truncated" then
+    fail(string.format("listing %s on %s for .git was truncated", dir, self.label))
+  elseif not git and why ~= "missing" then
+    fail(string.format("%s is not readable on %s (%s)", dir, self.label, why))
   end
-  local git = find_entry(r, ".git")
   if not git or not git.file or git.symlink then
     fail(string.format("%s on %s is not a worktree (no .git file)", dir, self.label))
   end
@@ -404,18 +478,20 @@ function Host:create(label, path, worktree)
   local win = created.initial_windows[1]
   local block_id = win.block_ids[1]
   self:attach(session_id)
+  -- The terminal reports pwd and the shell's cwd separately; wait for both.
   local pwd, cwd
   local give_up = os.time() + PWD_WAIT
   while true do
     pwd, cwd = self:block_state(session_id, block_id)
-    if pwd ~= nil or os.time() >= give_up then break end
+    if (pwd == path and cwd == path) or os.time() >= give_up then break end
     sleep(0.2)
   end
   if pwd ~= path or cwd ~= path then
     local err = self:destroy(session_id)
     local left = err and string.format("; could not remove session %s: %s", session_id, err) or ""
-    fail(string.format("new terminal on %s started in pwd=%s cwd=%s, not %s; removed it%s",
-      self.label, tostring(pwd), tostring(cwd), path, left))
+    local seen = (pwd == nil or cwd == nil) and "after waiting " .. PWD_WAIT .. "s, reported" or "started in"
+    fail(string.format("new terminal on %s %s pwd=%s cwd=%s, not %s; removed it%s",
+      self.label, seen, tostring(pwd), tostring(cwd), path, left))
   end
   return {
     session_id = session_id, window_id = win.window_id, block_id = block_id,
@@ -501,13 +577,16 @@ local function run_rex(ctx, argv, what, cap)
 end
 
 local function delegate(ctx, args)
+  local cap = args.op == "list" and CAP.list or CAP.open
   local argv = { "do", THIS_FILE, "--action", "host_worktree", "--json", "delegated=true" }
   for _, k in ipairs({ "op", "host", "project", "worktree", "app" }) do
     if args[k] ~= nil then table.insert(argv, k .. "=" .. args[k]) end
   end
   table.insert(argv, "switch=" .. tostring(args.switch == true))
-  return run_rex(ctx, argv, "the worker on " .. tostring(args.host),
-    args.op == "list" and CAP.list or CAP.open)
+  -- The worker stops on its own before run_rex's timeout kills it.
+  local left = math.min(cap, (deadline or (os.time() + BUDGET)) - os.time())
+  table.insert(argv, "budget=" .. tostring(math.max(left - 2, 1)))
+  return run_rex(ctx, argv, "the worker on " .. tostring(args.host), cap)
 end
 
 local function host_labels(ctx)
@@ -631,7 +710,11 @@ local function work(ctx, args, project)
   FORCE_PROBE = args.probe == true
   if args.op == "list" then
     local host = connect(ctx, args.host)
-    return { items = worktree_items(host, project), leftovers = #host.leftovers > 0 and host.leftovers or nil }
+    return {
+      items = worktree_items(host, project),
+      leftovers = #host.leftovers > 0 and host.leftovers or nil,
+      too_big_to_list = #host.skipped > 0 and host.skipped or nil,
+    }
   elseif args.op ~= nil then
     fail(string.format("unknown op %q", args.op))
   end
@@ -672,9 +755,11 @@ rex.action{
   args = {
     host = "string?", project = "string?", worktree = "string?",
     switch = "boolean?", op = "string?", delegated = "boolean?", app = "string?", probe = "boolean?",
+    budget = "string?",
   },
   run = function(ctx, args)
-    deadline = os.time() + BUDGET
+    local budget = args.delegated and tonumber(args.budget or "") or nil
+    deadline = os.time() + (budget and math.min(budget, BUDGET) or BUDGET)
     local project = args.project and check_project(args.project)
     if args.delegated then return work_safely(ctx, args, project) end
     if args.op ~= nil then fail("op= is internal to the worker") end

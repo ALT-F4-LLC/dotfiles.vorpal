@@ -115,6 +115,29 @@ const AUTO_MODE_ALLOW_RULES: &[&str] = &[
 /// here is excluded by test.
 const TRUST_STORE_ASK_VERBS: &[&str] = &["docket trust add", "docket trust rm"];
 
+/// Mutating production-cluster verbs ask before running. In Code Mode the
+/// auto-mode classifier reads a whole script, not each command, and these
+/// commands run unsandboxed and no hook checks their verbs, so an `ask` rule
+/// is the one control that sees the computed command. Each verb has three rows so that a flag
+/// before the verb (`kubectl -n x delete`, `terraform -chdir=d apply`) and a
+/// bare verb both match. An ask stalls a seat with nobody to answer it.
+/// Out of scope, by the operator's choice of this list: aws, doppler, docker,
+/// gh and vorpal; the other kubectl verbs that change state (create, replace,
+/// edit, rollout, set, label, annotate, taint, cordon, cp, run, debug); and
+/// terraform import, state, taint and force-unlock. Unverified live: whether a
+/// quoted verb (`kubectl 'delete'`) or an absolute path matches. A read-only
+/// `kubectl auth can-i delete` also asks.
+const PRODUCTION_ASK_VERBS: &[&str] = &[
+    "kubectl apply",
+    "kubectl delete",
+    "kubectl drain",
+    "kubectl exec",
+    "kubectl patch",
+    "kubectl scale",
+    "terraform apply",
+    "terraform destroy",
+];
+
 /// Shell indirection: an interpreter handed code as an argument, or a wrapper
 /// that runs its argument as a command the permission rules never see. A
 /// `Bash(rm *)` deny stops `rm -rf build/` but not `bash -c 'rm -rf build/'`
@@ -342,6 +365,16 @@ const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
 /// as the only command in the Bash call (the vorpal-toolchain fragment does).
 /// An excluded command still goes through the permission flow: an allow rule
 /// or, in auto mode, the classifier.
+///
+/// CODE MODE. A script's `$` call with `.cwd(dir)` reaches the shell as
+/// `cd '<dir>' && <command>` (measured 2026-11-24, 2.1.331: bare `git
+/// ls-remote origin HEAD` reached the remote, the `.cwd(dir)` form failed
+/// with `Host key verification failed`), which the `cd` rule above keeps
+/// sandboxed, so an excluded command there loses its unsandboxed network.
+/// Pass the directory as an argument (`git -C dir`) instead of `.cwd()`.
+/// MEASURED (2026-11-24): a script's `file()` read of a path under `~/.aws`
+/// is refused by `sensitive-path-guard-hook.sh`, so the read guard holds from
+/// code.
 ///
 /// GIT. The excluded git forms are the ones the sandbox stops, by operator
 /// ruling. Over SSH: `git push`, `git fetch`, `git ls-remote`, `git pull`,
@@ -578,6 +611,28 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
     paths.sort_unstable();
     paths
 }
+
+/// The PreToolUse hooks that guard calls and block them when the hook itself
+/// fails (a crash, an exit other than 0 or 2, invalid output). Code Mode runs a
+/// script's tool call by default after such a failure, so a guard must say
+/// `block`. The setting holds in every session, so a guard that crashes also
+/// blocks its matching calls for docket executors; none of the eight exits
+/// other than 0 or 2 on a designed path. A hook that times out blocks either
+/// way in Code Mode. Left out on purpose: `docket-advisor-first-hook.sh` is
+/// workflow discipline, not a guard, and `docket-spawn-guard-hook.sh` hands
+/// its exit status to `docket guard spawn`, so any engine status other than 0
+/// or 2 would block a Workflow launch, the tribunal launch that clears a hold
+/// included.
+const FAIL_CLOSED_GUARD_HOOKS: &[&str] = &[
+    "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
+    "bash ~/.claude/hooks/docket-denied-reissue-guard-hook.sh",
+    "bash ~/.claude/hooks/docket-proc-guard-hook.sh",
+    "bash ~/.claude/hooks/docket-sibling-guard-hook.sh",
+    "bash ~/.claude/hooks/docket-trust-guard-hook.sh",
+    "bash ~/.claude/hooks/git-gh-guard-hook.sh",
+    "bash ~/.claude/hooks/sandbox-bypass-guard-hook.sh",
+    "bash ~/.claude/hooks/sensitive-path-guard-hook.sh",
+];
 
 /// The settings.json this build emits, before it is written to the store.
 /// Reads the host-specific inputs, `XDG_RUNTIME_DIR`, the uid behind
@@ -895,6 +950,10 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         // Bash invocations.
         .with_permission_additional_directories(owned(["~/.claude/workflows"]));
 
+    for command in FAIL_CLOSED_GUARD_HOOKS {
+        builder = builder.with_hook_on_failure("PreToolUse", command, "block");
+    }
+
     for rule in PERMISSION_ALLOW_RULES {
         builder = builder.with_permission_allow(rule);
     }
@@ -903,6 +962,13 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
     }
     for verb in TRUST_STORE_ASK_VERBS {
         builder = builder.with_permission_ask(&format!("Bash({verb}:*)"));
+    }
+    for verb in PRODUCTION_ASK_VERBS {
+        let (tool, sub) = verb.split_once(' ').expect("a tool and a verb");
+        builder = builder
+            .with_permission_ask(&format!("Bash({verb}:*)"))
+            .with_permission_ask(&format!("Bash({tool} * {sub})"))
+            .with_permission_ask(&format!("Bash({tool} * {sub} *)"));
     }
     for pattern in sensitive_path_edit_deny_patterns() {
         builder = builder.with_permission_deny(&pattern);
@@ -1046,8 +1112,9 @@ mod tests {
     use super::{
         claude_home, component_name, home_install, owned, sandbox_filesystem_deny_read_paths,
         sandbox_just_tempdir, sandbox_scratch_roots, settings, settings_with, HostInputs,
-        AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, GIT_ALLOWED_SIGNERS_CONFIG_PATH,
-        GIT_IDENTITY_EMAIL, GIT_IDENTITY_NAME, MACOS_ONLY_LSP_PLUGINS, PERMISSION_ALLOW_RULES,
+        AUTO_MODE_ALLOW_RULES, AUTO_MODE_HARD_DENY_RULES, FAIL_CLOSED_GUARD_HOOKS,
+        GIT_ALLOWED_SIGNERS_CONFIG_PATH, GIT_IDENTITY_EMAIL, GIT_IDENTITY_NAME,
+        MACOS_ONLY_LSP_PLUGINS, PERMISSION_ALLOW_RULES, PRODUCTION_ASK_VERBS,
         SANDBOX_ALLOW_READ_PATHS, SANDBOX_EXCLUDED_COMMANDS, SCRATCH_ROOTS_TOKEN, SENSITIVE_PATHS,
         SENSITIVE_PATHS_DENY_EDIT_ONLY, SENSITIVE_PATHS_DENY_READ_ONLY,
         SHELL_INDIRECTION_DENY_PATTERNS, TRUST_STORE_ASK_VERBS, TRUST_STORE_PATHS,
@@ -1187,6 +1254,89 @@ mod tests {
         assert_eq!(sandbox["failIfUnavailable"], true);
         assert_eq!(sandbox["allowUnsandboxedCommands"], false);
         assert_eq!(sandbox["autoAllowBashIfSandboxed"], true);
+
+        // An `ask` rule on REPL prompts for every script and stops one from
+        // starting a subagent or running in the background.
+        let ask = emitted["permissions"]
+            .get("ask")
+            .map(strings)
+            .unwrap_or_default();
+        assert!(
+            !ask.iter()
+                .any(|row| row == "REPL" || row.starts_with("REPL(")),
+            "a REPL ask rule prompts for every script: {ask:?}"
+        );
+
+        // Each of these keeps Code Mode from starting: an API key helper, a
+        // token or key header, and OpenTelemetry tracing. OpenTelemetry events
+        // and metrics, and turning feature-flag fetching off, block it only
+        // below v2.1.329.
+        assert!(emitted.get("apiKeyHelper").is_none());
+        for key in [
+            "ANTHROPIC_AUTH_TOKEN",
+            "ANTHROPIC_CUSTOM_HEADERS",
+            "CLAUDE_CODE_ENHANCED_TELEMETRY_BETA",
+            "ENABLE_ENHANCED_TELEMETRY_BETA",
+            "ENABLE_BETA_TRACING_DETAILED",
+        ] {
+            assert!(
+                emitted["env"].get(key).is_none(),
+                "{key} turns Code Mode off"
+            );
+        }
+    }
+
+    /// Each mutating production verb emits its bare, flag-first and argument
+    /// ask rows, and no allow rule names one. This pins emission, not matching:
+    /// the permission matcher is the harness's.
+    #[test]
+    fn production_cluster_verbs_emit_ask_rows_in_every_spelling() {
+        let emitted = emitted_settings();
+        let ask = strings(&emitted["permissions"]["ask"]);
+        let allow = strings(&emitted["permissions"]["allow"]);
+        for verb in PRODUCTION_ASK_VERBS {
+            let (tool, sub) = verb.split_once(' ').expect("a tool and a verb");
+            for rule in [
+                format!("Bash({verb}:*)"),
+                format!("Bash({tool} * {sub})"),
+                format!("Bash({tool} * {sub} *)"),
+            ] {
+                assert!(ask.contains(&rule), "missing ask rule {rule}");
+            }
+            assert!(
+                !allow.iter().any(|row| row.contains(verb)),
+                "an allow rule names {verb}"
+            );
+        }
+    }
+
+    /// A script's tool calls run after a hook failure by default, so each
+    /// PreToolUse guard hook blocks on failure. Every other PreToolUse hook
+    /// is named here with the reason it keeps the default; a new hook fails
+    /// this test until it joins one list.
+    #[test]
+    fn code_mode_guard_hooks_block_on_failure() {
+        let emitted = emitted_settings();
+        let default_failure = ["docket-advisor-first-hook.sh", "docket-spawn-guard-hook.sh"];
+        for entry in emitted["hooks"]["PreToolUse"].as_array().expect("hooks") {
+            for hook in entry["hooks"].as_array().expect("handlers") {
+                let command = hook["command"].as_str().unwrap_or_default();
+                if default_failure.iter().any(|name| command.ends_with(name)) {
+                    assert!(hook.get("onFailure").is_none(), "{command}");
+                } else {
+                    assert_eq!(
+                        hook["onFailure"], "block",
+                        "{command} runs a call after the hook fails"
+                    );
+                }
+            }
+        }
+        for command in FAIL_CLOSED_GUARD_HOOKS {
+            assert!(
+                !hook_entries_running("PreToolUse", command).is_empty(),
+                "{command} is not registered"
+            );
+        }
     }
 
     #[test]
@@ -1983,10 +2133,37 @@ mod tests {
         // to a set that never moves with it. git and gh carry no ask row:
         // the git-gh-guard hook decides the three exceptions, and an ask row
         // would prompt on every push an agent is meant to make unattended.
-        let mut expected = vec![
-            "Bash(docket trust add:*)".to_string(),
-            "Bash(docket trust rm:*)".to_string(),
-        ];
+        let mut expected: Vec<String> = [
+            "Bash(docket trust add:*)",
+            "Bash(docket trust rm:*)",
+            "Bash(kubectl apply:*)",
+            "Bash(kubectl * apply)",
+            "Bash(kubectl * apply *)",
+            "Bash(kubectl delete:*)",
+            "Bash(kubectl * delete)",
+            "Bash(kubectl * delete *)",
+            "Bash(kubectl drain:*)",
+            "Bash(kubectl * drain)",
+            "Bash(kubectl * drain *)",
+            "Bash(kubectl exec:*)",
+            "Bash(kubectl * exec)",
+            "Bash(kubectl * exec *)",
+            "Bash(kubectl patch:*)",
+            "Bash(kubectl * patch)",
+            "Bash(kubectl * patch *)",
+            "Bash(kubectl scale:*)",
+            "Bash(kubectl * scale)",
+            "Bash(kubectl * scale *)",
+            "Bash(terraform apply:*)",
+            "Bash(terraform * apply)",
+            "Bash(terraform * apply *)",
+            "Bash(terraform destroy:*)",
+            "Bash(terraform * destroy)",
+            "Bash(terraform * destroy *)",
+        ]
+        .iter()
+        .map(|row| row.to_string())
+        .collect();
         let mut actual = strings(&emitted_settings()["permissions"]["ask"]);
         expected.sort_unstable();
         actual.sort_unstable();

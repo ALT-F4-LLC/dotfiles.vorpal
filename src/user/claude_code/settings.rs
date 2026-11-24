@@ -1731,6 +1731,24 @@ impl ClaudeCodeSettings {
         self
     }
 
+    /// Set `onFailure` on every `hook_name` handler that runs `command`.
+    #[allow(dead_code)]
+    pub fn with_hook_on_failure(
+        mut self,
+        hook_name: &str,
+        command: &str,
+        on_failure: &str,
+    ) -> Self {
+        for config in self.hooks.get_mut(hook_name).into_iter().flatten() {
+            for handler in &mut config.hooks {
+                if handler.command.as_deref() == Some(command) {
+                    handler.on_failure = Some(on_failure.to_string());
+                }
+            }
+        }
+        self
+    }
+
     #[allow(dead_code)]
     pub fn with_allowed_http_hook_url(mut self, url: &str) -> Self {
         self.allowed_http_hook_urls

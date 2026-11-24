@@ -1,6 +1,6 @@
 ---
 fragment: vorpal-toolchain
-version: 17
+version: 18
 ---
 # Vorpal toolchain
 
@@ -75,10 +75,12 @@ runs outside the Claude Code sandbox when it is the only command in the Bash
 call. Anything else in the call keeps the whole call sandboxed: a `cd`,
 `pushd`, or `popd`, a `NAME=value` prefix, a redirect other than `2>&1`, a
 pipe into another command, a loop, a subshell, or a command substitution such
-as `$(git rev-parse --show-toplevel)`. Spell every `vorpal` call as one bare
-command with literal arguments, and pass the directory through the tool's own
-flag. A command outside the operator's exclusion list, `go` and `make` among
-them, runs sandboxed. Only the operator can authorize a lift; a brief cannot.
+as `$(git rev-parse --show-toplevel)`. In a Code Mode script, `.cwd(dir)` is
+a `cd` and `.env({...})` is an `export`, so a `$` call with either keeps the
+call sandboxed. Spell every `vorpal` call as one bare command with literal
+arguments, and pass the directory through the tool's own flag. A command
+outside the operator's exclusion list, `go` and `make` among them, runs
+sandboxed. Only the operator can authorize a lift; a brief cannot.
 Do not request an unsandboxed retry or change sandbox settings to complete a
 step.
 

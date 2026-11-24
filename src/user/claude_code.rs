@@ -389,10 +389,24 @@ const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
 /// ls-remote origin HEAD` reached the remote, the `.cwd(dir)` form failed
 /// with `Host key verification failed`), which the `cd` rule above keeps
 /// sandboxed, so an excluded command there loses its unsandboxed network.
-/// Pass the directory as an argument (`git -C dir`) instead of `.cwd()`.
-/// Other excluded commands (gh, vorpal, kubectl, docker) are inferred to
-/// behave the same, since the rewrite precedes command matching; not measured,
-/// because telling them apart would need a credential read.
+/// `git -C dir` is no remedy: `git-gh-guard-hook.sh` refuses a git option
+/// before the subcommand on an excluded verb. Run the excluded verb as a bare
+/// `$` call from the session's directory, with no `.cwd()` and no `.env()`
+/// (`.env({A: 'x'})` reaches the shell as `export A='x'; <command>`).
+/// MEASURED (2026-11-24): bare `vorpal run go version` from a script reached
+/// registry.vorpal.lol ("alias not found in registry"), in the main session
+/// and in a worktree-isolated subagent, where both `tools.Bash` and `$`
+/// arrived bare; the same call with `.cwd(<project root>)` or with
+/// `.env({...})` failed with `failed to connect`; a `cd` in one `$` call
+/// does not persist to the next. `doppler --config-dir ~/Downloads ...` (a
+/// denied-read directory, no secret read) wrote there bare and failed with
+/// `operation not permitted` under `.cwd()`. gh, kubectl, docker, terraform
+/// and aws are inferred to behave the same: the rewrite precedes command
+/// matching, and the docker, terraform and aws probes did not tell the two
+/// forms apart. UNEXPLAINED (2026-11-24): a bare `kubectl --server
+/// https://example.com:443 get ns` from a script failed with `open
+/// ~/.kube/config: operation not permitted`, as if sandboxed, while a bare
+/// `kubectl config view` read the config; the cause is not established.
 /// MEASURED (2026-11-24): a script's `file()` read of a path under `~/.aws`
 /// is refused by `sensitive-path-guard-hook.sh`, so the read guard holds from
 /// code.

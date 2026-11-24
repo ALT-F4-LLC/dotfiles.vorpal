@@ -71,6 +71,16 @@ is not excluded (`cd <dir> &&`, `echo`, `ls`) the call stays sandboxed:
 `git push` is refused there unless it is a push between scratch
 repositories, and the other rows get the loose checks.
 
+In a Code Mode script, `.cwd(dir)` reaches the shell as `cd '<dir>' && <command>`
+and `.env({...})` as `export ...; <command>`. Neither command is excluded, so
+the call stays sandboxed and an SSH verb fails on the host key (measured for
+`.cwd()` with `git ls-remote`; `.env()` measured with `vorpal`; `.cwd()` also measured with `doppler`). `git -C` is refused by the hook, so run an
+excluded git verb as a bare `$` call from the session's directory with no
+`.cwd()` and no `.env()`, naming the remote and branch. A `cd` does not
+persist from one `$` call to the next. The auto-mode classifier reviews the
+script, not each command, so a call that leaves the sandbox in a script has no
+separate review.
+
 Write the destination of `git clone` and `git worktree add` relative to the
 project, such as `.claude/worktrees/<name>`. A destination written as an
 absolute path kept the call sandboxed (measured on Claude Code 2.1.323,

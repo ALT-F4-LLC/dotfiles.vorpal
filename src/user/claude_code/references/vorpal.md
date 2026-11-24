@@ -200,7 +200,10 @@ sources are in `Vorpal.lock`.
 - In Claude Code, the operator's sandbox settings exclude `vorpal *`, so a
   `vorpal` call reaches the registry only when it is the only command in the
   Bash call: no `cd`, `NAME=value` prefix, pipe, redirect other than `2>&1`,
-  loop, or command substitution. A sandboxed call fails with
+  loop, or command substitution. In a Code Mode script, `.cwd(dir)` is a
+  `cd` and `.env({...})` is an `export`, so either keeps the call sandboxed
+  (measured for both); pass the directory through the tool's own flag. A
+  sandboxed call fails with
   `failed to connect to https://registry.vorpal.lol`. Outside the repository
   root, pass both `--config <root>/Vorpal.toml` and `--context <root>`:
   `--config` resolves against the working directory, and a missing config

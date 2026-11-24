@@ -19,8 +19,8 @@ const MACOS_ONLY_LSP_PLUGINS: &[&str] = &[
 // Git expands only a leading `~/`; activation expands `${HOME}`. The install
 // spelling derives from this one through `home_install`, so the symlink and
 // the git config always name the same file.
-const ANTHROPIC_BASE_URL_GATEWAY: &str =
-    "https://agentgateway.bulbasaur.eks.altf4.internal/anthropic";
+// const ANTHROPIC_BASE_URL_GATEWAY: &str =
+//     "https://agentgateway.bulbasaur.eks.altf4.internal/anthropic";
 const GIT_ALLOWED_SIGNERS_CONFIG_PATH: &str = "~/.config/git/allowed_signers";
 // The agent signing key is a plain file pair on purpose: it lives outside
 // 1Password so an executor's commit never waits on the operator approving a
@@ -624,7 +624,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_include_git_instructions(false)
         .with_input_needed_notif_enabled(true)
         .with_isolate_peer_machines(true)
-        .with_model("opus")
+        .with_model("sonnet")
         .with_model_setting(
             ANTHROPIC_FABLE_MODEL,
             serde_json::json!({ "effortLevel": "high" }), // default: high
@@ -678,14 +678,15 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_enabled_plugin("gopls-lsp@claude-plugins-official", true)
         .with_enabled_plugin("rust-analyzer-lsp@claude-plugins-official", true)
         .with_enabled_plugin("typescript-lsp@claude-plugins-official", true)
-        .with_env("ANTHROPIC_BASE_URL", ANTHROPIC_BASE_URL_GATEWAY)
+        // .with_env("ANTHROPIC_BASE_URL", ANTHROPIC_BASE_URL_GATEWAY)
         .with_env("ANTHROPIC_DEFAULT_FABLE_MODEL", ANTHROPIC_FABLE_MODEL)
         .with_env("ANTHROPIC_DEFAULT_HAIKU_MODEL", ANTHROPIC_HAIKU_MODEL)
         .with_env("ANTHROPIC_DEFAULT_OPUS_MODEL", ANTHROPIC_OPUS_MODEL)
         .with_env("ANTHROPIC_DEFAULT_SONNET_MODEL", ANTHROPIC_SONNET_MODEL)
         .with_env("CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS", "1")
+        .with_env("CLAUDE_CODE_EXPERIMENTAL_CODE_MODE", "1")
         .with_env("CLAUDE_CODE_SUBPROCESS_ENV_SCRUB", "0") // REASON: Must be 0 for 'with_permission_default_mode('auto')'
-        .with_env("ENABLE_TOOL_SEARCH", "true") // REASON: Deferred MCP tool loading is off when ANTHROPIC_BASE_URL is not a first-party host
+        // .with_env("ENABLE_TOOL_SEARCH", "true") // REASON: Deferred MCP tool loading is off when ANTHROPIC_BASE_URL is not a first-party host
         .with_env("GIT_AUTHOR_EMAIL", GIT_IDENTITY_EMAIL)
         .with_env("GIT_AUTHOR_NAME", GIT_IDENTITY_NAME)
         .with_env("GIT_COMMITTER_EMAIL", GIT_IDENTITY_EMAIL)

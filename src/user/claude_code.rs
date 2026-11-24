@@ -125,7 +125,7 @@ const TRUST_STORE_ASK_VERBS: &[&str] = &["docket trust add", "docket trust rm"];
 /// `state list`) unprompted. An ask stalls a seat with nobody to answer it.
 /// Probes showed the ask rows fire from a Code Mode script (2026-11-24).
 /// Out of scope, by the operator's choice of this list: aws, doppler, docker,
-/// gh and vorpal; the kubectl verbs cp, label, annotate, taint, cordon,
+/// gh and vorpal; the kubectl verbs label, annotate, taint, cordon,
 /// uncordon, set, expose, autoscale and attach; and terraform taint, untaint,
 /// force-unlock, state push and refresh. Unverified live: whether a quoted
 /// verb (`kubectl 'delete'`) or an absolute path matches. A later word equal
@@ -133,6 +133,7 @@ const TRUST_STORE_ASK_VERBS: &[&str] = &["docket trust add", "docket trust rm"];
 /// `kubectl auth can-i delete` also ask.
 const PRODUCTION_ASK_VERBS: &[&str] = &[
     "kubectl apply",
+    "kubectl cp",
     "kubectl create",
     "kubectl debug",
     "kubectl delete",
@@ -2159,6 +2160,9 @@ mod tests {
             "Bash(kubectl apply:*)",
             "Bash(kubectl * apply)",
             "Bash(kubectl * apply *)",
+            "Bash(kubectl cp:*)",
+            "Bash(kubectl * cp)",
+            "Bash(kubectl * cp *)",
             "Bash(kubectl create:*)",
             "Bash(kubectl * create)",
             "Bash(kubectl * create *)",

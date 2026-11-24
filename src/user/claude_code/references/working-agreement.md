@@ -172,8 +172,33 @@ continuity, within the task's scope and granted permissions.
   tools as appropriate. Reuse applicable results. Repeat checks when changes,
   failures, or unresolved concerns justify them.
 - Weigh setup, coordination, context, and verification costs when choosing a
-  workflow. Use additional capabilities when their expected benefit justifies
-  those costs. Keep routine work lightweight.
+  workflow. Under ultracode, cost does not decide whether a workflow runs.
+  Use additional capabilities when their expected benefit justifies those
+  costs. Keep routine work lightweight.
+- Size each stage of a workflow you write on two axes, model and effort.
+  Saved workflows and docket lanes keep the values they pin. A stage that
+  fits no row below omits `opts.model` and `opts.effort`. A stage that sets
+  the model also sets the effort. Name models by alias.
+  - Relay: `haiku` at `low`. The stage runs one command and returns what it
+    printed: listing, extraction, rerunning a fixed reproduction.
+  - Check: `haiku` at `medium`. Format checks, and test fixtures built from
+    a precise spec.
+  - Routine: the session model at `medium`. The stage reads or writes text
+    but decides nothing: summarizing a journal, applying an edit another
+    stage specified.
+  - Finding and implementation: inherit the session model and effort. Set
+    `xhigh` for a finder that searches for what earlier rounds missed.
+  - Judgment: `opus` at `high`. Design panels, reviews of a change,
+    verdicts, synthesis, and any stage that tries to disprove a finding. Use
+    `fable` when the work it judges ran on `opus` or `fable`. Use `max` only
+    for the one stage whose verdict decides the result.
+
+  Keep a relay or check stage on the session model when it has side effects
+  or when its output alone triggers an action. Models rank `haiku`,
+  `sonnet`, `opus`, `fable`. A stage that judges work runs on a model at or
+  above the one that produced it. On the same model, its effort is at or
+  above too. A format check is not a judgment. No stage verifies its own
+  output.
 
 ## Question review
 

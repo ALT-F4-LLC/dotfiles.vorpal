@@ -1023,7 +1023,8 @@ pub struct ClaudeCodeSettings {
     /// lowest cap across scopes applies.
     #[serde(skip_serializing_if = "Option::is_none")]
     max_effort_level: Option<String>,
-    /// Start sessions at `xhigh` effort with ultracode on.
+    /// Start sessions with ultracode on: Claude plans a workflow for each
+    /// substantive task. Leaves the effort level unchanged.
     #[serde(skip_serializing_if = "Option::is_none")]
     ultracode: Option<bool>,
 

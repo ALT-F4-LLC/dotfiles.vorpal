@@ -1783,7 +1783,6 @@ impl ClaudeCodeSettings {
     // Voice
     // =====================================================================
 
-    #[allow(dead_code)]
     pub fn with_voice(mut self, voice: Voice) -> Self {
         self.voice = Some(voice);
         self

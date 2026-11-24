@@ -118,24 +118,41 @@ const TRUST_STORE_ASK_VERBS: &[&str] = &["docket trust add", "docket trust rm"];
 /// Mutating production-cluster verbs ask before running. In Code Mode the
 /// auto-mode classifier reads a whole script, not each command, and these
 /// commands run unsandboxed and no hook checks their verbs, so an `ask` rule
-/// is the one control that sees the computed command. Each verb has three rows so that a flag
-/// before the verb (`kubectl -n x delete`, `terraform -chdir=d apply`) and a
-/// bare verb both match. An ask stalls a seat with nobody to answer it.
+/// is the one control that sees the computed command. Each verb has three
+/// rows so that a flag before the verb (`kubectl -n x delete`,
+/// `terraform -chdir=d apply`) and a bare verb both match. A two-word verb
+/// (`rollout restart`, `state rm`) leaves the read forms (`rollout status`,
+/// `state list`) unprompted. An ask stalls a seat with nobody to answer it.
+/// Probes showed the ask rows fire from a Code Mode script (2026-11-24).
 /// Out of scope, by the operator's choice of this list: aws, doppler, docker,
-/// gh and vorpal; the other kubectl verbs that change state (create, replace,
-/// edit, rollout, set, label, annotate, taint, cordon, cp, run, debug); and
-/// terraform import, state, taint and force-unlock. Unverified live: whether a
-/// quoted verb (`kubectl 'delete'`) or an absolute path matches. A read-only
-/// `kubectl auth can-i delete` also asks.
+/// gh and vorpal; the kubectl verbs cp, label, annotate, taint, cordon,
+/// uncordon, set, expose, autoscale and attach; and terraform taint, untaint,
+/// force-unlock, state push and refresh. Unverified live: whether a quoted
+/// verb (`kubectl 'delete'`) or an absolute path matches. A later word equal
+/// to a verb (`kubectl get pods -n debug`), a `--dry-run` call and the read
+/// `kubectl auth can-i delete` also ask.
 const PRODUCTION_ASK_VERBS: &[&str] = &[
     "kubectl apply",
+    "kubectl create",
+    "kubectl debug",
     "kubectl delete",
     "kubectl drain",
+    "kubectl edit",
     "kubectl exec",
     "kubectl patch",
+    "kubectl replace",
+    "kubectl rollout pause",
+    "kubectl rollout restart",
+    "kubectl rollout resume",
+    "kubectl rollout undo",
+    "kubectl run",
     "kubectl scale",
     "terraform apply",
     "terraform destroy",
+    "terraform import",
+    "terraform state mv",
+    "terraform state rm",
+    "terraform workspace delete",
 ];
 
 /// Shell indirection: an interpreter handed code as an argument, or a wrapper
@@ -372,6 +389,9 @@ const SANDBOX_ALLOW_READ_PATHS: &[&str] = &[
 /// with `Host key verification failed`), which the `cd` rule above keeps
 /// sandboxed, so an excluded command there loses its unsandboxed network.
 /// Pass the directory as an argument (`git -C dir`) instead of `.cwd()`.
+/// Other excluded commands (gh, vorpal, kubectl, docker) are inferred to
+/// behave the same, since the rewrite precedes command matching; not measured,
+/// because telling them apart would need a credential read.
 /// MEASURED (2026-11-24): a script's `file()` read of a path under `~/.aws`
 /// is refused by `sensitive-path-guard-hook.sh`, so the read guard holds from
 /// code.
@@ -2139,18 +2159,45 @@ mod tests {
             "Bash(kubectl apply:*)",
             "Bash(kubectl * apply)",
             "Bash(kubectl * apply *)",
+            "Bash(kubectl create:*)",
+            "Bash(kubectl * create)",
+            "Bash(kubectl * create *)",
+            "Bash(kubectl debug:*)",
+            "Bash(kubectl * debug)",
+            "Bash(kubectl * debug *)",
             "Bash(kubectl delete:*)",
             "Bash(kubectl * delete)",
             "Bash(kubectl * delete *)",
             "Bash(kubectl drain:*)",
             "Bash(kubectl * drain)",
             "Bash(kubectl * drain *)",
+            "Bash(kubectl edit:*)",
+            "Bash(kubectl * edit)",
+            "Bash(kubectl * edit *)",
             "Bash(kubectl exec:*)",
             "Bash(kubectl * exec)",
             "Bash(kubectl * exec *)",
             "Bash(kubectl patch:*)",
             "Bash(kubectl * patch)",
             "Bash(kubectl * patch *)",
+            "Bash(kubectl replace:*)",
+            "Bash(kubectl * replace)",
+            "Bash(kubectl * replace *)",
+            "Bash(kubectl rollout pause:*)",
+            "Bash(kubectl * rollout pause)",
+            "Bash(kubectl * rollout pause *)",
+            "Bash(kubectl rollout restart:*)",
+            "Bash(kubectl * rollout restart)",
+            "Bash(kubectl * rollout restart *)",
+            "Bash(kubectl rollout resume:*)",
+            "Bash(kubectl * rollout resume)",
+            "Bash(kubectl * rollout resume *)",
+            "Bash(kubectl rollout undo:*)",
+            "Bash(kubectl * rollout undo)",
+            "Bash(kubectl * rollout undo *)",
+            "Bash(kubectl run:*)",
+            "Bash(kubectl * run)",
+            "Bash(kubectl * run *)",
             "Bash(kubectl scale:*)",
             "Bash(kubectl * scale)",
             "Bash(kubectl * scale *)",
@@ -2160,6 +2207,18 @@ mod tests {
             "Bash(terraform destroy:*)",
             "Bash(terraform * destroy)",
             "Bash(terraform * destroy *)",
+            "Bash(terraform import:*)",
+            "Bash(terraform * import)",
+            "Bash(terraform * import *)",
+            "Bash(terraform state mv:*)",
+            "Bash(terraform * state mv)",
+            "Bash(terraform * state mv *)",
+            "Bash(terraform state rm:*)",
+            "Bash(terraform * state rm)",
+            "Bash(terraform * state rm *)",
+            "Bash(terraform workspace delete:*)",
+            "Bash(terraform * workspace delete)",
+            "Bash(terraform * workspace delete *)",
         ]
         .iter()
         .map(|row| row.to_string())

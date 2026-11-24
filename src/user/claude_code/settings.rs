@@ -6,14 +6,88 @@ use std::collections::BTreeMap;
 // Supporting types for nested configuration structures
 // =========================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// One hook handler. `type` is `"command"`, `"http"`, `"mcp_tool"`,
+/// `"prompt"`, or `"agent"`; set the fields that type requires: `command`
+/// for `command`, `url` for `http`, `server` and `tool` for `mcp_tool`, and
+/// `prompt` for `prompt` and `agent`.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct HookCommand {
-    pub command: String,
+    // `command` comes first so command hooks keep the key order this
+    // builder emitted before the other handler types were modeled.
+    /// Command hooks: a shell command, or with `args` the executable to
+    /// spawn directly.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command: Option<String>,
     #[serde(rename = "type")]
     pub hook_type: String,
-    /// Seconds before Claude Code gives up waiting on this hook.
+
+    // ---- Common fields ----
+    /// Permission rule syntax, such as `"Bash(git *)"`, that filters when
+    /// the hook runs.
+    #[serde(rename = "if", skip_serializing_if = "Option::is_none")]
+    pub if_rule: Option<String>,
+    /// Seconds before canceling. Upstream defaults: 600 for `command`,
+    /// `http`, and `mcp_tool`; 30 for `prompt`; 60 for `agent`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeout: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_message: Option<String>,
+    /// Remove the hook after its first successful run. Honored only in
+    /// skill frontmatter; settings files, which this builder writes,
+    /// ignore it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub once: Option<bool>,
+
+    // ---- Command, HTTP, and MCP tool hooks ----
+    /// `"continue"` or `"block"`: whether the triggering action goes ahead
+    /// when the hook fails.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub on_failure: Option<String>,
+
+    // ---- Command hooks ----
+    /// Exec form: spawn `command` with these arguments and no shell.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub args: Option<Vec<String>>,
+    #[serde(rename = "async", skip_serializing_if = "Option::is_none")]
+    pub run_async: Option<bool>,
+    /// Run in the background and wake Claude on exit code 2.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub async_rewake: Option<bool>,
+    /// `"bash"` or `"powershell"`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shell: Option<String>,
+
+    // ---- HTTP hooks ----
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+    /// Values may interpolate `$VAR` for names in `allowed_env_vars`.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
+    pub headers: BTreeMap<String, String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub allowed_env_vars: Vec<String>,
+
+    // ---- MCP tool hooks ----
+    /// A configured MCP server name, or `plugin:<plugin>:<server>`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub server: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool: Option<String>,
+    /// Tool arguments; string values support `${path}` substitution from
+    /// the hook input.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input: Option<Value>,
+
+    // ---- Prompt and agent hooks ----
+    /// `$ARGUMENTS` is replaced with the hook input JSON.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prompt: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    /// Prompt hooks only: feed an `ok: false` reason back to Claude and
+    /// continue instead of ending the turn. Default `false`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub continue_on_block: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,6 +121,14 @@ pub struct Permissions {
     /// level; see [`ClaudeCodeSettings::with_disable_auto_mode`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub disable_auto_mode: Option<String>,
+    /// Refuse Write, Edit, and NotebookEdit outside the working directories
+    /// in every permission mode. A `true` from any settings source applies.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub block_writes_outside_working_directories: Option<bool>,
+    /// Deny a tool call that would otherwise wait on a permission prompt.
+    /// Read from user and managed settings and `--settings` only (v2.1.319+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deny_instead_of_prompting: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -164,22 +246,34 @@ pub struct Spellcheck {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub language: Option<String>,
     /// Underline color: a terminal color name, `#rrggbb`, `rgb(r,g,b)`, or
-    /// `ansi256(n)`. Defaults to the theme's error color.
+    /// `ansi256(n)`, `ansi:<name>`. Defaults to the theme's error color.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub color: Option<String>,
 }
 
 /// One footer badge rule: a regex over turn output plus a URL template whose
 /// `{name}` placeholders are filled from named capture groups.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FooterLinkRegex {
-    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
-    pub link_type: Option<String>,
+    /// Always `"regex"`.
+    #[serde(rename = "type")]
+    pub link_type: String,
     pub pattern: String,
     pub url: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
+}
+
+impl Default for FooterLinkRegex {
+    fn default() -> Self {
+        Self {
+            link_type: "regex".to_string(),
+            pattern: String::new(),
+            url: String::new(),
+            label: None,
+        }
+    }
 }
 
 /// Credentials kept out of sandboxed commands. A deny here is a wall a
@@ -259,6 +353,11 @@ pub struct Sandbox {
     /// REMOVES code-execution isolation; prefer `excluded_commands` per tool.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_apple_events: Option<bool>,
+    /// (Linux, WSL2) Let sandboxed commands create user namespaces. REMOVES
+    /// the sandbox boundary. A `true` counts from user, `--settings`, and
+    /// managed settings only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub allow_nested_user_namespaces: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub credentials: Option<SandboxCredentials>,
     /// Custom `ripgrep` binary for the sandbox; defaults to the one Claude
@@ -295,6 +394,16 @@ pub struct Attribution {
     pub session_url: Option<bool>,
 }
 
+/// The `attribution` value: the object form, or `false` to hide all
+/// attribution (v2.1.281+; earlier versions skip the whole settings file).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AttributionSetting {
+    /// Only `false` is documented.
+    Hidden(bool),
+    Config(Attribution),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct McpServerRule {
@@ -309,8 +418,7 @@ pub struct McpServerRule {
     pub server_url: Option<String>,
 }
 
-/// A command-rendered status line. `subagentStatusLine` documents only
-/// `type` and `command`; the optional fields apply to `statusLine`.
+/// A command-rendered status line.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StatusLine {
@@ -418,6 +526,25 @@ pub struct Worktree {
     /// background jobs edit the working copy directly.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bg_isolation: Option<String>,
+    /// Folder on a remote machine where Desktop SSH sessions create
+    /// worktrees: an absolute or `~/` path. Read by the desktop app only,
+    /// from user settings on the remote machine.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub location: Option<String>,
+}
+
+/// One Desktop SSH connection whose host comes from a command. `command` is
+/// a program and its arguments, not shell syntax.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SshHostCommand {
+    pub id: String,
+    pub name: String,
+    pub command: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ssh_identity_file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub start_directory: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -446,6 +573,16 @@ pub struct PolicyHelper {
 pub struct ChannelPlugin {
     pub marketplace: String,
     pub plugin: String,
+}
+
+/// One `allowedChannelPlugins` entry: the object form, or a
+/// `"plugin@marketplace"` string (v2.1.267+; earlier versions reject the
+/// whole list when it holds one).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ChannelPluginEntry {
+    Id(String),
+    Object(ChannelPlugin),
 }
 
 /// Cloud-session defaults for `claude --cloud`.
@@ -539,7 +676,7 @@ pub struct ClaudeCodeSettings {
 
     // ---- Attribution ----
     #[serde(skip_serializing_if = "Option::is_none")]
-    attribution: Option<Attribution>,
+    attribution: Option<AttributionSetting>,
     /// Deprecated by upstream — use [`attribution`] instead.
     #[serde(skip_serializing_if = "Option::is_none")]
     include_co_authored_by: Option<bool>,
@@ -551,8 +688,9 @@ pub struct ClaudeCodeSettings {
     enabled_mcpjson_servers: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     disabled_mcpjson_servers: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    allowed_mcp_servers: Vec<McpServerRule>,
+    /// `Some(vec![])` emits `[]`, which blocks every server users add.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allowed_mcp_servers: Option<Vec<McpServerRule>>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     denied_mcp_servers: Vec<McpServerRule>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -563,10 +701,12 @@ pub struct ClaudeCodeSettings {
     // ---- Hooks ----
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
     hooks: BTreeMap<String, Vec<HookConfig>>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    allowed_http_hook_urls: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    http_hook_allowed_env_vars: Vec<String>,
+    /// `Some(vec![])` emits `[]`, which the reference gives its own meaning.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allowed_http_hook_urls: Option<Vec<String>>,
+    /// `Some(vec![])` emits `[]`, which the reference gives its own meaning.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    http_hook_allowed_env_vars: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     allow_managed_hooks_only: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -577,8 +717,9 @@ pub struct ClaudeCodeSettings {
     enabled_plugins: BTreeMap<String, bool>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty", default)]
     extra_known_marketplaces: BTreeMap<String, Value>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    strict_known_marketplaces: Vec<Value>,
+    /// `Some(vec![])` emits `[]`, a complete marketplace lockdown.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    strict_known_marketplaces: Option<Vec<Value>>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     blocked_marketplaces: Vec<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -587,8 +728,9 @@ pub struct ClaudeCodeSettings {
     // ---- Channels ----
     #[serde(skip_serializing_if = "Option::is_none")]
     channels_enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    allowed_channel_plugins: Vec<ChannelPlugin>,
+    /// `Some(vec![])` emits `[]`, which blocks every channel plugin.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allowed_channel_plugins: Option<Vec<ChannelPluginEntry>>,
 
     // ---- Skills ----
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -739,8 +881,6 @@ pub struct ClaudeCodeSettings {
     ax_screen_reader: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     wheel_scroll_acceleration_enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    subagent_status_line: Option<StatusLine>,
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     footer_links_regexes: Vec<FooterLinkRegex>,
 
@@ -853,8 +993,9 @@ pub struct ClaudeCodeSettings {
     // ---- Remote / desktop ----
     #[serde(skip_serializing_if = "Option::is_none")]
     remote: Option<Remote>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    ssh_host_allowlist: Vec<String>,
+    /// `Some(vec![])` emits `[]`, which turns SSH sessions off.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ssh_host_allowlist: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     disable_desktop_local_sessions: Option<bool>,
 
@@ -906,7 +1047,8 @@ pub struct ClaudeCodeSettings {
     /// Show the session name set with `/rename` as the terminal tab title.
     #[serde(skip_serializing_if = "Option::is_none")]
     terminal_title_from_rename: Option<bool>,
-    /// `"auto"`, `"12-hour"`, `"24-hour"`, or `"24-hour-utc"` (v2.1.257+).
+    /// `"auto"`, `"12-hour"`, `"24-hour"`, `"24-hour-utc"` (v2.1.257+), or
+    /// a strftime pattern such as `"%H:%M"` (any value containing `%`).
     #[serde(skip_serializing_if = "Option::is_none")]
     time_format: Option<String>,
     /// An IANA time zone name such as `"UTC"` or `"Europe/Dublin"`.
@@ -929,6 +1071,71 @@ pub struct ClaudeCodeSettings {
     /// that `/login` accepts a cloud gateway on (v2.1.268+).
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     gateway_internal_networks: Vec<String>,
+
+    // ================================================================
+    // Keys added by auditing this builder against the settings reference
+    // current for Claude Code 2.1.331. `subagentStatusLine` is absent: the
+    // reference no longer documents it, and 2.1.331 marks it deprecated in
+    // favor of mods, though it still reads the key.
+    // ================================================================
+
+    // ---- Model and responses ----
+    /// `"prefix"` (the default) or `"exact"`. Managed settings only
+    /// (v2.1.283+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    available_models_match: Option<String>,
+    /// Model aliases or IDs to block even when `availableModels` permits
+    /// them. Managed settings only.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    denied_models: Vec<String>,
+
+    // ---- Memory and context ----
+    /// `false` stops compacting long conversations left idle (v2.1.290+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    idle_compaction: Option<bool>,
+
+    // ---- Interface ----
+    /// Wrap response prose at this many columns, minimum `40` (v2.1.282+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_prose_width: Option<u32>,
+
+    // ---- Plugins ----
+    /// `plugin@marketplace` ids whose mods run before every user mod. In
+    /// managed settings, list `sec-default@builtin` to keep the built-in
+    /// guard; an empty list removes it. Read from user or managed settings.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    prepend_plugins: Option<Vec<String>>,
+    /// `plugin@marketplace` ids whose mods run after every user mod.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    append_plugins: Vec<String>,
+
+    // ---- MCP ----
+    /// Let Claude in Chrome run alongside a deployed `managed-mcp.json`.
+    /// Read from the device's own managed settings only (v2.1.282+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allow_claude_in_chrome_with_managed_mcp: Option<bool>,
+
+    // ---- Remote / desktop ----
+    /// Stop scripts in Desktop Browser-pane HTML previews from SSH and WSL
+    /// sessions. Managed settings, read by the desktop app only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_remote_preview_scripts: Option<bool>,
+    /// Desktop SSH connections whose host a command prints. Read by the
+    /// desktop app only, from user or managed settings.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    ssh_host_commands: Vec<SshHostCommand>,
+
+    // ---- Authentication and providers ----
+    /// Providers a machine may use: `"anthropic"`, `"bedrock"`, `"vertex"`,
+    /// `"foundry"`, `"anthropicAws"`, `"anthropicGoogleCloud"`, `"mantle"`,
+    /// `"customEndpoint"`, or `"gateway"`. Managed settings only; an empty
+    /// list refuses every provider.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allowed_providers: Option<Vec<String>>,
+    /// Require a claude.ai login on Anthropic's API, or an Enterprise Admin
+    /// Console sign-in. Managed settings file or MDM only (v2.1.329+).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enforce_anthropic_sign_in: Option<bool>,
 }
 
 impl ClaudeCodeSettings {
@@ -966,9 +1173,10 @@ impl ClaudeCodeSettings {
             .push(HookConfig {
                 matcher: matcher.map(str::to_string),
                 hooks: vec![HookCommand {
-                    command: command.to_string(),
+                    command: Some(command.to_string()),
                     hook_type: hook_type.to_string(),
                     timeout,
+                    ..Default::default()
                 }],
             });
     }
@@ -1397,19 +1605,39 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_attribution(mut self, attribution: Attribution) -> Self {
-        self.attribution = Some(attribution);
+        self.attribution = Some(AttributionSetting::Config(attribution));
         self
+    }
+
+    /// Emit `"attribution": false`, hiding all attribution. Requires
+    /// v2.1.281+; earlier versions skip the settings file that holds it.
+    #[allow(dead_code)]
+    pub fn with_attribution_hidden(mut self) -> Self {
+        self.attribution = Some(AttributionSetting::Hidden(false));
+        self
+    }
+
+    /// The object form, replacing a `false` set by
+    /// [`Self::with_attribution_hidden`].
+    fn attribution_mut(&mut self) -> &mut Attribution {
+        if !matches!(self.attribution, Some(AttributionSetting::Config(_))) {
+            self.attribution = Some(AttributionSetting::Config(Attribution::default()));
+        }
+        match self.attribution.as_mut() {
+            Some(AttributionSetting::Config(attribution)) => attribution,
+            _ => unreachable!("attribution was set to the object form above"),
+        }
     }
 
     #[allow(dead_code)]
     pub fn with_attribution_commit(mut self, commit: &str) -> Self {
-        self.attribution.get_or_insert_with(Default::default).commit = Some(commit.to_string());
+        self.attribution_mut().commit = Some(commit.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_attribution_pr(mut self, pr: &str) -> Self {
-        self.attribution.get_or_insert_with(Default::default).pr = Some(pr.to_string());
+        self.attribution_mut().pr = Some(pr.to_string());
         self
     }
 
@@ -1443,7 +1671,9 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_allowed_mcp_server(mut self, rule: McpServerRule) -> Self {
-        self.allowed_mcp_servers.push(rule);
+        self.allowed_mcp_servers
+            .get_or_insert_with(Vec::new)
+            .push(rule);
         self
     }
 
@@ -1502,13 +1732,52 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_allowed_http_hook_url(mut self, url: &str) -> Self {
-        self.allowed_http_hook_urls.push(url.to_string());
+        self.allowed_http_hook_urls
+            .get_or_insert_with(Vec::new)
+            .push(url.to_string());
         self
     }
 
     #[allow(dead_code)]
     pub fn with_http_hook_allowed_env_var(mut self, name: &str) -> Self {
-        self.http_hook_allowed_env_vars.push(name.to_string());
+        self.http_hook_allowed_env_vars
+            .get_or_insert_with(Vec::new)
+            .push(name.to_string());
+        self
+    }
+
+    /// Emit `"allowedHttpHookUrls": []`, so no HTTP hook URL matches unless
+    /// another settings source lists entries.
+    #[allow(dead_code)]
+    pub fn with_allowed_http_hook_urls_none(mut self) -> Self {
+        self.allowed_http_hook_urls = Some(Vec::new());
+        self
+    }
+
+    /// Emit `"httpHookAllowedEnvVars": []`, so no variable is interpolated
+    /// unless another settings source lists entries.
+    #[allow(dead_code)]
+    pub fn with_http_hook_allowed_env_vars_none(mut self) -> Self {
+        self.http_hook_allowed_env_vars = Some(Vec::new());
+        self
+    }
+
+    /// Add any handler type (`http`, `mcp_tool`, `prompt`, `agent`, or a
+    /// command hook with fields `push_hook` does not set).
+    #[allow(dead_code)]
+    pub fn with_hook_handler(
+        mut self,
+        hook_name: &str,
+        matcher: Option<&str>,
+        handler: HookCommand,
+    ) -> Self {
+        self.hooks
+            .entry(hook_name.to_string())
+            .or_default()
+            .push(HookConfig {
+                matcher: matcher.map(str::to_string),
+                hooks: vec![handler],
+            });
         self
     }
 
@@ -1543,7 +1812,9 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_strict_known_marketplace(mut self, source: Value) -> Self {
-        self.strict_known_marketplaces.push(source);
+        self.strict_known_marketplaces
+            .get_or_insert_with(Vec::new)
+            .push(source);
         self
     }
 
@@ -1571,10 +1842,42 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_allowed_channel_plugin(mut self, marketplace: &str, plugin: &str) -> Self {
-        self.allowed_channel_plugins.push(ChannelPlugin {
-            marketplace: marketplace.to_string(),
-            plugin: plugin.to_string(),
-        });
+        self.allowed_channel_plugins
+            .get_or_insert_with(Vec::new)
+            .push(ChannelPluginEntry::Object(ChannelPlugin {
+                marketplace: marketplace.to_string(),
+                plugin: plugin.to_string(),
+            }));
+        self
+    }
+
+    /// The `"plugin@marketplace"` string form. Requires v2.1.267+.
+    #[allow(dead_code)]
+    pub fn with_allowed_channel_plugin_id(mut self, id: &str) -> Self {
+        self.allowed_channel_plugins
+            .get_or_insert_with(Vec::new)
+            .push(ChannelPluginEntry::Id(id.to_string()));
+        self
+    }
+
+    /// Emit `"allowedMcpServers": []`, blocking every server users add.
+    #[allow(dead_code)]
+    pub fn with_allowed_mcp_servers_none(mut self) -> Self {
+        self.allowed_mcp_servers = Some(Vec::new());
+        self
+    }
+
+    /// Emit `"strictKnownMarketplaces": []`, a complete lockdown.
+    #[allow(dead_code)]
+    pub fn with_strict_known_marketplaces_none(mut self) -> Self {
+        self.strict_known_marketplaces = Some(Vec::new());
+        self
+    }
+
+    /// Emit `"allowedChannelPlugins": []`, blocking every channel plugin.
+    #[allow(dead_code)]
+    pub fn with_allowed_channel_plugins_none(mut self) -> Self {
+        self.allowed_channel_plugins = Some(Vec::new());
         self
     }
 
@@ -2044,12 +2347,6 @@ impl ClaudeCodeSettings {
     }
 
     #[allow(dead_code)]
-    pub fn with_subagent_status_line(mut self, status_line: StatusLine) -> Self {
-        self.subagent_status_line = Some(status_line);
-        self
-    }
-
-    #[allow(dead_code)]
     pub fn with_footer_link_regex(mut self, link: FooterLinkRegex) -> Self {
         self.footer_links_regexes.push(link);
         self
@@ -2242,9 +2539,7 @@ impl ClaudeCodeSettings {
 
     #[allow(dead_code)]
     pub fn with_attribution_session_url(mut self, enabled: bool) -> Self {
-        self.attribution
-            .get_or_insert_with(Default::default)
-            .session_url = Some(enabled);
+        self.attribution_mut().session_url = Some(enabled);
         self
     }
 
@@ -2384,9 +2679,10 @@ impl ClaudeCodeSettings {
         self
     }
 
+    /// An empty list emits `[]`, which turns SSH sessions off.
     #[allow(dead_code)]
     pub fn with_ssh_host_allowlist(mut self, hosts: Vec<String>) -> Self {
-        self.ssh_host_allowlist = hosts;
+        self.ssh_host_allowlist = Some(hosts);
         self
     }
 
@@ -2451,7 +2747,8 @@ impl ClaudeCodeSettings {
         self
     }
 
-    /// `"auto"`, `"12-hour"`, `"24-hour"`, or `"24-hour-utc"`.
+    /// `"auto"`, `"12-hour"`, `"24-hour"`, `"24-hour-utc"`, or a strftime
+    /// pattern.
     #[allow(dead_code)]
     pub fn with_time_format(mut self, format: &str) -> Self {
         self.time_format = Some(format.to_string());
@@ -2483,5 +2780,276 @@ impl ClaudeCodeSettings {
     pub fn with_gateway_internal_networks(mut self, networks: Vec<String>) -> Self {
         self.gateway_internal_networks = networks;
         self
+    }
+
+    // =====================================================================
+    // Settings-reference audit additions (2.1.331)
+    // =====================================================================
+
+    #[allow(dead_code)]
+    pub fn with_block_writes_outside_working_directories(mut self, block: bool) -> Self {
+        self.permissions_mut()
+            .block_writes_outside_working_directories = Some(block);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_deny_instead_of_prompting(mut self, deny: bool) -> Self {
+        self.permissions_mut().deny_instead_of_prompting = Some(deny);
+        self
+    }
+
+    /// (Linux, WSL2) REMOVES the sandbox boundary for commands that create
+    /// user namespaces.
+    #[allow(dead_code)]
+    pub fn with_sandbox_allow_nested_user_namespaces(mut self, allow: bool) -> Self {
+        self.sandbox_mut().allow_nested_user_namespaces = Some(allow);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_worktree_location(mut self, location: &str) -> Self {
+        self.worktree.get_or_insert_with(Default::default).location = Some(location.to_string());
+        self
+    }
+
+    /// `"prefix"` (the default) or `"exact"`.
+    #[allow(dead_code)]
+    pub fn with_available_models_match(mut self, mode: &str) -> Self {
+        self.available_models_match = Some(mode.to_string());
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_denied_models(mut self, models: Vec<String>) -> Self {
+        self.denied_models = models;
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_idle_compaction(mut self, enabled: bool) -> Self {
+        self.idle_compaction = Some(enabled);
+        self
+    }
+
+    /// Minimum `40` columns; other values are ignored upstream.
+    #[allow(dead_code)]
+    pub fn with_max_prose_width(mut self, columns: u32) -> Self {
+        self.max_prose_width = Some(columns);
+        self
+    }
+
+    /// An empty list emits `[]`, which removes the built-in
+    /// `sec-default@builtin` guard.
+    #[allow(dead_code)]
+    pub fn with_prepend_plugins(mut self, plugins: Vec<String>) -> Self {
+        self.prepend_plugins = Some(plugins);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_append_plugins(mut self, plugins: Vec<String>) -> Self {
+        self.append_plugins = plugins;
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_allow_claude_in_chrome_with_managed_mcp(mut self, allow: bool) -> Self {
+        self.allow_claude_in_chrome_with_managed_mcp = Some(allow);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_disable_remote_preview_scripts(mut self, disable: bool) -> Self {
+        self.disable_remote_preview_scripts = Some(disable);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_ssh_host_command(mut self, command: SshHostCommand) -> Self {
+        self.ssh_host_commands.push(command);
+        self
+    }
+
+    /// An empty list refuses every provider, so Claude Code does not start.
+    #[allow(dead_code)]
+    pub fn with_allowed_providers(mut self, providers: Vec<String>) -> Self {
+        self.allowed_providers = Some(providers);
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn with_enforce_anthropic_sign_in(mut self, enforce: bool) -> Self {
+        self.enforce_anthropic_sign_in = Some(enforce);
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn attribution_hidden_serializes_as_false() {
+        let json =
+            serde_json::to_value(ClaudeCodeSettings::default().with_attribution_hidden()).unwrap();
+        assert_eq!(json["attribution"], Value::Bool(false));
+    }
+
+    #[test]
+    fn attribution_field_setter_replaces_hidden_with_object() {
+        let json = serde_json::to_value(
+            ClaudeCodeSettings::default()
+                .with_attribution_hidden()
+                .with_attribution_commit("")
+                .with_attribution_session_url(false),
+        )
+        .unwrap();
+        assert_eq!(
+            json["attribution"],
+            serde_json::json!({ "commit": "", "sessionUrl": false })
+        );
+    }
+}
+
+#[cfg(test)]
+mod audit_tests {
+    use super::*;
+
+    #[test]
+    fn empty_policy_lists_serialize_as_empty_arrays() {
+        let json = serde_json::to_value(
+            ClaudeCodeSettings::default()
+                .with_allowed_mcp_servers_none()
+                .with_strict_known_marketplaces_none()
+                .with_allowed_channel_plugins_none()
+                .with_ssh_host_allowlist(Vec::new()),
+        )
+        .unwrap();
+        for key in [
+            "allowedMcpServers",
+            "strictKnownMarketplaces",
+            "allowedChannelPlugins",
+            "sshHostAllowlist",
+        ] {
+            assert_eq!(json[key], serde_json::json!([]), "{key}");
+        }
+        let unset = serde_json::to_value(ClaudeCodeSettings::default()).unwrap();
+        assert_eq!(unset, serde_json::json!({}));
+    }
+
+    #[test]
+    fn http_hook_serializes_documented_keys() {
+        let hook = HookCommand {
+            hook_type: "http".to_string(),
+            url: Some("https://example.com/hook".to_string()),
+            if_rule: Some("Bash(git *)".to_string()),
+            headers: BTreeMap::from([("Authorization".to_string(), "Bearer $TOKEN".to_string())]),
+            allowed_env_vars: vec!["TOKEN".to_string()],
+            on_failure: Some("block".to_string()),
+            status_message: Some("Checking".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            serde_json::to_value(hook).unwrap(),
+            serde_json::json!({
+                "type": "http",
+                "url": "https://example.com/hook",
+                "if": "Bash(git *)",
+                "headers": { "Authorization": "Bearer $TOKEN" },
+                "allowedEnvVars": ["TOKEN"],
+                "onFailure": "block",
+                "statusMessage": "Checking"
+            })
+        );
+    }
+
+    #[test]
+    fn command_hook_serializes_documented_keys_in_legacy_order() {
+        let hook = HookCommand {
+            command: Some("./check.sh".to_string()),
+            hook_type: "command".to_string(),
+            timeout: Some(10),
+            run_async: Some(true),
+            async_rewake: Some(true),
+            ..Default::default()
+        };
+        assert_eq!(
+            serde_json::to_string(&hook).unwrap(),
+            r#"{"command":"./check.sh","type":"command","timeout":10,"async":true,"asyncRewake":true}"#
+        );
+    }
+
+    #[test]
+    fn prompt_hook_handler_and_empty_http_lists() {
+        let json = serde_json::to_value(
+            ClaudeCodeSettings::default()
+                .with_hook_handler(
+                    "Stop",
+                    None,
+                    HookCommand {
+                        hook_type: "prompt".to_string(),
+                        prompt: Some("Check $ARGUMENTS".to_string()),
+                        continue_on_block: Some(true),
+                        ..Default::default()
+                    },
+                )
+                .with_allowed_http_hook_urls_none()
+                .with_http_hook_allowed_env_vars_none(),
+        )
+        .unwrap();
+        assert_eq!(
+            json["hooks"]["Stop"][0]["hooks"][0],
+            serde_json::json!({
+                "type": "prompt",
+                "prompt": "Check $ARGUMENTS",
+                "continueOnBlock": true
+            })
+        );
+        assert_eq!(json["allowedHttpHookUrls"], serde_json::json!([]));
+        assert_eq!(json["httpHookAllowedEnvVars"], serde_json::json!([]));
+    }
+}
+
+#[cfg(test)]
+mod channel_plugin_tests {
+    use super::*;
+
+    #[test]
+    fn channel_plugin_entries_serialize_both_forms() {
+        let json = serde_json::to_value(
+            ClaudeCodeSettings::default()
+                .with_allowed_channel_plugin("claude-plugins-official", "telegram")
+                .with_allowed_channel_plugin_id("discord@claude-plugins-official"),
+        )
+        .unwrap();
+        assert_eq!(
+            json["allowedChannelPlugins"],
+            serde_json::json!([
+                { "marketplace": "claude-plugins-official", "plugin": "telegram" },
+                "discord@claude-plugins-official"
+            ])
+        );
+    }
+}
+
+#[cfg(test)]
+mod final_audit_tests {
+    use super::*;
+
+    #[test]
+    fn empty_prepend_plugins_and_footer_link_type() {
+        let json = serde_json::to_value(
+            ClaudeCodeSettings::default()
+                .with_prepend_plugins(Vec::new())
+                .with_footer_link_regex(FooterLinkRegex {
+                    pattern: "(?<id>[A-Z]+-\\d+)".to_string(),
+                    url: "https://example.com/{id}".to_string(),
+                    ..Default::default()
+                }),
+        )
+        .unwrap();
+        assert_eq!(json["prependPlugins"], serde_json::json!([]));
+        assert_eq!(json["footerLinksRegexes"][0]["type"], "regex");
     }
 }

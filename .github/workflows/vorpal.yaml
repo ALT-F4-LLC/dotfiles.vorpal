@@ -12,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - run: bash tests/brief-skill.test.sh
       - run: bash tests/ci-suite-wiring.test.sh
       - run: bash tests/citation-check.test.sh
       - run: bash tests/commit-skill-attribution.test.sh

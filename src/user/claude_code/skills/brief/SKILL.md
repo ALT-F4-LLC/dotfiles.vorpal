@@ -27,7 +27,9 @@ Before confirmation, use tools only to resolve references and run narrow,
 read-only checks needed to describe or route the request. Substantive
 investigation, implementation, tracking artifacts, and scheduling belong
 to the confirmed route. The advisor's inspection in §1 runs under the same
-limit.
+limit. Ultracode (§3) does not widen it: no `Workflow` runs until the
+confirmed route starts the work. That covers briefing, a pending `/goal`
+line, and `Just give me the brief`.
 
 Preserve the operator's intent without expanding it. Label derived
 requirements and proposals; leave unsupported details unspecified.
@@ -431,7 +433,8 @@ Consider other orchestration skills available in this session when one
 materially fits better; alternatives must satisfy the same docket and
 security requirements and must run the work under a goal, loop, or
 workflow (a docket run). Exclude `/brief` itself, and do not offer
-`workflow` as a standalone route.
+`workflow` as a standalone route: a `Workflow` run is how a route executes
+its work, never a route of its own.
 
 **Peer relay.** `/peer` is a relay route, not an executing one: it hands
 the confirmed brief to one of the operator's other live sessions on this
@@ -465,11 +468,14 @@ exclusions, and constraints, and names the evidence that must appear in
 the conversation to show each criterion met, such as a check's command and
 its passing output. It also carries these duties:
 
-- Create no docket issues, plan artifacts, schedules, or teams.
+- Create no docket issues, plan artifacts, schedules, or teams; a
+  `Workflow` run is not a team.
 - Verify each criterion with a suited check and show its output.
-- For a Security-sensitive `yes` brief routed here by an operator override
-  of rule 1, route the change's review through the advisor or a peer and
-  show its output.
+- State the brief's Size hint, and state in a reply each workflow result
+  that settles a criterion (Ultracode, below).
+- For a Security-sensitive `yes` brief routed here by the harness rule or
+  by an operator override of rule 1, route the change's review through the
+  advisor or a peer and show its output.
 - For a `route-direct` issue, after verification show the output of
   `docket issue comment add <id> -m "<what landed and where>"` and then
   `docket issue close <id>`.
@@ -494,6 +500,41 @@ the blocker at §4, after §1 has closed every question, and offer only
 `/peer` to a live session where `/goal` is available, or `Just give me the
 brief`. Never perform the work outside a goal, loop, or workflow.
 
+**Ultracode.** Ultracode is on when a message from the system in this
+session confirms it. The shipped settings default is not that evidence,
+and a later reminder that turns it off governs. While it is on, the
+session authors and runs a `Workflow` for every substantive task without
+being asked. That changes how the executing routes run, not which one §3
+selects:
+
+- **`/goal`:** work above `trivial` runs in this conversation as one
+  workflow per phase, with adversarial verification; trivial work stays
+  solo. The brief's Size hint draws that line, and an `unknown` hint
+  counts as above `trivial`, so it raises no question of its own. The
+  condition carries the Size hint, so the executing session draws the same
+  line, and the workflow-result duty above, since the evaluator cannot open
+  a workflow's journal or agent transcripts.
+- **`/loop`:** a pass whose action is trivial stays solo. Any larger pass,
+  on whatever rule or operator choice the route was confirmed, runs a
+  workflow every time it fires. Record that under Loop details' Limits and
+  coordination, labeled `derived`: `each pass runs a workflow while
+  ultracode is on`, so the confirmed schedule carries its cost.
+- **`/docket-plan`:** unchanged. Planning is a conversation with the
+  operator and records the run without executing it, so it stays solo; a
+  docket run already drives each wave through its lane workflows.
+- **`/peer`:** unchanged here. The peer session applies its own ultracode
+  state when it reselects the route under these rules, and its one
+  confirmation says so when that route's work runs through workflows.
+
+Ultracode lifts token cost as a constraint on how the work runs; it adds
+no authority. A Security-sensitive change's review on `/goal` or `/loop`
+still goes through the advisor, launched from this session, or a peer; a
+workflow's own verify stage or agents do not replace it. A workflow agent's question returns to the session, which
+handles it under the decision duty above. When ultracode is off, `/goal`
+and `/loop` work runs a workflow only when the operator's own words ask
+for one, and the condition or loop task carries that request only when the
+operator made it.
+
 Recommend only routes whose entry points and required capabilities are
 available. If a required route is unavailable, show the brief with the
 blocker at §4, after §1 has closed every question, rather than performing
@@ -514,7 +555,9 @@ brief's Open questions reads `none`.
 Present the complete brief verbatim, followed by every route this skill
 can select, including routes §3 excludes: `/docket-plan`, `/loop`,
 `/goal`, `/peer`, and any orchestration alternative weighed under §3. Give each route one line stating why it fits or which §3
-rule excludes it, and mark the recommended route. If
+rule excludes it, and mark the recommended route. When ultracode is on,
+an eligible `/goal` or `/loop` line whose work is not trivial says it runs
+through workflows (§3). If
 the downstream input requires a different structure, show the prepared
 handoff as well.
 

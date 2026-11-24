@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Refuse a Bash command the permission system already denied, reissued without
+# Refuse a Bash command or REPL (Code Mode) script the permission system already denied, reissued without
 # a new word from the operator.
 #
 # Runs before each Bash call. A denial is a Bash tool_result in this session's
@@ -52,11 +52,14 @@ deny() { printf '%s\n' "$1" >&2; exit 2; }
 command -v jq >/dev/null 2>&1 || allow
 DATA=$(cat 2>/dev/null) || allow
 
-[ "$(printf '%s' "$DATA" | jq -r '.tool_name // empty' 2>/dev/null)" = "Bash" ] || allow
+case "$(printf '%s' "$DATA" | jq -r '.tool_name // empty' 2>/dev/null)" in
+    Bash | REPL) ;;
+    *) allow ;;
+esac
 [ -n "$(printf '%s' "$DATA" | jq -r '.agent_id // empty' 2>/dev/null)" ] && allow
 TRANSCRIPT=$(printf '%s' "$DATA" | jq -r '.transcript_path // empty' 2>/dev/null)
 [ -n "$TRANSCRIPT" ] && [ -r "$TRANSCRIPT" ] || allow
-CMD=$(printf '%s' "$DATA" | jq -r '.tool_input.command // empty' 2>/dev/null)
+CMD=$(printf '%s' "$DATA" | jq -r '.tool_input.command // .tool_input.code // empty' 2>/dev/null)
 [ -n "$CMD" ] || allow
 CWD=$(printf '%s' "$DATA" | jq -r '.cwd // empty' 2>/dev/null)
 
@@ -96,6 +99,7 @@ def operator_turn:
     elif $l.type == "assistant" then
         reduce (($l.message.content? // [])[]? | select(type == "object" and .type == "tool_use")) as $u (.;
             if $u.name == "Bash" and (($u.input.command? // null) | type) == "string" then .pend[$u.id] = $u.input.command
+            elif $u.name == "REPL" and (($u.input.code? // null) | type) == "string" then .pend[$u.id] = $u.input.code
             elif $u.name == "AskUserQuestion" then .ask[$u.id] = true
             else . end)
     elif $l.type == "user" then

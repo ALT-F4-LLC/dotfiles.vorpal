@@ -102,7 +102,8 @@ fi
 
 mkdir -p "$LEDGER_DIR" 2>/dev/null || exit 0
 
-COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // "" | .[0:400]' 2>/dev/null || true)
+# A REPL (Code Mode) call carries its JavaScript in tool_input.code, not command.
+COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // .tool_input.code // "" | .[0:400]' 2>/dev/null || true)
 FILE_PATH=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // "" | .[0:400]' 2>/dev/null || true)
 TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null || true)
 # Present only inside a subagent; empty on the main thread.

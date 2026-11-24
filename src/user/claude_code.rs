@@ -769,11 +769,13 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "bash ~/.claude/hooks/docket-commit-guard-hook.sh",
             "command",
         )
-        // Refuses a Bash command the permission system already denied when it
-        // is reissued, however spelled, with no operator turn in between.
+        // Refuses a Bash command or Code Mode REPL script the permission
+        // system already denied when it is reissued, however spelled, with no
+        // operator turn in between. A classifier denial in Code Mode lands on
+        // the REPL call, so the matcher names it too.
         .with_hook(
             "PreToolUse",
-            Some("Bash"),
+            Some("Bash|REPL"),
             "bash ~/.claude/hooks/docket-denied-reissue-guard-hook.sh",
             "command",
         )
@@ -1148,6 +1150,43 @@ mod tests {
                 .unwrap_or_default();
             run.split('/').any(|tok| tok == sub)
         })
+    }
+
+    /// Code Mode (the `REPL` tool) is experimental and the harness ignores
+    /// its switch in project settings, so it must ride the user settings
+    /// `env`. It is also blocked by a `REPL` deny rule, a custom
+    /// `ANTHROPIC_BASE_URL`, and a remote-control launch; each stays absent.
+    /// Its shell calls run under the sandbox settings, so the sandbox must be
+    /// on, strict, unable to retry a command unsandboxed, and auto-allowing
+    /// sandboxed commands, so a script's shell calls run without a prompt each.
+    #[test]
+    fn code_mode_is_enabled_and_nothing_blocks_it() {
+        let emitted = emitted_settings();
+        assert_eq!(emitted["env"]["CLAUDE_CODE_EXPERIMENTAL_CODE_MODE"], "1");
+        assert!(
+            emitted["env"].get("ANTHROPIC_BASE_URL").is_none(),
+            "a custom ANTHROPIC_BASE_URL turns Code Mode off"
+        );
+        assert_eq!(emitted["remoteControlAtStartup"], false);
+
+        let deny = emitted["permissions"]
+            .get("deny")
+            .map(strings)
+            .unwrap_or_default();
+        assert!(
+            !deny.iter().any(|row| {
+                ["REPL", "Poll"]
+                    .iter()
+                    .any(|tool| row == tool || row.starts_with(&format!("{tool}(")))
+            }),
+            "a REPL or Poll deny rule turns Code Mode off: {deny:?}"
+        );
+
+        let sandbox = &emitted["sandbox"];
+        assert_eq!(sandbox["enabled"], true);
+        assert_eq!(sandbox["failIfUnavailable"], true);
+        assert_eq!(sandbox["allowUnsandboxedCommands"], false);
+        assert_eq!(sandbox["autoAllowBashIfSandboxed"], true);
     }
 
     #[test]

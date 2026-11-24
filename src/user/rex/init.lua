@@ -213,9 +213,11 @@ function Host:sweep_probes(sessions)
   if FORCE_PROBE then sessions = self:sessions() end
   for _, s in ipairs(sessions) do
     if s.label == PROBE_LABEL then
-      local view = self.server.call("session.view", { session_id = s.session_id })
-      local list = self.server.call("session.list_blocks", { session_id = s.session_id })
-      if view and list and #(view.windows or {}) == 0 and #(list.blocks or {}) == 0 then
+      -- Session methods need an attached connection; attach's reply is the view.
+      local att = self.server.call("session.attach", { session_id = s.session_id })
+      local list = att and self.server.call("session.list_blocks", { session_id = s.session_id })
+      if att and list and #((att.view or {}).windows or {}) == 0 and #(list.blocks or {}) == 0 then
+        self.attached[s.session_id] = att.view or {}
         self:destroy(s.session_id)
       end
     end
@@ -335,16 +337,17 @@ end
 
 -- Lists the worktrees of one project as names relative to <project>.git.
 -- It looks as deep as names the action can open, and only at names it
--- accepts. Directories too big to list are recorded in skipped.
+-- accepts. Directories too big to list, or left unread when time ran out,
+-- are recorded in skipped, and the worktrees found so far are kept.
 function Host:worktrees(project)
   local base = self:root() .. "/" .. project .. ".git"
   local found = {}
   local function walk(rel, depth)
-    if deadline and os.time() >= deadline - 1 then
-      fail(string.format("ran out of time listing worktrees on %s at %s", self.label,
-        rel == "" and base or (base .. "/" .. rel)))
-    end
     local dir = rel == "" and base or (base .. "/" .. rel)
+    if deadline and os.time() >= deadline - 1 then
+      table.insert(self.skipped, dir .. " (out of time)")
+      return
+    end
     local r = self:list_dir(dir, true, true)
     if r.status ~= "ok" then return end
     if rel ~= "" then
@@ -652,10 +655,11 @@ local function worktree_items(host, only_project)
   return items
 end
 
-local function pick_worktree(label, items, only_project)
+local function pick_worktree(label, items, only_project, skipped)
   if #items == 0 then
-    fail(string.format("no worktrees found on %s%s", label,
-      only_project and (" for " .. only_project) or ""))
+    fail(string.format("no worktrees found on %s%s%s", label,
+      only_project and (" for " .. only_project) or "",
+      skipped and ("; not searched: " .. table.concat(skipped, ", ")) or ""))
   end
   local id = ask{
     title = "Worktree on " .. (label == LOCAL and "this machine" or label),
@@ -779,8 +783,8 @@ rex.action{
 
     local worktree = args.worktree
     if worktree == nil then
-      local items = remote({ op = "list", host = label, project = project }).items or {}
-      project, worktree = pick_worktree(label, items, project)
+      local listed = remote({ op = "list", host = label, project = project })
+      project, worktree = pick_worktree(label, listed.items or {}, project, listed.too_big_to_list)
       if worktree == nil then return nil end
     elseif project == nil then
       fail("worktree= needs project=")

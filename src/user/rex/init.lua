@@ -47,13 +47,14 @@ local WRAPPER =
 -- Remote calls, session creation, and verification must fit in the action's
 -- 30 second limit. Time spent waiting on a prompt doesn't count. The action
 -- spends at most BUDGET seconds outside prompts, and gives each rex
--- subprocess what is left, capped by its kind. The opening worker stops
--- before creating after CREATE_DEADLINE and waits at most PWD_WAIT for a new
--- terminal, so it finishes within its cap.
+-- subprocess what is left, capped by its kind. The opening worker creates a
+-- session only while CREATE_RESERVE seconds remain before the deadline its
+-- parent delegated: enough to create it, wait at most PWD_WAIT for its
+-- terminal, and remove it again if that fails.
 local BUDGET = 27
 local CAP = { hosts = 5, list = 10, open = 20 }
-local CREATE_DEADLINE = 6
 local PWD_WAIT = 5
+local CREATE_RESERVE = PWD_WAIT + 4
 
 -- The longest session label, which bounds the worktree names the action can
 -- open and so how deep the picker looks.
@@ -306,7 +307,8 @@ end
 
 function Host:root()
   if not self.root_path then
-    local r = self:list_dir("~")
+    -- Only home is needed, so a truncated listing of a large home is fine.
+    local r = self:list_dir("~", false, true)
     if r.status ~= "ok" or (r.home or "") == "" then
       fail(string.format("cannot find the home directory on %s", self.label))
     end
@@ -440,6 +442,8 @@ function Host:block_state(session_id, block_id)
   return pwd, cwd
 end
 
+-- The first session labelled label. session.list puts new sessions last, so
+-- opens of one worktree that each created a session all name the same one.
 function Host:find_session(label)
   for _, s in ipairs(self:sessions()) do
     if s.label == label then return s.session_id end
@@ -448,26 +452,38 @@ function Host:find_session(label)
 end
 
 -- Reuses the session's terminal that reported the worktree as its pwd, or
--- failing that, one whose shell is in the worktree now.
-function Host:reuse(session_id, label, path)
-  local by_cwd
-  for _, b in ipairs(terminal_blocks(self:view(session_id))) do
-    local pwd, cwd = self:block_state(session_id, b.block_id)
-    local found = {
-      session_id = session_id, window_id = b.window_id, block_id = b.block_id,
-      pwd = pwd, process_cwd = cwd, reused = true,
-      drift = cwd ~= nil and cwd ~= path or nil,
-    }
-    if pwd == path then return found end
-    if cwd == path and not by_cwd then by_cwd = found end
+-- failing that, one whose shell is in the worktree now. A session another
+-- open just created may not have reported yet, so it waits up to wait
+-- seconds, never past the deadline.
+function Host:reuse(session_id, label, path, wait)
+  local give_up = math.min(os.time() + (wait or 0), deadline - 1)
+  while true do
+    local by_cwd
+    for _, b in ipairs(terminal_blocks(self:view(session_id))) do
+      local pwd, cwd = self:block_state(session_id, b.block_id)
+      local found = {
+        session_id = session_id, window_id = b.window_id, block_id = b.block_id,
+        pwd = pwd, process_cwd = cwd, reused = true,
+        drift = cwd ~= nil and cwd ~= path or nil,
+      }
+      if pwd == path then return found end
+      if cwd == path and not by_cwd then by_cwd = found end
+    end
+    if by_cwd then return by_cwd end
+    if os.time() >= give_up then break end
+    sleep(0.2)
   end
-  if by_cwd then return by_cwd end
   fail(string.format("session %q (%s) on %s has no terminal in %s; close that session "
     .. "and run the action again to get a fresh one", label, session_id, self.label, path))
 end
 
+-- Two opens of one worktree can both find no session and both create one.
+-- Each then keeps the first session with the label and removes its own if
+-- it is not that one, so both return the same session. A server that
+-- refuses a second session with the label leaves the other open's session,
+-- which is reused the same way.
 function Host:create(label, path, worktree)
-  local created = self:call("session.create", {
+  local created, cerr = self.server.call("session.create", {
     label = label,
     initial_windows = { {
       window_label = worktree,
@@ -477,7 +493,21 @@ function Host:create(label, path, worktree)
       } },
     } },
   })
+  if created == nil then
+    local other = self:find_session(label)
+    if other then return self:reuse(other, label, path, PWD_WAIT) end
+    fail(string.format("session.create on %s failed: %s", self.label, tostring(cerr)))
+  end
   local session_id = created.session_id
+  local first = self:find_session(label)
+  if first ~= nil and first ~= session_id then
+    local err = self:destroy(session_id)
+    if err ~= nil then
+      table.insert(self.leftovers, string.format("duplicate session %s on %s: %s",
+        session_id, self.label, err))
+    end
+    return self:reuse(first, label, path, PWD_WAIT)
+  end
   local win = created.initial_windows[1]
   local block_id = win.block_ids[1]
   self:attach(session_id)
@@ -655,18 +685,38 @@ local function worktree_items(host, only_project)
   return items
 end
 
+-- The picker row that says the search was incomplete. Its id has no colon,
+-- so it never names a worktree.
+local NOT_SEARCHED_ID = "not-searched"
+
 local function pick_worktree(label, items, only_project, skipped)
+  local not_searched = skipped and #skipped > 0 and table.concat(skipped, ", ") or nil
   if #items == 0 then
     fail(string.format("no worktrees found on %s%s%s", label,
       only_project and (" for " .. only_project) or "",
-      skipped and ("; not searched: " .. table.concat(skipped, ", ")) or ""))
+      not_searched and ("; not searched: " .. not_searched) or ""))
+  end
+  local title = "Worktree on " .. (label == LOCAL and "this machine" or label)
+  if not_searched then
+    title = title .. " (partial search)"
+    table.insert(items, 1, {
+      id = NOT_SEARCHED_ID,
+      title = string.format("Not searched: %d %s", #skipped,
+        #skipped == 1 and "directory" or "directories"),
+      subtitle = not_searched,
+      icon = "clock",
+      detail = "partial",
+    })
   end
   local id = ask{
-    title = "Worktree on " .. (label == LOCAL and "this machine" or label),
+    title = title,
     placeholder = "Filter by project or branch",
     items = items,
   }
   if id == nil then return nil end
+  if id == NOT_SEARCHED_ID then
+    fail("the worktree search was incomplete; not searched: " .. not_searched)
+  end
   return id:match("^([^:]+):(.+)$")
 end
 
@@ -674,7 +724,6 @@ end
 
 local function open_worktree(ctx, label, project, worktree)
   local host = connect(ctx, label)
-  local started = os.time()
   local path = host:resolve(project, check_worktree(worktree))
   local session_label = project .. ":" .. worktree
   if #session_label > 128 then
@@ -684,9 +733,9 @@ local function open_worktree(ctx, label, project, worktree)
   host:cleanup()
   local result
   if existing then
-    result = host:reuse(existing, session_label, path)
+    result = host:reuse(existing, session_label, path, PWD_WAIT)
   else
-    if os.time() - started > CREATE_DEADLINE then
+    if deadline - os.time() < CREATE_RESERVE then
       fail("ran out of time before creating the session; nothing was created")
     end
     result = host:create(session_label, path, worktree)

@@ -1659,10 +1659,18 @@ read-only probe reporting what the record currently says.
 WAVE PROBE: not a step execution${step ? `; it READS ${step}` : ''}.`
 }
 
+// Every probe brief names the call form, as claimBrief does: a probe is a
+// one-shot agent whose first call is its only one, and the auto-mode
+// classifier often refuses that first call when it arrives as a REPL script
+// the brief did not name. Replayed on 24 step-show probes: 0 of 12 denied
+// with this sentence, 9 of 12 without it. Replayed on 24 gate-status probes
+// with gateStatusBrief's two-command wording: 0 of 12 against 6 of 12.
 function probeBrief(command, servingStep) {
     return `Run exactly this one command:
 
   ${command}
+
+Run it as one direct Bash tool call when you have a Bash tool; if you have none, run it from a REPL script.
 
 Return its output VERBATIM as \`output\` in the structured output: no summary,
 no commentary, no code fence. If the command errors, return the error text
@@ -1753,6 +1761,8 @@ function stepShowBrief(step) {
 
   docket step show ${step} --json
 
+Run it as one direct Bash tool call when you have a Bash tool; if you have none, run it from a REPL script.
+
 Return the command's \`data\` object through the structured output: status,
 attempt, lease_expired, failed_attempts, reaped_claims, blocked_reason, each
 copied exactly as printed. Omit a field the output did not carry; fill none
@@ -1826,6 +1836,8 @@ function gateStatusBrief(step) {
 
   docket gate status ${step} --json
 
+Run each command in this brief as its own direct Bash tool call when you have a Bash tool; if you have none, run each from a REPL script.
+
 Return the command's \`data\` object through the structured output, copied
 field for field and value for value. Add no field the output did not carry;
 fill none in. If the command errors or prints no \`data\` object, return
@@ -1898,6 +1910,8 @@ function heldClusterBrief(step) {
 
   docket step show ${step} --json | jq -c '.data.held_cluster // {}'
 
+Run it as one direct Bash tool call when you have a Bash tool; if you have none, run it from a REPL script.
+
 Return the printed object through the structured output, copied field for
 field. Add no field the output did not carry; fill none in. If the command
 errors, return {error: <the error text verbatim>} and nothing else.
@@ -1944,6 +1958,8 @@ function proposalBrief(voteId, step) {
     return `Run exactly this one command:
 
   docket vote show ${voteId} --json | ${PROPOSAL_JQ}
+
+Run it as one direct Bash tool call when you have a Bash tool; if you have none, run it from a REPL script.
 
 Return the printed object through the structured output, copied field for
 field and value for value. Add no field the output did not carry; fill none

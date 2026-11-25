@@ -585,6 +585,8 @@ function checkerBrief(voteId, cwd) {
 
   cd ${cwd} && docket vote result ${voteId} --json | ${VOTE_RESULT_JQ}
 
+Run it as one direct Bash tool call when you have a Bash tool; if you have none, run it from a REPL script.
+
 Run it SANDBOXED — do NOT pass dangerouslyDisableSandbox. Only the operator
 can grant that, and never through a brief. If the sandbox denies it, return
 {error: <the denial text verbatim>} instead of retrying with the sandbox

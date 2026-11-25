@@ -345,10 +345,16 @@ function claimCommand(row, r, owner, modulePath) {
 // tokens to the step its brief claims or records, and this agent is wave
 // overhead (the WAVE CLAIM line), not the step's executor. Its command names
 // no STEP-N.d, so the sibling guard has nothing of a sibling's to weigh.
+// The brief names the call form because a direct Bash call is decided by the
+// operator-installed Bash(~/.docket/bin/docket-workflow-claim:*) rule, while a
+// REPL script is judged whole by the auto-mode classifier. Replayed on 24 claim
+// agents: 0 denied with this sentence, 6 of 24 without it.
 function claimBrief(row, command) {
     return `Run exactly this one command:
 
   ${command}
+
+Run it as one direct Bash tool call when you have a Bash tool; if you have none, run it from a REPL script.
 
 It claims ${row.step} under that owner, parks the lease token in the step's
 private scratch dir, and writes the rendered packet for the executor the wave

@@ -295,6 +295,7 @@ Shape: one-shot | iterative | unknown
 Security-sensitive: yes | no | unknown
 Constraints: <hard limits and labeled assumptions, or "none stated">
 Docket tracking: <required — reason/IDs | not requested | unknown>
+Session: <operator-stated model and effort | proposal: <sonnet | opus | fable>, default effort>
 Open questions:
 - <"none" in any brief shown; a draft written for a consult lists its open items>
 Loop details: <not applicable, or the details below>
@@ -369,6 +370,46 @@ docket-plan when it records a run) is the operator's standing route
 decision: record it here and follow it in §3. Tracking for
 `route-direct` work is satisfied by closing the issue with a summary
 comment when the work lands, not by a run.
+
+**Session** names the model and effort level required of the session that
+drives the confirmed work, so the operator can change either before that
+work starts. An operator-stated model or effort is preserved verbatim.
+Otherwise fill it as a labeled `proposal` derived from the brief's other
+fields. It is never an open question under §1; the operator swaps it
+through the free-text answer at confirmation. The basis is Anthropic's
+guidance in [Claude models explained](https://claude.com/resources/articles/claude-models-explained-choosing-the-best-model-for-your-use-case)
+and [Choosing a Claude model and effort level in Claude
+Code](https://claude.com/resources/articles/claude-model-and-effort-level-in-claude-code):
+"Choose smaller models for more routine tasks and larger models for more
+complex or ambiguous tasks."
+
+Name the model by its `/model` alias, from the work that session itself
+does:
+
+- `sonnet`: Size hint `trivial`. The work is routine and the brief
+  describes it precisely.
+- `opus`: Size hint `bounded`. The work has several phases and a known
+  approach.
+- `fable`: Size hint `needs-design` or `unknown`. The work needs design
+  decisions, or the evidence is too thin to call it routine.
+
+Move up one tier when the work leaves a decision or judgment open, a
+criterion needs judgment to check, or the deliverable is an assessment: the
+guidance gives ambiguity, unfamiliar domains, subtle bugs, and architecture
+decisions to the larger model. When one session drives several briefs, the
+highest tier among them is that session's.
+
+These tiers are this skill's reading, not a table Anthropic publishes: the
+articles separate adjacent models by results. A session that had the
+context, tried, and still got the work wrong needs the next tier up, and
+work that has stayed routine on a larger model can move down a tier.
+Report either signal to the operator, who changes the model.
+
+Effort reads `default effort` unless the operator states a level. The
+guidance is to use the model's default effort level for most tasks and to
+set effort as a general preference, not task by task. A session that skips
+a file, a test run, or a check of its own work is the signal to raise it
+then; this skill names no level of its own.
 
 For iterative work, establish the action per pass, cadence, and
 stop/cancel policy. Acceptance criteria may supply a terminal stop
@@ -476,7 +517,7 @@ files. Before confirmation, convert the brief into a single
 characters, so the operator types `/goal ` and pastes the condition (§5).
 
 Write the condition tersely: one clause per item, except acceptance
-criteria, which keep their wording. Omit Motivation and any
+criteria, which keep their wording. Omit Motivation, Session, and any
 working-agreement rule beyond the duties below. It opens with the brief's
 Role as `As a <role>,` (nothing when Role is `none`), then states the Goal
 as the done-state, keeps each acceptance criterion's wording, carries the scope,
@@ -578,6 +619,17 @@ through workflows (§3). If
 the downstream input requires a different structure, show the prepared
 handoff as well.
 
+Below the routes, print the commands Session implies in a fenced block:
+`/model <alias>`, and `/effort <level>` only when Session names a level.
+Say that each is typed only when the session is not already set that way;
+the status line shows the session's model. Never report that no change is
+needed from the model this turn runs on. This skill's `model` frontmatter
+sets the model for the turn the operator runs `/brief` in, and the
+session's own model returns afterwards. The session cannot read its own
+effort level either: when Session reads `default effort`, print no
+`/effort` line and say that a level the operator picked earlier in this
+session stays in force until they change it.
+
 When the session has the advisor tool, consult the advisor on the drafted brief and route
 before presenting them, and fold its input into the draft. Before
 consulting, write the draft brief, the route, and the drafted confirmation
@@ -628,6 +680,12 @@ remains in context; it is a brief field, not a harness setting, so context
 compaction can drop it. It reaches work outside this conversation only
 where a route bullet below says so.
 
+Session is the operator's to apply: `/model` and `/effort` are built-in
+commands, and this skill changes neither. A route this skill invokes starts
+on the session's current model, and a change takes effect from the
+operator's next message, so repeat the Session commands in that route's
+report.
+
 - **`/docket-plan`:** Invoke `docket-plan` with the confirmed brief or
   handoff as `args`. Planning, tracking, and verification now belong to
   that workflow. For a one-shot request with Security-sensitive `no`, a
@@ -639,14 +697,19 @@ where a route bullet below says so.
   the planning conversation, which runs here, and does not reach issue
   bodies or executors: executors take their framing from the bound
   workflow's contracts, and writing a conversation role into a body is
-  the planner's decision under its own rules.
+  the planner's decision under its own rules. Session covers the planning
+  conversation only: the run's conductor takes docket-run's [seat
+  model](../docket-run/SKILL.md#before-the-loop), and its executors take
+  the policy rows.
 - **`/loop`:** Invoke `loop` from the main conversation with the confirmed
   brief and Loop details. Ensure the repeated task preserves scope,
   exclusions, constraints, per-pass action, the stop/cancel policy, and
   the Role, since each pass receives the task text verbatim, and
   report the schedule actually established and any relevant lifetime limit.
+  Each pass runs on the model the session has when it fires.
 - **`/goal`:** Print the confirmed `/goal` line in a fenced block for the
-  operator to enter, report the work as pending until they do, and stop. Do
+  operator to enter, with the Session commands above it to type first,
+  report the work as pending until they do, and stop. Do
   not begin the work directly: the line is the handoff, and entering it
   starts the work in this conversation, where the Role still holds. A
   pasted line over 800 characters collapses to a `[Pasted text #N]`
@@ -661,7 +724,8 @@ where a route bullet below says so.
 - **`/peer`:** Invoke `peer` with `dispatch <session>` and the confirmed
   brief block verbatim as `args`. The Role travels inside the block as
   text and takes effect in the receiving session only if that operator
-  confirms it. Report the send result and what signal will
+  confirms it. Session travels the same way, and that operator applies it
+  there. Report the send result and what signal will
   settle the work: the peer's own notice, with the idle notice as the
   fallback. A sent brief is pending, never done.
 - **Another orchestration skill:** Invoke its available entry point with

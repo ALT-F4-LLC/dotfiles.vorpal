@@ -102,6 +102,20 @@ pin "$brief" "its pick is the recommended route below, and a differing §3 route
 # scratch file, which lies outside the repository.
 pin "$brief" 'read-only checks needed to describe or route the request. The one exception is the Write of the draft to a scratch file outside the repository.' "brief: the one pre-confirmation write is the draft's scratch file outside the repository"
 
+# Session: the brief names the model and effort the driving session needs,
+# and the operator applies them. The session cannot verify either from
+# inside, so the commands are always printed, never a "no change" verdict.
+pin "$brief" 'Session: <operator-stated model and effort | proposal: <sonnet | opus | fable>, default effort>' "brief: the field order carries Session"
+pin "$brief" 'It is never an open question under §1; the operator swaps it through the free-text answer at confirmation.' "brief: Session is a proposal, never a question"
+pin "$brief" '"Choose smaller models for more routine tasks and larger models for more complex or ambiguous tasks."' "brief: Session cites the published guidance"
+pin "$brief" "These tiers are this skill's reading, not a table Anthropic publishes" "brief: the tier mapping is labeled as the skill's own"
+pin "$brief" 'Effort reads `default effort` unless the operator states a level.' "brief: effort stays at the default unless the operator states one"
+pin "$brief" 'print the commands Session implies in a fenced block: `/model <alias>`, and `/effort <level>` only when Session names a level.' "brief: confirmation prints the Session commands"
+pin "$brief" 'Never report that no change is needed from the model this turn runs on.' "brief: no unverified no-change verdict"
+pin "$brief" 'say that a level the operator picked earlier in this session stays in force until they change it.' "brief: default effort still discloses an earlier pick"
+pin "$brief" "Session is the operator's to apply: \`/model\` and \`/effort\` are built-in commands, and this skill changes neither." "brief: the operator applies Session"
+pin "$brief" "Session covers the planning conversation only: the run's conductor takes docket-run's [seat model](../docket-run/SKILL.md#before-the-loop)" "brief: a run's seats keep their own model rules"
+
 # absent FILE LITERAL DESCRIPTION: the flattened file does not contain LITERAL.
 absent() {
   if flat "$1" | grep -qF -- "$2"; then

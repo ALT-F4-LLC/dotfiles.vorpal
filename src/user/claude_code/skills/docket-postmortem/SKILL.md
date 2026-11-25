@@ -34,8 +34,8 @@ Every operator touch the run needed is evidence, and an automatable one is a
 finding.
 
 Run in the invoking conversation: §4 launches the `docket-postmortem`
-Workflow script, §6 files through docket verbs, and the advisor call in §6
-needs this session. A forked subagent has none of those.
+Workflow script, §6 files through docket verbs, and the advisor consult in §6
+needs this conversation. A forked subagent has none of those.
 
 ## Boundaries and completion
 
@@ -387,8 +387,8 @@ closure: route by verified checkout and store, preserve the trust-boundary
 notice, never assign work, and record every result. If filing is blocked,
 finish the review with complete file-ready writeups.
 
-When the session can launch agents, launch the `advisor` agent on the reconciled findings
-before filing.
+When the session has the advisor tool, state the reconciled findings in the
+conversation and consult the advisor before filing.
 
 Deliver the review here: the identity block; coverage (captures, sessions,
 logs inventoried, digested, and read in full, launches, and every gap); the

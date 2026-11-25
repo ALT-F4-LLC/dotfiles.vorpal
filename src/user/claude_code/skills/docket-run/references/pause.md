@@ -166,7 +166,7 @@ every other path the prompt names from command output as well.
   answer the operator already gave that has not been executed yet.
 - **The unattended queue**, when the run's mode is `unattended`: every
   entry in `<scratchpad>/conductor.d/RUN-N.queue`, with its gate or step
-  id, evidence paths, and the advisor's answer verbatim, since parks
+  id, evidence paths, and the advisor's advice, summarized, since parks
   persist in the engine but this text does not. The resuming session
   starts attended and presents them on attach (docket-run's **Standing
   ruling: unattended mode**).
@@ -231,9 +231,9 @@ every step id the graceful halt refused; every advisory note carrying
 run conduct RUN-N` with no token anywhere in the prompt. Check this list
 as a gate, not from memory.
 
-When the session can launch agents, launch the `advisor` agent on the filled-in checklist before
-recording the prompt, and fold its input in as a further check, not a
-replacement for the list above.
+When the session has the advisor tool, paste the filled-in checklist into the
+conversation and consult the advisor before recording the prompt, and fold its
+input in as a further check, not a replacement for the list above.
 
 ## Resume-prompt paths
 

@@ -269,9 +269,12 @@ do not register live schemas to silence the error or call it a passed lint.
 ## 5. Review, approve, and activate
 
 Use the built-in question tool in this main conversation. Each question
-passes the advisor's [question
-review](../../references/working-agreement.md#question-review) first; the
-advisor's pick goes first, labeled `(Recommended)`. Honor approval already
+passes [question
+review](../../references/working-agreement.md#question-review) first: draft
+the set in text, consult the advisor, and put the advisor's pick first,
+labeled `(Recommended)`; on a Reserved or security-override question the
+protective option takes the label instead, and the advisor's pick, if
+different, is shown in its description. Honor approval already
 given for the same exact proposal. A timeout, away notice, empty answer, or
 automatic continuation does not approve any mutation, even if the tool
 returns selected defaults — keep that proposal pending. Missing
@@ -296,10 +299,10 @@ operator's answer or infer it from silence.
    as a note: a stub resolves and will run but measures nothing — surface
    that in §5.3's read-back as hollow assurance, not a satisfied gate.
 
-   When the session can launch agents, launch the `advisor` agent on the prepared binding
-   before presenting it, with the drafted §5 questions and options in its
-   brief so the launch serves as their question review, and fold its input
-   in with the rest of §5.
+   When the session has the advisor tool, state the drafted §5 questions and
+   options in the conversation beside the prepared binding, consult the
+   advisor before presenting it so the consult serves as their question
+   review, and fold its advice in with the rest of §5.
 3. **Approve trust individually.** Each call identifies one entry,
    repository, exact argv, and explicit values for `re-runnable`, `tree`,
    `flaky`, and `stub`, each of which defaults to off. Explain any prefix

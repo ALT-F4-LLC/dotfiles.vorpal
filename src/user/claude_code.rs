@@ -653,8 +653,7 @@ fn sandbox_filesystem_deny_read_paths() -> Vec<String> {
 /// `block`. The setting holds in every session, so a guard that crashes also
 /// blocks its matching calls for docket executors; none of the eight exits
 /// other than 0 or 2 on a designed path. A hook that times out blocks either
-/// way in Code Mode. Left out on purpose: `docket-advisor-first-hook.sh` is
-/// workflow discipline, not a guard, and `docket-spawn-guard-hook.sh` hands
+/// way in Code Mode. Left out on purpose: `docket-spawn-guard-hook.sh` hands
 /// its exit status to `docket guard spawn`, so any engine status other than 0
 /// or 2 would block a Workflow launch, the tribunal launch that clears a hold
 /// included.
@@ -714,6 +713,7 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
         .with_include_git_instructions(false)
         .with_input_needed_notif_enabled(true)
         .with_isolate_peer_machines(true)
+        .with_advisor_model("fable")
         .with_model("sonnet")
         .with_model_setting(
             ANTHROPIC_FABLE_MODEL,
@@ -836,15 +836,6 @@ fn settings_with(host: HostInputs) -> settings::ClaudeCodeSettings {
             "PostToolUse",
             Some("Workflow|Bash"),
             "bash ~/.claude/hooks/docket-park-notice-hook.sh",
-            "command",
-        )
-        // Holds a docket-run conductor to the advisor-first standing ruling:
-        // an operator question is refused until a completed advisor review
-        // or a recorded advisor ruling covers it.
-        .with_hook(
-            "PreToolUse",
-            Some("AskUserQuestion"),
-            "bash ~/.claude/hooks/docket-advisor-first-hook.sh",
             "command",
         )
         .with_hook(
@@ -1371,7 +1362,7 @@ mod tests {
     #[test]
     fn code_mode_guard_hooks_block_on_failure() {
         let emitted = emitted_settings();
-        let default_failure = ["docket-advisor-first-hook.sh", "docket-spawn-guard-hook.sh"];
+        let default_failure = ["docket-spawn-guard-hook.sh"];
         for entry in emitted["hooks"]["PreToolUse"].as_array().expect("hooks") {
             for hook in entry["hooks"].as_array().expect("handlers") {
                 let command = hook["command"].as_str().unwrap_or_default();
@@ -1403,6 +1394,18 @@ mod tests {
             home_install(GIT_ALLOWED_SIGNERS_CONFIG_PATH),
             "${HOME}/.config/git/allowed_signers"
         );
+    }
+
+    #[test]
+    fn emitted_settings_carry_the_fable_advisor_model() {
+        assert_eq!(emitted_settings()["advisorModel"], "fable");
+    }
+
+    #[test]
+    fn emitted_settings_register_no_advisor_first_gate() {
+        let emitted = emitted_settings();
+        let rendered = serde_json::to_string(&emitted["hooks"]).expect("hooks serialize");
+        assert!(!rendered.contains("docket-advisor-first-hook"));
     }
 
     #[test]

@@ -345,9 +345,9 @@ The picture also carries the §1 comparison: the shapes weighed, the one
 chosen, and the reason, so the operator approves a decision and not only a
 drawing.
 
-When the session can launch agents, launch the `advisor` agent on the design before rendering
-the artifact, with the drafted approval question in its brief so the launch
-serves as its question review.
+When the session has the advisor tool, state the design and the drafted
+approval question in the conversation, then consult the advisor before
+rendering the artifact, so the consult serves as its question review.
 
 Present the artifact link and ask for approval via `AskUserQuestion`
 (approve / revise). A revision request loops back through §4's gates if it

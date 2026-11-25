@@ -129,12 +129,6 @@ post-apply lint is a confirmation, not a second drafting round.
   requirement", "not linted") marked lint 0. The workflow logs them and
   returns them under `undraftedCriteria`; the pass drafts those criteria
   inline from source before any apply.
-- An advisor result that never arrives is read from the subagent transcript
-  at `~/.claude/projects/<project dir>/<session id>/subagents/agent-<agent
-  id>.jsonl` (the assistant text entries), where the agent id is the spawn
-  result's agentId and the sibling `.meta.json` names the agent's
-  description for finding it; relaunching repeats the work
-  and loses the same way. Three of six results in one pass needed this.
 - A criterion that needs the engine QA suite is operator evidence under this
   sandbox: `pgrep` exits 3 (no process list), which makes the suite's
   detached-child wait return at once, and a here-document in the suite is

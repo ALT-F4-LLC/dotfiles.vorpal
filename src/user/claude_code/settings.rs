@@ -2253,7 +2253,6 @@ impl ClaudeCodeSettings {
     // Claude Code 2.1.236 schema completion
     // =====================================================================
 
-    #[allow(dead_code)]
     pub fn with_advisor_model(mut self, model: &str) -> Self {
         self.advisor_model = Some(model.to_string());
         self

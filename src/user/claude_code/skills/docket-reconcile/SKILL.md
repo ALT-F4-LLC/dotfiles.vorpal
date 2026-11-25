@@ -289,9 +289,9 @@ the approved batch on your own initiative. A schema version with no file is a
 plain DEPRECATE, not an ORPHAN: retiring it changes no routing, and the
 engine refuses it while any live workflow still depends on it.
 
-When the session can launch agents, launch the `advisor` agent on the plan before presenting
-it for approval, with the drafted approval and orphan questions in its brief
-so the launch is their [question
+When the session has the advisor tool, state the plan and the drafted approval
+and orphan questions in the conversation, then consult the advisor before
+presenting it for approval, so the consult is their [question
 review](../../references/working-agreement.md#question-review).
 
 ## Step 3 — apply, then verify by assertion

@@ -1107,8 +1107,8 @@ plausible the context makes it look.
    fires later with no session present. `auto` is that same arming, asked
    for out loud, which is the whole difference.
 
-   When the session can launch agents, launch the `advisor` agent on the precondition results
-   before handing over the merge command.
+   When the session has the advisor tool, state the precondition results in the
+   conversation and consult the advisor before handing over the merge command.
 4. Merge method: the word given in the invocation (`squash`, `rebase`,
    `merge`) when present; otherwise the first of `rebase`, `merge`,
    `squash` that `gh repo view <owner>/<repo> --json

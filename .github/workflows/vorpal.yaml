@@ -12,6 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - run: bash tests/advisor-consult-rules.test.sh
+      - run: bash tests/advisor-tool-migration.test.sh
       - run: bash tests/brief-skill.test.sh
       - run: bash tests/ci-suite-wiring.test.sh
       - run: bash tests/citation-check.test.sh
@@ -23,7 +25,6 @@ jobs:
       - run: bash tests/diff-scope.test.sh
       - run: bash tests/direnv-env-hook.test.sh
       - run: bash tests/doc-validate.test.sh
-      - run: bash tests/docket-advisor-first-hook.test.sh
       - run: bash tests/docket-cli-inventory.test.sh
       - run: bash tests/docket-cli-sweep.test.sh
       - run: bash tests/docket-commit-guard-hook.test.sh

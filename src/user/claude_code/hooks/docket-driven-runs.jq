@@ -1,5 +1,5 @@
 # docket-driven-runs.jq -- the one test of whether a session drives a run,
-# shared by docket-park-notice-hook.sh and docket-advisor-first-hook.sh.
+# used by docket-park-notice-hook.sh.
 #
 # Input: the text of one of the session's own tool calls (a Bash command, or
 # another tool's input as a string). drives($r) is true when that call drives

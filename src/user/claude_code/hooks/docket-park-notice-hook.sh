@@ -69,8 +69,8 @@ RUNS=$(docket run status --limit 0 --json 2>/dev/null \
     | jq -r '.data.runs // [] | .[].run | select(type == "string" and test("^RUN-[0-9]+$"))' 2>/dev/null) || allow
 [ -n "$RUNS" ] || allow
 
-# The test of whether a call drives a run lives beside this hook, shared with
-# the advisor-first hook; without it nothing can be judged, so allow.
+# The test of whether a call drives a run lives beside this hook; without it
+# nothing can be judged, so allow.
 HOOK_DIR="${0%/*}"
 [ "$HOOK_DIR" = "$0" ] && HOOK_DIR="."
 DRIVES_DEF=$(cat "${HOOK_DIR}/docket-driven-runs.jq" 2>/dev/null) && [ -n "$DRIVES_DEF" ] || allow

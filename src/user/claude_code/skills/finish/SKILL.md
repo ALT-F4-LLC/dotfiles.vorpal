@@ -144,9 +144,9 @@ from, never a backlog issue, as the general review severity ladder's
 "Concern, unobserved" row requires. Nothing
 stays only in this transcript.
 
-When the session can launch agents, launch the `advisor` agent on the drafted items before
-filing them, with any drafted operator questions in its brief so the launch
-is their [question
+When the session has the advisor tool, state the drafted items and any drafted
+operator questions in the conversation, then consult the advisor before filing
+them, so the consult is their [question
 review](../../references/working-agreement.md#question-review).
 
 ## Check before you close

@@ -19,17 +19,19 @@ question, or when the user asks. Routine work needs only what follows.
   its caller with options and a recommendation. The caller asks it through
   `AskUserQuestion` or relays it upward, and never answers it for the
   operator, except as the evidence-decided ruling below settles it.
-- When the session can launch agents, the `advisor` reviews every drafted
-  `AskUserQuestion` set before it is asked, and its pick is the
-  `(Recommended)` option by default, with its one-line reason in the
-  description. An existing advisor launch on the same decision counts when
-  its brief carried the drafted questions and options. When you disagree
-  with the pick, keep its label and state your dissent beside the question
-  instead of a further launch. The [question review
+- When the session has the advisor tool, consult the advisor on every
+  drafted `AskUserQuestion` set before it is asked, with the set drafted in
+  the conversation first. Its pick is the `(Recommended)` option by default,
+  with its one-line reason in the description. An existing advisor consult on
+  the same decision counts when the drafted questions and options were in the
+  conversation before it. When you disagree with the pick, keep its label and
+  state your dissent beside the question. The [question review
   rule](references/working-agreement.md#question-review) holds the details.
 - A question the evidence decides is not asked: under the [evidence-decided
   ruling](references/working-agreement.md#standing-ruling-evidence-decided-questions),
-  a clear advisor pick on it is acted on and disclosed as advisor-settled.
+  an explicit advisor pick on it (its reply names exactly one offered option and
+  affirms that the question is `evidence` and outside the reserved classes)
+  is acted on and disclosed as advisor-settled.
   Preference questions and the ruling's reserved classes (authority beyond
   scope, irreversible actions, permission and trust changes, security risk,
   skill-assigned approvals) are still asked. The operator's own answer that
@@ -47,15 +49,16 @@ question, or when the user asks. Routine work needs only what follows.
 - When delegating, pass along the constraints and authorization limits, and
   check consequential results. Self-review is not independent review: name the
   review route used, or say none exists.
-- When the session can launch agents, launch the `advisor` agent (the `Agent`
-  tool with `subagent_type: advisor`) before committing to an approach, before
-  reporting work complete, when stuck, and before changing approach. It does
-  not see this conversation: the brief names the task, the decision or
-  deliverable, the evidence, the paths to read, and the constraints and
-  authorization limits, and carries evidence rather than your conclusion. Make
-  the deliverable durable before the completion call. Its advice is review
-  input: weigh it seriously, reconcile conflicts with your own evidence in a
-  further launch, and never treat it as authorization or as a substitute for an
+- When the session has the advisor tool, consult the advisor before
+  committing to an approach, before reporting work complete, when stuck, and
+  before changing approach. It sees the whole conversation but has no file
+  access: before consulting, state in the conversation the task, the decision
+  or deliverable, the evidence, the paths you read, and the constraints and
+  authorization limits, and read into the conversation what it must review.
+  Carry evidence rather than your conclusion. Make the deliverable durable
+  before the completion consult. Its advice is review input: weigh it
+  seriously, surface a conflict with your own evidence rather than switching
+  silently, and never treat it as authorization or as a substitute for an
   operator gate. Three cases differ: the evidence-decided ruling above, and
   two in the docket-run skill: [Standing ruling: the advisor answers
   first](skills/docket-run/SKILL.md#standing-ruling-the-advisor-answers-first)

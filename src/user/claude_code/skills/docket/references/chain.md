@@ -41,11 +41,13 @@ pass; under `/loop` each later firing holds it again until the loop ends.
 Each stage's ruling is in its own Skill file: groom's under **Hands-off
 grooming** in `docket-groom` §4, plan's under **Standing ruling: unattended
 planning**, run's under **Standing ruling: unattended mode**. All three
-share one shape: a decision the evidence settles goes to the advisor and a
-clear pick is acted on and disclosed as advisor-settled; an unclear pick, or
-a class the stage reserves to the operator (security answers, approvals of
-groom's §4b proposals), is queued, the work it blocks stays unchanged, and
-the stage ends without it. No stage calls `AskUserQuestion` while the
+share one shape: a decision the evidence settles goes to the advisor. An
+advisor reply that itself names the option for that question and affirms that
+it is an evidence question outside the reserved classes is acted on and
+disclosed as advisor-settled, and any other reply queues the question. A
+class the stage reserves to the operator (security answers, approvals of
+groom's §4b proposals) is queued too. Queued work stays unchanged, and the
+stage ends without it. No stage calls `AskUserQuestion` while the
 chain holds.
 
 The check needs the operator's chain line in context. If compaction dropped

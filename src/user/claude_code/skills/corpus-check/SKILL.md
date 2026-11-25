@@ -254,8 +254,8 @@ not a stale suite, and that a `prose-gates` failure means a fix reworded a
 sentence a suite pins verbatim: restore that sentence, or re-anchor the pin
 in the same change when the rewording was the intended fix.
 
-When the session can launch agents, launch the `advisor` agent on the drafted
-issue set before filing it, and fold its input in. File with `docket issue
+When the session has the advisor tool, state the drafted issue set in the
+conversation, consult the advisor before filing it, and fold its advice in. File with `docket issue
 create`, `-f`, `--scope`, `--size` and `--idempotency-key` set, no routing
 label, no assignee; read each receipt back and record the id.
 

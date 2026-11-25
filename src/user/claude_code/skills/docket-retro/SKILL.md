@@ -325,8 +325,8 @@ only. The packet may cite run IDs; the diff may not. A comment in the file is
 read years later by someone with no run history, so it says what was found
 in plain words, with no date, sha, or issue id.
 
-When the session can launch agents, launch the `advisor` on the packet
-before the panel. Then open the proposal from the repo the edits target
+When the session has the advisor tool, state the packet in the conversation
+and consult the advisor before the panel. Then open the proposal from the repo the edits target
 and convene the judges:
 
 ```bash
@@ -370,7 +370,7 @@ per command, default off, nothing run before approval. Ask it in its own
 question, never bundled with config edits the panel cleared: trust
 authorizes execution, a panel of agents cannot grant it, and a trust row in
 a bundle is approved without being read. Draft the trust question before
-the packet's advisor launch so that launch is its question review. Ask it
+the packet's advisor consult so that consult is its question review. Ask it
 once, with each entry's name, repo, and argv in the question and the
 advisor's result beside it. For a recognition question that result is "no
 pick", since only the operator knows what they added.

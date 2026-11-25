@@ -24,10 +24,11 @@ here; do not delegate the briefing flow to a forked subagent.
 ## Boundaries
 
 Before confirmation, use tools only to resolve references and run narrow,
-read-only checks needed to describe or route the request. Substantive
+read-only checks needed to describe or route the request. The one exception
+is the Write of the draft to a scratch file outside the repository. Substantive
 investigation, implementation, tracking artifacts, and scheduling belong
-to the confirmed route. The advisor's inspection in §1 runs under the same
-limit. Ultracode (§3) does not widen it: no `Workflow` runs until the
+to the confirmed route. The inspection §1 does before consulting runs
+under the same limit. Ultracode (§3) does not widen it: no `Workflow` runs until the
 confirmed route starts the work. That covers briefing, a pending `/goal`
 line, and `Just give me the brief`.
 
@@ -116,7 +117,9 @@ the one exception to that test: ask for it under the rule in §2 when the
 request supports more than one genuine role.
 
 No brief is shown to the operator while a question is open; until then
-the draft travels only inside advisor launches. Interrogate the advisor,
+the draft reaches the advisor only through a tool call that carries it, such
+as writing it to a scratch file with the Write tool, never through reply
+text the operator reads. Interrogate the advisor,
 then the operator, in rounds until the list is empty or the operator stops
 the briefing (Boundaries). There is no round limit.
 
@@ -140,41 +143,50 @@ approved deliverable or constraint.
 
 ### Advisor first
 
-When the session can launch agents, each round starts with one `advisor`
-launch. Its brief carries:
+When the session has the advisor tool, each round starts with one consult.
+The advisor sees the whole conversation and has no file access, so before
+consulting, the caller reads each passage that bounded read-only
+inspection needs into the conversation and states the following in the
+conversation, except the draft brief, which goes in a scratch file written
+with the Write tool:
 
-- the draft brief, which lists its open questions and goes to the advisor
-  only;
+- the draft brief, which lists its open questions and reaches the advisor
+  only through a tool call that carries it;
 - the questions already settled, with their answers, and the questions
   dropped as immaterial, with the reason;
-- the evidence and its locators, and the materiality test above;
-- the Boundaries limit on inspection, and the instruction not to answer
-  the Goal;
+- the evidence, its locators, the passages read, and the materiality test
+  above;
+- the Boundaries limit on inspection, and that the Goal is not answered;
 - the drafted `AskUserQuestion` set for the questions bound for the
-  operator.
+  operator, each question classified as evidence or preference, with the
+  reserved classes named.
 
-Ask it for three things:
+Consult for three things:
 
-- an answer, with its locator, to each question that bounded read-only
-  inspection decides;
+- an answer to each question that the passages read decide;
 - its [question
   review](../../references/working-agreement.md#question-review) of the
   drafted set;
-- every material open question the draft missed. It reopens a settled
-  question, or raises a dropped one again, only on new evidence.
+- every material open question the draft missed. Reopen a settled
+  question, or raise a dropped one again, only on new evidence.
 
-Read the located passage, then fold the answer into the brief as
-source-backed. A question the
+Fold an answer into the brief as source-backed only when it rests on a
+passage the caller read; the label belongs to that passage, not to the
+advisor's say-so. A question the
 advisor settles under the [evidence-decided
 ruling](../../references/working-agreement.md#standing-ruling-evidence-decided-questions)
-is closed, not asked, and disclosed as advisor-settled. That ruling
-decides which questions the advisor may settle; this skill adds none. A
-Security-sensitive question settles this way only toward the more
+is closed, not asked, and disclosed as advisor-settled, but only when the
+advisor's reply itself names exactly one offered option for it and affirms
+that it is an evidence question, not a preference, and outside the reserved
+classes; any other
+reply leaves it open. That ruling decides which questions the advisor may
+settle; this skill adds none. A
+Security-sensitive question closes by inspection only toward the more
 protective value. Add each question the advisor names to the list when it
 passes the materiality test.
 
-A session that cannot launch the advisor, or whose launch fails,
-interrogates the operator alone. Its loop ends when the list is empty or
+A session with no advisor, because the tool is missing or returns an
+error, interrogates the operator alone. Its loop ends when the list is empty or
 the operator stops it, and the advisor hand-off below is unavailable to
 it.
 
@@ -188,7 +200,9 @@ criteria, whether it runs now in this conversation or through a docket run
 is such a decision, since §3 rule 5 routes on it. Ask concrete questions
 about the work rather than asking the operator to classify its
 complexity. Offer a recommendation when evidence supports one; do not
-recommend guesses about facts. The advisor's pick takes `(Recommended)`.
+recommend guesses about facts. The advisor's pick takes `(Recommended)`;
+on a Reserved or security-override question, the protective option takes
+it: the one that grants nothing and leaves the gate failed.
 A question this round's review did not see gets its own review before it
 is asked.
 
@@ -198,7 +212,7 @@ genuinely supports, the advisor's pick first with `(Recommended)` in its
 label and your strongest-first ordering as its input;
 never pad the list with generic stances to reach the harness minimum.
 
-An investigative question the advisor's inspection cannot decide goes to
+An investigative question that bounded read-only inspection cannot decide goes to
 the operator, who may hold the answer. When only the work itself can
 answer it, ask how the brief carries it:
 
@@ -222,7 +236,9 @@ an answer. Ask it again in the next round, reworded, and name the ways it
 can close: an answer, a hand-off to the advisor, or a carry as a
 deliverable, an exclusion, or an assumption. An answer that hands a
 question to the advisor is settled under the ruling's **Delegated**
-clause.
+clause, which acts only on an advisor reply that names exactly one offered
+option for it and affirms that it is an evidence question, not a preference,
+and outside the reserved classes.
 
 A refusal to decide is not asked again as the same question. Name those
 ways once; if the operator still declines, or asks to stop, end the
@@ -230,10 +246,10 @@ briefing as Boundaries describes, with the open questions listed and no
 brief shown.
 
 The loop ends one of two ways. The operator stops it, and no brief is
-shown. Or the list is empty and an advisor launch on that draft names no
-new question that passes the materiality test. Make that launch §4's: it
-carries the draft brief, the route, and the confirmation question, so a
-clear request costs one launch. A question it names returns the flow
+shown. Or the list is empty and a consult on that draft names no
+new question that passes the materiality test. Make that consult §4's: the
+text before it carries the draft brief, the route, and the confirmation
+question, so a clear request costs one consult. A question it names returns the flow
 here.
 
 ### Limits
@@ -243,8 +259,8 @@ optional fields through interrogation, and leave execution questions for
 the selected workflow. A question that fails the materiality test is
 dropped, not listed.
 
-A clear request can skip the operator questions. When the session can
-launch agents, it never skips the advisor launch that confirms nothing is
+A clear request can skip the operator questions. When the session has
+the advisor tool, it never skips the consult that confirms nothing is
 open. A structured request still needs questions
 if it contains material omissions or contradictions. A request that is
 otherwise clear but supports several genuine roles still gets one round
@@ -280,7 +296,7 @@ Security-sensitive: yes | no | unknown
 Constraints: <hard limits and labeled assumptions, or "none stated">
 Docket tracking: <required — reason/IDs | not requested | unknown>
 Open questions:
-- <"none" in any brief shown; an advisor-launch draft lists its open items>
+- <"none" in any brief shown; a draft written for a consult lists its open items>
 Loop details: <not applicable, or the details below>
 - Per-pass action: <what each pass does>
 - Cadence: <specified or explicitly delegated>
@@ -475,7 +491,8 @@ its passing output. It also carries these duties:
   that settles a criterion (Ultracode, below).
 - For a Security-sensitive `yes` brief routed here by the harness rule or
   by an operator override of rule 1, route the change's review through the
-  advisor or a peer and show its output.
+  advisor or a peer, and show the peer's output or the advisor's advice,
+  summarized.
 - For a `route-direct` issue, after verification show the output of
   `docket issue comment add <id> -m "<what landed and where>"` and then
   `docket issue close <id>`.
@@ -528,7 +545,7 @@ selects:
 
 Ultracode lifts token cost as a constraint on how the work runs; it adds
 no authority. A Security-sensitive change's review on `/goal` or `/loop`
-still goes through the advisor, launched from this session, or a peer; a
+still goes through an advisor consult from this session, or a peer; a
 workflow's own verify stage or agents do not replace it. A workflow agent's question returns to the session, which
 handles it under the decision duty above. When ultracode is off, `/goal`
 and `/loop` work runs a workflow only when the operator's own words ask
@@ -561,16 +578,20 @@ through workflows (§3). If
 the downstream input requires a different structure, show the prepared
 handoff as well.
 
-When the session can launch agents, launch the `advisor` agent on the drafted brief and route
-before presenting them, and fold its input into the draft. Its brief
-carries the drafted confirmation question, so this launch is its question
-review and the launch that ends the §1 loop. An open question it names
+When the session has the advisor tool, consult the advisor on the drafted brief and route
+before presenting them, and fold its input into the draft. Before
+consulting, write the draft brief, the route, and the drafted confirmation
+question to a scratch file with the Write tool, so the advisor sees them
+and the operator is shown nothing unconfirmed. This consult is the
+question review and the consult that ends the §1 loop. An open question it names
 returns the flow to §1 before anything is presented. List each
 advisor-settled question beside the brief, with the option taken and the
 advisor's reason, so the confirmation covers them. The advisor picks
 among the routes §3 leaves eligible, with the §3-derived route as its
 input; its pick is the recommended route below,
-and a differing §3 route is shown beside it as dissent.
+and a differing §3 route is shown beside it as dissent. On a Reserved or
+security-override question the protective option takes `(Recommended)`
+instead, and the advisor's pick, if different, is shown in its description.
 
 Then use `AskUserQuestion` to confirm the displayed brief, route, and any
 prepared handoff. For multiple briefs, confirm the set and its routes

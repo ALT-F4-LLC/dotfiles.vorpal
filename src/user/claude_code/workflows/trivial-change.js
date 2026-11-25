@@ -434,6 +434,11 @@ function packetFromModule(mod, row, owner) {
 // `cwd` is the wave's args.cwd, the checkout. A shared executor's cwd may not
 // be that checkout, so its record and fail commands cd there first. An
 // isolated executor's reset cwd is its worktree, so its commands stay bare.
+// The CALL FORM paragraph answers the auto-mode classifier refusing an
+// executor's first call when it is a multi-command REPL script: 4 of 32 first
+// calls in one run. It is unmeasured, since that rate is too low for a small
+// replay to separate; the friction ledger's first-call denial rate after
+// activation is the check.
 function executorBrief(row, owner, claim, isolated, isWrite, cwd) {
     const { dir, token } = claim
     const atCheckout = isolated ? '' : `cd ${cwd} && `
@@ -480,7 +485,15 @@ it for you with \`docket step claim ${row.step} --owner ${owner} --render\`
 (attempt ${claim.attempt}): the lease is live, and the work packet the engine
 rendered at that claim closes this brief, verbatim; when it opens with
 \`(by reference)\`, the file it names holds the packet. Claiming again re-keys
-the lease and voids the parked token.${isolationNote}
+the lease and voids the parked token.
+
+CALL FORM: where this brief says "Bash call", a REPL script that makes the
+call is the same thing when your tools hold a REPL and no Bash tool, and
+running this brief's commands from REPL scripts is the sanctioned form.
+MAKE YOUR FIRST CALL ONE COMMAND THIS BRIEF NAMES, ALONE: a direct Bash tool
+call when you have a Bash tool, otherwise a REPL script that runs that one
+command and returns its output unfiltered. Each shell call inside a later
+script stays ONE plain command.${isolationNote}
 
 1. YOUR PRIVATE STEP SCRATCH DIR is ${dir} (mode 0700). EVERYTHING you write
    goes inside it, under filenames that start with your step id. The lease

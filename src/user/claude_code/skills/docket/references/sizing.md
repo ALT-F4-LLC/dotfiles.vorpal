@@ -58,11 +58,15 @@ whose issue drifts toward `bounded` should first ask whether it is really
 two `small` issues.
 
 An issue meeting both the `small` and `trivial` conditions takes `small`.
-Never apply the `small` or `trivial` label to a security-sensitive issue, a
-ui-scoped issue (one carrying `ui`, or whose files or scope lie under a TUI
+Never apply the `small` or `trivial` label to a security-sensitive issue (this
+includes an issue whose files or scope include a gate script: a file a docket
+trust list entry's argv names, the script that entry's make or just recipe
+invokes, or that recipe's own lines), a ui-scoped issue (one carrying `ui`, or whose files or scope lie under a TUI
 or UI surface), or one carrying any label in policy's `[security].labels`;
 small-change and trivial-change run no copy-verify or render-verify step.
 Such an issue keeps the matching `--size` value and carries no size label.
+A labelled gate-script issue still runs the gate with its edited copy, so the
+security track adds review depth, not an independent gate.
 If a ui issue already carries a size label, remove the size label, never
 the `ui` label. Confirm the binding with `docket workflow show small-change`
 or `docket workflow show trivial-change`.

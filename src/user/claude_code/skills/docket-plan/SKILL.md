@@ -1128,6 +1128,10 @@ any of these guarded paths and whose labels include none of `security`,
 - `src/user/docket/config/workflows/standard-change.toml`
 - `src/user/docket/config/fragments/severity-ladder-security.md`
 - `src/user/claude_code/agents/executor-read.md`
+- a gate script: a file a docket trust list entry's argv names, the script
+  that entry's make or just recipe invokes, or that recipe's own lines (the
+  [sizing reference](../docket/references/sizing.md) gives the same
+  definition and the review-depth limit of the label)
 
 Put each flagged issue to the operator through `AskUserQuestion`, naming the missing
 label before you record it. Never add the label yourself. Record the

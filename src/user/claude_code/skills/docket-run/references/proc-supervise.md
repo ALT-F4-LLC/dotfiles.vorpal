@@ -12,7 +12,7 @@ this file holds when the conductor uses it and the evidence it was built from.
 - [Attributing a detached process](#attributing-a-detached-process) (38 lines)
 - [Audited scenarios](#audited-scenarios) (18 lines)
 - [Capabilities with no audited scenario](#capabilities-with-no-audited-scenario) (21 lines)
-- [Limits](#limits) (56 lines)
+- [Limits](#limits) (74 lines)
 
 ## What it is for
 
@@ -206,8 +206,12 @@ escalation noted:
   cli.js -p`) and that has no child with its own id is not recognised; its
   tree reads as own-shell. With no session id in the environment (as in
   the real table) no child shows its own id, so only the title protects.
-- Whether the harness truncates a long hook reason is unknown; the
-  `summary` rows print last.
+- The hook's reason reached the caller whole: the inventory's 4,356
+  characters, through the last `summary` row, arrived in the caller's error
+  string. The REPL's refused-call notice for the same call cut the reason
+  after about 400 characters, so a reader of that notice alone sees neither
+  `source=ps` nor `registry=ok`. A direct Bash tool call was not tried, so
+  whether it shows the same cut is unknown.
 - A Linux orphan under a subreaper (`systemd --user`) is never dead-owner.
 - The death test is not a proof. A crashed session's stale entry plus a
   live unregistered `claude -p --resume <id>` whose orphaned child carries
@@ -216,5 +220,16 @@ escalation noted:
   it by hand.
 - The kill re-reads each pid's start time and skips one that changed, so a
   reused pid is never signalled.
-- The hook's paths are fixture-tested. They go live only after the
-  operator runs `just activate`.
+- The conductor path ran live once, from a main conversation holding a
+  conductor token, after `just activate`. The target was a background Bash
+  task running `echo probe-sleep-start; sleep 600` (a command that begins with
+  `sleep` is stopped, not backgrounded, at the REPL's timeout). Inventory
+  (0.387 s): `source=ps`, `registry=ok`, `foreign=736`; the task's zsh (pid
+  33681, evidence `ancestor=<session pid>`, the shell-snapshot marker in its
+  argv) and its `sleep 600` child (pid 33682, `root=33681`) both read
+  `own-shell stop`. The counts were own-shell 2, own-detached 0, own-service
+  14, unknown 3, dead-owner 0. `kill --dry-run --pid 33681` (0.303 s) printed
+  `dry-run 2 target(s) signal=TERM` and `would-signal TERM` for both pids.
+  `kill --pid 33681` (0.380 s) printed `signal TERM` for both pids and the task
+  ended with exit 144 within a second. Wall times were measured around each
+  call. Every result matched the expected one except the display cut above.

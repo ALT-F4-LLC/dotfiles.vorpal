@@ -269,4 +269,12 @@ frozen-drift-check:
 # a workflow TOML, run this, and commit the result.
 # tests/docket-run-lane-scripts.test.sh fails on a hand edit or a stale copy.
 lanes:
-    python3 -I src/user/claude_code/skills/docket-run/scripts/lane_scripts.py
+    py=; for candidate in python3 python3.14 python3.13 python3.12 python3.11; do \
+        command -v "$candidate" >/dev/null 2>&1 || continue; \
+        version=$("$candidate" --version 2>&1) || continue; \
+        version=${version#Python }; major=${version%%.*}; minor=${version#*.}; minor=${minor%%.*}; \
+        case "$major$minor" in ''|*[!0-9]*) continue ;; esac; \
+        if [ "$major" -gt 3 ] || { [ "$major" -eq 3 ] && [ "$minor" -ge 11 ]; }; then py=$(command -v "$candidate"); break; fi; \
+    done; \
+    [ -n "$py" ] || { echo "FATAL: lane_scripts.py needs Python 3.11+ (tomllib); no python3 or python3.11-3.14 on PATH is 3.11+" >&2; exit 1; }; \
+    "$py" -I src/user/claude_code/skills/docket-run/scripts/lane_scripts.py

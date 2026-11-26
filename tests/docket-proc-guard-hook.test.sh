@@ -132,6 +132,23 @@ hook "$(payload "$KILL" "$NEWTOK")"
 expect "only a RUN-N.token.new does not make a conductor" 2 no "runs only from a docket conductor"
 hook "$(payload "$KILL" "$BADRUN")"
 expect "a token with a non-numeric run id does not make a conductor" 2 no "runs only from a docket conductor"
+# A token another user owns does not make a conductor. chown needs root, so the
+# case runs only where passwordless sudo works and the suite is not root, and
+# prints a SKIP line elsewhere.
+ROOTTOK=77777777-7777-7777-7777-777777777777
+ROOTCASE="a token owned by another user does not make a conductor"
+if [ "$(id -u)" -ne 0 ] && sudo -n true >/dev/null 2>&1; then
+    mkdir -p "$SP/$ROOTTOK/scratchpad/conductor.d"
+    printf 'tok\n' > "$SP/$ROOTTOK/scratchpad/conductor.d/RUN-5.token"
+    if sudo -n chown 0 "$SP/$ROOTTOK/scratchpad/conductor.d/RUN-5.token" >/dev/null 2>&1; then
+        hook "$(payload "$KILL" "$ROOTTOK")"
+        expect "$ROOTCASE" 2 no "runs only from a docket conductor"
+    else
+        printf 'SKIP: %s (chown to root failed)\n' "$ROOTCASE"
+    fi
+else
+    printf 'SKIP: %s (needs sudo -n and a non-root user)\n' "$ROOTCASE"
+fi
 hook "$(payload "$KILL" "$SID/../$SID")"
 expect "a session id with a path character is never a conductor" 2 no "runs only from a docket conductor"
 hook "$(payload "$KILL" "")"

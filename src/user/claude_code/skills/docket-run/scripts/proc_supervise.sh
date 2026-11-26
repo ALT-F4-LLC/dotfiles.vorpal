@@ -113,9 +113,10 @@
 # Inside the Bash sandbox no signal reaches a process outside the call. That
 # is why the live kill runs from the hook, which runs outside the sandbox.
 #
-# PLATFORMS. Darwin is supported. The Linux branch is written but its /proc
-# reader has never run, and only the classifier is tested on a Linux-shaped
-# table. The table comes from
+# PLATFORMS. Darwin is supported. The Linux /proc reader ran live once on
+# ubuntu-latest CI and reported a child's session id and cwd; that run did not
+# observe the Linux registry procStart format, which is still unknown. The
+# classifier is also tested on a Linux-shaped table. The table comes from
 # `TZ=UTC ps -axww -o pid=,ppid=,pgid=,lstart=,command=` (UTC, because the
 # registry records procStart in UTC). Session ids come from `ps -E`
 # (Darwin) or /proc/<pid>/environ (Linux); cwds from `lsof -d cwd` (Darwin) or

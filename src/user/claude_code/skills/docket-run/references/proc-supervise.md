@@ -162,9 +162,12 @@ escalation noted:
 ## Limits
 
 - Darwin is the supported platform. The Linux classifier is tested on a
-  Linux-shaped table only; the `/proc` reader has never run, and the Linux
-  registry's `procStart` format is unknown (a mismatch reads the registry
-  unusable, so nothing is a target).
+  Linux-shaped table. The `/proc` reader ran live once on ubuntu-latest CI
+  (the suite's Linux case, which skips elsewhere): a child started under
+  `CLAUDE_CODE_SESSION_ID` showed up in the snapshot with that session id
+  and its own cwd, and the run passed. That run did not observe the Linux
+  registry's `procStart` format, so it is still unknown (a mismatch reads
+  the registry unusable, so nothing is a target).
 - In the Darwin Bash sandbox the table falls back to `lsof` (no argv,
   start time or environment). Ownership then comes from
   ancestry alone, any shell child of the session counts as own-shell, and

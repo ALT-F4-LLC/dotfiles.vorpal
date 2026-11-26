@@ -207,11 +207,12 @@ escalation noted:
   tree reads as own-shell. With no session id in the environment (as in
   the real table) no child shows its own id, so only the title protects.
 - The hook's reason reached the caller whole: the inventory's 4,356
-  characters, through the last `summary` row, arrived in the caller's error
-  string. The REPL's refused-call notice for the same call cut the reason
-  after about 500 characters, so a reader of that notice alone sees neither
-  `source=ps` nor `registry=ok`. A direct Bash tool call was not tried, so
-  whether it shows the same cut is unknown.
+  characters arrived in the caller's error string. The REPL's refused-call
+  notice for the same call cut the reason after about 500 characters. The
+  cut is a display limit only. The `summary` rows now come first, so a cut
+  drops process rows and the reader still sees `source=`, `registry=` and the
+  counts. A direct Bash tool call was not tried, so whether it shows the same
+  cut is unknown.
 - A Linux orphan under a subreaper (`systemd --user`) is never dead-owner.
 - The death test is not a proof. A crashed session's stale entry plus a
   live unregistered `claude -p --resume <id>` whose orphaned child carries

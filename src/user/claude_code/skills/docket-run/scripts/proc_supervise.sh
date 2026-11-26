@@ -148,9 +148,10 @@
 # `#self<TAB>pid`, naming the caller, whose ancestry and descendants are never
 # listed, and `#source<TAB>ps|lsof`.
 #
-# Output: one row per listed process,
+# Output: the `summary` rows first, so a display that cuts a long output keeps
+# source=, registry= and the counts, then one row per listed process,
 #   class<TAB>action<TAB>pid<TAB>ppid<TAB>owner<TAB>evidence<TAB>cwd<TAB>command
-# then `summary` rows. kill appends `refuse`, then `would-signal` (dry run) or
+# sorted by class, then pid. kill appends `refuse`, then `would-signal` (dry run) or
 # `signal`/`skip` rows.
 #
 # Exit: 0 done; 2 usage; 3 refused (kill gate); 4 no process table.
@@ -438,8 +439,10 @@ classify() { # <snapshot file> <sessions file>
         nc = split("own-shell own-detached own-service sibling sibling-detached unregistered unknown dead-owner", classes, " ")
         for (i = 1; i <= nc; i++) printf "summary\tcount\t%s\t%d\n", classes[i], cnt[classes[i]]
     }' "$2" "$1" > "$work/rows"
-    grep -v '^summary	' "$work/rows" | sort -t "$(printf '\t')" -k1,1 -k3,3n
+    # Summary rows first: a display that cuts a long reason drops the tail, and
+    # the summary carries source=, registry= and the per-class counts.
     grep '^summary	' "$work/rows"
+    grep -v '^summary	' "$work/rows" | sort -t "$(printf '\t')" -k1,1 -k3,3n
 }
 
 # ---- main --------------------------------------------------------------------

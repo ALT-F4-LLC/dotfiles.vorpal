@@ -139,6 +139,11 @@ expect_class() { # <pid> <class/action> <label>
 plan() { grep -E '^(refuse|dry-run|would-signal)' "$1" | tr '\n' ' '; }
 
 [ "$rc" -eq 0 ] && pass "inventory exits 0" || fail "inventory exited $rc: $(cat "$WORK/inv.err")"
+# A display that cuts a long output drops the tail, so every summary row must
+# precede the first process row.
+awk -F '\t' '$1 != "summary" { rows = 1 } $1 == "summary" { if (rows) late = 1; n++ } END { exit !(n > 0 && !late) }' "$WORK/inv" \
+    && pass "inventory prints every summary row before the first process row" \
+    || fail "inventory summary rows are not all first: $(cut -f1 "$WORK/inv" | uniq -c | tr '\n' ' ')"
 
 # ---- audited scenarios -------------------------------------------------------
 expect_class 110 own-shell/stop "S1 subagent shell"

@@ -423,6 +423,32 @@ bash "$PS_SCRIPT" inventory --snapshot "$WORK/snap-lsof" --sessions-tsv "$WORK/s
 grep -q $'^own-shell\tstop\t121\t.*step=STEP-77\t' "$WORK/lsof" && ! grep -q '^dead-owner' "$WORK/lsof" \
     && pass "lsof table: ancestry finds own shells, cwd names the step, nothing is dead-owner" || fail "lsof fixture: $(tr '\n' ' ' < "$WORK/lsof")"
 
+# ---- the Linux /proc reader, live ---------------------------------------------------
+# Every other snapshot case stubs ps and uname. This one runs the unstubbed
+# snapshot on Linux, where the sid column comes from /proc/<pid>/environ and
+# the cwd column from the /proc/<pid>/cwd link, and prints a SKIP line
+# elsewhere.
+LINUXCASE="the Linux /proc reader reports a child's session id and cwd"
+if [ "$(uname -s)" = Linux ]; then
+    LSID=99999999-9999-9999-9999-999999999999
+    mkdir -p "$WORK/linux-cwd"
+    LCWD=$(cd "$WORK/linux-cwd" && pwd -P)
+    ( cd "$LCWD" && exec env CLAUDE_CODE_SESSION_ID="$LSID" sleep 300 ) >/dev/null 2>&1 &
+    LPID=$!
+    sleep 1
+    bash "$PS_SCRIPT" snapshot > "$WORK/snap-linux-live" 2>&1
+    kill "$LPID" 2>/dev/null
+    wait "$LPID" 2>/dev/null
+    if grep -q $'^#source\tps$' "$WORK/snap-linux-live" \
+        && awk -F '\t' -v p="$LPID" -v s="$LSID" -v c="$LCWD" '$1 == p && $5 == s && $6 == c { found = 1 } END { exit !found }' "$WORK/snap-linux-live"; then
+        pass "$LINUXCASE"
+    else
+        fail "$LINUXCASE: $(grep -E "^(#source|$LPID	)" "$WORK/snap-linux-live" | tr '\n' ' ')"
+    fi
+else
+    printf 'SKIP: %s (not Linux)\n' "$LINUXCASE"
+fi
+
 # ---- the skill wiring -------------------------------------------------------------
 SKILL_DIR="${SCRIPT_DIR}/../src/user/claude_code/skills/docket-run"
 grep -q 'references/proc-supervise.md' "$SKILL_DIR/SKILL.md" \

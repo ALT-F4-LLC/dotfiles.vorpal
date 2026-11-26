@@ -331,7 +331,9 @@ nothing for them.
        file, then apply it.
      - <the step 1 command, with `src/user/claude_code/skills/simplify-corpus/scripts/`
        as the script directory, the saved copy as the original, and the
-       edited file as the candidate> exits 0. Failing variant: the same
+       edited file as the candidate> exits 0. This criterion is read-verified:
+       the saved original copy exists only in the implement step, so no fixed
+       pre-gate command can run it. Failing variant: the same
        command exits non-zero when one protected span (a quoted phrase, a
        link target, a fenced block) differs, or the file no longer parses.
      - Each gate named below introduces no failure absent from Baseline:

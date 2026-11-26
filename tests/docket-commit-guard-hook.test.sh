@@ -479,7 +479,10 @@ case_brace_word_prose_allows() {
 # scanned text, later lines included. Rescanning every later line for each
 # brace word made a widened heredoc of many `git {` lines quadratic: a body
 # under the input cap kept the hook running for minutes, past the 600 s
-# default hook timeout. The bound here is a tenth of that timeout. The
+# default hook timeout. The hook decides this 20000-line input in about 6 s on
+# an idle machine, and a parallel gate run once stretched that to 61 s, so the
+# bound is a load-independent 180 s: thirty times the idle time, a third of
+# the hook timeout, and far below the minutes the quadratic scan took. The
 # verdict rows pin both separators on a later line, and the ALLOW of a body
 # that has neither.
 
@@ -495,10 +498,10 @@ case_brace_look_ahead_is_linear() {
     start=$SECONDS
     got=$(verdict_of "$(build_input "$cmd")")
     elapsed=$((SECONDS - start))
-    if [ "$got" = "DENY" ] && [ "$elapsed" -le 60 ]; then
-        pass "20000 widened git { lines before a git commit decide within 60 s (DENY in ${elapsed} s, ${#cmd} bytes)"
+    if [ "$got" = "DENY" ] && [ "$elapsed" -le 180 ]; then
+        pass "20000 widened git { lines before a git commit decide within 180 s (DENY in ${elapsed} s, ${#cmd} bytes)"
     else
-        fail "20000 widened git { lines before a git commit (want DENY within 60 s, got ${got} in ${elapsed} s)"
+        fail "20000 widened git { lines before a git commit (want DENY within 180 s, got ${got} in ${elapsed} s)"
     fi
     assert_verdict 'git {commit'$'\n''echo a,b' DENY 'brace word with a comma on a later line'
     assert_verdict 'git {commit'$'\n''echo a..b' DENY 'brace word with a .. on a later line'

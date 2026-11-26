@@ -481,8 +481,8 @@ case_brace_word_prose_allows() {
 # under the input cap kept the hook running for minutes, past the 600 s
 # default hook timeout. The hook decides this 20000-line input in about 6 s on
 # an idle machine, and a parallel gate run once stretched that to 61 s, so the
-# bound is a load-independent 180 s: thirty times the idle time, a third of
-# the hook timeout, and far below the minutes the quadratic scan took. The
+# bound is a wider 180 s: thirty times the idle time, a third of the hook
+# timeout, and far below the minutes the quadratic scan took. The
 # verdict rows pin both separators on a later line, and the ALLOW of a body
 # that has neither.
 

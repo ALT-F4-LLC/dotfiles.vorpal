@@ -334,8 +334,10 @@ nothing for them.
        edited file as the candidate> exits 0. This criterion is read-verified:
        the saved original copy exists only in the implement step, so no fixed
        pre-gate command can run it. Failing variant: the same
-       command exits non-zero when one protected span (a quoted phrase, a
-       link target, a fenced block) differs, or the file no longer parses.
+       command exits non-zero when the file no longer parses. For the prose
+       and contract kinds, it also exits non-zero when one protected span (a
+       quoted phrase, a link target, a fenced block) differs; the check runs
+       no span comparison for the other kinds.
      - Each gate named below introduces no failure absent from Baseline:
        <the gates from step 3>.
      - A failure that names a sentence a suite pins verbatim means that hunk

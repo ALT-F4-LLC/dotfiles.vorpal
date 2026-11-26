@@ -12,7 +12,7 @@ this file holds when the conductor uses it and the evidence it was built from.
 - [Attributing a detached process](#attributing-a-detached-process) (38 lines)
 - [Audited scenarios](#audited-scenarios) (18 lines)
 - [Capabilities with no audited scenario](#capabilities-with-no-audited-scenario) (21 lines)
-- [Limits](#limits) (74 lines)
+- [Limits](#limits) (77 lines)
 
 ## What it is for
 
@@ -209,7 +209,7 @@ escalation noted:
 - The hook's reason reached the caller whole: the inventory's 4,356
   characters, through the last `summary` row, arrived in the caller's error
   string. The REPL's refused-call notice for the same call cut the reason
-  after about 400 characters, so a reader of that notice alone sees neither
+  after about 500 characters, so a reader of that notice alone sees neither
   `source=ps` nor `registry=ok`. A direct Bash tool call was not tried, so
   whether it shows the same cut is unknown.
 - A Linux orphan under a subreaper (`systemd --user`) is never dead-owner.
@@ -231,5 +231,8 @@ escalation noted:
   14, unknown 3, dead-owner 0. `kill --dry-run --pid 33681` (0.303 s) printed
   `dry-run 2 target(s) signal=TERM` and `would-signal TERM` for both pids.
   `kill --pid 33681` (0.380 s) printed `signal TERM` for both pids and the task
-  ended with exit 144 within a second. Wall times were measured around each
-  call. Every result matched the expected one except the display cut above.
+  ended with exit 144 within a second. The caller measured each wall time
+  around the whole call, which also ran the other PreToolUse hooks (the
+  commit and denied-reissue guards show in the table), so each figure is an
+  upper bound on the proc-guard hook's own time. Every result matched the
+  expected one except the display cut above.
